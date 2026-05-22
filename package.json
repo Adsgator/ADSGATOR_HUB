@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:seed": "node scripts/seed-test.mjs",
+    "db:seed-clean": "node -e \"const {createClient}=await import('@supabase/supabase-js');const{readFileSync}=await import('fs');const e=Object.fromEntries(readFileSync('.env.local','utf-8').split('\\n').filter(l=>l.includes('=')&&!l.startsWith('#')&&l.trim()).map(l=>{const i=l.indexOf('=');return[l.slice(0,i).trim(),l.slice(i+1).trim()]}));const s=createClient(e['NEXT_PUBLIC_SUPABASE_URL'],e['SUPABASE_SERVICE_ROLE_KEY'],{auth:{persistSession:false}});const{data}=await s.from('clientes').select('id').like('nome','%[TESTE]%');if(data?.length){for(const c of data){await s.from('notificacoes').delete().eq('cliente_id',c.id);await s.from('historico_acoes').delete().eq('cliente_id',c.id);await s.from('estagios').delete().eq('cliente_id',c.id);await s.from('assinaturas').delete().eq('cliente_id',c.id);await s.from('financeiro_lancamentos').delete().eq('cliente_id',c.id);}await s.from('clientes').delete().like('nome','%[TESTE]%');}console.log('🧹 Dados de teste removidos: '+(data?.length??0)+' clientes');\""
   },
   "dependencies": {
     "@google-analytics/data": "^6.0.0",
