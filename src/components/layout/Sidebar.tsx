@@ -1,127 +1,137 @@
-'use client';
+'use client'
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, Users, BarChart3, DollarSign,
-  Layers, Settings, LogOut, Moon, Sun, Monitor,
-  ChevronRight,
-} from 'lucide-react';
-import { useTheme } from '@/providers/ThemeProvider';
-import { logout } from '@/lib/auth';
+  LayoutDashboard,
+  Users,
+  BarChart2,
+  DollarSign,
+  FileText,
+  Layers,
+  Settings,
+  HelpCircle,
+  LogOut,
+  Zap,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { logout } from '@/lib/auth'
 
 const NAV_ITEMS = [
-  { href: '/dashboard',     icon: LayoutDashboard, label: 'Dashboard'  },
-  { href: '/clientes',      icon: Users,           label: 'Clientes'   },
-  { href: '/relatorios',    icon: BarChart3,        label: 'Relatórios' },
-  { href: '/financeiro',    icon: DollarSign,       label: 'Financeiro' },
-  { href: '/biblioteca',    icon: Layers,           label: 'Biblioteca' },
-  { href: '/configuracoes', icon: Settings,         label: 'Config'     },
-] as const;
+  {
+    group: 'MENU',
+    items: [
+      { href: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
+      { href: '/clientes',     icon: Users,           label: 'Clientes'     },
+      { href: '/analytics',    icon: BarChart2,       label: 'Analytics'    },
+      { href: '/financeiro',   icon: DollarSign,      label: 'Financeiro'   },
+      { href: '/relatorios',   icon: FileText,        label: 'Relatórios'   },
+      { href: '/biblioteca',   icon: Layers,          label: 'Biblioteca'   },
+    ],
+  },
+  {
+    group: 'GERAL',
+    items: [
+      { href: '/configuracoes', icon: Settings,   label: 'Configurações' },
+      { href: '/ajuda',         icon: HelpCircle, label: 'Ajuda'         },
+    ],
+  },
+]
 
 export function Sidebar() {
-  const pathname              = usePathname();
-  const router                = useRouter();
-  const { theme, setTheme }   = useTheme();
-  const [expanded, setExpanded] = useState(false);
+  const pathname = usePathname()
+  const router   = useRouter()
 
   async function handleLogout() {
-    await logout();
-    router.push('/login');
+    await logout()
+    router.push('/login')
   }
-
-  const themeIcons = { dark: Moon, light: Sun, system: Monitor } as const;
-  const ThemeIcon  = themeIcons[theme] ?? Moon;
-
-  const nextTheme: Record<string, 'light' | 'system' | 'dark'> = {
-    dark: 'light', light: 'system', system: 'dark',
-  };
 
   return (
     <aside
-      className={`
-        fixed inset-y-0 left-0 z-40 flex flex-col
-        transition-all duration-200 ease-in-out
-        dark:bg-surface-card bg-white
-        dark:border-r dark:border-surface-border border-r border-gray-100
-        ${expanded ? 'w-[13.5rem]' : 'w-[3.5rem]'}
-      `}
-      onMouseEnter={() => setExpanded(true)}
-      onMouseLeave={() => setExpanded(false)}
+      className={cn(
+        'fixed left-0 top-0 h-screen w-sidebar z-40',
+        'flex flex-col',
+        'bg-surface-card border-r border-surface-border',
+        'transition-all duration-300',
+      )}
     >
-      {/* Logo */}
-      <div className="flex items-center h-[3.5rem] px-[0.875rem] border-b dark:border-surface-border border-gray-100 gap-[0.75rem] overflow-hidden">
-        <div className="shrink-0 w-[1.75rem] h-[1.75rem] rounded-[0.375rem] bg-brand flex items-center justify-center">
-          <span className="text-white font-bold text-sm leading-none">A</span>
+      {/* ── LOGO ────────────────────────────────────── */}
+      <div className="flex items-center gap-[0.625rem] h-[3.5rem] px-[1.25rem] border-b border-surface-border shrink-0">
+        <div className="w-[1.75rem] h-[1.75rem] rounded-[0.375rem] bg-ads-500 flex items-center justify-center">
+          <Zap className="w-[1rem] h-[1rem] text-white" strokeWidth={2.5} />
         </div>
-        <span className={`
-          dark:text-ink-primary text-gray-900 font-semibold text-sm whitespace-nowrap
-          transition-opacity duration-150
-          ${expanded ? 'opacity-100' : 'opacity-0'}
-        `}>
-          Adsgator Hub
+        <span className="text-ink-primary font-bold text-[1rem] tracking-tight">
+          ADSGATOR
         </span>
       </div>
 
-      {/* Nav principal */}
-      <nav className="flex-1 flex flex-col gap-[0.25rem] p-[0.5rem] overflow-hidden">
-        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
-          const ativo = pathname === href || pathname.startsWith(`${href}/`);
-          return (
-            <Link
-              key={href}
-              href={href}
-              title={label}
-              className={`
-                relative flex items-center gap-[0.75rem] h-[2.25rem] px-[0.625rem]
-                rounded-[0.375rem] transition-colors group overflow-hidden
-                ${ativo
-                  ? 'dark:bg-brand/15 dark:text-brand bg-green-50 text-green-700'
-                  : 'dark:text-ink-secondary text-gray-500 dark:hover:bg-surface-hover dark:hover:text-ink-primary hover:bg-gray-50 hover:text-gray-800'
-                }
-              `}
-            >
-              <Icon className="shrink-0 w-[1.125rem] h-[1.125rem]" strokeWidth={ativo ? 2 : 1.5} />
-              <span className={`
-                text-sm font-medium whitespace-nowrap
-                transition-opacity duration-150
-                ${expanded ? 'opacity-100' : 'opacity-0'}
-              `}>
-                {label}
-              </span>
-              {ativo && (
-                <span className="absolute left-0 top-[0.375rem] bottom-[0.375rem] w-[0.1875rem] bg-brand rounded-r-full" />
-              )}
-            </Link>
-          );
-        })}
+      {/* ── NAVEGAÇÃO ───────────────────────────────── */}
+      <nav className="flex-1 overflow-y-auto py-[1rem] px-[0.75rem] space-y-[1.5rem]">
+        {NAV_ITEMS.map((group) => (
+          <div key={group.group}>
+            <p className="text-ink-muted text-[0.625rem] font-semibold uppercase tracking-[0.08em] px-[0.5rem] mb-[0.375rem]">
+              {group.group}
+            </p>
+            <ul className="space-y-[0.125rem]">
+              {group.items.map(({ href, icon: Icon, label }) => {
+                const isActive = pathname === href || pathname.startsWith(href + '/')
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      className={cn(
+                        'flex items-center gap-[0.625rem]',
+                        'h-[2.25rem] px-[0.625rem] rounded-[0.375rem]',
+                        'text-[0.875rem] font-medium',
+                        'transition-all duration-150',
+                        isActive
+                          ? 'bg-ads-500/10 text-ads-500'
+                          : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          'w-[1rem] h-[1rem] shrink-0',
+                          isActive ? 'text-ads-500' : 'text-ink-muted',
+                        )}
+                        strokeWidth={isActive ? 2.5 : 1.75}
+                      />
+                      <span>{label}</span>
+
+                      {isActive && (
+                        <span className="ml-auto w-[0.1875rem] h-[1rem] rounded-full bg-ads-500" />
+                      )}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ))}
       </nav>
 
-      {/* Rodapé da sidebar */}
-      <div className="p-[0.5rem] border-t dark:border-surface-border border-gray-100 flex flex-col gap-[0.25rem] overflow-hidden">
-        <button
-          onClick={() => setTheme(nextTheme[theme])}
-          title={`Tema: ${theme}`}
-          className="flex items-center gap-[0.75rem] h-[2.25rem] px-[0.625rem] rounded-[0.375rem] dark:text-ink-secondary text-gray-500 dark:hover:bg-surface-hover dark:hover:text-ink-primary hover:bg-gray-50 hover:text-gray-800 transition-colors"
-        >
-          <ThemeIcon className="shrink-0 w-[1.125rem] h-[1.125rem]" strokeWidth={1.5} />
-          <span className={`text-sm font-medium whitespace-nowrap transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
-            Tema ({theme})
-          </span>
-        </button>
-
-        <button
-          onClick={handleLogout}
-          title="Sair"
-          className="flex items-center gap-[0.75rem] h-[2.25rem] px-[0.625rem] rounded-[0.375rem] dark:text-ink-secondary text-gray-500 dark:hover:bg-status-red/10 dark:hover:text-status-red hover:bg-red-50 hover:text-red-600 transition-colors"
-        >
-          <LogOut className="shrink-0 w-[1.125rem] h-[1.125rem]" strokeWidth={1.5} />
-          <span className={`text-sm font-medium whitespace-nowrap transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
-            Sair
-          </span>
-        </button>
+      {/* ── RODAPÉ — USUÁRIO ───────────────────────── */}
+      <div className="shrink-0 border-t border-surface-border p-[0.75rem]">
+        <div className="flex items-center gap-[0.625rem] p-[0.5rem] rounded-[0.375rem] hover:bg-surface-hover transition-colors cursor-pointer group">
+          <div className="w-[1.75rem] h-[1.75rem] rounded-full bg-ads-500/20 border border-ads-500/30 flex items-center justify-center shrink-0">
+            <span className="text-ads-500 text-[0.75rem] font-bold">A</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-ink-primary text-[0.8125rem] font-medium truncate">Admin</p>
+            <p className="text-ink-muted text-[0.6875rem] truncate">Adsgator</p>
+          </div>
+          <button
+            onClick={handleLogout}
+            title="Sair"
+          >
+            <LogOut
+              className="w-[0.875rem] h-[0.875rem] text-ink-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              strokeWidth={1.75}
+            />
+          </button>
+        </div>
       </div>
     </aside>
-  );
+  )
 }

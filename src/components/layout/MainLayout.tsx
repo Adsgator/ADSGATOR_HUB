@@ -1,15 +1,29 @@
-import React from 'react';
-import { Sidebar } from './Sidebar';
+'use client'
 
-export function MainLayout({ children }: { children: React.ReactNode }) {
+import React from 'react'
+import { Sidebar } from './Sidebar'
+import { TopBar } from './TopBar'
+
+interface MainLayoutProps {
+  children: React.ReactNode
+  title?: string
+  subtitle?: string
+  actions?: React.ReactNode
+}
+
+export function MainLayout({ children, title, subtitle, actions }: MainLayoutProps) {
   return (
-    <div className="flex min-h-screen dark:bg-surface-bg bg-gray-50">
+    <div className="min-h-screen bg-surface-base">
       <Sidebar />
-      <main className="flex-1 ml-[3.5rem] min-h-screen">
-        <div className="max-w-[90rem] mx-auto px-[2rem] py-[2rem]">
+
+      {/* ── CONTEÚDO PRINCIPAL ──────────────────────── */}
+      <div className="ml-sidebar">
+        <TopBar title={title} subtitle={subtitle} actions={actions} />
+
+        <main className="p-[2rem]">
           {children}
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
-  );
+  )
 }

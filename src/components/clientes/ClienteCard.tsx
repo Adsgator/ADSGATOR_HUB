@@ -90,7 +90,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
           {templatesDisponiveis.map((tag) => (
             <a
               key={tag}
-              href={gerarLinkWhatsApp(tag, cliente.whatsapp)}
+              href={gerarLinkWhatsApp(tag, cliente.whatsapp ?? '')}
               target="_blank"
               rel="noopener noreferrer"
               className="
@@ -111,7 +111,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
       {/* Rodapé: ações secundárias */}
       <div className="px-[1.25rem] pb-[1rem] pt-[0.25rem] flex items-center gap-[0.5rem] border-t dark:border-surface-border border-gray-50 mt-auto">
         <a
-          href={`https://wa.me/55${cliente.whatsapp.replace(/\D/g, '')}`}
+          href={`https://wa.me/55${(cliente.whatsapp ?? '').replace(/\D/g, '')}`}
           target="_blank"
           rel="noopener noreferrer"
           className="

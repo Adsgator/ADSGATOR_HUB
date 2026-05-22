@@ -101,30 +101,43 @@ serve(async (req) => {
           data_proxima_cobranca:   dataProxima.toISOString(),
         });
 
-        // Criar estágio inicial
-        await supabase.from('estagios_operacionais').insert({
-          cliente_id:       novoCliente.id,
-          estagio:          'recebido',
-          acao_proxima:     'Enviar mensagem de boas-vindas via WhatsApp com template #BOASVINDAS',
-          pendente_cliente: false,
-        });
-
-        // Registrar histórico
-        await supabase.from('historico_acoes').insert({
-          cliente_id:      novoCliente.id,
-          tipo_acao:       'cliente_criado_automaticamente',
-          descricao:       `Cliente criado automaticamente via Asaas. Primeiro pagamento: R$ ${valorPago.toFixed(2)}.`,
-          valor_impactado: valorPago,
-          metadata:        { asaas_subscription_id: subscriptionId, source: 'webhook_asaas' },
-        });
-
-        // Criar alerta de ação imediata
-        await supabase.from('alertas').insert({
+        // Criar estágio inicial no novo schema
+        await supabase.from('estagios').insert({
           cliente_id:  novoCliente.id,
-          tipo_alerta: 'acao_imediata',
-          mensagem:    '🔔 Novo cliente recebido! Enviar #BOASVINDAS agora.',
-          dispara_em:  new Date().toISOString(),
-          disparado:   false,
+          nome:        'recebido',
+          descricao:   'Novo cliente — enviar #BOASVINDAS agora',
+          acao_label:  '#BOASVINDAS',
+          acao_url:    `https://wa.me/${novoCliente.whatsapp?.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉 Vou entrar em contato em breve para iniciar seu onboarding.')}`,
+          checklist: JSON.stringify([
+            { item: 'Enviar mensagem #BOASVINDAS no WhatsApp', done: false },
+            { item: 'Criar ficha do cliente no sistema', done: false },
+            { item: 'Agendar call de onboarding', done: false },
+          ]),
+          ativo: true,
+        });
+
+        // Registrar lançamento financeiro inicial
+        await supabase.from('financeiro_lancamentos').insert({
+          user_id:          novoCliente.user_id,
+          cliente_id:       novoCliente.id,
+          tipo:             'receita',
+          categoria:        'mensalidade',
+          descricao:        `Primeiro pagamento — ${novoCliente.nome}`,
+          valor:            valorPago,
+          data:             new Date().toISOString().split('T')[0],
+          asaas_payment_id: subscriptionId,
+          status:           'confirmado',
+        });
+
+        // Criar notificação de ação imediata
+        await supabase.from('notificacoes').insert({
+          user_id:    novoCliente.user_id,
+          cliente_id: novoCliente.id,
+          tipo:       'urgente',
+          titulo:     'Novo cliente recebido!',
+          mensagem:   `${novoCliente.nome} aguarda #BOASVINDAS agora.`,
+          acao_label: '#BOASVINDAS',
+          acao_url:   `https://wa.me/${novoCliente.whatsapp?.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`,
         });
       }
     }

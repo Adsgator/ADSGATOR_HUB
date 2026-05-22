@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${GeistSans.variable} ${GeistMono.variable} dark`}>
+    <html lang="pt-BR" className={`${GeistSans.variable} ${GeistMono.variable} dark`} suppressHydrationWarning>
       <body>
         <ThemeProvider>
           {children}

@@ -5,7 +5,7 @@ import type { Cliente, Estagio, HistoricoAcao, Assinatura } from './types';
 // CLIENTES
 // ============================================================
 
-export async function criarCliente(dados: Omit<Cliente, 'id' | 'data_criacao' | 'data_atualizacao'>) {
+export async function criarCliente(dados: Omit<Cliente, 'id' | 'user_id' | 'dias_atraso' | 'created_at' | 'updated_at' | 'data_criacao' | 'data_atualizacao'>) {
   const { data, error } = await supabase
     .from('clientes')
     .insert([{ ...dados, status: 'recebido' }])

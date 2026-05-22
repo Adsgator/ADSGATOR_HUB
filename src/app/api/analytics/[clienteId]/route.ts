@@ -5,13 +5,14 @@ import { supabase } from '@/lib/supabase';
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { clienteId: string } }
+  { params }: { params: Promise<{ clienteId: string }> }
 ) {
   try {
+    const { clienteId } = await params
     const { data, error } = await supabase
       .from('relatorios_mensais')
       .select('*')
-      .eq('cliente_id', params.clienteId)
+      .eq('cliente_id', clienteId)
       .order('mes_ano', { ascending: false })
       .limit(6);
 
@@ -27,15 +28,16 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { clienteId: string } }
+  { params }: { params: Promise<{ clienteId: string }> }
 ) {
   try {
+    const { clienteId } = await params
     const body = await req.json() as { mesAno: string };
 
     const { data: cliente, error: errCliente } = await supabase
       .from('clientes')
       .select('google_ads_customer_id, ga4_property_id, nome')
-      .eq('id', params.clienteId)
+      .eq('id', clienteId)
       .single();
 
     if (errCliente || !cliente) {
@@ -63,7 +65,7 @@ export async function POST(
       ]);
 
       await gerarRelatorioMensal(
-        { cliente_id: params.clienteId, mes_ano: body.mesAno, campanhas, keywords, ga4, paginas, fontes },
+        { cliente_id: clienteId, mes_ano: body.mesAno, campanhas, keywords, ga4, paginas, fontes },
         cliente.nome,
       );
 
@@ -81,7 +83,7 @@ export async function POST(
         await supabase
           .from('relatorios_mensais')
           .update({ analise_ia: analise })
-          .eq('cliente_id', params.clienteId)
+          .eq('cliente_id', clienteId)
           .eq('mes_ano', body.mesAno);
       } catch (iaErr) {
         console.error('Vertex AI (não crítico):', iaErr);
@@ -94,7 +96,7 @@ export async function POST(
     const { error } = await supabase
       .from('relatorios_mensais')
       .upsert(
-        { cliente_id: params.clienteId, mes_ano: body.mesAno, status_geracao: 'pendente' },
+        { cliente_id: clienteId, mes_ano: body.mesAno, status_geracao: 'pendente' },
         { onConflict: 'cliente_id,mes_ano' }
       );
     if (error) throw error;

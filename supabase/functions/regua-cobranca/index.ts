@@ -1,3 +1,6 @@
+// supabase/functions/regua-cobranca/index.ts
+// Cron: todo dia às 09:00 — 0 9 * * *
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -6,72 +9,102 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 );
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: { 'Access-Control-Allow-Origin': '*' } });
-  }
-
+serve(async () => {
   try {
     console.log('[REGUA-COBRANCA] Iniciando verificação de atrasos...');
 
-    const hoje = new Date();
-    const { data: assinaturas, error } = await supabase
-      .from('assinaturas')
-      .select('*, clientes(id, nome, email, whatsapp)')
-      .eq('status', 'ativa')
-      .not('data_proxima_cobranca', 'is', null);
+    // ── Clientes com dias_atraso > 0 ───────────────────────────────────
+    const { data: clientes } = await supabase
+      .from('clientes')
+      .select('*')
+      .gt('dias_atraso', 0)
+      .neq('status', 'cancelado')
+      .neq('status', 'cancelado_debito');
 
-    if (error) throw new Error(error.message);
+    for (const cliente of clientes ?? []) {
+      const dias = cliente.dias_atraso as number;
 
-    let processadas = 0;
-
-    for (const assinatura of assinaturas ?? []) {
-      const dataCobranca = new Date(assinatura.data_proxima_cobranca);
-      const diasAtraso   = Math.floor(
-        (hoje.getTime() - dataCobranca.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      if (diasAtraso <= 0) continue;
-
-      let novoStatus = assinatura.status;
-
-      if (diasAtraso >= 30) {
-        novoStatus = 'cancelado_debito';
-      } else if (diasAtraso >= 15) {
-        novoStatus = 'atrasado_grave';
-      } else if (diasAtraso >= 7) {
-        novoStatus = 'atrasado';
+      // D+7 — Alerta laranja: suspensão iminente
+      if (dias >= 7 && dias < 15) {
+        await supabase.from('notificacoes').insert({
+          user_id:    cliente.user_id,
+          cliente_id: cliente.id,
+          tipo:       'atencao',
+          titulo:     `${cliente.nome} — ${dias} dias em atraso`,
+          mensagem:   'Campanha em risco de suspensão. Envie alerta ao cliente.',
+          acao_label: '#ALERTA D+7',
+          acao_url:   `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Seu pagamento está em atraso há ${dias} dias. As campanhas serão suspensas em breve.`)}`,
+        });
       }
+
+      // D+15 — Alerta vermelho: quebra de contrato
+      if (dias >= 15 && dias < 30) {
+        await supabase.from('notificacoes').insert({
+          user_id:    cliente.user_id,
+          cliente_id: cliente.id,
+          tipo:       'urgente',
+          titulo:     `${cliente.nome} — QUEBRA DE CONTRATO iminente`,
+          mensagem:   `${dias} dias sem pagamento. Envie notificação formal de rescisão.`,
+          acao_label: '#QUEBRA CONTRATO',
+          acao_url:   `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}. Em razão do atraso de ${dias} dias, estamos comunicando a rescisão contratual conforme cláusula 8.`)}`,
+        });
+      }
+
+      // D+30 — Cancelamento automático
+      if (dias >= 30) {
+        await supabase
+          .from('clientes')
+          .update({ status: 'cancelado_debito' })
+          .eq('id', cliente.id);
+
+        await supabase.from('notificacoes').insert({
+          user_id:    cliente.user_id,
+          cliente_id: cliente.id,
+          tipo:       'urgente',
+          titulo:     `${cliente.nome} — CANCELADO por débito`,
+          mensagem:   'Status alterado para cancelado_debito. Remover landing page e ativos do Storage.',
+          acao_label: 'Ver cliente',
+          acao_url:   `/clientes/${cliente.id}`,
+        });
+
+        await supabase.from('audit_logs').insert({
+          user_id:     cliente.user_id,
+          acao:        'cancelamento_automatico_debito',
+          tabela:      'clientes',
+          registro_id: cliente.id,
+          descricao:   `Cancelamento automático após ${dias} dias de atraso`,
+        });
+      }
+
+      console.log(`[PROCESSADO] ${cliente.nome} — ${dias}d de atraso`);
+    }
+
+    // ── Alerta 48h para clientes congelados ───────────────────────────
+    const { data: congelados } = await supabase
+      .from('clientes')
+      .select('*')
+      .eq('status', 'congelado')
+      .lte('alerta_48h_em', new Date().toISOString());
+
+    for (const cliente of congelados ?? []) {
+      await supabase.from('notificacoes').insert({
+        user_id:    cliente.user_id,
+        cliente_id: cliente.id,
+        tipo:       'atencao',
+        titulo:     `${cliente.nome} — Congelado há 48h`,
+        mensagem:   'Cliente retido sem resposta há 48 horas. Enviar lembrete.',
+        acao_label: 'Lembrete WhatsApp',
+        acao_url:   `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Ainda aguardamos seu retorno para continuar.`)}`,
+      });
 
       await supabase
-        .from('assinaturas')
-        .update({ dias_atraso: diasAtraso, status: novoStatus })
-        .eq('id', assinatura.id);
-
-      if ([7, 15, 30].includes(diasAtraso)) {
-        await supabase.from('historico_acoes').insert({
-          cliente_id:     assinatura.cliente_id,
-          tipo_acao:      'alerta_financeiro',
-          descricao:      `Pagamento em atraso há ${diasAtraso} dias. Valor: R$ ${assinatura.valor_mensal}`,
-          valor_impactado: assinatura.valor_mensal,
-          metadata:       { dias_atraso: diasAtraso, status: novoStatus },
-        });
-
-        await supabase.from('alertas').insert({
-          cliente_id: assinatura.cliente_id,
-          tipo:       'pagamento_atrasado',
-          mensagem:   `Pagamento em atraso há ${diasAtraso} dias`,
-          lido:       false,
-        });
-
-        console.log(`[ALERTA] ${assinatura.clientes?.nome} — ${diasAtraso}d de atraso`);
-      }
-
-      processadas++;
+        .from('clientes')
+        .update({ alerta_48h_em: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString() })
+        .eq('id', cliente.id);
     }
 
     return new Response(
-      JSON.stringify({ success: true, processadas }),
+      JSON.stringify({ success: true, processados: clientes?.length ?? 0 }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (err) {

@@ -109,22 +109,15 @@ export default function RelatoriosPage() {
   ] : [];
 
   return (
-    <MainLayout>
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-[2rem]">
-        <div>
-          <h1 className="dark:text-ink-primary text-gray-900 text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
-            Relatórios de Performance
-          </h1>
-          <p className="dark:text-ink-secondary text-gray-500 text-sm">
-            Google Ads + GA4 — histórico por cliente
-          </p>
-        </div>
-        <div className="flex items-center gap-[0.75rem]">
+    <MainLayout
+      title="Relatórios"
+      subtitle="Google Ads + GA4 — histórico por cliente"
+      actions={
+        <div className="flex items-center gap-[0.625rem]">
           <select
             value={clienteSel}
             onChange={(e) => setClienteSel(e.target.value)}
-            className="h-[2.25rem] pl-[0.75rem] pr-[2rem] rounded dark:bg-surface-card dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+            className="h-[2rem] pl-[0.625rem] pr-[1.75rem] rounded-[0.375rem] bg-surface-card border border-surface-border text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/40 transition-colors"
           >
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>{c.nome}</option>
@@ -133,38 +126,40 @@ export default function RelatoriosPage() {
           <button
             onClick={solicitarRelatorio}
             disabled={gerando || !clienteSel}
-            className="flex items-center gap-[0.5rem] dark:bg-brand dark:text-white bg-green-600 text-white text-sm font-semibold h-[2.25rem] px-[0.875rem] rounded transition-colors hover:opacity-90 disabled:opacity-50"
+            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-ads-500 text-white text-[0.8125rem] font-medium hover:bg-ads-600 transition-colors disabled:opacity-50"
           >
             {gerando
-              ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
-              : <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+              ? <div className="w-[0.75rem] h-[0.75rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
+              : <RefreshCw className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
             }
-            Solicitar Relatório
+            Solicitar
           </button>
         </div>
-      </div>
+      }
+    >
 
       {/* SELETOR DE MÊS */}
       {relatorios.length > 0 && (
         <div className="flex gap-[0.5rem] flex-wrap mb-[1.5rem]">
           {relatorios.map((r) => {
-            const [ano, mes] = r.mes_ano.split('-');
-            const label = new Date(Number(ano), Number(mes) - 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            const [ano, mes] = r.mes_ano.split('-')
+            const label = new Date(Number(ano), Number(mes) - 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
             return (
               <button
                 key={r.mes_ano}
                 onClick={() => setSelecionado(r)}
-                className={`px-[0.875rem] h-[2rem] rounded text-sm font-medium transition-colors
-                  ${selecionado?.mes_ano === r.mes_ano
-                    ? 'dark:bg-brand dark:text-white bg-green-600 text-white'
-                    : 'dark:bg-surface-card dark:border dark:border-surface-border dark:text-ink-secondary bg-white border border-gray-100 text-gray-600 dark:hover:border-brand/40 hover:border-green-300'}`}
+                className={`px-[0.875rem] h-[2rem] rounded-[0.375rem] text-[0.8125rem] font-medium transition-colors ${
+                  selecionado?.mes_ano === r.mes_ano
+                    ? 'bg-ads-500 text-white'
+                    : 'bg-surface-card border border-surface-border text-ink-secondary hover:border-ads-500/40'
+                }`}
               >
                 {label}
                 {r.status_geracao === 'pendente' && (
                   <span className="ml-[0.375rem] font-bold text-status-orange">●</span>
                 )}
               </button>
-            );
+            )
           })}
         </div>
       )}
@@ -172,16 +167,16 @@ export default function RelatoriosPage() {
       {/* LOADING */}
       {loading && (
         <div className="flex items-center justify-center h-[16rem]">
-          <div className="w-[1.5rem] h-[1.5rem] border-2 border-brand border-t-transparent rounded-full animate-spin" />
+          <div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* EMPTY */}
       {!loading && relatorios.length === 0 && (
-        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[3rem] text-center">
-          <BarChart3 className="w-[2.5rem] h-[2.5rem] dark:text-ink-muted text-gray-300 mx-auto mb-[1rem]" strokeWidth={1} />
-          <p className="dark:text-ink-secondary text-gray-500 text-sm">
-            Nenhum relatório encontrado. Clique em &quot;Solicitar Relatório&quot; para gerar o primeiro.
+        <div className="bg-surface-card border border-surface-border rounded-xl p-[3rem] text-center">
+          <BarChart3 className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
+          <p className="text-ink-secondary text-[0.875rem]">
+            Nenhum relatório encontrado. Clique em &quot;Solicitar&quot; para gerar o primeiro.
           </p>
         </div>
       )}
@@ -190,9 +185,9 @@ export default function RelatoriosPage() {
         <>
           {/* STATUS PENDENTE */}
           {selecionado.status_geracao === 'pendente' && (
-            <div className="mb-[1.5rem] flex items-start gap-[0.75rem] dark:bg-status-orange/10 bg-orange-50 border dark:border-status-orange/20 border-orange-100 rounded-lg px-[1rem] py-[0.875rem]">
+            <div className="mb-[1.5rem] flex items-start gap-[0.75rem] bg-status-orange/10 border border-status-orange/20 rounded-xl px-[1rem] py-[0.875rem]">
               <RefreshCw className="shrink-0 w-[0.875rem] h-[0.875rem] text-status-orange mt-[0.125rem]" strokeWidth={2} />
-              <p className="text-sm dark:text-status-orange text-orange-700">
+              <p className="text-[0.875rem] text-status-orange">
                 Relatório em processamento. Recarregue em alguns instantes.
               </p>
             </div>
@@ -201,49 +196,49 @@ export default function RelatoriosPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem] mb-[1.5rem]">
             {kpis.map(({ label, valor, sub, icon: Icon, cor }) => (
-              <div key={label} className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.25rem] py-[1rem]">
+              <div key={label} className="bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[1rem]">
                 <div className="flex items-start justify-between mb-[0.5rem]">
-                  <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold">{label}</p>
+                  <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">{label}</p>
                   <Icon className={`w-[1rem] h-[1rem] ${cor}`} strokeWidth={1.5} />
                 </div>
                 <p className={`text-[1.75rem] font-bold leading-none mb-[0.375rem] ${cor}`}>{valor}</p>
-                <p className="dark:text-ink-muted text-gray-400 text-xs">{sub}</p>
+                <p className="text-ink-muted text-[0.75rem]">{sub}</p>
               </div>
             ))}
           </div>
 
           {/* DETALHE */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[1.5rem]">
-            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
               <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
                 <TrendingUp className="w-[1rem] h-[1rem] text-status-blue" strokeWidth={1.5} />
-                <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">Google Ads</h3>
+                <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Google Ads</h3>
               </div>
               {[
                 { label: 'Investimento', valor: fmt(selecionado.investimento_ads ?? 0) },
                 { label: 'Conversões',   valor: String(selecionado.conversoes ?? 0)   },
                 { label: 'ROI',          valor: `${(selecionado.roi ?? 0).toFixed(2)}x` },
               ].map(({ label, valor }) => (
-                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b dark:border-surface-border border-gray-50 last:border-0">
-                  <p className="dark:text-ink-secondary text-gray-500 text-sm">{label}</p>
-                  <p className="dark:text-ink-primary text-gray-900 font-semibold text-sm">{valor}</p>
+                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b border-surface-border last:border-0">
+                  <p className="text-ink-secondary text-[0.875rem]">{label}</p>
+                  <p className="text-ink-primary font-semibold text-[0.875rem]">{valor}</p>
                 </div>
               ))}
             </div>
 
-            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
               <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
                 <BarChart3 className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.5} />
-                <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">Google Analytics 4</h3>
+                <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Google Analytics 4</h3>
               </div>
               {[
-                { label: 'Sessões',           valor: (selecionado.sessoes_ga4 ?? 0).toLocaleString()          },
-                { label: 'Novos Usuários',    valor: (selecionado.usuarios_novos ?? 0).toLocaleString()       },
-                { label: 'Taxa Engajamento',  valor: `${(selecionado.taxa_engajamento ?? 0).toFixed(1)}%`     },
+                { label: 'Sessões',          valor: (selecionado.sessoes_ga4 ?? 0).toLocaleString()      },
+                { label: 'Novos Usuários',   valor: (selecionado.usuarios_novos ?? 0).toLocaleString()   },
+                { label: 'Taxa Engajamento', valor: `${(selecionado.taxa_engajamento ?? 0).toFixed(1)}%` },
               ].map(({ label, valor }) => (
-                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b dark:border-surface-border border-gray-50 last:border-0">
-                  <p className="dark:text-ink-secondary text-gray-500 text-sm">{label}</p>
-                  <p className="dark:text-ink-primary text-gray-900 font-semibold text-sm">{valor}</p>
+                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b border-surface-border last:border-0">
+                  <p className="text-ink-secondary text-[0.875rem]">{label}</p>
+                  <p className="text-ink-primary font-semibold text-[0.875rem]">{valor}</p>
                 </div>
               ))}
             </div>
@@ -251,23 +246,23 @@ export default function RelatoriosPage() {
 
           {/* ANÁLISE IA */}
           {selecionado.analise_ia && (
-            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem] mb-[1.5rem]">
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[1.5rem]">
               <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
-                <Sparkles className="w-[1rem] h-[1rem] text-status-purple" strokeWidth={1.5} />
-                <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">Análise IA — Vertex AI</h3>
+                <Sparkles className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.5} />
+                <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Análise IA — Gemini</h3>
               </div>
-              <p className="dark:text-ink-secondary text-gray-600 text-sm mb-[1.25rem] leading-relaxed">
+              <p className="text-ink-secondary text-[0.875rem] mb-[1.25rem] leading-relaxed">
                 {selecionado.analise_ia.resumo_executivo}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-[1rem] mb-[1.25rem]">
                 {selecionado.analise_ia.pontos_positivos.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-brand mb-[0.5rem]">Pontos Positivos</p>
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-status-green mb-[0.5rem]">Pontos Positivos</p>
                     <ul className="flex flex-col gap-[0.375rem]">
                       {selecionado.analise_ia.pontos_positivos.map((p, i) => (
                         <li key={i} className="flex items-start gap-[0.5rem]">
-                          <span className="text-brand font-bold text-xs mt-[0.125rem]">✓</span>
-                          <span className="dark:text-ink-secondary text-gray-600 text-sm">{p}</span>
+                          <span className="text-status-green font-bold text-[0.75rem] mt-[0.125rem]">✓</span>
+                          <span className="text-ink-secondary text-[0.875rem]">{p}</span>
                         </li>
                       ))}
                     </ul>
@@ -275,12 +270,12 @@ export default function RelatoriosPage() {
                 )}
                 {selecionado.analise_ia.pontos_atencao.length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-status-orange mb-[0.5rem]">Pontos de Atenção</p>
+                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-status-orange mb-[0.5rem]">Pontos de Atenção</p>
                     <ul className="flex flex-col gap-[0.375rem]">
                       {selecionado.analise_ia.pontos_atencao.map((p, i) => (
                         <li key={i} className="flex items-start gap-[0.5rem]">
-                          <span className="text-status-orange font-bold text-xs mt-[0.125rem]">!</span>
-                          <span className="dark:text-ink-secondary text-gray-600 text-sm">{p}</span>
+                          <span className="text-status-orange font-bold text-[0.75rem] mt-[0.125rem]">!</span>
+                          <span className="text-ink-secondary text-[0.875rem]">{p}</span>
                         </li>
                       ))}
                     </ul>
@@ -289,21 +284,21 @@ export default function RelatoriosPage() {
               </div>
               {selecionado.analise_ia.recomendacoes.length > 0 && (
                 <div className="mb-[1rem]">
-                  <p className="text-xs font-semibold uppercase tracking-wide dark:text-ink-muted text-gray-400 mb-[0.5rem]">Recomendações</p>
+                  <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-muted mb-[0.5rem]">Recomendações</p>
                   <ol className="flex flex-col gap-[0.375rem]">
                     {selecionado.analise_ia.recomendacoes.map((r, i) => (
                       <li key={i} className="flex items-start gap-[0.625rem]">
-                        <span className="w-[1.25rem] h-[1.25rem] rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold shrink-0">{i + 1}</span>
-                        <span className="dark:text-ink-secondary text-gray-600 text-sm">{r}</span>
+                        <span className="w-[1.25rem] h-[1.25rem] rounded-full bg-ads-500 flex items-center justify-center text-white text-[0.6875rem] font-bold shrink-0">{i + 1}</span>
+                        <span className="text-ink-secondary text-[0.875rem]">{r}</span>
                       </li>
                     ))}
                   </ol>
                 </div>
               )}
               {selecionado.analise_ia.proximo_passo && (
-                <div className="dark:bg-brand/10 bg-green-50 border dark:border-brand/20 border-green-100 rounded px-[0.875rem] py-[0.75rem]">
-                  <p className="text-xs font-semibold text-brand uppercase tracking-wide mb-[0.25rem]">Próximo Passo</p>
-                  <p className="dark:text-ink-primary text-gray-900 text-sm">{selecionado.analise_ia.proximo_passo}</p>
+                <div className="bg-ads-500/10 border border-ads-500/20 rounded-[0.375rem] px-[0.875rem] py-[0.75rem]">
+                  <p className="text-[0.6875rem] font-semibold text-ads-500 uppercase tracking-wide mb-[0.25rem]">Próximo Passo</p>
+                  <p className="text-ink-primary text-[0.875rem]">{selecionado.analise_ia.proximo_passo}</p>
                 </div>
               )}
             </div>
@@ -311,14 +306,14 @@ export default function RelatoriosPage() {
 
           {/* DOWNLOAD */}
           {selecionado.conteudo_markdown && (
-            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.5rem] py-[1.25rem] flex items-center justify-between">
+            <div className="bg-surface-card border border-surface-border rounded-xl px-[1.5rem] py-[1.25rem] flex items-center justify-between">
               <div>
-                <p className="dark:text-ink-primary text-gray-900 font-semibold text-sm">Relatório completo em Markdown</p>
-                <p className="dark:text-ink-muted text-gray-400 text-xs mt-[0.125rem]">Pronto para compartilhar com o cliente</p>
+                <p className="text-ink-primary font-semibold text-[0.875rem]">Relatório completo em Markdown</p>
+                <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">Pronto para compartilhar com o cliente</p>
               </div>
               <button
                 onClick={baixarMarkdown}
-                className="flex items-center gap-[0.5rem] dark:bg-surface-hover dark:text-ink-primary bg-gray-100 text-gray-700 text-sm font-semibold h-[2.25rem] px-[0.875rem] rounded hover:opacity-80 transition-opacity"
+                className="flex items-center gap-[0.5rem] bg-surface-hover border border-surface-border text-ink-primary text-[0.8125rem] font-semibold h-[2rem] px-[0.875rem] rounded-[0.375rem] hover:border-ads-500/40 transition-colors"
               >
                 <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
                 Baixar .md

@@ -35,14 +35,11 @@ export default function NovoClientePage() {
         nome:                   form.nome.trim(),
         email:                  form.email.trim().toLowerCase(),
         whatsapp:               form.whatsapp.replace(/\D/g, ''),
-        dominio:                form.dominio.trim() || null,
+        dominio:                form.dominio.trim() || undefined,
         nicho:                  form.nicho.trim(),
         status:                 'recebido' as ClienteStatus,
-        google_ads_customer_id: null,
-        ga4_property_id:        null,
-        cor_tema:               '#10b981',
-        notas_internas:         null,
-        metadata:               {},
+        google_ads_customer_id: undefined,
+        ga4_property_id:        undefined,
       });
 
       if (form.plano_nome && form.valor_mensal) {

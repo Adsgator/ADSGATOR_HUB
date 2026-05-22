@@ -1,286 +1,288 @@
-'use client';
+'use client'
 
-import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, MessageCircle, ExternalLink,
-  Clock, CheckCircle, ChevronRight,
-} from 'lucide-react';
-import type { Cliente, Estagio, HistoricoAcao, Assinatura } from '@/lib/types';
-import {
-  obterCliente, obterEstagioAtivo, obterHistoricoCliente,
-  obterAssinaturaCliente, avancarEstagio,
-} from '@/lib/database';
-import { FLUXO_OPERACIONAL, ORDEM_ESTAGIOS, gerarLinkWhatsApp, WHATSAPP_TEMPLATES } from '@/lib/fluxo-operacional';
-import { OnboardChecklist } from '@/components/clientes/OnboardChecklist';
-import { MainLayout } from '@/components/layout/MainLayout';
+  Clock, ChevronRight, RefreshCw, BarChart3,
+} from 'lucide-react'
+import { MainLayout }      from '@/components/layout/MainLayout'
+import { ChecklistCard }   from '@/components/clientes/ChecklistCard'
+import { AuditTimeline }   from '@/components/clientes/AuditTimeline'
+import { supabase }        from '@/lib/supabase'
+import type { Cliente, Estagio } from '@/lib/types'
+
+const STATUS_LABEL: Record<string, string> = {
+  recebido:        'Recebido',
+  onboarding:      'Onboarding',
+  setup_trafego:   'Setup Tráfego',
+  ativo:           'Ativo',
+  congelado:       'Congelado',
+  cancelado_debito:'Cancelado D.',
+  cancelado:       'Cancelado',
+}
+
+const FLUXO_PROXIMO: Record<string, string> = {
+  recebido:      'onboarding',
+  onboarding:    'setup_trafego',
+  setup_trafego: 'ativo',
+}
 
 export default function ClienteDetalhe() {
-  const { id }  = useParams<{ id: string }>();
-  const router  = useRouter();
+  const { id }  = useParams<{ id: string }>()
+  const router  = useRouter()
 
-  const [cliente,    setCliente]    = useState<Cliente | null>(null);
-  const [estagio,    setEstagio]    = useState<Estagio | null>(null);
-  const [historico,  setHistorico]  = useState<HistoricoAcao[]>([]);
-  const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
-  const [loading,    setLoading]    = useState(true);
-  const [avancando,  setAvancando]  = useState(false);
+  const [cliente,   setCliente]   = useState<Cliente | null>(null)
+  const [estagio,   setEstagio]   = useState<Estagio | null>(null)
+  const [estagios,  setEstagios]  = useState<Estagio[]>([])
+  const [loading,   setLoading]   = useState(true)
+  const [avancando, setAvancando] = useState(false)
 
-  useEffect(() => {
-    Promise.all([
-      obterCliente(id),
-      obterEstagioAtivo(id),
-      obterHistoricoCliente(id),
-      obterAssinaturaCliente(id),
-    ]).then(([c, e, h, a]) => {
-      setCliente(c);
-      setEstagio(e);
-      setHistorico(h);
-      setAssinatura(a);
-    }).catch(console.error).finally(() => setLoading(false));
-  }, [id]);
+  async function carregar() {
+    const [{ data: c }, { data: ests }] = await Promise.all([
+      supabase.from('clientes').select('*').eq('id', id).single(),
+      supabase.from('estagios_operacionais').select('*').eq('cliente_id', id).order('data_entrada', { ascending: false }),
+    ])
+    setCliente(c as Cliente ?? null)
+    const lista = (ests ?? []) as Estagio[]
+    setEstagios(lista)
+    setEstagio(lista.find((e) => e.data_saida === null || e.data_saida === undefined) ?? null)
+    setLoading(false)
+  }
+
+  useEffect(() => { if (id) carregar() }, [id])
 
   async function handleAvancar() {
-    if (!cliente) return;
-    const etapa = FLUXO_OPERACIONAL[cliente.status];
-    if (!etapa?.proximo_estagio) return;
-    const proximo = FLUXO_OPERACIONAL[etapa.proximo_estagio];
-    if (!proximo) return;
-
-    setAvancando(true);
+    if (!cliente) return
+    const proximo = FLUXO_PROXIMO[cliente.status]
+    if (!proximo) return
+    setAvancando(true)
     try {
-      await avancarEstagio(id, etapa.proximo_estagio, proximo.instrucao);
-      const [c, e, h] = await Promise.all([
-        obterCliente(id), obterEstagioAtivo(id), obterHistoricoCliente(id),
-      ]);
-      setCliente(c); setEstagio(e); setHistorico(h);
-    } catch (err) {
-      console.error(err);
+      await supabase.from('clientes').update({ status: proximo }).eq('id', id)
+      if (estagio) {
+        await supabase.from('estagios_operacionais').update({ data_saida: new Date().toISOString() }).eq('id', estagio.id)
+      }
+      await supabase.from('estagios_operacionais').insert({
+        cliente_id:   id,
+        estagio:      proximo,
+        acao_proxima: STATUS_LABEL[proximo] ?? proximo,
+      })
+      await carregar()
     } finally {
-      setAvancando(false);
+      setAvancando(false)
     }
   }
+
+  const ORDEM = ['recebido', 'onboarding', 'setup_trafego', 'ativo']
 
   if (loading || !cliente) {
     return (
       <MainLayout>
         <div className="flex items-center justify-center h-[20rem]">
-          <div className="w-[1.5rem] h-[1.5rem] border-2 border-brand border-t-transparent rounded-full animate-spin" />
+          <div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" />
         </div>
       </MainLayout>
-    );
+    )
   }
 
-  const etapaAtual  = FLUXO_OPERACIONAL[cliente.status];
-  const indiceAtual = ORDEM_ESTAGIOS.indexOf(cliente.status as typeof ORDEM_ESTAGIOS[number]);
-  const templates   = etapaAtual?.whatsapp_templates ?? [];
-
-  function formatarData(iso: string) {
-    return new Date(iso).toLocaleString('pt-BR', {
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
-  }
+  const indiceAtual = ORDEM.indexOf(cliente.status)
+  const proximo     = FLUXO_PROXIMO[cliente.status]
 
   return (
-    <MainLayout>
+    <MainLayout
+      title={cliente.nome}
+      subtitle={cliente.nicho ?? ''}
+    >
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-[0.375rem] dark:text-ink-muted text-gray-400 hover:dark:text-ink-secondary hover:text-gray-600 text-sm mb-[1.5rem] transition-colors"
+        className="flex items-center gap-[0.375rem] text-ink-muted hover:text-ink-secondary text-[0.875rem] mb-[1.5rem] transition-colors"
       >
         <ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
         Voltar
       </button>
 
-      {/* Header do cliente */}
+      {/* ── HEADER ── */}
       <div className="flex items-start justify-between mb-[2rem]">
         <div>
-          <h1 className="dark:text-ink-primary text-gray-900 text-[1.75rem] font-bold mb-[0.25rem]">
-            {cliente.nome}
-          </h1>
-          <p className="dark:text-ink-secondary text-gray-500 text-sm">{cliente.email}</p>
+          <div className="flex items-center gap-[0.75rem] mb-[0.25rem]">
+            <span className="text-[0.75rem] font-semibold px-[0.5rem] py-[0.125rem] rounded bg-ads-500/15 text-ads-500">
+              {STATUS_LABEL[cliente.status] ?? cliente.status}
+            </span>
+            {(cliente.dias_atraso ?? 0) > 0 && (
+              <span className="flex items-center gap-[0.25rem] text-[0.75rem] font-semibold text-status-red bg-status-red/10 px-[0.5rem] py-[0.125rem] rounded">
+                <Clock className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                {cliente.dias_atraso}d atraso
+              </span>
+            )}
+          </div>
+          <p className="text-ink-secondary text-[0.875rem]">{cliente.email}</p>
           {cliente.dominio && (
             <a
               href={`https://${cliente.dominio}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-[0.25rem] text-xs dark:text-brand text-green-600 mt-[0.25rem] hover:underline"
+              className="inline-flex items-center gap-[0.25rem] text-[0.75rem] text-ads-500 mt-[0.25rem] hover:underline"
             >
               {cliente.dominio}
-              <ExternalLink className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.5} />
+              <ExternalLink className="w-[0.625rem] h-[0.625rem]" strokeWidth={1.5} />
             </a>
           )}
         </div>
 
-        {/* Barra de progresso do fluxo */}
+        {/* Stepper de progresso */}
         <div className="hidden md:flex items-center gap-[0.25rem]">
-          {ORDEM_ESTAGIOS.map((s, idx) => {
-            const etapa   = FLUXO_OPERACIONAL[s];
-            const passado = idx < indiceAtual;
-            const atual   = idx === indiceAtual;
-            return (
-              <React.Fragment key={s}>
-                <div className={`
-                  flex items-center gap-[0.25rem] text-xs font-medium px-[0.625rem] h-[1.75rem] rounded-[0.25rem]
-                  ${passado ? 'dark:bg-brand/15 dark:text-brand bg-green-50 text-green-700' : ''}
-                  ${atual   ? 'dark:bg-brand dark:text-white bg-green-600 text-white' : ''}
-                  ${!passado && !atual ? 'dark:bg-surface-hover dark:text-ink-muted bg-gray-100 text-gray-400' : ''}
-                `}>
-                  {passado && <CheckCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}
-                  {etapa?.label}
-                </div>
-                {idx < ORDEM_ESTAGIOS.length - 1 && (
-                  <ChevronRight className="w-[0.75rem] h-[0.75rem] dark:text-ink-muted text-gray-300 shrink-0" strokeWidth={1.5} />
-                )}
-              </React.Fragment>
-            );
-          })}
+          {ORDEM.map((s, idx) => (
+            <div key={s} className="flex items-center gap-[0.25rem]">
+              <div className={`
+                text-[0.6875rem] font-medium px-[0.5rem] h-[1.5rem] rounded flex items-center
+                ${ idx < indiceAtual  ? 'bg-ads-500/15 text-ads-500'
+                  : idx === indiceAtual ? 'bg-ads-500 text-white'
+                  : 'bg-surface-hover text-ink-muted border border-surface-border'}
+              `}>
+                {STATUS_LABEL[s]}
+              </div>
+              {idx < ORDEM.length - 1 && (
+                <ChevronRight className="w-[0.625rem] h-[0.625rem] text-ink-muted" strokeWidth={1.5} />
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1.5rem]">
-        {/* Coluna principal */}
+        {/* ── COLUNA PRINCIPAL ── */}
         <div className="lg:col-span-2 flex flex-col gap-[1.5rem]">
 
-          {/* Card de instrução */}
-          {etapaAtual && (
-            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
-              <h2 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[0.75rem]">
-                ▶ {etapaAtual.instrucao}
+          {/* Ação atual + WhatsApp */}
+          {estagio && (
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+              <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.5rem]">Ação atual</p>
+              <h2 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">
+                {estagio.acao_proxima ?? estagio.estagio}
               </h2>
-
-              {templates.length > 0 && (
-                <div className="flex flex-wrap gap-[0.625rem] mb-[1rem]">
-                  {templates.map((tag) => (
-                    <a
-                      key={tag}
-                      href={gerarLinkWhatsApp(tag, cliente.whatsapp)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="
-                        inline-flex items-center gap-[0.5rem]
-                        dark:bg-brand/12 dark:hover:bg-brand/20 dark:text-brand dark:border dark:border-brand/20
-                        bg-green-50 hover:bg-green-100 text-green-700 border border-green-200
-                        text-sm font-semibold px-[0.875rem] h-[2.25rem] rounded transition-colors
-                      "
-                    >
-                      <MessageCircle className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
-                      {WHATSAPP_TEMPLATES[tag]?.titulo ?? tag}
-                      <span className="text-2xs font-normal opacity-60">{tag}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              {etapaAtual.proximo_estagio && (
-                <button
-                  onClick={handleAvancar}
-                  disabled={avancando}
-                  className="
-                    flex items-center gap-[0.5rem]
-                    dark:bg-brand dark:hover:bg-brand-dark dark:text-white
-                    bg-green-600 hover:bg-green-700 text-white
-                    text-sm font-semibold px-[1rem] h-[2.25rem] rounded transition-colors
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                  "
-                >
-                  {avancando ? (
-                    <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <CheckCircle className="w-[1rem] h-[1rem]" strokeWidth={2} />
-                  )}
-                  {etapaAtual.proxima_acao_label}
-                </button>
-              )}
+              <div className="flex flex-wrap gap-[0.625rem]">
+                {estagio.acao_url && (
+                  <a
+                    href={estagio.acao_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-[0.5rem] bg-ads-500/10 hover:bg-ads-500/20 text-ads-500 border border-ads-500/30 text-[0.875rem] font-semibold px-[0.875rem] h-[2.25rem] rounded-[0.375rem] transition-colors"
+                  >
+                    <MessageCircle className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+                    {estagio.acao_label ?? 'Enviar mensagem'}
+                  </a>
+                )}
+                {proximo && (
+                  <button
+                    onClick={handleAvancar}
+                    disabled={avancando}
+                    className="inline-flex items-center gap-[0.5rem] bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold px-[0.875rem] h-[2.25rem] rounded-[0.375rem] transition-colors disabled:opacity-50"
+                  >
+                    {avancando
+                      ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                    }
+                    Avançar para {STATUS_LABEL[proximo]}
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Checklist */}
-          {['onboarding', 'setup_trafego'].includes(cliente.status) && (
-            <OnboardChecklist clienteId={cliente.id} estagio={cliente.status} />
+          {/* Checklist do estágio ativo */}
+          {estagio?.checklist && estagio.checklist.length > 0 && (
+            <ChecklistCard
+              clienteId={id}
+              estagioId={estagio.id}
+              items={estagio.checklist}
+            />
           )}
 
-          {/* Histórico de ações */}
-          <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
-            <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1rem]">
-              Histórico de Ações
-            </h3>
-            {historico.length === 0 ? (
-              <p className="dark:text-ink-muted text-gray-400 text-sm">Nenhuma ação registrada ainda.</p>
-            ) : (
-              <div className="relative">
-                <div className="absolute left-[0.5rem] top-0 bottom-0 w-[0.0625rem] dark:bg-surface-border bg-gray-100" />
-                <div className="flex flex-col gap-[1rem] pl-[1.75rem]">
-                  {historico.map((acao) => (
-                    <div key={acao.id} className="relative">
-                      <div className="absolute left-[-1.25rem] top-[0.3125rem] w-[0.5rem] h-[0.5rem] rounded-full dark:bg-surface-border bg-gray-200 border-2 dark:border-surface-bg border-white" />
-                      <p className="dark:text-ink-secondary text-gray-700 text-sm leading-snug">
-                        {acao.descricao}
-                      </p>
-                      <p className="dark:text-ink-muted text-gray-400 text-xs mt-[0.125rem]">
-                        {formatarData(acao.data_acao)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
+          {/* Analytics rápido */}
+          <a
+            href={`/relatorios?cliente=${id}`}
+            className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] flex items-center justify-between hover:border-ads-500/40 transition-colors group"
+          >
+            <div className="flex items-center gap-[0.75rem]">
+              <BarChart3 className="w-[1.25rem] h-[1.25rem] text-ink-muted group-hover:text-ads-500 transition-colors" strokeWidth={1.5} />
+              <div>
+                <p className="text-ink-primary text-[0.875rem] font-semibold">Relatórios de Performance</p>
+                <p className="text-ink-muted text-[0.75rem]">Google Ads + GA4 — ver histórico</p>
               </div>
-            )}
-          </div>
+            </div>
+            <ExternalLink className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-ads-500 transition-colors" strokeWidth={1.5} />
+          </a>
+
+          {/* Audit Timeline */}
+          <AuditTimeline clienteId={id} />
         </div>
 
-        {/* Coluna lateral */}
+        {/* ── COLUNA LATERAL ── */}
         <div className="flex flex-col gap-[1rem]">
-          <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem]">
-            <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-sm mb-[1rem]">
-              Informações
-            </h3>
-            <div className="flex flex-col gap-[0.875rem]">
-              {[
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+            <h3 className="text-ink-primary font-semibold text-[0.875rem] mb-[1rem]">Informações</h3>
+            <div className="flex flex-col gap-[0.75rem]">
+              {([
                 { label: 'Nicho',         valor: cliente.nicho },
                 { label: 'WhatsApp',      valor: cliente.whatsapp },
                 { label: 'Domínio',       valor: cliente.dominio ?? '—' },
                 { label: 'Google Ads ID', valor: cliente.google_ads_customer_id ?? 'Não configurado' },
                 { label: 'GA4 ID',        valor: cliente.ga4_property_id ?? 'Não configurado' },
-              ].map(({ label, valor }) => (
+              ] as { label: string; valor: string | undefined }[]).map(({ label, valor }) => (
                 <div key={label}>
-                  <p className="dark:text-ink-muted text-gray-400 text-2xs uppercase tracking-wide font-semibold mb-[0.125rem]">
-                    {label}
-                  </p>
-                  <p className="dark:text-ink-secondary text-gray-700 text-sm break-all">
-                    {valor}
-                  </p>
+                  <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold mb-[0.125rem]">{label}</p>
+                  <p className="text-ink-secondary text-[0.875rem] break-all">{valor ?? '—'}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {assinatura && (
-            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem]">
-              <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-sm mb-[1rem]">
-                Assinatura
-              </h3>
-              <div className="flex flex-col gap-[0.75rem]">
-                <div>
-                  <p className="dark:text-ink-muted text-gray-400 text-2xs uppercase tracking-wide font-semibold mb-[0.125rem]">Plano</p>
-                  <p className="dark:text-ink-secondary text-gray-700 text-sm">{assinatura.plano_nome}</p>
-                </div>
-                <div>
-                  <p className="dark:text-ink-muted text-gray-400 text-2xs uppercase tracking-wide font-semibold mb-[0.125rem]">Valor Mensal</p>
-                  <p className="dark:text-ink-primary text-gray-900 text-lg font-bold">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(assinatura.valor_mensal)}
-                  </p>
-                </div>
-                {assinatura.dias_atraso > 0 && (
-                  <div className="flex items-center gap-[0.375rem] dark:bg-status-red/10 bg-red-50 dark:text-status-red text-red-700 text-xs font-semibold px-[0.625rem] py-[0.375rem] rounded">
-                    <Clock className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
-                    {assinatura.dias_atraso} dias de atraso
-                  </div>
-                )}
+          {/* Financeiro */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+            <h3 className="text-ink-primary font-semibold text-[0.875rem] mb-[1rem]">Financeiro</h3>
+            <div className="flex flex-col gap-[0.75rem]">
+              <div>
+                <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold mb-[0.125rem]">MRR</p>
+                <p className="text-ink-primary text-[1.25rem] font-bold">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cliente.mrr ?? 0)}
+                </p>
               </div>
+              {cliente.plano && (
+                <div>
+                  <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold mb-[0.125rem]">Plano</p>
+                  <p className="text-ink-secondary text-[0.875rem]">{cliente.plano}</p>
+                </div>
+              )}
+              {(cliente.dias_atraso ?? 0) > 0 && (
+                <div className="flex items-center gap-[0.375rem] bg-status-red/10 text-status-red text-[0.75rem] font-semibold px-[0.625rem] py-[0.375rem] rounded">
+                  <Clock className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                  {cliente.dias_atraso} dias de atraso
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Estágios anteriores */}
+          {estagios.filter((e) => e.data_saida).length > 0 && (
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+              <h3 className="text-ink-primary font-semibold text-[0.875rem] mb-[0.75rem]">Etapas concluídas</h3>
+              <ul className="space-y-[0.5rem]">
+                {estagios.filter((e) => e.data_saida).map((e) => (
+                  <li key={e.id} className="flex items-center gap-[0.5rem] text-ink-muted text-[0.8125rem]">
+                    <div className="w-[0.375rem] h-[0.375rem] rounded-full bg-ads-500/50 shrink-0" />
+                    {STATUS_LABEL[e.estagio] ?? e.estagio}
+                    {e.data_saida && (
+                      <span className="ml-auto text-[0.6875rem]">
+                        {new Date(e.data_saida).toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
       </div>
     </MainLayout>
-  );
+  )
 }
