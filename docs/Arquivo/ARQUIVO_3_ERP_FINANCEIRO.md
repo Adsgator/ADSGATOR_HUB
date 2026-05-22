@@ -1,229 +1,232 @@
-# ADSGATOR HUB - ARQUIVO 3: ERP FINANCEIRO
+# ADSGATOR HUB — ARQUIVO 3: ERP FINANCEIRO (v2 — FINAL)
 
-## 1. LÓGICA DE CÁLCULO FINANCEIRO: lib/financeiro.ts
+> **LEIA ANTES DE IMPLEMENTAR**
+> Este arquivo define TODA a camada financeira do sistema. Implemente na ordem:
+> `(1)` `src/lib/financeiro.ts` → `(2)` Edge Function → `(3)` `src/app/(app)/financeiro/page.tsx`
+>
+> **Regras absolutas:**
+> - Imports: `supabase` vem de `@/lib/supabase`, não de `auth`
+> - Layout: `MainLayout` vem de `@/components/layout/MainLayout`
+> - Ícones: importar direto do `lucide-react` — **não existe** componente `Icons`
+> - Tokens Tailwind: usar `surface-*`, `ink-*`, `brand`, `status-*` (ver `tailwind.config.ts`)
+> - Nenhum `Math.random()` em lógica de negócio
+> - Nunca usar `any` em tipos — tipar tudo explicitamente
+
+---
+
+## ✅ PRÉ-REQUISITOS — confirmar antes de implementar
+
+Todas as tabelas abaixo **já existem** em `supabase/schema.sql`:
+
+| Tabela | Colunas chave usadas aqui |
+|---|---|
+| `assinaturas` | `id`, `cliente_id`, `plano_nome`, `valor_mensal`, `status`, `dias_atraso`, `data_proxima_cobranca` |
+| `configuracoes_financeiras` | `agencia_id='adsgator-main'`, `custos_fixos_mensais`, `custos_variaveis_percentual`, `margem_lucro_minima` |
+| `custos_detalhados` | `nome`, `valor`, `tipo` (`fixo`\|`variavel`), `ativo` |
+| `clientes` | `id`, `nome`, `email`, `whatsapp` |
+| `historico_acoes` | `cliente_id`, `tipo_acao`, `descricao`, `valor_impactado`, `metadata` |
+| `estagios_operacionais` | `cliente_id`, `estagio`, `acao_proxima`, `pendente_cliente` |
+| `relatorios_mensais` | `mes_ano`, `mrr` — usado para calcular tendência de crescimento |
+
+---
+
+## 1. LÓGICA FINANCEIRA — `src/lib/financeiro.ts`
 
 ```typescript
-import { supabase } from './auth';
-import { registrarHistorico } from './database';
+// ─────────────────────────────────────────────────────────────────────────────
+// ATENÇÃO: importar de './supabase', NÃO de './auth'
+// ─────────────────────────────────────────────────────────────────────────────
+import { supabase } from './supabase';
+
+// ─── TIPOS ───────────────────────────────────────────────────────────────────
 
 export interface DREData {
-  receita_bruta: number;
-  custos_fixos: number;
-  custos_variaveis: number;
-  lucro_bruto: number;
-  lucro_liquido: number;
-  margem_liquida_percentual: number;
-  mrr: number; // Monthly Recurring Revenue
+  receita_bruta:              number;
+  custos_fixos:               number;
+  custos_variaveis:           number;
+  lucro_bruto:                number;
+  lucro_liquido:              number;
+  margem_liquida_percentual:  number;
+  mrr:                        number;
 }
 
-export interface StatusFinanceiro {
-  cliente_id: string;
-  valor_total_contrato: number;
-  proxima_cobranca: string;
-  dias_para_vencimento: number;
-  status: 'em_dia' | 'atrasado_7d' | 'atrasado_15d' | 'cancelado';
-  marcador_cor: 'verde' | 'laranja' | 'vermelho';
+export interface ConfigFinanceira {
+  custos_fixos_mensais:           number;
+  custos_variaveis_percentual:    number;
+  margem_lucro_minima:            number;
+  saldo_google_ads_limite_alerta: number;
 }
 
-// ============================================
-// CALCULAR MRR (Monthly Recurring Revenue)
-// ============================================
+export interface ClienteAtrasado {
+  cliente: {
+    id:       string;
+    nome:     string;
+    email:    string;
+    whatsapp: string;
+  };
+  dias_atraso:           number;
+  valor_devido:          number;
+  data_proxima_cobranca: string;
+  status_assinatura:     string;
+}
+
+export interface ProjecaoMensal {
+  mes:               string;   // 'YYYY-MM'
+  mes_label:         string;   // 'jan/25'
+  receita_projetada: number;
+  lucro_projetado:   number;
+}
+
+export interface ValidacaoMargem {
+  margemAtual:  number;
+  margemMinima: number;
+  estaOk:       boolean;
+  alerta:       string | null;
+}
+
+// ─── CALCULAR MRR ────────────────────────────────────────────────────────────
 
 export async function calcularMRR(): Promise<number> {
-  const { data: assinaturas, error } = await supabase
+  const { data, error } = await supabase
     .from('assinaturas')
     .select('valor_mensal')
     .eq('status', 'ativa');
-
   if (error) throw new Error(`Erro ao calcular MRR: ${error.message}`);
-
-  return assinaturas.reduce((total, assinatura) => total + assinatura.valor_mensal, 0);
+  return (data ?? []).reduce((t, a) => t + Number(a.valor_mensal), 0);
 }
 
-// ============================================
-// CALCULAR DRE DINÂMICO
-// ============================================
+// ─── OBTER CONFIG FINANCEIRA ──────────────────────────────────────────────────
 
-export async function calcularDREMensal(mesAno?: string): Promise<DREData> {
-  const agora = new Date();
-  const mes = mesAno || `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
-
-  // 1. RECEITA BRUTA
-  const mrr = await calcularMRR();
-
-  // 2. CUSTOS FIXOS E VARIÁVEIS
-  const { data: config, error: errorConfig } = await supabase
+export async function obterConfigFinanceira(): Promise<ConfigFinanceira> {
+  const { data, error } = await supabase
     .from('configuracoes_financeiras')
-    .select('custos_fixos_mensais, custos_variaveis_percentual')
+    .select('custos_fixos_mensais, custos_variaveis_percentual, margem_lucro_minima, saldo_google_ads_limite_alerta')
+    .eq('agencia_id', 'adsgator-main')
     .single();
+  if (error) throw new Error(`Erro na config financeira: ${error.message}`);
+  return {
+    custos_fixos_mensais:           Number(data.custos_fixos_mensais           ?? 0),
+    custos_variaveis_percentual:    Number(data.custos_variaveis_percentual    ?? 0),
+    margem_lucro_minima:            Number(data.margem_lucro_minima            ?? 30),
+    saldo_google_ads_limite_alerta: Number(data.saldo_google_ads_limite_alerta ?? 50),
+  };
+}
 
-  if (errorConfig) throw new Error(`Erro ao obter configurações: ${errorConfig.message}`);
+// ─── CALCULAR DRE MENSAL ──────────────────────────────────────────────────────
 
-  const custosFixos = config.custos_fixos_mensais || 0;
-  const percentualVariavel = (config.custos_variaveis_percentual || 0) / 100;
-  const custosVariaveis = mrr * percentualVariavel;
+export async function calcularDREMensal(): Promise<DREData> {
+  const [mrr, config] = await Promise.all([calcularMRR(), obterConfigFinanceira()]);
 
-  // 3. CÁLCULOS
-  const lucroBruto = mrr - custosVariaveis;
-  const lucroLiquido = lucroBruto - custosFixos;
-  const margemLiquida = mrr > 0 ? (lucroLiquido / mrr) * 100 : 0;
+  const custosVariaveis = mrr * (config.custos_variaveis_percentual / 100);
+  const lucroBruto      = mrr - custosVariaveis;
+  const lucroLiquido    = lucroBruto - config.custos_fixos_mensais;
+  const margem          = mrr > 0 ? (lucroLiquido / mrr) * 100 : 0;
 
   return {
-    receita_bruta: mrr,
-    custos_fixos: custosFixos,
-    custos_variaveis: custosVariaveis,
-    lucro_bruto: lucroBruto,
-    lucro_liquido: lucroLiquido,
-    margem_liquida_percentual: margemLiquida,
+    receita_bruta:             mrr,
+    custos_fixos:              config.custos_fixos_mensais,
+    custos_variaveis:          custosVariaveis,
+    lucro_bruto:               lucroBruto,
+    lucro_liquido:             lucroLiquido,
+    margem_liquida_percentual: margem,
     mrr,
   };
 }
 
-// ============================================
-// STATUS FINANCEIRO POR CLIENTE
-// ============================================
+// ─── LISTAR CLIENTES ATRASADOS ────────────────────────────────────────────────
 
-export async function obterStatusFinanceiroCliente(clienteId: string): Promise<StatusFinanceiro> {
-  const { data: assinatura, error } = await supabase
-    .from('assinaturas')
-    .select('*')
-    .eq('cliente_id', clienteId)
-    .single();
-
-  if (error || !assinatura) {
-    throw new Error('Assinatura não encontrada');
-  }
-
-  const proximaCobranca = new Date(assinatura.data_proxima_cobranca);
-  const agora = new Date();
-  const diasParaVencimento = Math.ceil(
-    (proximaCobranca.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  let statusPagamento: 'em_dia' | 'atrasado_7d' | 'atrasado_15d' | 'cancelado';
-  let marcar: 'verde' | 'laranja' | 'vermelho';
-
-  if (assinatura.status === 'cancelado_debito') {
-    statusPagamento = 'cancelado';
-    marcar = 'vermelho';
-  } else if (assinatura.dias_atraso >= 15) {
-    statusPagamento = 'atrasado_15d';
-    marcar = 'vermelho';
-  } else if (assinatura.dias_atraso >= 7) {
-    statusPagamento = 'atrasado_7d';
-    marcar = 'laranja';
-  } else {
-    statusPagamento = 'em_dia';
-    marcar = 'verde';
-  }
-
-  return {
-    cliente_id: clienteId,
-    valor_total_contrato: assinatura.valor_mensal,
-    proxima_cobranca: assinatura.data_proxima_cobranca,
-    dias_para_vencimento: diasParaVencimento,
-    status: statusPagamento,
-    marcador_cor: marcar,
-  };
-}
-
-// ============================================
-// LISTAR CLIENTES COM ATRASO
-// ============================================
-
-export async function listarClientesAtrasados() {
-  const { data: assinaturas, error } = await supabase
+export async function listarClientesAtrasados(): Promise<ClienteAtrasado[]> {
+  const { data, error } = await supabase
     .from('assinaturas')
     .select('*, clientes(id, nome, email, whatsapp)')
-    .neq('dias_atraso', 0)
+    .gt('dias_atraso', 0)
     .order('dias_atraso', { ascending: false });
-
   if (error) throw new Error(`Erro ao listar atrasos: ${error.message}`);
-
-  return assinaturas.map((assinatura) => ({
-    cliente: assinatura.clientes,
-    dias_atraso: assinatura.dias_atraso,
-    valor_devido: assinatura.valor_mensal,
-    data_proxima_cobranca: assinatura.data_proxima_cobranca,
+  return (data ?? []).map((a) => ({
+    cliente:               a.clientes as ClienteAtrasado['cliente'],
+    dias_atraso:           Number(a.dias_atraso),
+    valor_devido:          Number(a.valor_mensal),
+    data_proxima_cobranca: a.data_proxima_cobranca as string,
+    status_assinatura:     a.status as string,
   }));
 }
 
-// ============================================
-// REGISTRAR CUSTO VARIAVEL OU FIXO
-// ============================================
+// ─── ATUALIZAR CONFIG FINANCEIRA ──────────────────────────────────────────────
 
-export async function atualizarConfigFinanceira(dados: {
-  custos_fixos_mensais?: number;
-  custos_variaveis_percentual?: number;
-}) {
+export async function atualizarConfigFinanceira(dados: Partial<ConfigFinanceira>): Promise<void> {
   const { error } = await supabase
     .from('configuracoes_financeiras')
     .update(dados)
     .eq('agencia_id', 'adsgator-main');
-
-  if (error) throw new Error(`Erro ao atualizar config: ${error.message}`);
+  if (error) throw new Error(`Erro ao salvar config: ${error.message}`);
 }
 
-// ============================================
-// PROJEÇÃO FINANCEIRA (3 MESES)
-// ============================================
+// ─── PROJEÇÃO 3 MESES (tendência linear — SEM Math.random()) ─────────────────
+// Calcula o crescimento médio dos últimos meses a partir de relatorios_mensais.
+// Se não há histórico suficiente, projeta crescimento zero (conservador).
 
-export async function projetarFinanceiro3Meses() {
-  const dre = await calcularDREMensal();
-  const hoje = new Date();
+export async function projetarFinanceiro3Meses(): Promise<ProjecaoMensal[]> {
+  const [dre] = await Promise.all([calcularDREMensal()]);
 
-  const projecao = [];
+  // Busca até 6 meses anteriores para calcular tendência
+  const { data: historico } = await supabase
+    .from('relatorios_mensais')
+    .select('mes_ano, mrr')
+    .order('mes_ano', { ascending: false })
+    .limit(6);
 
-  for (let i = 0; i < 3; i++) {
-    const mes = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
-    const mesAno = `${mes.getFullYear()}-${String(mes.getMonth() + 1).padStart(2, '0')}`;
-
-    projecao.push({
-      mes: mesAno,
-      receita_projetada: dre.mrr * (1 + (Math.random() * 0.1 - 0.05)), // ±5% variação
-      lucro_projetado: dre.lucro_liquido * (1 + (Math.random() * 0.1 - 0.05)),
-    });
+  let taxaCrescimento = 0;
+  if (historico && historico.length >= 2) {
+    const crescimentos: number[] = [];
+    for (let i = 0; i < historico.length - 1; i++) {
+      const atual    = Number(historico[i].mrr     ?? 0);
+      const anterior = Number(historico[i + 1].mrr ?? 0);
+      if (anterior > 0) crescimentos.push((atual - anterior) / anterior);
+    }
+    if (crescimentos.length > 0) {
+      taxaCrescimento = crescimentos.reduce((s, v) => s + v, 0) / crescimentos.length;
+    }
   }
+  // Limitar taxa entre -10% e +20% para evitar projeções irrazoáveis
+  taxaCrescimento = Math.max(-0.10, Math.min(0.20, taxaCrescimento));
 
-  return projecao;
+  const hoje = new Date();
+  return Array.from({ length: 3 }).map((_, i) => {
+    const mes    = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+    const fator  = Math.pow(1 + taxaCrescimento, i);
+    const receita = dre.mrr * fator;
+    const custVar = receita * (dre.custos_variaveis / (dre.mrr > 0 ? dre.mrr : 1));
+    return {
+      mes:               `${mes.getFullYear()}-${String(mes.getMonth() + 1).padStart(2, '0')}`,
+      mes_label:         mes.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      receita_projetada: receita,
+      lucro_projetado:   receita - custVar - dre.custos_fixos,
+    };
+  });
 }
 
-// ============================================
-// VALIDAR MARGEM MÍNIMA
-// ============================================
+// ─── VALIDAR MARGEM MÍNIMA ────────────────────────────────────────────────────
 
-export async function validarMargemMinima(): Promise<{
-  margemAtual: number;
-  margemMinima: number;
-  estaOk: boolean;
-  alerta: string | null;
-}> {
-  const { data: config } = await supabase
-    .from('configuracoes_financeiras')
-    .select('margem_lucro_minima')
-    .single();
-
-  const dre = await calcularDREMensal();
+export async function validarMargemMinima(): Promise<ValidacaoMargem> {
+  const [dre, config] = await Promise.all([calcularDREMensal(), obterConfigFinanceira()]);
   const margemAtual = dre.margem_liquida_percentual;
-  const margemMinima = config?.margem_lucro_minima || 30;
-
   return {
     margemAtual,
-    margemMinima,
-    estaOk: margemAtual >= margemMinima,
-    alerta:
-      margemAtual < margemMinima
-        ? `⚠️ Margem abaixo do esperado: ${margemAtual.toFixed(1)}% < ${margemMinima}%`
-        : null,
+    margemMinima: config.margem_lucro_minima,
+    estaOk: margemAtual >= config.margem_lucro_minima,
+    alerta: margemAtual < config.margem_lucro_minima
+      ? `Margem atual ${margemAtual.toFixed(1)}% está abaixo do mínimo de ${config.margem_lucro_minima}%`
+      : null,
   };
 }
 ```
 
 ---
 
-## 2. EDGE FUNCTION: Régua de Cobrança Automática
+## 2. EDGE FUNCTION — `supabase/functions/regua-cobranca/index.ts`
 
-### Arquivo: `supabase/functions/regrua-cobranca/index.ts`
+> Roda via cron (a cada 6 horas). Configura no Supabase Dashboard → Edge Functions → Schedule.
+> Não precisa alterar nada no arquivo — as ações automáticas (7d, 15d, 30d) já estão definidas.
 
 ```typescript
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -389,370 +392,299 @@ serve(async (req) => {
 
 ---
 
-## 3. COMPONENTE: Dashboard Financeiro
+## 3. PÁGINA — `src/app/(app)/financeiro/page.tsx`
+
+> **Design System:** usar tokens `surface-*`, `ink-*`, `brand`, `status-*` do tailwind.config.ts
+> **Estrutura visual:**
+> - Seção 1: 4 KPI cards (MRR, Lucro Bruto, Lucro Líquido, Margem %)
+> - Seção 2: Alerta de margem (se abaixo do mínimo)
+> - Seção 3: DRE visual com barras de distribuição
+> - Seção 4: Projeção 3 meses
+> - Seção 5: Configurações de custo (form inline editável)
+> - Seção 6: Tabela de clientes em atraso com ação WhatsApp
 
 ```typescript
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { calcularDREMensal, projetarFinanceiro3Meses, validarMargemMinima, listarClientesAtrasados } from '@/lib/financeiro';
-import { MainLayout } from '@/components/MainLayout';
-import { Icons } from '@/components/Icons';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  TrendingUp, DollarSign, AlertCircle, CheckCircle,
+  MessageCircle, Settings, ChevronDown, ChevronUp, Save,
+} from 'lucide-react';
+import {
+  calcularDREMensal, projetarFinanceiro3Meses, validarMargemMinima,
+  listarClientesAtrasados, obterConfigFinanceira, atualizarConfigFinanceira,
+  type DREData, type ProjecaoMensal, type ValidacaoMargem,
+  type ClienteAtrasado, type ConfigFinanceira,
+} from '@/lib/financeiro';
+import { MainLayout } from '@/components/layout/MainLayout';
 
-interface ClienteAtrasado {
-  cliente: { id: string; nome: string; email: string; whatsapp: string };
-  dias_atraso: number;
-  valor_devido: number;
-  data_proxima_cobranca: string;
-}
+const fmt = (v: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+const pct = (parte: number, total: number) =>
+  total > 0 ? ((parte / total) * 100).toFixed(1) : '0.0';
 
 export default function FinanceiroPage() {
-  const [dre, setDre] = useState<any>(null);
-  const [projecao, setProjecao] = useState<any[]>([]);
-  const [validacao, setValidacao] = useState<any>(null);
-  const [clientesAtrasados, setClientesAtrasados] = useState<ClienteAtrasado[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [dre,       setDre]       = useState<DREData | null>(null);
+  const [projecao,  setProjecao]  = useState<ProjecaoMensal[]>([]);
+  const [validacao, setValidacao] = useState<ValidacaoMargem | null>(null);
+  const [atrasados, setAtrasados] = useState<ClienteAtrasado[]>([]);
+  const [config,    setConfig]    = useState<ConfigFinanceira | null>(null);
+  const [loading,   setLoading]   = useState(true);
+  const [editando,  setEditando]  = useState(false);
+  const [salvando,  setSalvando]  = useState(false);
+  const [formConfig, setFormConfig] = useState({ custos_fixos_mensais: '', custos_variaveis_percentual: '' });
 
-  useEffect(() => {
-    carregarDados();
-  }, []);
-
-  async function carregarDados() {
+  const carregar = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const [dreMensal, proj3meses, margemValidacao, atrasados] = await Promise.all([
+      const [dreDados, proj, val, atr, cfg] = await Promise.all([
         calcularDREMensal(),
         projetarFinanceiro3Meses(),
         validarMargemMinima(),
         listarClientesAtrasados(),
+        obterConfigFinanceira(),
       ]);
+      setDre(dreDados); setProjecao(proj); setValidacao(val);
+      setAtrasados(atr); setConfig(cfg);
+      setFormConfig({
+        custos_fixos_mensais:        String(cfg.custos_fixos_mensais),
+        custos_variaveis_percentual: String(cfg.custos_variaveis_percentual),
+      });
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, []);
 
-      setDre(dreMensal);
-      setProjecao(proj3meses);
-      setValidacao(margemValidacao);
-      setClientesAtrasados(atrasados);
-    } catch (error) {
-      console.error('Erro ao carregar dados financeiros:', error);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => { carregar(); }, [carregar]);
+
+  async function salvarConfig() {
+    setSalvando(true);
+    try {
+      await atualizarConfigFinanceira({
+        custos_fixos_mensais:        parseFloat(formConfig.custos_fixos_mensais)        || 0,
+        custos_variaveis_percentual: parseFloat(formConfig.custos_variaveis_percentual) || 0,
+      });
+      setEditando(false);
+      await carregar();
+    } catch (e) { console.error(e); }
+    finally { setSalvando(false); }
   }
 
   if (loading || !dre) {
     return (
       <MainLayout>
-        <div className="text-center py-12">
-          <p className="dark:text-gray-400 text-gray-600">Carregando dados financeiros...</p>
+        <div className="flex items-center justify-center h-[20rem]">
+          <div className="w-[1.5rem] h-[1.5rem] border-2 border-brand border-t-transparent rounded-full animate-spin" />
         </div>
       </MainLayout>
     );
   }
 
-  const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(valor);
-  };
+  const kpis = [
+    { label: 'MRR',          valor: fmt(dre.mrr),          sub: 'Receita recorrente mensal',      icon: TrendingUp,  cor: 'text-brand'         },
+    { label: 'Lucro Bruto',  valor: fmt(dre.lucro_bruto),  sub: `${pct(dre.lucro_bruto, dre.mrr)}% da receita`,  icon: DollarSign, cor: 'text-status-blue'   },
+    { label: 'Custos Totais',valor: fmt(dre.custos_fixos + dre.custos_variaveis), sub: `Fixos + Variáveis`, icon: AlertCircle, cor: 'text-status-orange' },
+    { label: 'Lucro Líquido',valor: fmt(dre.lucro_liquido),sub: `Margem: ${dre.margem_liquida_percentual.toFixed(1)}%`, icon: CheckCircle, cor: dre.lucro_liquido >= 0 ? 'text-brand' : 'text-status-red' },
+  ];
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="dark:text-white text-gray-900 text-4xl font-bold mb-2">
-            Dashboard Financeiro
-          </h1>
-          <p className="dark:text-gray-400 text-gray-600">
-            Controle completo da saúde financeira da sua agência
-          </p>
-        </div>
+      {/* ── HEADER ── */}
+      <div className="mb-[2rem]">
+        <h1 className="dark:text-ink-primary text-gray-900 text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
+          Dashboard Financeiro
+        </h1>
+        <p className="dark:text-ink-secondary text-gray-500 text-sm">
+          Saúde financeira da agência em tempo real
+        </p>
+      </div>
 
-        {/* Alerta de Margem */}
-        {validacao && !validacao.estaOk && (
-          <div className="mb-8 dark:bg-orange-500/10 bg-orange-50 border dark:border-orange-500/30 border-orange-200 rounded-lg p-6 flex items-start gap-4">
-            <Icons.AlertCircle className="w-6 h-6 dark:text-orange-400 text-orange-600 flex-shrink-0 mt-1" strokeWidth={2} />
-            <div>
-              <h3 className="dark:text-orange-400 text-orange-700 font-bold mb-2">
-                ⚠️ Margem Abaixo do Esperado
-              </h3>
-              <p className="dark:text-orange-300 text-orange-800 text-sm">
-                {validacao.alerta}
-              </p>
-              <p className="dark:text-orange-300 text-orange-800 text-sm mt-2">
-                Considere revisar os custos fixos ou aumentar os preços de alguns planos.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* KPIs Principais */}
-        <div className="grid grid-cols-4 gap-6 mb-12">
-          {/* MRR */}
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-1">
-                  MRR (Receita Recorrente)
-                </p>
-                <p className="dark:text-white text-gray-900 text-3xl font-bold">
-                  {formatarMoeda(dre.mrr)}
-                </p>
-              </div>
-              <Icons.TrendingUp className="w-6 h-6 dark:text-green-500 text-green-600" strokeWidth={2} />
-            </div>
-            <p className="dark:text-gray-500 text-gray-600 text-xs">
-              {dre.mrr > 0 ? '📈 Receita saudável' : '📉 Sem receita'}
+      {/* ── ALERTA DE MARGEM ── */}
+      {validacao && !validacao.estaOk && (
+        <div className="mb-[1.5rem] flex items-start gap-[0.75rem] dark:bg-status-orange/8 bg-orange-50 border dark:border-status-orange/20 border-orange-100 rounded-lg px-[1rem] py-[0.875rem]">
+          <AlertCircle className="shrink-0 w-[1rem] h-[1rem] text-status-orange mt-[0.0625rem]" strokeWidth={2} />
+          <div>
+            <p className="text-sm font-semibold dark:text-status-orange text-orange-700">
+              Margem abaixo do mínimo configurado
             </p>
-          </div>
-
-          {/* Lucro Bruto */}
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-1">
-                  Lucro Bruto
-                </p>
-                <p className="dark:text-white text-gray-900 text-3xl font-bold">
-                  {formatarMoeda(dre.lucro_bruto)}
-                </p>
-              </div>
-              <Icons.DollarSign className="w-6 h-6 dark:text-blue-500 text-blue-600" strokeWidth={2} />
-            </div>
-            <p className="dark:text-gray-500 text-gray-600 text-xs">
-              {((dre.lucro_bruto / dre.mrr) * 100).toFixed(1)}% da receita
-            </p>
-          </div>
-
-          {/* Custos Variáveis */}
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-1">
-                  Custos Variáveis
-                </p>
-                <p className="dark:text-white text-gray-900 text-3xl font-bold">
-                  {formatarMoeda(dre.custos_variaveis)}
-                </p>
-              </div>
-              <Icons.AlertCircle className="w-6 h-6 dark:text-warning text-orange-600" strokeWidth={2} />
-            </div>
-            <p className="dark:text-gray-500 text-gray-600 text-xs">
-              {((dre.custos_variaveis / dre.mrr) * 100).toFixed(1)}% da receita
-            </p>
-          </div>
-
-          {/* Lucro Líquido */}
-          <div className={`
-            rounded-lg p-6 border
-            ${dre.lucro_liquido >= 0
-              ? 'dark:bg-green-500/10 dark:border-green-500/30 bg-green-50 border-green-200'
-              : 'dark:bg-red-500/10 dark:border-red-500/30 bg-red-50 border-red-200'
-            }
-          `}>
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-1">
-                  Lucro Líquido
-                </p>
-                <p className={`
-                  text-3xl font-bold
-                  ${dre.lucro_liquido >= 0
-                    ? 'dark:text-green-400 text-green-700'
-                    : 'dark:text-red-400 text-red-700'
-                  }
-                `}>
-                  {formatarMoeda(dre.lucro_liquido)}
-                </p>
-              </div>
-              <Icons.CheckCircle className={`w-6 h-6 ${dre.lucro_liquido >= 0 ? 'dark:text-green-500 text-green-600' : 'dark:text-red-500 text-red-600'}`} strokeWidth={2} />
-            </div>
-            <p className="dark:text-gray-500 text-gray-600 text-xs">
-              Margem: {dre.margem_liquida_percentual.toFixed(1)}%
+            <p className="text-xs dark:text-ink-muted text-gray-500 mt-[0.125rem]">
+              {validacao.alerta} — Revise os custos fixos ou renegocie planos.
             </p>
           </div>
         </div>
+      )}
 
-        {/* Estrutura de Custos */}
-        <div className="grid grid-cols-2 gap-6 mb-12">
-          {/* Custos Fixos */}
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <h3 className="dark:text-white text-gray-900 font-bold text-lg mb-6">
-              Custos Fixos Mensais
-            </h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <p className="dark:text-gray-400 text-gray-600">Valor Total</p>
-                <p className="dark:text-white text-gray-900 font-bold">
-                  {formatarMoeda(dre.custos_fixos)}
-                </p>
-              </div>
-              <div className="w-full dark:bg-dark-hover bg-gray-100 rounded-full h-2">
-                <div
-                  className="dark:bg-primary bg-green-500 h-2 rounded-full"
-                  style={{
-                    width: `${Math.min((dre.custos_fixos / dre.mrr) * 100, 100)}%`,
-                  }}
-                />
-              </div>
-              <p className="dark:text-gray-500 text-gray-600 text-xs">
-                {((dre.custos_fixos / dre.mrr) * 100).toFixed(1)}% da receita
-              </p>
+      {/* ── KPIs ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem] mb-[2rem]">
+        {kpis.map(({ label, valor, sub, icon: Icon, cor }) => (
+          <div key={label} className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.25rem] py-[1rem]">
+            <div className="flex items-start justify-between mb-[0.5rem]">
+              <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold">{label}</p>
+              <Icon className={`w-[1rem] h-[1rem] ${cor}`} strokeWidth={1.5} />
             </div>
+            <p className={`text-[1.75rem] font-bold leading-none mb-[0.375rem] ${cor}`}>{valor}</p>
+            <p className="dark:text-ink-muted text-gray-400 text-xs">{sub}</p>
           </div>
+        ))}
+      </div>
 
-          {/* Breakdown de Custos */}
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <h3 className="dark:text-white text-gray-900 font-bold text-lg mb-6">
-              Distribuição de Receita
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <p className="dark:text-gray-400 text-gray-600 text-sm">Custos Variáveis</p>
-                  <p className="dark:text-white text-gray-900 font-semibold">
-                    {((dre.custos_variaveis / dre.mrr) * 100).toFixed(1)}%
-                  </p>
-                </div>
-                <div className="w-full dark:bg-dark-hover bg-gray-100 rounded-full h-2">
-                  <div
-                    className="dark:bg-warning bg-orange-500 h-2 rounded-full"
-                    style={{
-                      width: `${((dre.custos_variaveis / dre.mrr) * 100).toFixed(1)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <p className="dark:text-gray-400 text-gray-600 text-sm">Custos Fixos</p>
-                  <p className="dark:text-white text-gray-900 font-semibold">
-                    {((dre.custos_fixos / dre.mrr) * 100).toFixed(1)}%
-                  </p>
-                </div>
-                <div className="w-full dark:bg-dark-hover bg-gray-100 rounded-full h-2">
-                  <div
-                    className="dark:bg-secondary bg-blue-500 h-2 rounded-full"
-                    style={{
-                      width: `${((dre.custos_fixos / dre.mrr) * 100).toFixed(1)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <p className="dark:text-gray-400 text-gray-600 text-sm">Lucro Líquido</p>
-                  <p className="dark:text-white text-gray-900 font-semibold">
-                    {dre.margem_liquida_percentual.toFixed(1)}%
-                  </p>
-                </div>
-                <div className="w-full dark:bg-dark-hover bg-gray-100 rounded-full h-2">
-                  <div
-                    className="dark:bg-primary bg-green-500 h-2 rounded-full"
-                    style={{
-                      width: `${Math.max(dre.margem_liquida_percentual, 0)}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Projeção 3 Meses */}
-        <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200 mb-12">
-          <h3 className="dark:text-white text-gray-900 font-bold text-xl mb-6">
-            Projeção de 3 Meses
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[2rem]">
+        {/* ── DRE DISTRIBUIÇÃO ── */}
+        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+          <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
+            Distribuição da Receita
           </h3>
-          <div className="grid grid-cols-3 gap-4">
-            {projecao.map((proj, idx) => (
-              <div key={idx} className="dark:bg-dark-hover bg-gray-50 rounded-lg p-4">
-                <p className="dark:text-gray-400 text-gray-600 text-sm mb-3">
-                  {new Date(proj.mes).toLocaleDateString('pt-BR', {
-                    year: 'numeric',
-                    month: 'short',
-                  })}
+          {[
+            { label: 'Custos Variáveis', valor: dre.custos_variaveis, cor: 'bg-status-orange' },
+            { label: 'Custos Fixos',     valor: dre.custos_fixos,     cor: 'bg-status-blue'  },
+            { label: 'Lucro Líquido',    valor: Math.max(dre.lucro_liquido, 0), cor: 'bg-brand' },
+          ].map(({ label, valor, cor }) => (
+            <div key={label} className="mb-[1rem]">
+              <div className="flex justify-between items-center mb-[0.375rem]">
+                <p className="dark:text-ink-secondary text-gray-600 text-sm">{label}</p>
+                <p className="dark:text-ink-primary text-gray-900 text-sm font-semibold">
+                  {pct(valor, dre.mrr)}% · {fmt(valor)}
                 </p>
-                <div className="space-y-2">
-                  <div>
-                    <p className="dark:text-gray-500 text-gray-600 text-xs mb-1">Receita</p>
-                    <p className="dark:text-white text-gray-900 font-bold">
-                      {formatarMoeda(proj.receita_projetada)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="dark:text-gray-500 text-gray-600 text-xs mb-1">Lucro</p>
-                    <p className={`font-bold ${proj.lucro_projetado >= 0 ? 'dark:text-green-400 text-green-700' : 'dark:text-red-400 text-red-700'}`}>
-                      {formatarMoeda(proj.lucro_projetado)}
-                    </p>
-                  </div>
+              </div>
+              <div className="h-[0.375rem] dark:bg-surface-hover bg-gray-100 rounded-full overflow-hidden">
+                <div className={`h-full ${cor} rounded-full transition-all duration-500`}
+                  style={{ width: `${Math.min(pct(valor, dre.mrr) as unknown as number, 100)}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── PROJEÇÃO 3 MESES ── */}
+        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+          <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
+            Projeção — Próximos 3 Meses
+          </h3>
+          <div className="flex flex-col gap-[0.875rem]">
+            {projecao.map((p, i) => (
+              <div key={p.mes} className="flex items-center justify-between">
+                <div className="flex items-center gap-[0.625rem]">
+                  <div className={`w-[0.375rem] h-[0.375rem] rounded-full ${i === 0 ? 'bg-brand' : 'dark:bg-ink-muted bg-gray-300'}`} />
+                  <p className="dark:text-ink-secondary text-gray-600 text-sm capitalize">{p.mes_label}</p>
+                  {i === 0 && <span className="text-2xs font-semibold bg-brand/15 text-brand px-[0.375rem] py-[0.0625rem] rounded">Atual</span>}
+                </div>
+                <div className="text-right">
+                  <p className="dark:text-ink-primary text-gray-900 text-sm font-semibold">{fmt(p.receita_projetada)}</p>
+                  <p className={`text-xs font-medium ${p.lucro_projetado >= 0 ? 'text-brand' : 'text-status-red'}`}>
+                    {fmt(p.lucro_projetado)} líq.
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Clientes com Atraso */}
-        {clientesAtrasados.length > 0 && (
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <h3 className="dark:text-white text-gray-900 font-bold text-xl mb-6">
-              🔴 Clientes com Atraso ({clientesAtrasados.length})
+      {/* ── CONFIGURAÇÕES DE CUSTO ── */}
+      <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem] mb-[2rem]">
+        <div className="flex items-center justify-between mb-[1rem]">
+          <div className="flex items-center gap-[0.5rem]">
+            <Settings className="w-[1rem] h-[1rem] dark:text-ink-muted text-gray-400" strokeWidth={1.5} />
+            <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">
+              Configurações de Custo
             </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="dark:border-dark-border border-b border-gray-200">
-                    <th className="text-left py-3 dark:text-gray-400 text-gray-600 text-sm font-semibold">Cliente</th>
-                    <th className="text-left py-3 dark:text-gray-400 text-gray-600 text-sm font-semibold">Dias de Atraso</th>
-                    <th className="text-left py-3 dark:text-gray-400 text-gray-600 text-sm font-semibold">Valor Devido</th>
-                    <th className="text-left py-3 dark:text-gray-400 text-gray-600 text-sm font-semibold">Ação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {clientesAtrasados.map((item) => (
-                    <tr key={item.cliente.id} className="dark:border-dark-border border-b border-gray-200 hover:dark:bg-dark-hover hover:bg-gray-50">
-                      <td className="py-4">
-                        <div>
-                          <p className="dark:text-white text-gray-900 font-medium">{item.cliente.nome}</p>
-                          <p className="dark:text-gray-500 text-gray-600 text-sm">{item.cliente.email}</p>
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        <span className={`
-                          px-3 py-1 rounded-md font-semibold text-sm
-                          ${item.dias_atraso >= 30
-                            ? 'dark:bg-red-500/20 dark:text-red-400 bg-red-100 text-red-700'
-                            : item.dias_atraso >= 15
-                            ? 'dark:bg-orange-500/20 dark:text-orange-400 bg-orange-100 text-orange-700'
-                            : 'dark:bg-yellow-500/20 dark:text-yellow-400 bg-yellow-100 text-yellow-700'
-                          }
-                        `}>
-                          {item.dias_atraso}d
-                        </span>
-                      </td>
-                      <td className="py-4 dark:text-white text-gray-900 font-semibold">
-                        {formatarMoeda(item.valor_devido)}
-                      </td>
-                      <td className="py-4">
-                        <a
-                          href={`https://wa.me/${item.cliente.whatsapp.replace(/\D/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="dark:text-primary text-green-600 hover:underline font-medium text-sm"
-                        >
-                          WhatsApp
-                        </a>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          </div>
+          <button
+            onClick={() => setEditando(!editando)}
+            className="text-xs font-semibold dark:text-ink-secondary text-gray-500 dark:hover:text-ink-primary hover:text-gray-800 flex items-center gap-[0.25rem] transition-colors"
+          >
+            {editando ? <><ChevronUp className="w-[0.875rem] h-[0.875rem]" /> Fechar</> : <><ChevronDown className="w-[0.875rem] h-[0.875rem]" /> Editar</>}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-2 gap-[1.5rem]">
+          {config && [
+            { label: 'Custos Fixos Mensais',      valor: fmt(config.custos_fixos_mensais),           key: 'custos_fixos_mensais' as const },
+            { label: 'Custos Variáveis (%MRR)',    valor: `${config.custos_variaveis_percentual}%`,   key: 'custos_variaveis_percentual' as const },
+          ].map(({ label, valor, key }) => (
+            <div key={key}>
+              <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.375rem]">{label}</p>
+              {editando ? (
+                <input
+                  type="number"
+                  value={formConfig[key]}
+                  onChange={(e) => setFormConfig({ ...formConfig, [key]: e.target.value })}
+                  className="w-full h-[2.25rem] px-[0.75rem] rounded dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+                />
+              ) : (
+                <p className="dark:text-ink-primary text-gray-900 font-semibold text-lg">{valor}</p>
+              )}
             </div>
+          ))}
+        </div>
+
+        {editando && (
+          <div className="flex justify-end mt-[1rem]">
+            <button
+              onClick={salvarConfig}
+              disabled={salvando}
+              className="flex items-center gap-[0.5rem] dark:bg-brand dark:hover:bg-brand-dark dark:text-white bg-green-600 hover:bg-green-700 text-white text-sm font-semibold h-[2.25rem] px-[1rem] rounded transition-colors disabled:opacity-50"
+            >
+              {salvando ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+              Salvar
+            </button>
           </div>
         )}
       </div>
+
+      {/* ── CLIENTES EM ATRASO ── */}
+      {atrasados.length > 0 && (
+        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+          <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
+            Clientes com Atraso ({atrasados.length})
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b dark:border-surface-border border-gray-100">
+                  {['Cliente', 'Atraso', 'Valor Devido', 'Ação'].map((h) => (
+                    <th key={h} className="text-left pb-[0.75rem] dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {atrasados.map((item) => (
+                  <tr key={item.cliente.id} className="border-b dark:border-surface-border border-gray-50 dark:hover:bg-surface-hover hover:bg-gray-50 transition-colors">
+                    <td className="py-[0.875rem]">
+                      <p className="dark:text-ink-primary text-gray-900 font-medium text-sm">{item.cliente.nome}</p>
+                      <p className="dark:text-ink-muted text-gray-400 text-xs">{item.cliente.email}</p>
+                    </td>
+                    <td className="py-[0.875rem]">
+                      <span className={`
+                        inline-flex items-center text-xs font-bold px-[0.5rem] py-[0.125rem] rounded
+                        ${item.dias_atraso >= 30 ? 'bg-status-red/15 text-status-red'
+                          : item.dias_atraso >= 15 ? 'bg-status-orange/15 text-status-orange'
+                          : 'bg-status-yellow/15 text-status-yellow'}
+                      `}>
+                        {item.dias_atraso}d
+                      </span>
+                    </td>
+                    <td className="py-[0.875rem] dark:text-ink-primary text-gray-900 font-semibold text-sm">
+                      {fmt(item.valor_devido)}
+                    </td>
+                    <td className="py-[0.875rem]">
+                      <a
+                        href={`https://wa.me/55${item.cliente.whatsapp.replace(/\D/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-[0.375rem] dark:bg-brand/10 dark:hover:bg-brand/20 dark:text-brand bg-green-50 hover:bg-green-100 text-green-700 text-xs font-semibold px-[0.625rem] h-[1.75rem] rounded transition-colors"
+                      >
+                        <MessageCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.5} />
+                        WhatsApp
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </MainLayout>
   );
 }
@@ -760,17 +692,39 @@ export default function FinanceiroPage() {
 
 ---
 
-## 4. RESUMO DO ERP FINANCEIRO
+## 4. CHECKLIST DE IMPLEMENTAÇÃO
 
-- ✅ Cálculo automático de DRE mensal (MRR, custos, lucro)
-- ✅ Validação contínua de margem mínima
-- ✅ Edge Function rodando a cada 6 horas para régua de cobrança
-- ✅ Alertas automáticos em 7, 15 e 30 dias de atraso
-- ✅ Dashboard financeiro com KPIs em tempo real
-- ✅ Projeção de 3 meses
-- ✅ Visualização de clientes com atraso
-- ✅ Integração com histórico de ações para auditoria
-- ✅ Suporte a múltiplas moedas (BRL por padrão)
-- ✅ Cálculos baseados em dados reais do Supabase
+### Ordem de execução (não pular etapas)
 
-**Status:** Pronto para implementação imediata.
+- [ ] **1.** Confirmar que `supabase/schema.sql` já foi executado no Supabase Dashboard
+- [ ] **2.** Criar `src/lib/financeiro.ts` com o código da Seção 1
+- [ ] **3.** Criar `supabase/functions/regua-cobranca/index.ts` com o código da Seção 2
+- [ ] **4.** No Supabase Dashboard → Edge Functions → Schedules → adicionar cron `0 */6 * * *` apontando para `regua-cobranca`
+- [ ] **5.** Criar `src/app/(app)/financeiro/page.tsx` com o código da Seção 3
+- [ ] **6.** Adicionar link `/financeiro` na Sidebar (componente `Sidebar.tsx`)
+- [ ] **7.** Inserir pelo menos 1 assinatura ativa via Supabase Dashboard (para ver o MRR)
+- [ ] **8.** Ajustar `configuracoes_financeiras` no banco com valores reais da agência
+
+### Erros comuns a evitar
+
+| ❌ Errado | ✅ Correto |
+|---|---|
+| `import { supabase } from './auth'` | `import { supabase } from './supabase'` |
+| `import { MainLayout } from '@/components/MainLayout'` | `import { MainLayout } from '@/components/layout/MainLayout'` |
+| `import { Icons } from '@/components/Icons'` | `import { TrendingUp, ... } from 'lucide-react'` |
+| `dark:bg-dark-card` (não existe) | `dark:bg-surface-card` |
+| `dark:text-white` (frágil) | `dark:text-ink-primary` |
+| `dark:bg-primary` (não existe) | `dark:bg-brand` |
+| `Math.random()` em projeção | Tendência linear baseada em `relatorios_mensais` |
+
+### O que este módulo entrega
+
+- MRR calculado em tempo real das `assinaturas` ativas
+- DRE: receita → custos variáveis → custos fixos → lucro líquido → margem %
+- Projeção 3 meses com base em crescimento médio histórico (conservador: clampado em -10%/+20%)
+- Régua de cobrança automática via Edge Function Deno (altera `status` e `dias_atraso` na tabela `assinaturas`)
+- Alertas registrados em `historico_acoes` para auditoria
+- Dashboard com form inline para editar configurações de custo
+- Tabela de inadimplentes com botão WhatsApp direto
+
+**Status:** v2 — Pronto para implementação imediata.

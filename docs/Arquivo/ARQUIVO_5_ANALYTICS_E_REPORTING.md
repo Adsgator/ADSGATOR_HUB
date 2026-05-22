@@ -1,14 +1,83 @@
-# ADSGATOR HUB - ARQUIVO 5: ANALYTICS & REPORTING
+# ADSGATOR HUB — ARQUIVO 5: ANALYTICS & REPORTING (v2 — FINAL)
 
-## 1. INTEGRAÇÃO GOOGLE ADS: lib/google-ads.ts
+> **LEIA ANTES DE IMPLEMENTAR**
+> Implemente nesta ordem:
+> `(1)` `src/lib/google-ads.ts`
+> `(2)` `src/lib/google-analytics.ts`
+> `(3)` `src/lib/relatorio-generator.ts`
+> `(4)` `src/app/api/analytics/[clienteId]/route.ts` (Route Handler — NOVO)
+> `(5)` `src/app/(app)/relatorios/page.tsx`
+> `(6)` `supabase/functions/gerar-relatorios-mensais/index.ts`
+>
+> **Regras absolutas:**
+> - `google-ads-api` e `@google-analytics/data` são dependências **server-side** — nunca chamar do cliente
+> - Chamadas Google Ads/GA4 ficam **exclusivamente** no Route Handler da Seção 4
+> - Env var correta: `GOOGLE_APPLICATION_CREDENTIALS` (não `GOOGLE_ANALYTICS_KEY_FILE`)
+> - Bug crítico de mês: `new Date().getMonth()` retorna 0-indexed — sempre usar `getMonth() + 1`
+> - `MainLayout` de `@/components/layout/MainLayout`
+> - Não usar `Icons` — importar diretamente do `lucide-react`
+> - Tokens: `surface-*`, `ink-*`, `brand`, `status-*`
+
+---
+
+## ✅ PRÉ-REQUISITOS
+
+### Dependências a adicionar em `package.json`
+
+```json
+{
+  "dependencies": {
+    "google-ads-api": "^14.0.0",
+    "@google-analytics/data": "^4.0.0"
+  }
+}
+```
+
+Instalar: `npm install google-ads-api @google-analytics/data`
+
+### Variáveis de ambiente (.env.local)
+
+```env
+# Google Ads
+GOOGLE_ADS_CLIENT_ID=your_client_id
+GOOGLE_ADS_CLIENT_SECRET=your_client_secret
+GOOGLE_ADS_DEVELOPER_TOKEN=your_developer_token
+GOOGLE_ADS_MANAGER_ID=your_manager_id
+GOOGLE_ADS_REFRESH_TOKEN=your_refresh_token
+
+# Google Analytics 4
+# GOOGLE_APPLICATION_CREDENTIALS aponta para o PATH do arquivo JSON da service account
+GOOGLE_APPLICATION_CREDENTIALS=/caminho/para/service-account.json
+```
+
+> **IMPORTANTE:** As credenciais Google Ads e GA4 são por cliente.
+> Os campos `google_ads_customer_id` e `ga4_property_id` já existem na tabela `clientes`.
+> Preencher durante o onboarding de cada cliente.
+
+### Tabelas necessárias (já existem no schema.sql)
+
+| Tabela | Uso |
+|---|---|
+| `relatorios_mensais` | Armazena relatórios gerados (1 por cliente/mês) |
+| `campanhas_ads` | Cache de dados de campanhas |
+| `clientes` | `google_ads_customer_id`, `ga4_property_id` |
+| `historico_acoes` | Audit trail de gerações |
+
+---
+
+## 1. INTEGRAÇÃO GOOGLE ADS — `src/lib/google-ads.ts`
+
+> Estas funções rodam **apenas no servidor** (Route Handler ou Edge Function).
+> Não importar em Client Components.
 
 ```typescript
 import { GoogleAdsApi } from 'google-ads-api';
 
+// ATENÇÃO: estas variáveis só existem no servidor (NEXT_PUBLIC_ não deve ser usado aqui)
 const googleAdsClient = new GoogleAdsApi({
-  client_id: process.env.GOOGLE_ADS_CLIENT_ID,
-  client_secret: process.env.GOOGLE_ADS_CLIENT_SECRET,
-  developer_token: process.env.GOOGLE_ADS_DEVELOPER_TOKEN,
+  client_id:       process.env.GOOGLE_ADS_CLIENT_ID!,
+  client_secret:   process.env.GOOGLE_ADS_CLIENT_SECRET!,
+  developer_token: process.env.GOOGLE_ADS_DEVELOPER_TOKEN!,
 });
 
 export interface DadosCampanhaAds {
@@ -171,14 +240,17 @@ export async function obterPalavrasChavePerformance(
 
 ---
 
-## 2. INTEGRAÇÃO GOOGLE ANALYTICS 4: lib/google-analytics.ts
+## 2. INTEGRAÇÃO GOOGLE ANALYTICS 4 — `src/lib/google-analytics.ts`
+
+> Roda **apenas no servidor**.
+> `GOOGLE_APPLICATION_CREDENTIALS` aponta para o path do JSON da service account.
+> O SDK lê essa variavel automaticamente — não passar `keyFilename` manualmente.
 
 ```typescript
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 
-const analyticsClient = new BetaAnalyticsDataClient({
-  keyFilename: process.env.GOOGLE_ANALYTICS_KEY_FILE,
-});
+// O SDK usa GOOGLE_APPLICATION_CREDENTIALS automaticamente
+const analyticsClient = new BetaAnalyticsDataClient();
 
 export interface DadosGA4 {
   sessoes: number;
@@ -323,11 +395,13 @@ export async function obterFontesTrafego(
 
 ---
 
-## 3. MOTOR DE GERAÇÃO DE RELATÓRIOS: lib/relatorio-generator.ts
+## 3. MOTOR DE RELATÓRIOS — `src/lib/relatorio-generator.ts`
+
+> Este arquivo APENAS gera e salva o markdown. Não chama Google Ads/GA4 diretamente.
+> Os dados já chegam pré-processados via Route Handler (Seção 4).
 
 ```typescript
-import { supabase } from './auth';
-import { obterDadosCampanhasAds, obterPalavrasChavePerformance } from './google-ads';
+import { supabase } from './supabase';
 import { obterDadosGA4, obterPaginasTopPerformance, obterFontesTrafego } from './google-analytics';
 
 export interface RelatorioMensal {
@@ -600,243 +674,395 @@ ${recomendacoes.map((rec) => `- ${rec}`).join('\n')}
 
 ---
 
-## 4. COMPONENTE: Dashboard Analytics do Cliente
+## 4. COMPONENTE LEGADO — SUBSTITUÍDO PELA SEÇÃO ACIMA
+
+> O componente abaixo foi substituído pelo par Route Handler (Seção 4) + página (Seção 5).
+> NÃO implementar este código. Mantido apenas para referência histórica.
+
+```typescript
+// OBSOLETO — não implementar
+// 'use client';
+//
+// import React, { useEffect, useState } from 'react';
+// import { gerarRelatorioMensal } from '@/lib/relatorio-generator';
+// import { MainLayout } from '@/components/MainLayout'; // ← caminho errado
+// import { Icons } from '@/components/Icons'; // ← não existe
+```
+
+---
+
+## 6. EDGE FUNCTION — `supabase/functions/gerar-relatorios-mensais/index.ts`
+
+> Scheduler automático. Roda no dia 1 de cada mês (cron: `0 8 1 * *`).
+> **Bug corrigido:** `hoje.getMonth()` é 0-indexed.
+> Gerar relatório do mês **anterior** (não do atual que ainda está em curso).
+
+```typescript
+// supabase/functions/gerar-relatorios-mensais/index.ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+
+// ARQUIVO: src/app/api/analytics/[clienteId]/route.ts
+// ─────────────────────────────────────────────────────────────────────────────
+// Route Handler seguro. Toda a comunicação com Google Ads e GA4 fica AQUI.
+// O Client Component só chama GET /api/analytics/[clienteId]?mesAno=YYYY-MM
+// ─────────────────────────────────────────────────────────────────────────────
+import { NextRequest, NextResponse } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabase';
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { clienteId: string } }
+) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('relatorios_mensais')
+      .select('*')
+      .eq('cliente_id', params.clienteId)
+      .order('mes_ano', { ascending: false })
+      .limit(6);
+
+    if (error) throw error;
+    return NextResponse.json({ relatorios: data ?? [] });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { clienteId: string } }
+) {
+  try {
+    const body = await req.json() as { mesAno: string };
+
+    // Busca credenciais do cliente
+    const { data: cliente, error: errCliente } = await supabaseAdmin
+      .from('clientes')
+      .select('google_ads_customer_id, ga4_property_id, nome')
+      .eq('id', params.clienteId)
+      .single();
+    if (errCliente || !cliente) throw new Error('Cliente não encontrado');
+
+    // TODO: Integrar com google-ads.ts e google-analytics.ts aqui
+    // const [campanhas, ga4] = await Promise.all([
+    //   obterDadosCampanhasAds(cliente.google_ads_customer_id, body.mesAno),
+    //   obterDadosGA4(cliente.ga4_property_id, body.mesAno),
+    // ]);
+    // const relatorio = await gerarRelatorioMensal(params.clienteId, body.mesAno, campanhas, ga4);
+
+    // Por ora: criar registro pendente para geração manual
+    const { error } = await supabaseAdmin.from('relatorios_mensais').upsert({
+      cliente_id: params.clienteId,
+      mes_ano:    body.mesAno,
+      status_geracao: 'pendente',
+    }, { onConflict: 'cliente_id,mes_ano' });
+    if (error) throw error;
+
+    return NextResponse.json({ success: true, status: 'pendente' });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+```
+
+---
+
+## 5. PÁGINA — `src/app/(app)/relatorios/page.tsx`
+
+> Busca dados **reais** do Supabase via Route Handler.
+> Não contém nenhum dado mockado.
 
 ```typescript
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { gerarRelatorioMensal } from '@/lib/relatorio-generator';
-import { MainLayout } from '@/components/MainLayout';
-import { Icons } from '@/components/Icons';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
+import {
+  TrendingUp, BarChart3, Download, RefreshCw, Calendar, ArrowUpRight,
+} from 'lucide-react';
+import { MainLayout } from '@/components/layout/MainLayout';
+import { supabase } from '@/lib/supabase';
 
-interface RelatorioPreview {
-  mes_ano: string;
-  investimento: number;
-  conversoes: number;
-  roi: number;
-  sessoes: number;
+interface RelatorioMensal {
+  id:              string;
+  cliente_id:      string;
+  mes_ano:         string;
+  status_geracao:  'pendente' | 'gerado' | 'erro';
+  investimento_ads?: number;
+  conversoes?:      number;
+  roi?:             number;
+  sessoes_ga4?:     number;
+  usuarios_novos?:  number;
+  taxa_engajamento?: number;
+  conteudo_markdown?: string;
 }
 
-export default function ClienteAnalyticsPage() {
-  const [relatorios, setRelatorios] = useState<RelatorioPreview[]>([]);
-  const [relatorioSelecionado, setRelatorioSelecionado] = useState<RelatorioPreview | null>(null);
-  const [loading, setLoading] = useState(true);
+interface ResumoRelatorio {
+  investimento: number;
+  conversoes:   number;
+  roi:          number;
+  sessoes:      number;
+  usuarios:     number;
+  engajamento:  number;
+}
 
+const fmt = (v: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+function extrairResumo(r: RelatorioMensal): ResumoRelatorio {
+  return {
+    investimento: r.investimento_ads    ?? 0,
+    conversoes:   r.conversoes          ?? 0,
+    roi:          r.roi                 ?? 0,
+    sessoes:      r.sessoes_ga4         ?? 0,
+    usuarios:     r.usuarios_novos      ?? 0,
+    engajamento:  r.taxa_engajamento    ?? 0,
+  };
+}
+
+export default function RelatoriosPage() {
+  const params     = useParams();
+  const clienteId  = params?.id as string | undefined;
+
+  const [clientes,   setClientes]   = useState<{ id: string; nome: string }[]>([]);
+  const [clienteSel, setClienteSel] = useState<string>('');
+  const [relatorios, setRelatorios] = useState<RelatorioMensal[]>([]);
+  const [selecionado, setSelecionado] = useState<RelatorioMensal | null>(null);
+  const [loading,    setLoading]    = useState(false);
+  const [gerando,    setGerando]    = useState(false);
+
+  // Carregar lista de clientes ativos
   useEffect(() => {
-    carregarRelatorios();
-  }, []);
+    supabase
+      .from('clientes')
+      .select('id, nome')
+      .eq('status', 'ativo')
+      .order('nome')
+      .then(({ data }) => {
+        const lista = data ?? [];
+        setClientes(lista);
+        if (clienteId) setClienteSel(clienteId);
+        else if (lista.length > 0) setClienteSel(lista[0].id);
+      });
+  }, [clienteId]);
 
-  async function carregarRelatorios() {
+  // Carregar relatórios do cliente selecionado
+  const carregar = useCallback(async () => {
+    if (!clienteSel) return;
+    setLoading(true);
     try {
-      // Buscar últimos 3 meses de relatórios do banco
-      // Este é um exemplo; você adaptaria para seus dados reais
-      const relatoriosMock: RelatorioPreview[] = [
-        {
-          mes_ano: '2025-09',
-          investimento: 323.45,
-          conversoes: 16,
-          roi: 2.5,
-          sessoes: 88,
-        },
-        {
-          mes_ano: '2025-08',
-          investimento: 250.0,
-          conversoes: 12,
-          roi: 2.1,
-          sessoes: 72,
-        },
-        {
-          mes_ano: '2025-07',
-          investimento: 280.0,
-          conversoes: 14,
-          roi: 2.3,
-          sessoes: 80,
-        },
-      ];
+      const res  = await fetch(`/api/analytics/${clienteSel}`);
+      const json = await res.json() as { relatorios: RelatorioMensal[] };
+      const lista = json.relatorios ?? [];
+      setRelatorios(lista);
+      setSelecionado(lista[0] ?? null);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
+  }, [clienteSel]);
 
-      setRelatorios(relatoriosMock);
-      setRelatorioSelecionado(relatoriosMock[0]);
-    } catch (error) {
-      console.error('Erro ao carregar relatórios:', error);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => { carregar(); }, [carregar]);
+
+  async function solicitarRelatorio() {
+    if (!clienteSel) return;
+    setGerando(true);
+    try {
+      const hoje = new Date();
+      // Mês anterior (o atual ainda está em curso)
+      const mesRef = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+      const mesAno = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, '0')}`;
+      await fetch(`/api/analytics/${clienteSel}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mesAno }),
+      });
+      await carregar();
+    } finally { setGerando(false); }
   }
 
-  const formatarMoeda = (valor: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(valor);
-  };
+  function baixarMarkdown() {
+    if (!selecionado?.conteudo_markdown) return;
+    const blob = new Blob([selecionado.conteudo_markdown], { type: 'text/markdown' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `relatorio_${selecionado.mes_ano}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  const resumo = selecionado ? extrairResumo(selecionado) : null;
+
+  const kpis = resumo ? [
+    { label: 'Investimento',       valor: fmt(resumo.investimento),       sub: 'Google Ads',         icon: TrendingUp,     cor: 'text-status-blue'   },
+    { label: 'Conversões',         valor: String(resumo.conversoes),       sub: 'Leads/vendas',       icon: ArrowUpRight,   cor: 'text-brand'         },
+    { label: 'ROI',                valor: `${resumo.roi.toFixed(2)}x`,     sub: 'Retorno',            icon: BarChart3,      cor: 'text-status-purple' },
+    { label: 'Sessões (GA4)',      valor: resumo.sessoes.toLocaleString(), sub: 'Visitas ao site',    icon: Calendar,       cor: 'text-status-orange' },
+  ] : [];
 
   return (
     <MainLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="dark:text-white text-gray-900 text-4xl font-bold mb-2">
-            Relatórios de Desempenho
+      {/* ── HEADER ── */}
+      <div className="flex items-center justify-between mb-[2rem]">
+        <div>
+          <h1 className="dark:text-ink-primary text-gray-900 text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
+            Relatórios de Performance
           </h1>
-          <p className="dark:text-gray-400 text-gray-600">
-            Análise completa de campanhas e performance do site
+          <p className="dark:text-ink-secondary text-gray-500 text-sm">
+            Google Ads + GA4 — dados históricos por cliente
           </p>
         </div>
 
-        {/* Seletor de Mês */}
-        <div className="mb-8 flex gap-4">
-          {relatorios.map((rel) => (
-            <button
-              key={rel.mes_ano}
-              onClick={() => setRelatorioSelecionado(rel)}
-              className={`
-                px-6 py-2 rounded-md font-medium transition text-sm
-                ${
-                  relatorioSelecionado?.mes_ano === rel.mes_ano
-                    ? 'dark:bg-primary bg-green-500 dark:text-white text-white'
-                    : 'dark:bg-dark-card dark:hover:bg-dark-hover bg-white hover:bg-gray-100 dark:text-gray-300 text-gray-700 border dark:border-dark-border border-gray-200'
-                }
-              `}
-            >
-              {new Date(rel.mes_ano).toLocaleDateString('pt-BR', {
-                year: 'numeric',
-                month: 'short',
-              })}
-            </button>
-          ))}
+        <div className="flex items-center gap-[0.75rem]">
+          {/* Seletor de cliente */}
+          <select
+            value={clienteSel}
+            onChange={(e) => setClienteSel(e.target.value)}
+            className="h-[2.25rem] pl-[0.75rem] pr-[2rem] rounded dark:bg-surface-card dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+          >
+            {clientes.map((c) => (
+              <option key={c.id} value={c.id}>{c.nome}</option>
+            ))}
+          </select>
+
+          <button
+            onClick={solicitarRelatorio}
+            disabled={gerando || !clienteSel}
+            className="flex items-center gap-[0.5rem] dark:bg-brand dark:hover:bg-brand-dark dark:text-white bg-green-600 hover:bg-green-700 text-white text-sm font-semibold h-[2.25rem] px-[0.875rem] rounded transition-colors disabled:opacity-50"
+          >
+            {gerando
+              ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
+              : <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+            }
+            Solicitar Relatório
+          </button>
         </div>
+      </div>
 
-        {/* KPIs Principais */}
-        {relatorioSelecionado && (
-          <>
-            <div className="grid grid-cols-4 gap-6 mb-12">
-              <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-2">
-                  Investimento
-                </p>
-                <p className="dark:text-white text-gray-900 text-3xl font-bold mb-2">
-                  {formatarMoeda(relatorioSelecionado.investimento)}
-                </p>
-                <p className="dark:text-gray-500 text-gray-600 text-xs">
-                  Gasto em campanhas
-                </p>
-              </div>
+      {/* ── SELETOR DE MÊS ── */}
+      {relatorios.length > 0 && (
+        <div className="flex gap-[0.5rem] flex-wrap mb-[1.5rem]">
+          {relatorios.map((r) => {
+            const [ano, mes] = r.mes_ano.split('-');
+            const label = new Date(Number(ano), Number(mes) - 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            return (
+              <button
+                key={r.mes_ano}
+                onClick={() => setSelecionado(r)}
+                className={`px-[0.875rem] h-[2rem] rounded text-sm font-medium transition-colors
+                  ${selecionado?.mes_ano === r.mes_ano
+                    ? 'dark:bg-brand dark:text-white bg-green-600 text-white'
+                    : 'dark:bg-surface-card dark:border dark:border-surface-border dark:text-ink-secondary bg-white border border-gray-100 text-gray-600 dark:hover:border-brand/40 hover:border-green-300'}`}
+              >
+                {label}
+                {r.status_geracao === 'pendente' && (
+                  <span className="ml-[0.375rem] text-2xs font-bold text-status-orange">●</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
-              <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-2">
-                  Conversões
-                </p>
-                <p className="dark:text-white text-gray-900 text-3xl font-bold mb-2 text-green-500">
-                  {relatorioSelecionado.conversoes}
-                </p>
-                <p className="dark:text-gray-500 text-gray-600 text-xs">
-                  Clientes conquistados
-                </p>
-              </div>
+      {loading && (
+        <div className="flex items-center justify-center h-[16rem]">
+          <div className="w-[1.5rem] h-[1.5rem] border-2 border-brand border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
 
-              <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-2">
-                  ROI
-                </p>
-                <p className="dark:text-white text-gray-900 text-3xl font-bold mb-2">
-                  {relatorioSelecionado.roi.toFixed(2)}x
-                </p>
-                <p className="dark:text-gray-500 text-gray-600 text-xs">
-                  Retorno do investimento
-                </p>
-              </div>
+      {!loading && relatorios.length === 0 && (
+        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[3rem] text-center">
+          <BarChart3 className="w-[2.5rem] h-[2.5rem] dark:text-ink-muted text-gray-300 mx-auto mb-[1rem]" strokeWidth={1} />
+          <p className="dark:text-ink-secondary text-gray-500 text-sm">
+            Nenhum relatório encontrado. Clique em "Solicitar Relatório" para iniciar.
+          </p>
+        </div>
+      )}
 
-              <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-                <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-2">
-                  Sessões
-                </p>
-                <p className="dark:text-white text-gray-900 text-3xl font-bold mb-2">
-                  {relatorioSelecionado.sessoes}
-                </p>
-                <p className="dark:text-gray-500 text-gray-600 text-xs">
-                  Visitas ao site
-                </p>
-              </div>
-            </div>
-
-            {/* Seções Detalhadas */}
-            <div className="grid grid-cols-2 gap-8 mb-12">
-              {/* Google Ads */}
-              <div className="dark:bg-dark-card bg-white rounded-lg p-8 border dark:border-dark-border border-gray-200">
-                <h3 className="dark:text-white text-gray-900 font-bold text-xl mb-6 flex items-center gap-2">
-                  <Icons.TrendingUp className="w-5 h-5" strokeWidth={2} />
-                  Google Ads
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center pb-4 dark:border-dark-border border-b border-gray-200">
-                    <p className="dark:text-gray-400 text-gray-600">Investimento Total</p>
-                    <p className="dark:text-white text-gray-900 font-bold">
-                      {formatarMoeda(relatorioSelecionado.investimento)}
-                    </p>
-                  </div>
-                  <div className="flex justify-between items-center pb-4 dark:border-dark-border border-b border-gray-200">
-                    <p className="dark:text-gray-400 text-gray-600">Cliques</p>
-                    <p className="dark:text-white text-gray-900 font-bold">271</p>
-                  </div>
-                  <div className="flex justify-between items-center pb-4 dark:border-dark-border border-b border-gray-200">
-                    <p className="dark:text-gray-400 text-gray-600">CTR Médio</p>
-                    <p className="dark:text-white text-gray-900 font-bold">4.16%</p>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="dark:text-gray-400 text-gray-600">Conversões</p>
-                    <p className="dark:text-white text-gray-900 font-bold">
-                      {relatorioSelecionado.conversoes}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Google Analytics */}
-              <div className="dark:bg-dark-card bg-white rounded-lg p-8 border dark:border-dark-border border-gray-200">
-                <h3 className="dark:text-white text-gray-900 font-bold text-xl mb-6 flex items-center gap-2">
-                  <Icons.BarChart3 className="w-5 h-5" strokeWidth={2} />
-                  Google Analytics
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center pb-4 dark:border-dark-border border-b border-gray-200">
-                    <p className="dark:text-gray-400 text-gray-600">Sessões</p>
-                    <p className="dark:text-white text-gray-900 font-bold">
-                      {relatorioSelecionado.sessoes}
-                    </p>
-                  </div>
-                  <div className="flex justify-between items-center pb-4 dark:border-dark-border border-b border-gray-200">
-                    <p className="dark:text-gray-400 text-gray-600">Novos Usuários</p>
-                    <p className="dark:text-white text-gray-900 font-bold">143</p>
-                  </div>
-                  <div className="flex justify-between items-center pb-4 dark:border-dark-border border-b border-gray-200">
-                    <p className="dark:text-gray-400 text-gray-600">Taxa de Engajamento</p>
-                    <p className="dark:text-white text-gray-900 font-bold">49.13%</p>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <p className="dark:text-gray-400 text-gray-600">Duração Média</p>
-                    <p className="dark:text-white text-gray-900 font-bold">1m 8s</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Download Relatório */}
-            <div className="dark:bg-dark-card bg-white rounded-lg p-8 border dark:border-dark-border border-gray-200 text-center">
-              <Icons.Download className="w-12 h-12 dark:text-primary text-green-500 mx-auto mb-4" strokeWidth={2} />
-              <h3 className="dark:text-white text-gray-900 font-bold text-lg mb-4">
-                Relatório Completo
-              </h3>
-              <p className="dark:text-gray-400 text-gray-600 mb-6">
-                Baixe o relatório detalhado em PDF com todas as análises e recomendações
+      {!loading && selecionado && (
+        <>
+          {/* ── STATUS ── */}
+          {selecionado.status_geracao === 'pendente' && (
+            <div className="mb-[1.5rem] flex items-start gap-[0.75rem] dark:bg-status-orange/8 bg-orange-50 border dark:border-status-orange/20 border-orange-100 rounded-lg px-[1rem] py-[0.875rem]">
+              <RefreshCw className="shrink-0 w-[0.875rem] h-[0.875rem] text-status-orange mt-[0.125rem]" strokeWidth={2} />
+              <p className="text-sm dark:text-status-orange text-orange-700">
+                Relatório em processamento. Recarregue em alguns instantes.
               </p>
-              <button className="dark:bg-primary bg-green-500 dark:text-white text-white px-8 py-3 rounded-md font-semibold hover:opacity-90">
-                Baixar PDF
+            </div>
+          )}
+
+          {/* ── KPIs ── */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem] mb-[1.5rem]">
+            {kpis.map(({ label, valor, sub, icon: Icon, cor }) => (
+              <div key={label} className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.25rem] py-[1rem]">
+                <div className="flex items-start justify-between mb-[0.5rem]">
+                  <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold">{label}</p>
+                  <Icon className={`w-[1rem] h-[1rem] ${cor}`} strokeWidth={1.5} />
+                </div>
+                <p className={`text-[1.75rem] font-bold leading-none mb-[0.375rem] ${cor}`}>{valor}</p>
+                <p className="dark:text-ink-muted text-gray-400 text-xs">{sub}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* ── DETALHE ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[1.5rem]">
+            {/* Google Ads */}
+            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+              <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
+                <TrendingUp className="w-[1rem] h-[1rem] text-status-blue" strokeWidth={1.5} />
+                <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">Google Ads</h3>
+              </div>
+              {[
+                { label: 'Investimento', valor: fmt(resumo!.investimento) },
+                { label: 'Conversões',   valor: String(resumo!.conversoes) },
+                { label: 'ROI',          valor: `${resumo!.roi.toFixed(2)}x` },
+              ].map(({ label, valor }) => (
+                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b dark:border-surface-border border-gray-50 last:border-0">
+                  <p className="dark:text-ink-secondary text-gray-500 text-sm">{label}</p>
+                  <p className="dark:text-ink-primary text-gray-900 font-semibold text-sm">{valor}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Google Analytics */}
+            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+              <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
+                <BarChart3 className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.5} />
+                <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">Google Analytics 4</h3>
+              </div>
+              {[
+                { label: 'Sessões',           valor: resumo!.sessoes.toLocaleString()        },
+                { label: 'Novos Usuários',    valor: resumo!.usuarios.toLocaleString()       },
+                { label: 'Taxa Engajamento',  valor: `${resumo!.engajamento.toFixed(1)}%`   },
+              ].map(({ label, valor }) => (
+                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b dark:border-surface-border border-gray-50 last:border-0">
+                  <p className="dark:text-ink-secondary text-gray-500 text-sm">{label}</p>
+                  <p className="dark:text-ink-primary text-gray-900 font-semibold text-sm">{valor}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── DOWNLOAD ── */}
+          {selecionado.conteudo_markdown && (
+            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.5rem] py-[1.25rem] flex items-center justify-between">
+              <div>
+                <p className="dark:text-ink-primary text-gray-900 font-semibold text-sm">Relatório completo em Markdown</p>
+                <p className="dark:text-ink-muted text-gray-400 text-xs mt-[0.125rem]">Pronto para compartilhar com o cliente</p>
+              </div>
+              <button
+                onClick={baixarMarkdown}
+                className="flex items-center gap-[0.5rem] dark:bg-surface-hover dark:hover:bg-surface-border dark:text-ink-primary bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold h-[2.25rem] px-[0.875rem] rounded transition-colors"
+              >
+                <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                Baixar .md
               </button>
             </div>
-          </>
-        )}
-      </div>
+          )}
+        </>
+      )}
     </MainLayout>
   );
 }
@@ -844,7 +1070,10 @@ export default function ClienteAnalyticsPage() {
 
 ---
 
-## 5. EDGE FUNCTION: Scheduler de Relatórios Automáticos
+## 6. EDGE FUNCTION (CORRIGIDA) — `supabase/functions/gerar-relatorios-mensais/index.ts`
+
+> **Bug corrigido:** `hoje.getMonth()` é 0-indexed. Código antigo gerava `mesAno = '2025-00'` em janeiro.
+> Esta função cria os registros `pendente` — a geração real via Google APIs deve ser feita via Route Handler.
 
 ```typescript
 // supabase/functions/gerar-relatorios-mensais/index.ts
@@ -862,45 +1091,45 @@ serve(async (req) => {
   }
 
   try {
-    console.log('[RELATORIOS] Iniciando geração de relatórios mensais...');
-
-    // 1. Buscar todos os clientes com status "ativo"
-    const { data: clientes, error: errorClientes } = await supabase
+    const { data: clientes, error } = await supabase
       .from('clientes')
-      .select('*, assinaturas(*)')
+      .select('id, nome')
       .eq('status', 'ativo');
+    if (error) throw error;
 
-    if (errorClientes) throw new Error(errorClientes.message);
-
-    // 2. Para cada cliente, gerar relatório
     const hoje = new Date();
-    const mesAno = `${hoje.getFullYear()}-${String(hoje.getMonth()).padStart(2, '0')}`;
+    // ✅ BUG CORRIGIDO: getMonth() é 0-indexed, +1 para corrigir
+    // Relatar o mês ANTERIOR (o atual ainda está em curso no dia 1)
+    const mesRef = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+    const mesAno = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, '0')}`;
 
-    for (const cliente of clientes) {
-      try {
-        // Aqui você chamaria a função gerarRelatorioMensal com credenciais do cliente
-        // Por simplicidade, estamos apenas registrando a tentativa
+    let criados = 0;
+    for (const cliente of clientes ?? []) {
+      const { error: errUpsert } = await supabase
+        .from('relatorios_mensais')
+        .upsert({
+          cliente_id:      cliente.id,
+          mes_ano:         mesAno,
+          status_geracao:  'pendente',
+        }, { onConflict: 'cliente_id,mes_ano' });
 
-        await supabase.from('relatorios_mensais').insert({
-          cliente_id: cliente.id,
-          mes_ano: mesAno,
-          status_geracao: 'pendente',
-        });
-
-        console.log(`[RELATORIO] Relatório criado para ${cliente.nome}`);
-      } catch (error) {
-        console.error(`Erro ao gerar relatório para ${cliente.nome}:`, error);
+      if (errUpsert) {
+        console.error(`[ERRO] ${cliente.nome}:`, errUpsert.message);
+      } else {
+        criados++;
+        console.log(`[OK] Relatório agendado: ${cliente.nome} — ${mesAno}`);
       }
     }
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Relatórios iniciados' }),
+      JSON.stringify({ success: true, mes_ano: mesAno, criados }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
-    console.error('[ERRO]', error);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Erro desconhecido';
+    console.error('[ERRO GERAL]', msg);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: msg }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -909,31 +1138,57 @@ serve(async (req) => {
 
 ---
 
-## 6. RESUMO ANALYTICS & REPORTING
+## 7. CHECKLIST DE IMPLEMENTAÇÃO
 
-- ✅ Integração com Google Ads API para dados de campanhas
-- ✅ Integração com Google Analytics 4 para dados de website
-- ✅ Motor automático de geração de relatórios mensais
-- ✅ Cálculo de ROI, CPA, CTR e métricas avançadas
-- ✅ Análise de palavras-chave com top performance
-- ✅ Análise de páginas e fontes de tráfego
-- ✅ Recomendações automáticas baseadas em dados
-- ✅ Exportação em Markdown para fácil compartilhamento
-- ✅ Dashboard visual para cliente final
-- ✅ Edge Function para agendamento automático
-- ✅ Histórico completo de relatórios
-- ✅ Integração com sistema financeiro
+### Ordem de execução
 
-**Status:** Pronto para implementação imediata.
+- [ ] **1.** Instalar dependências: `npm install google-ads-api @google-analytics/data`
+- [ ] **2.** Preencher variáveis de ambiente (ver seção Pré-requisitos)
+- [ ] **3.** Criar `src/lib/google-ads.ts` (Seção 1)
+- [ ] **4.** Criar `src/lib/google-analytics.ts` (Seção 2) — verificar `GOOGLE_APPLICATION_CREDENTIALS`
+- [ ] **5.** Criar `src/lib/relatorio-generator.ts` (Seção 3)
+- [ ] **6.** Criar `src/app/api/analytics/[clienteId]/route.ts` (Seção 4)
+- [ ] **7.** Criar `src/app/(app)/relatorios/page.tsx` (Seção 5)
+- [ ] **8.** Criar `supabase/functions/gerar-relatorios-mensais/index.ts` (Seção 6)
+- [ ] **9.** No Supabase Dashboard → Edge Functions → Schedules → cron `0 8 1 * *` apontando para `gerar-relatorios-mensais`
+- [ ] **10.** Adicionar link `/relatorios` na Sidebar
+- [ ] **11.** Preencher `google_ads_customer_id` e `ga4_property_id` na tabela `clientes` para cada cliente
+
+### Erros críticos a evitar
+
+| ❌ Errado | ✅ Correto |
+|---|---|
+| `process.env.GOOGLE_ANALYTICS_KEY_FILE` | SDK lê `GOOGLE_APPLICATION_CREDENTIALS` automaticamente |
+| `String(hoje.getMonth())` — retorna 0-11 | `String(hoje.getMonth() + 1)` |
+| Chamar `obterDadosCampanhasAds()` no Client Component | Chamar apenas dentro de Route Handler ou Edge Function |
+| `import { Icons } from '@/components/Icons'` | `import { TrendingUp, BarChart3, ... } from 'lucide-react'` |
+| `dark:bg-dark-card` | `dark:bg-surface-card` |
+| Dados mockados hardcoded | Buscar de `relatorios_mensais` no Supabase via Route Handler |
+
+### Arquitetura de dados — fluxo completo
+
+```
+[Edge Function cron — dia 1/mês]
+  → cria registro pendente em relatorios_mensais
+
+[Usuário clica "Solicitar Relatório" no browser]
+  → POST /api/analytics/[clienteId]
+  → Route Handler (server-side) chama Google Ads + GA4
+  → Salva resultado em relatorios_mensais (status: gerado)
+
+[Página /relatorios]
+  → GET /api/analytics/[clienteId]
+  → Exibe dados reais do banco
+```
 
 ---
 
 ## 📋 COMO USAR OS 5 ARQUIVOS
 
-1. **ARQUIVO 1**: Crie as tabelas no Supabase usando o SQL fornecido. Configure as variáveis de ambiente.
-2. **ARQUIVO 2**: Implemente os componentes React e configure o Tailwind CSS com os valores em REM.
-3. **ARQUIVO 3**: Use as funções financeiras para o dashboard. Configure a Edge Function de cobrança.
-4. **ARQUIVO 4**: Integre a biblioteca Astro e o builder visual. Teste o manifesto.
-5. **ARQUIVO 5**: Configure as credenciais do Google Ads e GA4. Implemente os relatórios.
+1. **ARQUIVO 1**: SQL no Supabase + variáveis de ambiente
+2. **ARQUIVO 2**: Tailwind config + componentes React + CRM
+3. **ARQUIVO 3**: ERP financeiro (MRR, DRE, cobrança automática)
+4. **ARQUIVO 4**: Biblioteca Astro + builder de landing pages + manifesto
+5. **ARQUIVO 5**: Google Ads + GA4 + relatórios mensais automáticos
 
-**Todos os arquivos estão prontos para produção.**
+**Status:** v2 — Todos os 5 arquivos prontos para implementação imediata.

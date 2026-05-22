@@ -1,6 +1,9 @@
-# ADSGATOR HUB - ARQUIVO 2: UX & CRM
+# ADSGATOR HUB — ARQUIVO 2: UX & CRM
+> **Implementação:** Copie os arquivos para as pastas indicadas dentro do projeto Next.js.
 
-## 1. SETUP TAILWIND: tailwind.config.ts
+---
+
+## 1. `tailwind.config.ts`
 
 ```typescript
 import type { Config } from 'tailwindcss';
@@ -14,62 +17,68 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      spacing: {
-        // REM-based spacing (proibido px)
-        '0.5': '0.125rem',
-        '1': '0.25rem',
-        '1.5': '0.375rem',
-        '2': '0.5rem',
-        '2.5': '0.625rem',
-        '3': '0.75rem',
-        '3.5': '0.875rem',
-        '4': '1rem',
-        '5': '1.25rem',
-        '6': '1.5rem',
-        '7': '1.75rem',
-        '8': '2rem',
-        '9': '2.25rem',
-        '10': '2.5rem',
-        '12': '3rem',
-        '14': '3.5rem',
-        '16': '4rem',
-        '20': '5rem',
-        '24': '6rem',
+      // ─── NUNCA use px. Apenas rem. ───────────────────────
+      fontFamily: {
+        sans:  ['Geist', 'system-ui', 'sans-serif'],
+        mono:  ['Geist Mono', 'monospace'],
       },
       colors: {
-        // Design system minimalista escuro
-        'dark-bg': '#0f0f0f',
-        'dark-card': '#1a1a1a',
-        'dark-border': '#2d2d2d',
-        'dark-hover': '#252525',
-        'primary': '#10b981',
-        'primary-dark': '#059669',
-        'secondary': '#6366f1',
-        'warning': '#f97316',
-        'danger': '#ef4444',
-        'success': '#10b981',
+        brand: {
+          DEFAULT: '#10b981',
+          dark:    '#059669',
+          light:   '#34d399',
+          muted:   'rgba(16,185,129,0.12)',
+        },
+        surface: {
+          bg:     '#0c0c0d',
+          card:   '#141415',
+          hover:  '#1a1a1c',
+          border: '#242427',
+          input:  '#1e1e21',
+        },
+        ink: {
+          primary:   '#f0f0f1',
+          secondary: '#8b8b96',
+          muted:     '#52525e',
+          disabled:  '#3a3a44',
+        },
+        status: {
+          orange: '#f97316',
+          red:    '#ef4444',
+          blue:   '#3b82f6',
+          purple: '#8b5cf6',
+          yellow: '#eab308',
+        },
       },
       fontSize: {
-        'xs': '0.75rem',
-        'sm': '0.875rem',
-        'base': '1rem',
-        'lg': '1.125rem',
-        'xl': '1.25rem',
-        '2xl': '1.5rem',
-        '3xl': '1.875rem',
-        '4xl': '2.25rem',
+        '2xs': ['0.625rem',  { lineHeight: '0.875rem' }],
+        xs:    ['0.75rem',   { lineHeight: '1rem'     }],
+        sm:    ['0.875rem',  { lineHeight: '1.25rem'  }],
+        base:  ['1rem',      { lineHeight: '1.5rem'   }],
+        lg:    ['1.125rem',  { lineHeight: '1.75rem'  }],
+        xl:    ['1.25rem',   { lineHeight: '1.75rem'  }],
+        '2xl': ['1.5rem',    { lineHeight: '2rem'     }],
+        '3xl': ['1.875rem',  { lineHeight: '2.25rem'  }],
+        '4xl': ['2.25rem',   { lineHeight: '2.5rem'   }],
       },
       borderRadius: {
-        'none': '0',
-        'sm': '0.125rem',
-        'base': '0.25rem',
-        'md': '0.375rem',
-        'lg': '0.5rem',
+        none: '0',
+        sm:   '0.1875rem',
+        DEFAULT: '0.375rem',
+        md:   '0.5rem',
+        lg:   '0.75rem',
+        xl:   '1rem',
+        full: '9999rem',
       },
-      borderWidth: {
-        'thin': '0.5px',
-        'normal': '1px',
-        'thick': '2px',
+      animation: {
+        'fade-in':      'fadeIn 0.2s ease-out',
+        'slide-up':     'slideUp 0.25s ease-out',
+        'pulse-subtle': 'pulseSubtle 2s cubic-bezier(0.4,0,0.6,1) infinite',
+      },
+      keyframes: {
+        fadeIn:      { from: { opacity: '0' }, to: { opacity: '1' } },
+        slideUp:     { from: { opacity: '0', transform: 'translateY(0.5rem)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+        pulseSubtle: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.5' } },
       },
     },
   },
@@ -81,7 +90,199 @@ export default config;
 
 ---
 
-## 2. PROVIDER DE TEMA: providers/ThemeProvider.tsx
+## 2. `src/lib/fluxo-operacional.ts`
+> **Este é o coração do sistema "Mão com Açúcar".**
+> Define cada estágio, a instrução exata, os templates de WhatsApp disponíveis
+> e o checklist de tarefas. A UI lê este objeto e guia o operador sem ambiguidade.
+
+```typescript
+export interface EtapaFluxo {
+  id:                string;
+  label:             string;
+  descricao:         string;
+  corBadge:          string;        // classe Tailwind para a cor do badge
+  icone:             string;        // nome do ícone Lucide
+  instrucao:         string;        // instrução direta para o operador
+  whatsapp_templates: string[];     // tags dos templates disponíveis neste estágio
+  checklist?:        ChecklistItem[];
+  proximo_estagio?:  string;        // id do próximo estágio
+  proxima_acao_label: string;       // texto do botão "Avançar"
+}
+
+export interface ChecklistItem {
+  id:    string;
+  texto: string;
+}
+
+// Ordem do fluxo: recebido → onboarding → setup_trafego → ativo
+export const FLUXO_OPERACIONAL: Record<string, EtapaFluxo> = {
+
+  recebido: {
+    id:                'recebido',
+    label:             'Recebido',
+    descricao:         'Pagamento confirmado. Cliente aguarda contato inicial.',
+    corBadge:          'bg-status-blue text-white',
+    icone:             'Bell',
+    instrucao:         'Envie a mensagem de boas-vindas agora com o template #BOASVINDAS. O cliente acabou de pagar e está aguardando.',
+    whatsapp_templates: ['#BOASVINDAS'],
+    proximo_estagio:   'onboarding',
+    proxima_acao_label: 'Boas-vindas enviadas → Ir para Onboarding',
+  },
+
+  onboarding: {
+    id:                'onboarding',
+    label:             'Onboarding',
+    descricao:         'Configuração inicial da conta e estrutura do projeto.',
+    corBadge:          'bg-status-purple text-white',
+    icone:             'ClipboardList',
+    instrucao:         'Conclua o checklist de onboarding abaixo. Envie o #CONVITE para call e o #BRIEFINGGA para coletar informações do negócio.',
+    whatsapp_templates: ['#CONVITE', '#BRIEFINGGA'],
+    checklist: [
+      { id: 'contrato',        texto: 'Contrato enviado e assinado' },
+      { id: 'pix-setup',       texto: 'Pix do setup recebido' },
+      { id: 'grupo-zap',       texto: 'Grupo criado no WhatsApp com o cliente' },
+      { id: 'video-boas-vindas', texto: 'Vídeo de boas-vindas enviado' },
+    ],
+    proximo_estagio:   'setup_trafego',
+    proxima_acao_label: 'Onboarding completo → Ir para Setup de Tráfego',
+  },
+
+  setup_trafego: {
+    id:                'setup_trafego',
+    label:             'Setup de Tráfego',
+    descricao:         'Configuração técnica da conta Google Ads, LP e campanhas.',
+    corBadge:          'bg-status-yellow text-black',
+    icone:             'Settings2',
+    instrucao:         'Siga o checklist técnico abaixo. Conclua todos os itens antes de ativar as campanhas.',
+    whatsapp_templates: [],
+    checklist: [
+      { id: 'acesso-ads',      texto: 'Acesso à conta Google Ads solicitado/concedido' },
+      { id: 'pagamento-ads',   texto: 'Pagamento configurado na conta Google Ads' },
+      { id: 'publico-alvo',    texto: 'Público-alvo criado e configurado' },
+      { id: 'palavras-chave',  texto: 'Palavras-chave negativadas (nível de conta)' },
+      { id: 'conversao-ads',   texto: 'Tag de conversão (WhatsApp) criada' },
+      { id: 'dominio',         texto: 'Domínio comprado e configurado' },
+      { id: 'lp-criada',       texto: 'Landing page criada e publicada' },
+      { id: 'tag-geral',       texto: 'Tag geral do Google instalada na LP' },
+      { id: 'tag-conversao',   texto: 'Tag de conversão instalada na LP' },
+      { id: 'teste-fluxo',     texto: 'Fluxo completo (Anúncio → LP → WhatsApp) testado' },
+      { id: 'campanha-criada', texto: 'Campanha criada e estruturada' },
+      { id: 'anuncios-criados',texto: 'Anúncios criados (mínimo 3 variações)' },
+      { id: 'revisao-final',   texto: 'Revisão final de orçamento, locais e palavras-chave' },
+      { id: 'campanha-ativa',  texto: '🚀 Campanha ATIVADA' },
+    ],
+    proximo_estagio:   'ativo',
+    proxima_acao_label: 'Campanha no ar → Cliente Ativo',
+  },
+
+  ativo: {
+    id:                'ativo',
+    label:             'Ativo',
+    descricao:         'Campanha rodando. Gestão contínua e otimizações.',
+    corBadge:          'bg-brand text-white',
+    icone:             'TrendingUp',
+    instrucao:         'Cliente ativo. Monitore o saldo, verifique as métricas semanalmente e otimize as campanhas. Use #SALDOGOOGLE quando o saldo estiver crítico.',
+    whatsapp_templates: ['#SALDOGOOGLE'],
+    proximo_estagio:   undefined,
+    proxima_acao_label: '',
+  },
+
+  congelado: {
+    id:                'congelado',
+    label:             'Retido',
+    descricao:         'Aguardando retorno do cliente. Alerta automático em 48h.',
+    corBadge:          'bg-status-orange text-white',
+    icone:             'PauseCircle',
+    instrucao:         'Este cliente está aguardando sua resposta. O sistema alertará automaticamente em 48h se não houver movimento.',
+    whatsapp_templates: [],
+    proximo_estagio:   undefined,
+    proxima_acao_label: '',
+  },
+
+  cancelado: {
+    id:                'cancelado',
+    label:             'Cancelado',
+    descricao:         'Contrato encerrado. Ações de desativação necessárias.',
+    corBadge:          'bg-status-red text-white',
+    icone:             'XCircle',
+    instrucao:         'Cliente cancelado. Remova a Landing Page do ar, delete os assets do Storage e encerre as campanhas no Google Ads.',
+    whatsapp_templates: [],
+    proximo_estagio:   undefined,
+    proxima_acao_label: '',
+  },
+};
+
+// Ordem linear para a barra de progresso
+export const ORDEM_ESTAGIOS = ['recebido','onboarding','setup_trafego','ativo'] as const;
+
+// Templates WhatsApp com mensagens reais da agência
+export const WHATSAPP_TEMPLATES: Record<string, { titulo: string; mensagem: string }> = {
+  '#BOASVINDAS': {
+    titulo: 'Boas-vindas',
+    mensagem: `Olá! 👋
+
+Seja muito bem-vindo(a)! 🚀
+
+Estamos super animados em tê-lo(a) como nosso cliente. A partir de agora, estamos juntos para colocar o seu negócio em outro nível no Google!
+
+Nos próximos dias vou entrar em contato para alinharmos os próximos passos do nosso projeto.
+
+Qualquer dúvida que surgir, pode chamar aqui! Estou à disposição.`,
+  },
+
+  '#CONVITE': {
+    titulo: 'Convite para Call de Alinhamento',
+    mensagem: `Oi! 👋
+
+Tudo certo? Vim marcar nossa call inicial para a gente alinhar a estratégia e tirar todas as dúvidas antes de começar.
+
+Tenho disponibilidade nos seguintes horários. Qual funciona melhor para você?
+
+Por favor me informe a melhor opção e te mando o link da chamada. 😊`,
+  },
+
+  '#BRIEFINGGA': {
+    titulo: 'Briefing Google Ads',
+    mensagem: `Oi! 📋
+
+Para montar a sua campanha de Google Ads da forma mais certeira possível, precisamos de algumas informações sobre o seu negócio.
+
+Pode me responder as perguntas abaixo?
+
+✅ Qual o seu principal produto/serviço?
+✅ Qual o ticket médio?
+✅ Qual a cidade/região de atuação?
+✅ Qual o perfil do seu cliente ideal (idade, gênero, situação)?
+✅ Quais são seus 3 principais diferenciais?
+✅ Já teve experiências com Google Ads antes?
+
+Com isso, já consigo estruturar tudo para você! 🙏`,
+  },
+
+  '#SALDOGOOGLE': {
+    titulo: 'Alerta de Saldo Google Ads',
+    mensagem: `Olá! ⚠️
+
+Passando para avisar que o saldo da sua conta do Google Ads está próximo do limite mínimo.
+
+Para garantir que suas campanhas não parem e você não perca leads, é importante fazer uma recarga o quanto antes.
+
+Qualquer dúvida sobre como fazer a recarga, é só me chamar! 😊`,
+  },
+};
+
+export function gerarLinkWhatsApp(template: keyof typeof WHATSAPP_TEMPLATES, numero: string): string {
+  const t = WHATSAPP_TEMPLATES[template];
+  if (!t) return '';
+  const numeroLimpo = numero.replace(/\D/g, '');
+  const mensagemCodificada = encodeURIComponent(t.mensagem);
+  return `https://wa.me/55${numeroLimpo}?text=${mensagemCodificada}`;
+}
+```
+
+---
+
+## 3. `src/providers/ThemeProvider.tsx`
 
 ```typescript
 'use client';
@@ -91,258 +292,176 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 type Theme = 'dark' | 'light' | 'system';
 
 interface ThemeContextType {
-  theme: Theme;
-  setTheme: (theme: Theme) => void;
-  isDark: boolean;
+  theme:    Theme;
+  setTheme: (t: Theme) => void;
+  isDark:   boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
-  const [isDark, setIsDark] = useState(true);
+  const [theme,  setThemeState] = useState<Theme>('dark');
+  const [isDark, setIsDark]     = useState(true);
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as Theme | null;
-    if (savedTheme) {
-      setThemeState(savedTheme);
-    }
-
-    const updateDarkMode = () => {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const currentTheme = savedTheme || 'system';
-
-      if (currentTheme === 'system') {
-        setIsDark(prefersDark);
-        document.documentElement.classList.toggle('dark', prefersDark);
-      } else if (currentTheme === 'dark') {
-        setIsDark(true);
-        document.documentElement.classList.add('dark');
-      } else {
-        setIsDark(false);
-        document.documentElement.classList.remove('dark');
-      }
-    };
-
-    updateDarkMode();
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    mediaQuery.addEventListener('change', updateDarkMode);
-
-    return () => mediaQuery.removeEventListener('change', updateDarkMode);
+    const saved = (localStorage.getItem('adsgator-theme') as Theme) ?? 'dark';
+    aplicarTema(saved);
   }, []);
 
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('theme', newTheme);
-
-    if (newTheme === 'dark') {
-      setIsDark(true);
-      document.documentElement.classList.add('dark');
-    } else if (newTheme === 'light') {
-      setIsDark(false);
-      document.documentElement.classList.remove('dark');
-    } else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setIsDark(prefersDark);
-      document.documentElement.classList.toggle('dark', prefersDark);
-    }
-  };
+  function aplicarTema(t: Theme) {
+    setThemeState(t);
+    localStorage.setItem('adsgator-theme', t);
+    const prefersD = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const ativo = t === 'system' ? prefersD : t === 'dark';
+    setIsDark(ativo);
+    document.documentElement.classList.toggle('dark', ativo);
+  }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, isDark }}>
+    <ThemeContext.Provider value={{ theme, setTheme: aplicarTema, isDark }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
 export function useTheme() {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme deve ser usado dentro do ThemeProvider');
-  }
-  return context;
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error('useTheme fora do ThemeProvider');
+  return ctx;
 }
 ```
 
 ---
 
-## 3. COMPONENTE: Icons.tsx (Lucide React)
-
-```typescript
-'use client';
-
-import {
-  Home,
-  Users,
-  TrendingUp,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  ChevronDown,
-  AlertCircle,
-  Clock,
-  CheckCircle,
-  MessageCircle,
-  Copy,
-  Zap,
-  DollarSign,
-  Eye,
-  Moon,
-  Sun,
-} from 'lucide-react';
-
-export const Icons = {
-  Home,
-  Users,
-  TrendingUp,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  ChevronDown,
-  AlertCircle,
-  Clock,
-  CheckCircle,
-  MessageCircle,
-  Copy,
-  Zap,
-  DollarSign,
-  Eye,
-  Moon,
-  Sun,
-};
-
-interface IconProps {
-  className?: string;
-  strokeWidth?: number;
-}
-
-export function renderIcon(
-  name: keyof typeof Icons,
-  props: IconProps = {}
-) {
-  const Icon = Icons[name];
-  return (
-    <Icon
-      className={props.className || 'w-5 h-5'}
-      strokeWidth={props.strokeWidth || 1.5}
-    />
-  );
-}
-```
-
----
-
-## 4. COMPONENTE: Sidebar.tsx
+## 4. `src/components/layout/Sidebar.tsx`
 
 ```typescript
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { Icons } from './Icons';
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  LayoutDashboard, Users, BarChart3, DollarSign,
+  Layers, Settings, LogOut, Moon, Sun, Monitor,
+  ChevronRight,
+} from 'lucide-react';
 import { useTheme } from '@/providers/ThemeProvider';
+import { logout } from '@/lib/auth';
 
-const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: 'Home' },
-  { href: '/clientes', label: 'Clientes', icon: 'Users' },
-  { href: '/relatorios', label: 'Relatórios', icon: 'TrendingUp' },
-  { href: '/financeiro', label: 'Financeiro', icon: 'DollarSign' },
-  { href: '/configuracoes', label: 'Configurações', icon: 'Settings' },
-];
+const NAV_ITEMS = [
+  { href: '/dashboard',       icon: LayoutDashboard, label: 'Dashboard'  },
+  { href: '/clientes',        icon: Users,           label: 'Clientes'   },
+  { href: '/relatorios',      icon: BarChart3,        label: 'Relatórios' },
+  { href: '/financeiro',      icon: DollarSign,       label: 'Financeiro' },
+  { href: '/biblioteca',      icon: Layers,           label: 'Biblioteca' },
+  { href: '/configuracoes',   icon: Settings,         label: 'Config'     },
+] as const;
 
 export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
-  const pathname = usePathname();
-  const router = useRouter();
-  const { theme, setTheme, isDark } = useTheme();
+  const pathname          = usePathname();
+  const router            = useRouter();
+  const { theme, setTheme } = useTheme();
+  const [expanded, setExpanded] = useState(false);
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      if (response.ok) {
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error('Erro ao fazer logout:', error);
-    }
+  async function handleLogout() {
+    await logout();
+    router.push('/login');
+  }
+
+  const themeIcons = { dark: Moon, light: Sun, system: Monitor } as const;
+  const ThemeIcon  = themeIcons[theme] ?? Moon;
+
+  const nextTheme: Record<string, 'light' | 'system' | 'dark'> = {
+    dark: 'light', light: 'system', system: 'dark',
   };
 
   return (
     <aside
       className={`
-        fixed top-0 left-0 h-screen transition-all duration-300
-        ${isOpen ? 'w-16' : 'w-16'}
-        dark:bg-dark-card bg-white dark:border-r dark:border-dark-border
-        border-r border-gray-200 flex flex-col items-center py-8
+        fixed inset-y-0 left-0 z-40 flex flex-col
+        transition-all duration-200 ease-in-out
+        dark:bg-surface-card bg-white
+        dark:border-r dark:border-surface-border border-r border-gray-100
+        ${expanded ? 'w-[13.5rem]' : 'w-[3.5rem]'}
       `}
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
     >
       {/* Logo */}
-      <div className="mb-12 flex items-center justify-center">
-        <div className="w-10 h-10 bg-primary rounded-md flex items-center justify-center">
-          <span className="text-white font-bold text-lg">A</span>
+      <div className="flex items-center h-[3.5rem] px-[0.875rem] border-b dark:border-surface-border border-gray-100 gap-[0.75rem] overflow-hidden">
+        <div className="shrink-0 w-[1.75rem] h-[1.75rem] rounded-[0.375rem] bg-brand flex items-center justify-center">
+          <span className="text-white font-bold text-sm leading-none">A</span>
         </div>
+        <span className={`
+          dark:text-ink-primary text-gray-900 font-semibold text-sm whitespace-nowrap
+          transition-opacity duration-150
+          ${expanded ? 'opacity-100' : 'opacity-0'}
+        `}>
+          Adsgator Hub
+        </span>
       </div>
 
-      {/* Navegação */}
-      <nav className="flex flex-col gap-4 flex-1">
-        {navItems.map((item) => {
-          const Icon = Icons[item.icon as keyof typeof Icons];
-          const isActive = pathname === item.href;
-
+      {/* Nav principal */}
+      <nav className="flex-1 flex flex-col gap-[0.25rem] p-[0.5rem] overflow-hidden">
+        {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+          const ativo = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={href}
+              href={href}
+              title={label}
               className={`
-                w-12 h-12 rounded-md flex items-center justify-center
-                transition-colors duration-200
-                ${
-                  isActive
-                    ? 'dark:bg-primary bg-primary dark:text-white text-white'
-                    : 'dark:hover:bg-dark-hover hover:bg-gray-100 dark:text-gray-400 text-gray-600'
+                relative flex items-center gap-[0.75rem] h-[2.25rem] px-[0.625rem]
+                rounded-[0.375rem] transition-colors group overflow-hidden
+                ${ativo
+                  ? 'dark:bg-brand/15 dark:text-brand bg-green-50 text-green-700'
+                  : 'dark:text-ink-secondary text-gray-500 dark:hover:bg-surface-hover dark:hover:text-ink-primary hover:bg-gray-50 hover:text-gray-800'
                 }
               `}
-              title={item.label}
             >
-              <Icon className="w-5 h-5" strokeWidth={1.5} />
+              <Icon className="shrink-0 w-[1.125rem] h-[1.125rem]" strokeWidth={ativo ? 2 : 1.5} />
+              <span className={`
+                text-sm font-medium whitespace-nowrap
+                transition-opacity duration-150
+                ${expanded ? 'opacity-100' : 'opacity-0'}
+              `}>
+                {label}
+              </span>
+              {ativo && (
+                <span className="absolute left-0 top-[0.375rem] bottom-[0.375rem] w-[0.1875rem] bg-brand rounded-r-full" />
+              )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Toggle Tema */}
-      <button
-        onClick={() => setTheme(isDark ? 'light' : 'dark')}
-        className={`
-          w-12 h-12 rounded-md flex items-center justify-center
-          dark:hover:bg-dark-hover hover:bg-gray-100 transition-colors
-          dark:text-gray-400 text-gray-600
-        `}
-        title="Alternar tema"
-      >
-        {isDark ? (
-          <Icons.Sun className="w-5 h-5" strokeWidth={1.5} />
-        ) : (
-          <Icons.Moon className="w-5 h-5" strokeWidth={1.5} />
-        )}
-      </button>
+      {/* Rodapé da sidebar */}
+      <div className="p-[0.5rem] border-t dark:border-surface-border border-gray-100 flex flex-col gap-[0.25rem] overflow-hidden">
+        {/* Toggle de tema */}
+        <button
+          onClick={() => setTheme(nextTheme[theme])}
+          title={`Tema: ${theme}`}
+          className="flex items-center gap-[0.75rem] h-[2.25rem] px-[0.625rem] rounded-[0.375rem] dark:text-ink-secondary text-gray-500 dark:hover:bg-surface-hover dark:hover:text-ink-primary hover:bg-gray-50 hover:text-gray-800 transition-colors"
+        >
+          <ThemeIcon className="shrink-0 w-[1.125rem] h-[1.125rem]" strokeWidth={1.5} />
+          <span className={`text-sm font-medium whitespace-nowrap transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+            Tema ({theme})
+          </span>
+        </button>
 
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className={`
-          w-12 h-12 rounded-md flex items-center justify-center
-          dark:hover:bg-danger/20 hover:bg-red-50 transition-colors
-          dark:text-danger text-red-600
-        `}
-        title="Sair"
-      >
-        <Icons.LogOut className="w-5 h-5" strokeWidth={1.5} />
-      </button>
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          title="Sair"
+          className="flex items-center gap-[0.75rem] h-[2.25rem] px-[0.625rem] rounded-[0.375rem] dark:text-ink-secondary text-gray-500 dark:hover:bg-status-red/10 dark:hover:text-status-red hover:bg-red-50 hover:text-red-600 transition-colors"
+        >
+          <LogOut className="shrink-0 w-[1.125rem] h-[1.125rem]" strokeWidth={1.5} />
+          <span className={`text-sm font-medium whitespace-nowrap transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0'}`}>
+            Sair
+          </span>
+        </button>
+      </div>
     </aside>
   );
 }
@@ -350,24 +469,18 @@ export function Sidebar() {
 
 ---
 
-## 5. COMPONENTE: Layout Principal
+## 5. `src/components/layout/MainLayout.tsx`
 
 ```typescript
-'use client';
-
 import React from 'react';
 import { Sidebar } from './Sidebar';
 
-interface MainLayoutProps {
-  children: React.ReactNode;
-}
-
-export function MainLayout({ children }: MainLayoutProps) {
+export function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen dark:bg-dark-bg bg-white">
+    <div className="flex min-h-screen dark:bg-surface-bg bg-gray-50">
       <Sidebar />
-      <main className="flex-1 ml-16 overflow-auto">
-        <div className="p-8">
+      <main className="flex-1 ml-[3.5rem] min-h-screen">
+        <div className="max-w-[90rem] mx-auto px-[2rem] py-[2rem]">
           {children}
         </div>
       </main>
@@ -378,125 +491,185 @@ export function MainLayout({ children }: MainLayoutProps) {
 
 ---
 
-## 6. COMPONENTE: Card de Cliente (Home)
+## 6. `src/components/ui/Badge.tsx`
+
+```typescript
+import React from 'react';
+
+interface BadgeProps {
+  children: React.ReactNode;
+  variant?: 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple';
+  size?:    'sm' | 'md';
+}
+
+const variants = {
+  default: 'dark:bg-surface-hover dark:text-ink-secondary bg-gray-100 text-gray-600',
+  success: 'bg-brand/15 text-brand',
+  warning: 'bg-status-orange/15 text-status-orange',
+  danger:  'bg-status-red/15 text-status-red',
+  info:    'bg-status-blue/15 text-status-blue',
+  purple:  'bg-status-purple/15 text-status-purple',
+};
+
+const sizes = {
+  sm: 'text-2xs px-[0.375rem] py-[0.0625rem] rounded-[0.1875rem]',
+  md: 'text-xs  px-[0.5rem]  py-[0.125rem]  rounded-[0.25rem]',
+};
+
+export function Badge({ children, variant = 'default', size = 'md' }: BadgeProps) {
+  return (
+    <span className={`inline-flex items-center font-semibold ${variants[variant]} ${sizes[size]}`}>
+      {children}
+    </span>
+  );
+}
+```
+
+---
+
+## 7. `src/components/clientes/ClienteCard.tsx`
 
 ```typescript
 'use client';
 
 import React from 'react';
-import { Cliente, Estagio } from '@/lib/types';
-import { Icons } from './Icons';
+import Link from 'next/link';
+import {
+  MessageCircle, PauseCircle, ChevronRight,
+  Bell, ClipboardList, Settings2, TrendingUp, XCircle,
+} from 'lucide-react';
+import type { Cliente, Estagio } from '@/lib/types';
+import { FLUXO_OPERACIONAL, gerarLinkWhatsApp, WHATSAPP_TEMPLATES } from '@/lib/fluxo-operacional';
 
 interface ClienteCardProps {
-  cliente: Cliente;
-  estagio: Estagio | null;
-  onWhatsApp: (numero: string) => void;
+  cliente:    Cliente;
+  estagio:    Estagio | null;
   onCongelar: (clienteId: string) => void;
 }
 
-export function ClienteCard({
-  cliente,
-  estagio,
-  onWhatsApp,
-  onCongelar,
-}: ClienteCardProps) {
-  const statusConfig = {
-    recebido: { cor: 'bg-blue-500', label: '🔔 Recebido' },
-    onboarding: { cor: 'bg-yellow-500', label: '📋 Onboarding' },
-    setup_trafego: { cor: 'bg-purple-500', label: '⚙️ Setup Tráfego' },
-    ativo: { cor: 'bg-green-500', label: '✅ Ativo' },
-    congelado: { cor: 'bg-orange-500', label: '❄️ Congelado' },
-    cancelado: { cor: 'bg-red-500', label: '❌ Cancelado' },
-  };
+const ICONES_ESTAGIO = {
+  recebido:      Bell,
+  onboarding:    ClipboardList,
+  setup_trafego: Settings2,
+  ativo:         TrendingUp,
+  congelado:     PauseCircle,
+  cancelado:     XCircle,
+} as const;
 
-  const config = statusConfig[cliente.status as keyof typeof statusConfig] || {
-    cor: 'bg-gray-500',
-    label: cliente.status,
-  };
+const BADGE_CORES: Record<string, string> = {
+  recebido:           'bg-status-blue/15 text-status-blue',
+  onboarding:         'bg-status-purple/15 text-status-purple',
+  setup_trafego:      'bg-status-yellow/15 text-status-yellow',
+  ativo:              'bg-brand/15 text-brand',
+  congelado:          'bg-status-orange/15 text-status-orange',
+  cancelado:          'bg-status-red/15 text-status-red',
+  alerta_financeiro_7d:  'bg-status-orange/15 text-status-orange',
+};
+
+export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) {
+  const fluxoEtapa  = FLUXO_OPERACIONAL[cliente.status] ?? FLUXO_OPERACIONAL['ativo'];
+  const IconeStatus = ICONES_ESTAGIO[cliente.status as keyof typeof ICONES_ESTAGIO] ?? TrendingUp;
+  const badgeCor    = BADGE_CORES[cliente.status] ?? 'bg-surface-hover text-ink-secondary';
+
+  const templatesDisponiveis = fluxoEtapa.whatsapp_templates ?? [];
 
   return (
-    <div
-      className={`
-        dark:bg-dark-card bg-white rounded-lg p-6 border
-        dark:border-dark-border border-gray-200 hover:shadow-lg
-        transition-all duration-300 cursor-pointer
-      `}
-    >
-      {/* Header com Status */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <h3 className="dark:text-white text-gray-900 font-semibold text-xl mb-1">
+    <div className="
+      dark:bg-surface-card bg-white rounded-lg
+      dark:border dark:border-surface-border border border-gray-100
+      hover:dark:border-surface-border/70 hover:dark:bg-surface-hover
+      hover:border-gray-200 hover:shadow-sm
+      transition-all duration-150 flex flex-col
+      animate-fade-in
+    ">
+      {/* Header */}
+      <div className="flex items-start justify-between p-[1.25rem] pb-[0.875rem]">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-[0.5rem] mb-[0.25rem]">
+            <span className={`inline-flex items-center gap-[0.25rem] text-2xs font-semibold px-[0.375rem] py-[0.0625rem] rounded-[0.1875rem] ${badgeCor}`}>
+              <IconeStatus className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
+              {fluxoEtapa.label}
+            </span>
+          </div>
+          <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base truncate">
             {cliente.nome}
           </h3>
-          <p className="dark:text-gray-400 text-gray-600 text-sm">
-            {cliente.email}
+          <p className="dark:text-ink-muted text-gray-400 text-xs truncate">
+            {cliente.nicho}
           </p>
         </div>
-        <div className={`${config.cor} text-white px-3 py-1 rounded-md text-xs font-semibold`}>
-          {config.label}
-        </div>
+        <Link
+          href={`/clientes/${cliente.id}`}
+          className="shrink-0 w-[1.75rem] h-[1.75rem] flex items-center justify-center rounded dark:hover:bg-surface-hover hover:bg-gray-100 dark:text-ink-muted text-gray-400 transition-colors"
+        >
+          <ChevronRight className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+        </Link>
       </div>
 
-      {/* Nicho e Domínio */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div>
-          <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-1">
-            Nicho
-          </p>
-          <p className="dark:text-white text-gray-900 font-medium">
-            {cliente.nicho || 'A definir'}
-          </p>
-        </div>
-        <div>
-          <p className="dark:text-gray-500 text-gray-500 text-xs uppercase tracking-wide mb-1">
-            Domínio
-          </p>
-          <p className="dark:text-white text-gray-900 font-medium">
-            {cliente.dominio || '—'}
-          </p>
-        </div>
+      {/* Instrução / Próxima Ação */}
+      <div className="mx-[1.25rem] mb-[0.875rem] px-[0.75rem] py-[0.625rem] rounded dark:bg-brand/5 bg-green-50 border-l-2 border-brand">
+        <p className="text-2xs dark:text-ink-muted text-gray-500 font-semibold uppercase tracking-wide mb-[0.25rem]">
+          Próxima ação
+        </p>
+        <p className="text-xs dark:text-ink-secondary text-gray-700 leading-snug">
+          {estagio?.acao_proxima ?? fluxoEtapa.instrucao}
+        </p>
       </div>
 
-      {/* Ação Próxima */}
-      {estagio && (
-        <div className="dark:bg-dark-hover bg-gray-50 rounded-md p-4 mb-4 border-l-2 border-primary">
-          <p className="dark:text-gray-400 text-gray-600 text-xs uppercase tracking-wide mb-2">
-            Próxima Ação
-          </p>
-          <p className="dark:text-white text-gray-900 font-medium">
-            {estagio.acao_proxima}
-          </p>
+      {/* Botões WhatsApp */}
+      {templatesDisponiveis.length > 0 && (
+        <div className="px-[1.25rem] pb-[0.875rem] flex flex-wrap gap-[0.5rem]">
+          {templatesDisponiveis.map((tag) => (
+            <a
+              key={tag}
+              href={gerarLinkWhatsApp(tag, cliente.whatsapp)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="
+                inline-flex items-center gap-[0.375rem]
+                dark:bg-brand/10 dark:hover:bg-brand/20 dark:text-brand
+                bg-green-50 hover:bg-green-100 text-green-700
+                text-xs font-semibold px-[0.625rem] py-[0.375rem] rounded
+                transition-colors
+              "
+            >
+              <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
+              {WHATSAPP_TEMPLATES[tag]?.titulo ?? tag}
+            </a>
+          ))}
         </div>
       )}
 
-      {/* Botões de Ação */}
-      <div className="flex gap-3">
-        <button
-          onClick={() => onWhatsApp(cliente.whatsapp)}
-          className={`
-            flex-1 flex items-center justify-center gap-2
-            dark:bg-primary bg-green-500 dark:hover:bg-primary-dark hover:bg-green-600
-            dark:text-white text-white rounded-md py-2 px-4
-            transition-colors font-medium text-sm
-          `}
+      {/* Rodapé: ações secundárias */}
+      <div className="px-[1.25rem] pb-[1rem] pt-[0.25rem] flex items-center gap-[0.5rem] border-t dark:border-surface-border border-gray-50 mt-auto">
+        <a
+          href={`https://wa.me/55${cliente.whatsapp.replace(/\D/g, '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="
+            flex-1 flex items-center justify-center gap-[0.375rem]
+            dark:bg-surface-hover dark:hover:bg-surface-border dark:text-ink-secondary
+            bg-gray-50 hover:bg-gray-100 text-gray-600
+            text-xs font-medium h-[2rem] rounded transition-colors
+          "
         >
-          <Icons.MessageCircle className="w-4 h-4" strokeWidth={2} />
+          <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
           WhatsApp
-        </button>
+        </a>
 
-        {estagio?.pendente_cliente && (
+        {cliente.status !== 'congelado' && cliente.status !== 'cancelado' && (
           <button
             onClick={() => onCongelar(cliente.id)}
-            className={`
-              flex items-center justify-center gap-2
-              dark:bg-orange-500/20 bg-orange-50
-              dark:text-orange-400 text-orange-600 rounded-md py-2 px-4
-              hover:dark:bg-orange-500/30 hover:bg-orange-100
-              transition-colors font-medium text-sm
-            `}
+            className="
+              flex items-center justify-center gap-[0.375rem]
+              dark:bg-status-orange/10 dark:hover:bg-status-orange/20 dark:text-status-orange
+              bg-orange-50 hover:bg-orange-100 text-orange-600
+              text-xs font-medium h-[2rem] px-[0.75rem] rounded transition-colors
+            "
+            title="Mover para Retidos"
           >
-            <Icons.Clock className="w-4 h-4" strokeWidth={2} />
-            Descongelar
+            <PauseCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
+            Reter
           </button>
         )}
       </div>
@@ -507,203 +680,592 @@ export function ClienteCard({
 
 ---
 
-## 7. COMPONENTE: Dashboard Home (Página Principal)
+## 8. `src/components/clientes/OnboardChecklist.tsx`
 
 ```typescript
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Cliente, Estagio } from '@/lib/types';
-import { listarClientes, obterEstagioAtivo, congelarCliente } from '@/lib/database';
-import { ClienteCard } from '@/components/ClienteCard';
-import { MainLayout } from '@/components/MainLayout';
+import { Check } from 'lucide-react';
+import { FLUXO_OPERACIONAL } from '@/lib/fluxo-operacional';
+import { obterProgressoOnboard, salvarProgressoOnboard } from '@/lib/database';
 
-export default function DashboardHome() {
-  const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [estagios, setEstagios] = useState<Map<string, Estagio | null>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [filtroStatus, setFiltroStatus] = useState<string | null>(null);
+interface OnboardChecklistProps {
+  clienteId: string;
+  estagio:   string;
+}
+
+export function OnboardChecklist({ clienteId, estagio }: OnboardChecklistProps) {
+  const [progresso,  setProgresso]  = useState<Record<string, boolean>>({});
+  const [salvando,   setSalvando]   = useState(false);
+
+  const etapa = FLUXO_OPERACIONAL[estagio];
+  const itens = etapa?.checklist ?? [];
 
   useEffect(() => {
-    carregarClientes();
-  }, []);
+    obterProgressoOnboard(clienteId).then(setProgresso).catch(console.error);
+  }, [clienteId]);
 
-  async function carregarClientes() {
+  async function toggleItem(itemId: string) {
+    const novoProgresso = { ...progresso, [itemId]: !progresso[itemId] };
+    setProgresso(novoProgresso);
+    setSalvando(true);
     try {
-      setLoading(true);
-      const dados = await listarClientes(
-        filtroStatus ? { status: filtroStatus } : undefined
-      );
-
-      setClientes(dados);
-
-      // Buscar estagios ativos para cada cliente
-      const estagiosMap = new Map<string, Estagio | null>();
-      for (const cliente of dados) {
-        const estagio = await obterEstagioAtivo(cliente.id);
-        estagiosMap.set(cliente.id, estagio);
-      }
-      setEstagios(estagiosMap);
-    } catch (error) {
-      console.error('Erro ao carregar clientes:', error);
+      await salvarProgressoOnboard(clienteId, novoProgresso);
+    } catch (err) {
+      console.error(err);
     } finally {
-      setLoading(false);
+      setSalvando(false);
     }
   }
 
-  const handleWhatsApp = (numero: string) => {
-    const numerolimpo = numero.replace(/\D/g, '');
-    const url = `https://wa.me/${numerolimpo}`;
-    window.open(url, '_blank');
-  };
+  if (itens.length === 0) return null;
 
-  const handleCongelarCliente = async (clienteId: string) => {
-    try {
-      await congelarCliente(clienteId, 2);
-      carregarClientes();
-    } catch (error) {
-      console.error('Erro ao congelar cliente:', error);
-    }
-  };
-
-  const clientesAtivos = clientes.filter((c) => c.status !== 'congelado' && c.status !== 'cancelado');
-  const clientesPendentes = clientes.filter((c) => c.status === 'congelado');
+  const concluidos = itens.filter((i) => progresso[i.id]).length;
+  const percentual = Math.round((concluidos / itens.length) * 100);
 
   return (
-    <MainLayout>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="dark:text-white text-gray-900 text-4xl font-bold mb-2">
-            Dashboard Operacional
-          </h1>
-          <p className="dark:text-gray-400 text-gray-600">
-            Controle total da sua agência em um único lugar
-          </p>
+    <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+      <div className="flex items-center justify-between mb-[1rem]">
+        <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">
+          Checklist de {etapa?.label}
+        </h3>
+        <div className="flex items-center gap-[0.5rem]">
+          {salvando && (
+            <span className="text-2xs dark:text-ink-muted text-gray-400">Salvando…</span>
+          )}
+          <span className="text-xs dark:text-ink-secondary text-gray-600 font-medium">
+            {concluidos}/{itens.length}
+          </span>
         </div>
+      </div>
 
-        {/* KPIs Rápidos */}
-        <div className="grid grid-cols-4 gap-6 mb-12">
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <p className="dark:text-gray-400 text-gray-600 text-sm uppercase mb-2">
-              Total de Clientes
-            </p>
-            <p className="dark:text-white text-gray-900 text-3xl font-bold">
-              {clientes.length}
-            </p>
-          </div>
+      {/* Barra de progresso */}
+      <div className="h-[0.25rem] dark:bg-surface-hover bg-gray-100 rounded-full mb-[1rem] overflow-hidden">
+        <div
+          className="h-full bg-brand rounded-full transition-all duration-300"
+          style={{ width: `${percentual}%` }}
+        />
+      </div>
 
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <p className="dark:text-gray-400 text-gray-600 text-sm uppercase mb-2">
-              Ativos
-            </p>
-            <p className="dark:text-white text-gray-900 text-3xl font-bold text-green-500">
-              {clientesAtivos.length}
-            </p>
-          </div>
-
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <p className="dark:text-gray-400 text-gray-600 text-sm uppercase mb-2">
-              Congelados
-            </p>
-            <p className="dark:text-white text-gray-900 text-3xl font-bold text-orange-500">
-              {clientesPendentes.length}
-            </p>
-          </div>
-
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200">
-            <p className="dark:text-gray-400 text-gray-600 text-sm uppercase mb-2">
-              Taxa de Retencao
-            </p>
-            <p className="dark:text-white text-gray-900 text-3xl font-bold">
-              {((clientesAtivos.length / clientes.length) * 100).toFixed(0)}%
-            </p>
-          </div>
-        </div>
-
-        {/* Filtros */}
-        <div className="mb-8 flex gap-4">
-          <button
-            onClick={() => {
-              setFiltroStatus(null);
-              carregarClientes();
-            }}
-            className={`
-              px-4 py-2 rounded-md font-medium transition-colors text-sm
-              ${
-                filtroStatus === null
-                  ? 'dark:bg-primary bg-green-500 dark:text-white text-white'
-                  : 'dark:bg-dark-hover bg-gray-100 dark:text-gray-300 text-gray-700 hover:dark:bg-dark-border'
-              }
-            `}
-          >
-            Todos
-          </button>
-          {['recebido', 'onboarding', 'setup_trafego', 'ativo'].map((status) => (
+      {/* Itens */}
+      <div className="flex flex-col gap-[0.375rem]">
+        {itens.map((item) => {
+          const feito = progresso[item.id] ?? false;
+          return (
             <button
-              key={status}
-              onClick={() => setFiltroStatus(status)}
+              key={item.id}
+              onClick={() => toggleItem(item.id)}
               className={`
-                px-4 py-2 rounded-md font-medium transition-colors text-sm
-                ${
-                  filtroStatus === status
-                    ? 'dark:bg-primary bg-green-500 dark:text-white text-white'
-                    : 'dark:bg-dark-hover bg-gray-100 dark:text-gray-300 text-gray-700 hover:dark:bg-dark-border'
+                flex items-start gap-[0.75rem] p-[0.75rem] rounded text-left
+                transition-colors
+                ${feito
+                  ? 'dark:bg-brand/8 bg-green-50 dark:border dark:border-brand/20 border border-green-100'
+                  : 'dark:hover:bg-surface-hover hover:bg-gray-50 dark:border dark:border-surface-border border border-gray-50'
                 }
               `}
             >
-              {status.replace('_', ' ').toUpperCase()}
+              <div className={`
+                shrink-0 w-[1.125rem] h-[1.125rem] rounded-[0.25rem] border flex items-center justify-center mt-[0.0625rem]
+                transition-all
+                ${feito
+                  ? 'bg-brand border-brand'
+                  : 'dark:border-surface-border border-gray-300 dark:bg-surface-hover bg-white'
+                }
+              `}>
+                {feito && <Check className="w-[0.625rem] h-[0.625rem] text-white" strokeWidth={3} />}
+              </div>
+              <span className={`text-sm leading-snug ${feito ? 'dark:text-ink-muted text-gray-400 line-through' : 'dark:text-ink-secondary text-gray-700'}`}>
+                {item.texto}
+              </span>
             </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## 9. `src/app/(app)/dashboard/page.tsx` — Central Operacional
+
+```typescript
+'use client';
+
+import React, { useEffect, useState, useCallback } from 'react';
+import { AlertCircle, Users, CheckCircle, PauseCircle } from 'lucide-react';
+import type { Cliente, Estagio } from '@/lib/types';
+import { listarClientes, obterEstagioAtivo, congelarCliente } from '@/lib/database';
+import { ClienteCard } from '@/components/clientes/ClienteCard';
+import { MainLayout } from '@/components/layout/MainLayout';
+
+type ClienteComEstagio = { cliente: Cliente; estagio: Estagio | null };
+
+const FILTROS = [
+  { key: null,           label: 'Todos'         },
+  { key: 'recebido',     label: 'Recebidos'     },
+  { key: 'onboarding',   label: 'Onboarding'    },
+  { key: 'setup_trafego',label: 'Setup Tráfego' },
+  { key: 'ativo',        label: 'Ativos'        },
+] as const;
+
+export default function DashboardPage() {
+  const [dados,    setDados]    = useState<ClienteComEstagio[]>([]);
+  const [loading,  setLoading]  = useState(true);
+  const [filtro,   setFiltro]   = useState<string | null>(null);
+
+  const carregarDados = useCallback(async () => {
+    setLoading(true);
+    try {
+      const clientes = await listarClientes();
+      const comEstagio = await Promise.all(
+        clientes.map(async (c) => ({
+          cliente: c,
+          estagio: await obterEstagioAtivo(c.id).catch(() => null),
+        }))
+      );
+      setDados(comEstagio);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { carregarDados(); }, [carregarDados]);
+
+  async function handleCongelar(clienteId: string) {
+    await congelarCliente(clienteId).catch(console.error);
+    carregarDados();
+  }
+
+  // Separar clientes por seção
+  const retidos  = dados.filter((d) => d.cliente.status === 'congelado');
+  const ativos   = dados.filter((d) => d.cliente.status !== 'congelado' && d.cliente.status !== 'cancelado');
+  const filtrados = filtro ? ativos.filter((d) => d.cliente.status === filtro) : ativos;
+
+  // KPIs
+  const totalAtivos    = dados.filter((d) => d.cliente.status === 'ativo').length;
+  const totalRetidos   = retidos.length;
+  const totalRecebidos = dados.filter((d) => d.cliente.status === 'recebido').length;
+  const totalGeral     = dados.length;
+
+  // Taxa de retenção (evita divisão por zero)
+  const taxaRetencao = totalGeral > 0
+    ? Math.round((totalAtivos / totalGeral) * 100)
+    : 0;
+
+  return (
+    <MainLayout>
+      {/* Header */}
+      <div className="mb-[2rem]">
+        <h1 className="dark:text-ink-primary text-gray-900 text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
+          Central Operacional
+        </h1>
+        <p className="dark:text-ink-secondary text-gray-500 text-sm">
+          Cada cliente tem uma ação clara. Siga o fluxo.
+        </p>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem] mb-[2rem]">
+        {[
+          { label: 'Total de Clientes',   valor: totalGeral,     cor: 'dark:text-ink-primary text-gray-900'   },
+          { label: 'Ativos',              valor: totalAtivos,    cor: 'text-brand'                             },
+          { label: 'Retidos',             valor: totalRetidos,   cor: 'text-status-orange'                     },
+          { label: 'Taxa de Retenção',    valor: `${taxaRetencao}%`, cor: 'dark:text-ink-primary text-gray-900' },
+        ].map((kpi) => (
+          <div
+            key={kpi.label}
+            className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.25rem] py-[1rem]"
+          >
+            <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.375rem]">
+              {kpi.label}
+            </p>
+            <p className={`text-[1.75rem] font-bold leading-none ${kpi.cor}`}>
+              {kpi.valor}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Alerta: clientes recebidos precisam de ação imediata */}
+      {totalRecebidos > 0 && (
+        <div className="mb-[1.5rem] flex items-start gap-[0.75rem] dark:bg-status-blue/8 bg-blue-50 border dark:border-status-blue/20 border-blue-100 rounded-lg px-[1rem] py-[0.875rem]">
+          <AlertCircle className="shrink-0 w-[1rem] h-[1rem] text-status-blue mt-[0.0625rem]" strokeWidth={2} />
+          <p className="text-sm dark:text-status-blue text-blue-700 font-medium">
+            {totalRecebidos} cliente{totalRecebidos > 1 ? 's' : ''} aguardando ação imediata — envie o #BOASVINDAS agora.
+          </p>
+        </div>
+      )}
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-[0.375rem] mb-[1.5rem]">
+        {FILTROS.map(({ key, label }) => (
+          <button
+            key={String(key)}
+            onClick={() => setFiltro(key)}
+            className={`
+              text-xs font-semibold px-[0.75rem] h-[1.75rem] rounded-[0.25rem] transition-colors
+              ${filtro === key
+                ? 'dark:bg-brand/15 dark:text-brand bg-green-100 text-green-700'
+                : 'dark:bg-surface-hover dark:text-ink-secondary dark:hover:text-ink-primary bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-800'
+              }
+            `}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Grid de clientes ativos */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1rem]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 h-[14rem] animate-pulse" />
           ))}
         </div>
+      ) : filtrados.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-[4rem] dark:text-ink-muted text-gray-400">
+          <CheckCircle className="w-[3rem] h-[3rem] mb-[1rem]" strokeWidth={1} />
+          <p className="text-base font-medium">Nenhum cliente nesta categoria</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1rem] mb-[3rem]">
+          {filtrados.map(({ cliente, estagio }) => (
+            <ClienteCard
+              key={cliente.id}
+              cliente={cliente}
+              estagio={estagio}
+              onCongelar={handleCongelar}
+            />
+          ))}
+        </div>
+      )}
 
-        {/* Lista de Clientes */}
-        {loading ? (
-          <div className="text-center py-12">
-            <p className="dark:text-gray-400 text-gray-600">Carregando clientes...</p>
-          </div>
-        ) : clientesAtivos.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="dark:text-gray-400 text-gray-600">Nenhum cliente encontrado</p>
-          </div>
-        ) : (
-          <>
-            <h2 className="dark:text-white text-gray-900 text-2xl font-bold mb-6">
-              {filtroStatus ? `${filtroStatus.toUpperCase()} (${clientesAtivos.length})` : 'Clientes Ativos'}
+      {/* Seção: Clientes Retidos */}
+      {retidos.length > 0 && (
+        <section>
+          <div className="flex items-center gap-[0.5rem] mb-[1rem]">
+            <PauseCircle className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={2} />
+            <h2 className="dark:text-ink-primary text-gray-800 font-semibold text-base">
+              Clientes Retidos ({retidos.length})
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {clientesAtivos.map((cliente) => (
-                <ClienteCard
-                  key={cliente.id}
-                  cliente={cliente}
-                  estagio={estagios.get(cliente.id) || null}
-                  onWhatsApp={handleWhatsApp}
-                  onCongelar={handleCongelarCliente}
-                />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1rem]">
+            {retidos.map(({ cliente, estagio }) => (
+              <ClienteCard
+                key={cliente.id}
+                cliente={cliente}
+                estagio={estagio}
+                onCongelar={handleCongelar}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </MainLayout>
+  );
+}
+```
+
+---
+
+## 10. `src/app/(app)/clientes/[id]/page.tsx` — Perfil Completo do Cliente
+
+```typescript
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  ArrowLeft, MessageCircle, ExternalLink,
+  Clock, CheckCircle, ChevronRight,
+} from 'lucide-react';
+import type { Cliente, Estagio, HistoricoAcao, Assinatura } from '@/lib/types';
+import {
+  obterCliente, obterEstagioAtivo, obterHistoricoCliente,
+  obterAssinaturaCliente, avancarEstagio, descongelarCliente,
+} from '@/lib/database';
+import { FLUXO_OPERACIONAL, ORDEM_ESTAGIOS, gerarLinkWhatsApp, WHATSAPP_TEMPLATES } from '@/lib/fluxo-operacional';
+import { OnboardChecklist } from '@/components/clientes/OnboardChecklist';
+import { MainLayout } from '@/components/layout/MainLayout';
+
+export default function ClienteDetalhe() {
+  const { id }  = useParams<{ id: string }>();
+  const router  = useRouter();
+
+  const [cliente,    setCliente]    = useState<Cliente | null>(null);
+  const [estagio,    setEstagio]    = useState<Estagio | null>(null);
+  const [historico,  setHistorico]  = useState<HistoricoAcao[]>([]);
+  const [assinatura, setAssinatura] = useState<Assinatura | null>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [avancando,  setAvancando]  = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      obterCliente(id),
+      obterEstagioAtivo(id),
+      obterHistoricoCliente(id),
+      obterAssinaturaCliente(id),
+    ]).then(([c, e, h, a]) => {
+      setCliente(c);
+      setEstagio(e);
+      setHistorico(h);
+      setAssinatura(a);
+    }).catch(console.error).finally(() => setLoading(false));
+  }, [id]);
+
+  async function handleAvancar() {
+    if (!cliente) return;
+    const etapa = FLUXO_OPERACIONAL[cliente.status];
+    if (!etapa?.proximo_estagio) return;
+
+    const proximo = FLUXO_OPERACIONAL[etapa.proximo_estagio];
+    if (!proximo) return;
+
+    setAvancando(true);
+    try {
+      await avancarEstagio(id, etapa.proximo_estagio, proximo.instrucao);
+      // Recarregar dados
+      const [c, e, h] = await Promise.all([
+        obterCliente(id), obterEstagioAtivo(id), obterHistoricoCliente(id),
+      ]);
+      setCliente(c); setEstagio(e); setHistorico(h);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAvancando(false);
+    }
+  }
+
+  if (loading || !cliente) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-[20rem]">
+          <div className="w-[1.5rem] h-[1.5rem] border-2 border-brand border-t-transparent rounded-full animate-spin" />
+        </div>
+      </MainLayout>
+    );
+  }
+
+  const etapaAtual  = FLUXO_OPERACIONAL[cliente.status];
+  const indiceAtual = ORDEM_ESTAGIOS.indexOf(cliente.status as typeof ORDEM_ESTAGIOS[number]);
+  const templates   = etapaAtual?.whatsapp_templates ?? [];
+
+  function formatarData(iso: string) {
+    return new Date(iso).toLocaleString('pt-BR', {
+      day: '2-digit', month: 'short', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  return (
+    <MainLayout>
+      {/* Back */}
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-[0.375rem] dark:text-ink-muted text-gray-400 hover:dark:text-ink-secondary hover:text-gray-600 text-sm mb-[1.5rem] transition-colors"
+      >
+        <ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+        Voltar
+      </button>
+
+      {/* Header do cliente */}
+      <div className="flex items-start justify-between mb-[2rem]">
+        <div>
+          <h1 className="dark:text-ink-primary text-gray-900 text-[1.75rem] font-bold mb-[0.25rem]">
+            {cliente.nome}
+          </h1>
+          <p className="dark:text-ink-secondary text-gray-500 text-sm">{cliente.email}</p>
+          {cliente.dominio && (
+            <a
+              href={`https://${cliente.dominio}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-[0.25rem] text-xs dark:text-brand text-green-600 mt-[0.25rem] hover:underline"
+            >
+              {cliente.dominio}
+              <ExternalLink className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.5} />
+            </a>
+          )}
+        </div>
+
+        {/* Barra de progresso do fluxo */}
+        <div className="hidden md:flex items-center gap-[0.25rem]">
+          {ORDEM_ESTAGIOS.map((s, idx) => {
+            const etapa = FLUXO_OPERACIONAL[s];
+            const passado = idx < indiceAtual;
+            const atual   = idx === indiceAtual;
+            return (
+              <React.Fragment key={s}>
+                <div className={`
+                  flex items-center gap-[0.25rem] text-xs font-medium px-[0.625rem] h-[1.75rem] rounded-[0.25rem]
+                  ${passado ? 'dark:bg-brand/15 dark:text-brand bg-green-50 text-green-700' : ''}
+                  ${atual   ? 'dark:bg-brand dark:text-white bg-green-600 text-white' : ''}
+                  ${!passado && !atual ? 'dark:bg-surface-hover dark:text-ink-muted bg-gray-100 text-gray-400' : ''}
+                `}>
+                  {passado && <CheckCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}
+                  {etapa?.label}
+                </div>
+                {idx < ORDEM_ESTAGIOS.length - 1 && (
+                  <ChevronRight className="w-[0.75rem] h-[0.75rem] dark:text-ink-muted text-gray-300 shrink-0" strokeWidth={1.5} />
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1.5rem]">
+        {/* Coluna principal */}
+        <div className="lg:col-span-2 flex flex-col gap-[1.5rem]">
+
+          {/* Card de instrução */}
+          {etapaAtual && (
+            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+              <h2 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[0.75rem]">
+                {etapaAtual.instrucao.startsWith('◆') ? etapaAtual.instrucao : `▶ ${etapaAtual.instrucao}`}
+              </h2>
+
+              {/* Templates WhatsApp */}
+              {templates.length > 0 && (
+                <div className="flex flex-wrap gap-[0.625rem] mb-[1rem]">
+                  {templates.map((tag) => (
+                    <a
+                      key={tag}
+                      href={gerarLinkWhatsApp(tag, cliente.whatsapp)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="
+                        inline-flex items-center gap-[0.5rem]
+                        dark:bg-brand/12 dark:hover:bg-brand/20 dark:text-brand dark:border dark:border-brand/20
+                        bg-green-50 hover:bg-green-100 text-green-700 border border-green-200
+                        text-sm font-semibold px-[0.875rem] h-[2.25rem] rounded transition-colors
+                      "
+                    >
+                      <MessageCircle className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+                      {WHATSAPP_TEMPLATES[tag]?.titulo ?? tag}
+                      <span className="text-2xs font-normal opacity-60">{tag}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {/* Botão de avanço de estágio */}
+              {etapaAtual.proximo_estagio && (
+                <button
+                  onClick={handleAvancar}
+                  disabled={avancando}
+                  className="
+                    flex items-center gap-[0.5rem]
+                    dark:bg-brand dark:hover:bg-brand-dark dark:text-white
+                    bg-green-600 hover:bg-green-700 text-white
+                    text-sm font-semibold px-[1rem] h-[2.25rem] rounded transition-colors
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                  "
+                >
+                  {avancando ? (
+                    <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-[1rem] h-[1rem]" strokeWidth={2} />
+                  )}
+                  {etapaAtual.proxima_acao_label}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Checklist (só para onboarding e setup_trafego) */}
+          {['onboarding','setup_trafego'].includes(cliente.status) && (
+            <OnboardChecklist clienteId={cliente.id} estagio={cliente.status} />
+          )}
+
+          {/* Histórico de ações */}
+          <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+            <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1rem]">
+              Histórico de Ações
+            </h3>
+            {historico.length === 0 ? (
+              <p className="dark:text-ink-muted text-gray-400 text-sm">Nenhuma ação registrada ainda.</p>
+            ) : (
+              <div className="relative">
+                {/* Linha do tempo */}
+                <div className="absolute left-[0.5rem] top-0 bottom-0 w-[0.0625rem] dark:bg-surface-border bg-gray-100" />
+                <div className="flex flex-col gap-[1rem] pl-[1.75rem]">
+                  {historico.map((acao) => (
+                    <div key={acao.id} className="relative">
+                      <div className="absolute left-[-1.25rem] top-[0.3125rem] w-[0.5rem] h-[0.5rem] rounded-full dark:bg-surface-border bg-gray-200 border-2 dark:border-surface-bg border-white" />
+                      <p className="dark:text-ink-secondary text-gray-700 text-sm leading-snug">
+                        {acao.descricao}
+                      </p>
+                      <p className="dark:text-ink-muted text-gray-400 text-xs mt-[0.125rem]">
+                        {formatarData(acao.data_acao)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Coluna lateral: informações */}
+        <div className="flex flex-col gap-[1rem]">
+          {/* Dados do cliente */}
+          <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem]">
+            <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-sm mb-[1rem]">
+              Informações
+            </h3>
+            <div className="flex flex-col gap-[0.875rem]">
+              {[
+                { label: 'Nicho',    valor: cliente.nicho              },
+                { label: 'WhatsApp', valor: cliente.whatsapp           },
+                { label: 'Domínio',  valor: cliente.dominio ?? '—'     },
+                { label: 'Google Ads ID', valor: cliente.google_ads_customer_id ?? 'Não configurado' },
+                { label: 'GA4 ID',        valor: cliente.ga4_property_id          ?? 'Não configurado' },
+              ].map(({ label, valor }) => (
+                <div key={label}>
+                  <p className="dark:text-ink-muted text-gray-400 text-2xs uppercase tracking-wide font-semibold mb-[0.125rem]">
+                    {label}
+                  </p>
+                  <p className="dark:text-ink-secondary text-gray-700 text-sm break-all">
+                    {valor}
+                  </p>
+                </div>
               ))}
             </div>
-          </>
-        )}
+          </div>
 
-        {/* Clientes Retidos */}
-        {clientesPendentes.length > 0 && (
-          <>
-            <h2 className="dark:text-white text-gray-900 text-2xl font-bold mb-6 mt-12">
-              Clientes Retidos ({clientesPendentes.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {clientesPendentes.map((cliente) => (
-                <ClienteCard
-                  key={cliente.id}
-                  cliente={cliente}
-                  estagio={estagios.get(cliente.id) || null}
-                  onWhatsApp={handleWhatsApp}
-                  onCongelar={handleCongelarCliente}
-                />
-              ))}
+          {/* Assinatura */}
+          {assinatura && (
+            <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem]">
+              <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-sm mb-[1rem]">
+                Assinatura
+              </h3>
+              <div className="flex flex-col gap-[0.75rem]">
+                <div>
+                  <p className="dark:text-ink-muted text-gray-400 text-2xs uppercase tracking-wide font-semibold mb-[0.125rem]">Plano</p>
+                  <p className="dark:text-ink-secondary text-gray-700 text-sm">{assinatura.plano_nome}</p>
+                </div>
+                <div>
+                  <p className="dark:text-ink-muted text-gray-400 text-2xs uppercase tracking-wide font-semibold mb-[0.125rem]">Valor Mensal</p>
+                  <p className="dark:text-ink-primary text-gray-900 text-lg font-bold">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(assinatura.valor_mensal)}
+                  </p>
+                </div>
+                {assinatura.dias_atraso > 0 && (
+                  <div className="flex items-center gap-[0.375rem] dark:bg-status-red/10 bg-red-50 dark:text-status-red text-red-700 text-xs font-semibold px-[0.625rem] py-[0.375rem] rounded">
+                    <Clock className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                    {assinatura.dias_atraso} dias de atraso
+                  </div>
+                )}
+              </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </MainLayout>
   );
@@ -712,124 +1274,178 @@ export default function DashboardHome() {
 
 ---
 
-## 8. COMPONENTE: Automação WhatsApp (Templates)
+## 11. `src/app/(app)/clientes/novo/page.tsx` — Formulário de Novo Cliente
 
 ```typescript
 'use client';
 
-const WHATSAPP_TEMPLATES = {
-  '#BOASVINDAS': {
-    titulo: 'Boas-vindas',
-    mensagem: `Olá! 👋
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft } from 'lucide-react';
+import { criarCliente, criarAssinatura } from '@/lib/database';
+import { MainLayout } from '@/components/layout/MainLayout';
 
-Bem-vindo ao Adsgator! 🚀
+const NICHOS_SUGERIDOS = [
+  'Psicologia', 'Odontologia', 'Estética', 'Advocacia', 'Medicina',
+  'Fisioterapia', 'Nutrição', 'Academia', 'Imóveis', 'Adestramento',
+  'Educação', 'Contabilidade', 'Engenharia', 'Outro',
+];
 
-Estamos muito felizes em tê-lo conosco. Prepare-se para transformar seu tráfego digital em resultados reais.
+export default function NovoClientePage() {
+  const router = useRouter();
+  const [form, setForm] = useState({
+    nome: '', email: '', whatsapp: '',
+    dominio: '', nicho: '', plano_nome: '', valor_mensal: '',
+  });
+  const [salvando, setSalvando] = useState(false);
+  const [erro,     setErro]     = useState('');
 
-Nosso time está pronto para levar seu negócio para o próximo nível.
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
 
-Vamos marcar uma call para alinhamento inicial? Nosso horário disponível é:
-- Amanhã às 10:00
-- Amanhã às 14:00
-- Depois de amanhã às 09:00
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErro('');
+    setSalvando(true);
+    try {
+      const novoCliente = await criarCliente({
+        nome:     form.nome.trim(),
+        email:    form.email.trim().toLowerCase(),
+        whatsapp: form.whatsapp.replace(/\D/g, ''),
+        dominio:  form.dominio.trim() || null,
+        nicho:    form.nicho.trim(),
+        status:   'recebido',
+        google_ads_customer_id: null,
+        ga4_property_id:        null,
+        cor_tema:               '#10b981',
+        notas_internas:         null,
+        metadata:               {},
+        data_criacao:           '',
+        data_atualizacao:       '',
+      } as any);
 
-Qual funciona melhor para você? ✨`,
-  },
+      if (form.plano_nome && form.valor_mensal) {
+        await criarAssinatura({
+          cliente_id:  novoCliente.id,
+          plano_nome:  form.plano_nome.trim(),
+          valor_mensal: parseFloat(form.valor_mensal),
+        });
+      }
 
-  '#CONVITE': {
-    titulo: 'Convite para Call',
-    mensagem: `Oi! 👋
+      router.push('/dashboard');
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Erro ao criar cliente');
+    } finally {
+      setSalvando(false);
+    }
+  }
 
-Gostaria de marcar nossa call inicial para estruturar sua estratégia de tráfego?
+  const inputClass = `
+    w-full h-[2.5rem] px-[0.75rem] rounded
+    dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary dark:placeholder-ink-muted
+    bg-white border border-gray-200 text-gray-900 placeholder-gray-400
+    focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
+    text-sm transition-colors
+  `;
 
-📅 Disponibilidades:
-- 🕙 10:00 - 12:00
-- 🕐 14:00 - 16:00
-- 🕕 16:00 - 18:00
+  const labelClass = 'block dark:text-ink-secondary text-gray-700 text-sm font-medium mb-[0.375rem]';
 
-Qual horário você prefere?
+  return (
+    <MainLayout>
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-[0.375rem] dark:text-ink-muted text-gray-400 hover:dark:text-ink-secondary hover:text-gray-600 text-sm mb-[1.5rem] transition-colors"
+      >
+        <ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+        Voltar
+      </button>
 
-Senha da call: [ADICIONAR_ZOOM_LINK]`,
-  },
+      <div className="max-w-[40rem]">
+        <h1 className="dark:text-ink-primary text-gray-900 text-[1.5rem] font-bold mb-[0.25rem]">Novo Cliente</h1>
+        <p className="dark:text-ink-secondary text-gray-500 text-sm mb-[2rem]">
+          Preencha os dados básicos. O cliente entrará automaticamente no fluxo operacional.
+        </p>
 
-  '#BRIEFINGGA': {
-    titulo: 'Solicitação de Briefing',
-    mensagem: `Oi! 📋
+        {erro && (
+          <div className="mb-[1.5rem] dark:bg-status-red/10 bg-red-50 border dark:border-status-red/20 border-red-200 rounded px-[1rem] py-[0.75rem]">
+            <p className="text-sm dark:text-status-red text-red-700">{erro}</p>
+          </div>
+        )}
 
-Para montar sua estratégia de Google Ads com precisão, preciso de algumas informações:
+        <form onSubmit={handleSubmit} className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem] flex flex-col gap-[1.25rem]">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[1.25rem]">
+            <div>
+              <label className={labelClass}>Nome completo *</label>
+              <input name="nome" value={form.nome} onChange={handleChange} required className={inputClass} placeholder="Ex.: Ana Paula Santos" />
+            </div>
+            <div>
+              <label className={labelClass}>WhatsApp *</label>
+              <input name="whatsapp" value={form.whatsapp} onChange={handleChange} required className={inputClass} placeholder="11999998888" />
+            </div>
+          </div>
 
-✅ Principais produtos/serviços
-✅ Ticket médio
-✅ Localização de atuação
-✅ Público-alvo principal
-✅ Objetivos para os próximos 90 dias
+          <div>
+            <label className={labelClass}>E-mail *</label>
+            <input name="email" type="email" value={form.email} onChange={handleChange} required className={inputClass} placeholder="cliente@email.com" />
+          </div>
 
-Poderia compartilhar isso por aqui ou prefere que agende uma chamada rápida?
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-[1.25rem]">
+            <div>
+              <label className={labelClass}>Nicho *</label>
+              <select name="nicho" value={form.nicho} onChange={handleChange} required className={inputClass + ' cursor-pointer'}>
+                <option value="">Selecione…</option>
+                {NICHOS_SUGERIDOS.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Domínio</label>
+              <input name="dominio" value={form.dominio} onChange={handleChange} className={inputClass} placeholder="meusite.com.br" />
+            </div>
+          </div>
 
-Obrigado! 🙏`,
-  },
+          <div className="border-t dark:border-surface-border border-gray-100 pt-[1.25rem]">
+            <p className="text-xs dark:text-ink-muted text-gray-400 font-semibold uppercase tracking-wide mb-[1rem]">
+              Assinatura (opcional)
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-[1.25rem]">
+              <div>
+                <label className={labelClass}>Nome do Plano</label>
+                <input name="plano_nome" value={form.plano_nome} onChange={handleChange} className={inputClass} placeholder="Ex.: Plano Starter" />
+              </div>
+              <div>
+                <label className={labelClass}>Valor Mensal (R$)</label>
+                <input name="valor_mensal" type="number" min="0" step="0.01" value={form.valor_mensal} onChange={handleChange} className={inputClass} placeholder="0,00" />
+              </div>
+            </div>
+          </div>
 
-  '#SALDOGOOGLE': {
-    titulo: 'Alerta de Saldo Google Ads',
-    mensagem: `⚠️ ATENÇÃO
-
-Seu saldo em campanhas no Google Ads está baixo!
-
-Saldo atual: R$ XX,XX
-Limite crítico: R$ 50,00
-
-Por favor, realize uma recarga para evitar interrupção de campanhas.
-
-Link para recarga: [GOOGLE_ADS_LINK]
-
-Qualquer dúvida, pode chamar! 💬`,
-  },
-};
-
-export function gerarLinkWhatsApp(template: keyof typeof WHATSAPP_TEMPLATES, numero: string): string {
-  const msg = WHATSAPP_TEMPLATES[template]?.mensagem || '';
-  const numerolimpo = numero.replace(/\D/g, '');
-  const mensagemCodificada = encodeURIComponent(msg);
-  return `https://wa.me/${numerolimpo}?text=${mensagemCodificada}`;
-}
-
-export function obterTemplates() {
-  return Object.entries(WHATSAPP_TEMPLATES).map(([key, value]) => ({
-    tag: key,
-    ...value,
-  }));
+          <button
+            type="submit"
+            disabled={salvando}
+            className="
+              flex items-center justify-center gap-[0.5rem]
+              dark:bg-brand dark:hover:bg-brand-dark dark:text-white
+              bg-green-600 hover:bg-green-700 text-white
+              h-[2.5rem] rounded font-semibold text-sm transition-colors
+              disabled:opacity-50 disabled:cursor-not-allowed
+            "
+          >
+            {salvando
+              ? <><div className="w-[1rem] h-[1rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> Criando…</>
+              : 'Criar Cliente'
+            }
+          </button>
+        </form>
+      </div>
+    </MainLayout>
+  );
 }
 ```
 
 ---
 
-## 9. API ROUTE: Autenticação
-
-```typescript
-// pages/api/auth/logout.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { supabase } from '@/lib/auth';
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    await supabase.auth.signOut();
-    return res.status(200).json({ success: true });
-  } catch (error) {
-    return res.status(500).json({ error: 'Erro ao fazer logout' });
-  }
-}
-```
-
----
-
-## 10. PÁGINA: Login
+## 12. `src/app/login/page.tsx`
 
 ```typescript
 'use client';
@@ -837,101 +1453,89 @@ export default async function handler(
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginComEmail } from '@/lib/auth';
-import { Icons } from '@/components/Icons';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const router = useRouter();
+  const [email,   setEmail]   = useState('');
+  const [senha,   setSenha]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [erro,    setErro]    = useState('');
 
-  const handleLogin = async (e: React.FormEvent) => {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
+    setErro(''); setLoading(true);
     try {
-      await loginComEmail(email, senha);
+      await loginComEmail(email.trim(), senha);
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao fazer login');
+      setErro(err instanceof Error ? err.message : 'Credenciais inválidas');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen dark:bg-dark-bg bg-white flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-primary rounded-lg mx-auto mb-6 flex items-center justify-center">
-            <span className="text-white font-bold text-3xl">A</span>
+    <div className="min-h-screen dark:bg-surface-bg bg-gray-50 flex items-center justify-center px-[1rem]">
+      <div className="w-full max-w-[22rem]">
+        <div className="text-center mb-[2.5rem]">
+          <div className="w-[3rem] h-[3rem] rounded-[0.625rem] bg-brand flex items-center justify-center mx-auto mb-[1.25rem]">
+            <span className="text-white font-bold text-xl">A</span>
           </div>
-          <h1 className="dark:text-white text-gray-900 text-3xl font-bold">
+          <h1 className="dark:text-ink-primary text-gray-900 text-[1.5rem] font-bold">
             Adsgator Hub
           </h1>
-          <p className="dark:text-gray-400 text-gray-600 mt-2">
-            Sistema nervoso central da sua agência
+          <p className="dark:text-ink-muted text-gray-400 text-sm mt-[0.25rem]">
+            Sistema nervoso central da agência
           </p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
-              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+        <form onSubmit={handleLogin} className="flex flex-col gap-[1rem]">
+          {erro && (
+            <div className="dark:bg-status-red/10 bg-red-50 border dark:border-status-red/20 border-red-200 rounded px-[0.875rem] py-[0.625rem]">
+              <p className="text-sm dark:text-status-red text-red-700">{erro}</p>
             </div>
           )}
 
-          <div>
-            <label className="dark:text-gray-300 text-gray-700 text-sm font-medium block mb-2">
-              E-mail
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={`
-                w-full px-4 py-2 rounded-md border
-                dark:bg-dark-card dark:border-dark-border dark:text-white
-                bg-white border-gray-200 text-gray-900
-                focus:outline-none focus:ring-2 focus:ring-primary
-              `}
-              placeholder="seu@email.com"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="dark:text-gray-300 text-gray-700 text-sm font-medium block mb-2">
-              Senha
-            </label>
-            <input
-              type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              className={`
-                w-full px-4 py-2 rounded-md border
-                dark:bg-dark-card dark:border-dark-border dark:text-white
-                bg-white border-gray-200 text-gray-900
-                focus:outline-none focus:ring-2 focus:ring-primary
-              `}
-              placeholder="••••••••"
-              required
-            />
-          </div>
+          {[
+            { label: 'E-mail', type: 'email',    value: email,    set: setEmail,    ph: 'admin@adsgator.com' },
+            { label: 'Senha',  type: 'password', value: senha,    set: setSenha,    ph: '••••••••'           },
+          ].map(({ label, type, value, set, ph }) => (
+            <div key={label}>
+              <label className="block dark:text-ink-secondary text-gray-700 text-sm font-medium mb-[0.375rem]">
+                {label}
+              </label>
+              <input
+                type={type}
+                value={value}
+                onChange={(e) => set(e.target.value)}
+                required
+                placeholder={ph}
+                className="
+                  w-full h-[2.5rem] px-[0.75rem] rounded
+                  dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary dark:placeholder-ink-muted
+                  bg-white border border-gray-200 text-gray-900 placeholder-gray-400
+                  focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
+                  text-sm transition-colors
+                "
+              />
+            </div>
+          ))}
 
           <button
             type="submit"
             disabled={loading}
-            className={`
-              w-full py-2 px-4 rounded-md font-semibold
-              dark:bg-primary dark:hover:bg-primary-dark dark:text-white
-              bg-green-500 hover:bg-green-600 text-white
-              transition-colors disabled:opacity-50
-            `}
+            className="
+              h-[2.5rem] rounded font-semibold text-sm
+              dark:bg-brand dark:hover:bg-brand-dark dark:text-white
+              bg-green-600 hover:bg-green-700 text-white
+              transition-colors disabled:opacity-50 disabled:cursor-not-allowed
+              flex items-center justify-center gap-[0.5rem]
+            "
           >
-            {loading ? 'Entrando...' : 'Entrar'}
+            {loading
+              ? <><div className="w-[1rem] h-[1rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> Entrando…</>
+              : 'Entrar'
+            }
           </button>
         </form>
       </div>
@@ -942,19 +1546,11 @@ export default function LoginPage() {
 
 ---
 
-## 11. RESUMO DA UX & CRM
+## ✅ Checklist de Implementação do Arquivo 2
 
-- ✅ Sistema de temas Dark/Light com suporte a preferência do sistema
-- ✅ Sidebar minimalista inspirada em Supabase
-- ✅ Componentes em REM (sem px)
-- ✅ Ícones vazados com stroke-width controlável
-- ✅ Dashboard operacional com visão geral em tempo real
-- ✅ Cards de cliente com status visual e ações rápidas
-- ✅ Integração direta com WhatsApp Web usando templates predefinidos
-- ✅ Sistema de filtros e busca
-- ✅ Congelamento de clientes com alertas automáticos
-- ✅ Página de login com validação
-- ✅ Autenticação via Supabase Auth
-- ✅ Design system coeso e premium
-
-**Status:** Pronto para implementação imediata.
+- [ ] Instalar dependências: `npm install @supabase/supabase-js lucide-react next`
+- [ ] Adicionar fonte Geist ao `layout.tsx`: `import { Geist, Geist_Mono } from 'next/font/google'`
+- [ ] Criar `src/providers/ThemeProvider.tsx` e envolver o app no `layout.tsx`
+- [ ] Verificar que as classes Tailwind de `brand/`, `surface/`, `ink/`, `status/` estão no `tailwind.config.ts`
+- [ ] Criar as rotas `/dashboard`, `/clientes/[id]`, `/clientes/novo`, `/login`
+- [ ] Testar o fluxo: Login → Dashboard → Novo Cliente → Card com instrução → Avanço de estágio

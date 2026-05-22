@@ -1,4 +1,26 @@
-# ADSGATOR HUB - ARQUIVO 4: BIBLIOTECA ASTRO & MANIFESTO
+# ADSGATOR HUB — ARQUIVO 4: BIBLIOTECA ASTRO & MANIFESTO (v2 — FINAL)
+
+> **LEIA ANTES DE IMPLEMENTAR**
+> Implemente na ordem: `(1)` `src/lib/astro-components.ts` → `(2)` `src/lib/manifesto-generator.ts` → `(3)` `src/app/(app)/biblioteca/page.tsx`
+>
+> **Regras absolutas:**
+> - `MainLayout` vem de `@/components/layout/MainLayout`
+> - Ícones: importar direto do `lucide-react` — **não existe** componente `Icons`
+> - Tokens: `surface-*`, `ink-*`, `brand` (ver tailwind.config.ts)
+> - `alert()` proibido — usar estado React para feedback
+> - Toda cópia de código usa `navigator.clipboard.writeText()` com estado de confirmação visual
+
+---
+
+## ✅ PRÉ-REQUISITOS
+
+Nenhuma tabela nova necessária. O módulo é 100% client-side (sem banco de dados).
+
+- `src/lib/astro-components.ts` — biblioteca de componentes (Seção 1)
+- `src/lib/manifesto-generator.ts` — gerador de manifesto em Markdown (Seção 2)
+- `src/app/(app)/biblioteca/page.tsx` — página única com tabs Biblioteca / Construtor (Seção 3)
+
+---
 
 ## 1. DEFINIÇÃO DE COMPONENTES ASTRO: lib/astro-components.ts
 
@@ -379,206 +401,432 @@ export function obterComponentePorId(id: string): AstroComponento | undefined {
 
 ---
 
-## 2. PÁGINA: Biblioteca de Componentes (Visualizador)
+---
+
+## 2. PÁGINA — `src/app/(app)/biblioteca/page.tsx`
+
+> Página única com **2 tabs**: Biblioteca (visualizador + código) e Construtor (builder + manifesto).
+> As duas funcionalidades ficam no mesmo arquivo para simplificar o roteamento.
 
 ```typescript
 'use client';
 
 import React, { useState } from 'react';
-import { BIBLIOTECA_COMPONENTES } from '@/lib/astro-components';
-import { MainLayout } from '@/components/MainLayout';
-import { Icons } from '@/components/Icons';
+import { Copy, CheckCheck, Eye, Package, Zap, Download } from 'lucide-react';
+import { BIBLIOTECA_COMPONENTES, type AstroComponento } from '@/lib/astro-components';
+import { gerarManifestoProducao, downloadManifestoMD } from '@/lib/manifesto-generator';
+import { MainLayout } from '@/components/layout/MainLayout';
+
+// ─── TYPES ───────────────────────────────────────────────────────────────────
+type Tab = 'biblioteca' | 'construtor';
+
+interface BuilderState {
+  nomeCliente:    string;
+  nicho:          string;
+  estilo:         string;
+  direcaoArte:    string;
+  paleta: { primaria: string; secundaria: string; backgrounds: string[] };
+  componentesSelecionados: string[];
+  copy: Record<string, string>;
+}
+
+// ─── COMPONENTE PRINCIPAL ─────────────────────────────────────────────────────
 
 export default function BibliotecaPage() {
-  const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>('hero');
-  const [componenteSelecionado, setComponenteSelecionado] = useState<string>('hero-01');
-  const [mostrandoPreview, setMostrandoPreview] = useState(true);
-
-  const categorias = Array.from(
-    new Set(BIBLIOTECA_COMPONENTES.map((c) => c.categoria))
-  );
-
-  const componentesDaCategoria = BIBLIOTECA_COMPONENTES.filter(
-    (c) => c.categoria === categoriaSelecionada
-  );
-
-  const componenteSelecionadoObj = BIBLIOTECA_COMPONENTES.find(
-    (c) => c.id === componenteSelecionado
-  );
+  const [tab, setTab] = useState<Tab>('biblioteca');
 
   return (
     <MainLayout>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-12">
-          <h1 className="dark:text-white text-gray-900 text-4xl font-bold mb-2">
-            Biblioteca de Componentes Astro
+        <div className="mb-[1.5rem]">
+          <h1 className="dark:text-ink-primary text-gray-900 text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
+            Biblioteca Astro
           </h1>
-          <p className="dark:text-gray-400 text-gray-600">
-            Construa landing pages profissionais com componentes prontos e otimizados
+          <p className="dark:text-ink-secondary text-gray-500 text-sm">
+            Componentes prontos para landing pages + gerador de manifesto de produção
           </p>
         </div>
 
-        {/* Layout: Sidebar + Preview */}
-        <div className="grid grid-cols-4 gap-8">
-          {/* SIDEBAR: Seleção de Componentes */}
-          <div className="dark:bg-dark-card bg-white rounded-lg p-6 border dark:border-dark-border border-gray-200 h-fit">
-            <h3 className="dark:text-white text-gray-900 font-bold text-lg mb-6">
-              Categorias
-            </h3>
-            <div className="space-y-2 mb-8">
-              {categorias.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setCategoriaSelecionada(cat);
-                    const primeiroComponente = BIBLIOTECA_COMPONENTES.find(
-                      (c) => c.categoria === cat
-                    );
-                    if (primeiroComponente) {
-                      setComponenteSelecionado(primeiroComponente.id);
-                    }
-                  }}
-                  className={`
-                    w-full text-left px-4 py-2 rounded-md font-medium transition
-                    ${
-                      categoriaSelecionada === cat
-                        ? 'dark:bg-primary bg-green-500 dark:text-white text-white'
-                        : 'dark:hover:bg-dark-hover hover:bg-gray-100 dark:text-gray-300 text-gray-700'
-                    }
-                  `}
-                >
-                  {cat.replace('_', ' ').toUpperCase()}
-                </button>
-              ))}
-            </div>
+        {/* Tabs */}
+        <div className="flex gap-[0.25rem] p-[0.25rem] dark:bg-surface-card bg-gray-100 rounded-lg w-fit mb-[2rem]">
+          {([['biblioteca', Package, 'Biblioteca'], ['construtor', Zap, 'Construtor']] as const).map(
+            ([id, Icon, label]) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                className={`flex items-center gap-[0.375rem] px-[0.875rem] h-[2rem] rounded text-sm font-medium transition-colors
+                  ${tab === id
+                    ? 'dark:bg-surface-hover dark:text-ink-primary bg-white text-gray-900 shadow-sm'
+                    : 'dark:text-ink-muted text-gray-500 dark:hover:text-ink-secondary hover:text-gray-700'}`}
+              >
+                <Icon className="w-[0.875rem] h-[0.875rem]" strokeWidth={tab === id ? 2 : 1.5} />
+                {label}
+              </button>
+            )
+          )}
+        </div>
 
-            <h3 className="dark:text-white text-gray-900 font-bold text-lg mb-4">
-              {categoriaSelecionada.replace('_', ' ').toUpperCase()}
-            </h3>
-            <div className="space-y-2">
-              {componentesDaCategoria.map((comp) => (
-                <button
-                  key={comp.id}
-                  onClick={() => setComponenteSelecionado(comp.id)}
-                  className={`
-                    w-full text-left px-4 py-2 rounded-md text-sm font-medium transition
-                    ${
-                      componenteSelecionado === comp.id
-                        ? 'dark:bg-dark-border bg-gray-200 dark:text-white text-gray-900'
-                        : 'dark:hover:bg-dark-hover hover:bg-gray-100 dark:text-gray-400 text-gray-600'
-                    }
-                  `}
-                >
-                  {comp.nome}
-                </button>
-              ))}
+        {tab === 'biblioteca' ? <TabBiblioteca /> : <TabConstrutor />}
+      </div>
+    </MainLayout>
+  );
+}
+
+// ─── TAB: BIBLIOTECA ─────────────────────────────────────────────────────────
+
+function TabBiblioteca() {
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<string>('hero');
+  const [componenteSelecionado, setComponenteSelecionado] = useState<string>('hero-01');
+  const [mostrandoCodigo, setMostrandoCodigo] = useState(false);
+  const [copiado, setCopiado] = useState(false);
+
+  const categorias = Array.from(new Set(BIBLIOTECA_COMPONENTES.map((c) => c.categoria)));
+  const componentesDaCategoria = BIBLIOTECA_COMPONENTES.filter((c) => c.categoria === categoriaSelecionada);
+  const comp = BIBLIOTECA_COMPONENTES.find((c) => c.id === componenteSelecionado);
+
+  async function copiarCodigo() {
+    if (!comp) return;
+    await navigator.clipboard.writeText(comp.codigo_astro);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2500);
+  }
+
+  if (!comp) return null;
+
+  return (
+    <div className="grid grid-cols-4 gap-[1.5rem]">
+      {/* ── SIDEBAR ── */}
+      <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1rem] h-fit sticky top-[1rem]">
+        <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.75rem]">
+          Categorias
+        </p>
+        <div className="flex flex-col gap-[0.125rem] mb-[1.25rem]">
+          {categorias.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                setCategoriaSelecionada(cat);
+                const primeiro = BIBLIOTECA_COMPONENTES.find((c) => c.categoria === cat);
+                if (primeiro) setComponenteSelecionado(primeiro.id);
+              }}
+              className={`w-full text-left px-[0.75rem] h-[2rem] rounded text-sm font-medium transition-colors
+                ${categoriaSelecionada === cat
+                  ? 'dark:bg-brand/15 dark:text-brand bg-green-50 text-green-700'
+                  : 'dark:text-ink-secondary text-gray-600 dark:hover:bg-surface-hover hover:bg-gray-50'}`}
+            >
+              {cat.replace(/_/g, ' ')}
+            </button>
+          ))}
+        </div>
+
+        <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.5rem]">
+          {categoriaSelecionada.replace(/_/g, ' ')}
+        </p>
+        <div className="flex flex-col gap-[0.125rem]">
+          {componentesDaCategoria.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setComponenteSelecionado(c.id)}
+              className={`w-full text-left px-[0.75rem] h-[2rem] rounded text-xs font-medium transition-colors
+                ${componenteSelecionado === c.id
+                  ? 'dark:bg-surface-hover dark:text-ink-primary bg-gray-100 text-gray-900'
+                  : 'dark:text-ink-muted text-gray-500 dark:hover:bg-surface-hover hover:bg-gray-50'}`}
+            >
+              {c.nome}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── PAINEL PRINCIPAL ── */}
+      <div className="col-span-3 flex flex-col gap-[1rem]">
+        {/* Meta do componente */}
+        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.5rem] py-[1.25rem]">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="dark:text-ink-primary text-gray-900 font-semibold text-lg">{comp.nome}</h2>
+              <p className="dark:text-ink-secondary text-gray-500 text-sm">{comp.descricao}</p>
             </div>
+            <span className="dark:bg-surface-hover bg-gray-100 dark:text-ink-muted text-gray-500 text-xs font-medium px-[0.5rem] py-[0.25rem] rounded">
+              v{comp.versao}
+            </span>
+          </div>
+          <div className="flex gap-[0.375rem] flex-wrap mt-[0.875rem]">
+            {comp.variacoes.map((v) => (
+              <span key={v} className="dark:bg-surface-hover bg-gray-100 dark:text-ink-muted text-gray-500 text-xs font-medium px-[0.5rem] py-[0.125rem] rounded">
+                {v}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Código */}
+        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 overflow-hidden">
+          <div className="flex items-center justify-between px-[1.25rem] py-[0.75rem] dark:border-b dark:border-surface-border border-b border-gray-100">
+            <div className="flex items-center gap-[0.5rem]">
+              <Eye className="w-[0.875rem] h-[0.875rem] dark:text-ink-muted text-gray-400" strokeWidth={1.5} />
+              <p className="dark:text-ink-primary text-gray-900 text-sm font-medium">
+                {mostrandoCodigo ? 'Código Astro' : 'Informações'}
+              </p>
+            </div>
+            <button
+              onClick={() => setMostrandoCodigo(!mostrandoCodigo)}
+              className="text-xs font-semibold dark:text-ink-secondary text-gray-500 dark:hover:text-ink-primary hover:text-gray-800 transition-colors"
+            >
+              {mostrandoCodigo ? 'Ver info' : 'Ver código'}
+            </button>
           </div>
 
-          {/* MAIN: Preview e Detalhes */}
-          {componenteSelecionadoObj && (
-            <div className="col-span-3">
-              {/* Header do Componente */}
-              <div className="dark:bg-dark-card bg-white rounded-lg p-8 border dark:border-dark-border border-gray-200 mb-8">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h2 className="dark:text-white text-gray-900 text-3xl font-bold mb-2">
-                      {componenteSelecionadoObj.nome}
-                    </h2>
-                    <p className="dark:text-gray-400 text-gray-600">
-                      {componenteSelecionadoObj.descricao}
-                    </p>
-                  </div>
-                  <div className="dark:bg-dark-hover bg-gray-100 px-4 py-2 rounded-md">
-                    <p className="dark:text-gray-400 text-gray-600 text-sm">
-                      v{componenteSelecionadoObj.versao}
-                    </p>
-                  </div>
-                </div>
+          {mostrandoCodigo ? (
+            <div className="relative">
+              <pre className="dark:bg-surface-bg bg-gray-50 text-xs font-mono dark:text-ink-secondary text-gray-700 p-[1.25rem] overflow-x-auto max-h-[24rem]">
+                {comp.codigo_astro}
+              </pre>
+              <button
+                onClick={copiarCodigo}
+                className={`absolute top-[0.75rem] right-[0.75rem] flex items-center gap-[0.375rem] text-xs font-semibold px-[0.625rem] h-[1.75rem] rounded transition-all
+                  ${copiado
+                    ? 'dark:bg-brand/20 dark:text-brand bg-green-50 text-green-700'
+                    : 'dark:bg-surface-hover dark:text-ink-secondary bg-white border border-gray-100 text-gray-600 dark:hover:text-ink-primary hover:text-gray-800'}`}
+              >
+                {copiado
+                  ? <><CheckCheck className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Copiado!</>
+                  : <><Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Copiar</>
+                }
+              </button>
+            </div>
+          ) : (
+            <div className="p-[1.25rem]">
+              <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.75rem]">
+                Recomendações
+              </p>
+              <ul className="flex flex-col gap-[0.5rem]">
+                {comp.recomendacoes.map((rec, i) => (
+                  <li key={i} className="flex items-start gap-[0.5rem]">
+                    <span className="text-brand font-bold text-xs mt-[0.125rem]">✓</span>
+                    <span className="dark:text-ink-secondary text-gray-600 text-sm">{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-                {/* Variações */}
-                <div className="flex gap-2 flex-wrap">
-                  {componenteSelecionadoObj.variacoes.map((var_) => (
-                    <span
-                      key={var_}
-                      className="dark:bg-dark-hover bg-gray-100 dark:text-gray-400 text-gray-600 px-3 py-1 rounded-md text-xs font-medium"
-                    >
-                      {var_}
-                    </span>
-                  ))}
-                </div>
-              </div>
+// ─── TAB: CONSTRUTOR ─────────────────────────────────────────────────────────
 
-              {/* Preview ou Código */}
-              <div className="dark:bg-dark-card bg-white rounded-lg border dark:border-dark-border border-gray-200 overflow-hidden mb-8">
-                <div className="flex items-center justify-between px-6 py-4 dark:bg-dark-hover bg-gray-50 border-b dark:border-dark-border border-gray-200">
-                  <p className="dark:text-white text-gray-900 font-semibold">
-                    {mostrandoPreview ? '👁️ Preview' : '💻 Código'}
+function TabConstrutor() {
+  const [builder, setBuilder] = useState<BuilderState>({
+    nomeCliente: '', nicho: '', estilo: 'minimalista', direcaoArte: '',
+    paleta: { primaria: '#10b981', secundaria: '#6366f1', backgrounds: ['#0f0f0f', '#1a1a1a'] },
+    componentesSelecionados: [],
+    copy: {},
+  });
+  const [gerando, setGerando] = useState(false);
+  const [gerado,  setGerado]  = useState(false);
+
+  const categorias = Array.from(new Set(BIBLIOTECA_COMPONENTES.map((c) => c.categoria)));
+
+  function toggleComponente(id: string) {
+    setBuilder((prev) => ({
+      ...prev,
+      componentesSelecionados: prev.componentesSelecionados.includes(id)
+        ? prev.componentesSelecionados.filter((c) => c !== id)
+        : [...prev.componentesSelecionados, id],
+    }));
+  }
+
+  async function gerarManifesto() {
+    if (!builder.nomeCliente || !builder.nicho || builder.componentesSelecionados.length === 0) {
+      // Feedback visual — sem alert()
+      return;
+    }
+    setGerando(true);
+    try {
+      const manifesto = gerarManifestoProducao(
+        builder.nomeCliente, builder.nicho, builder.paleta,
+        builder.estilo, builder.direcaoArte, builder.componentesSelecionados, builder.copy,
+      );
+      downloadManifestoMD(manifesto);
+      setGerado(true);
+      setTimeout(() => setGerado(false), 3000);
+    } finally { setGerando(false); }
+  }
+
+  const camposObrigatoriosPreenchidos =
+    builder.nomeCliente.trim() !== '' &&
+    builder.nicho.trim()        !== '' &&
+    builder.componentesSelecionados.length > 0;
+
+  return (
+    <div className="grid grid-cols-3 gap-[1.5rem]">
+      {/* ── PAINEL DE CONFIGURAÇÃO ── */}
+      <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem] h-fit sticky top-[1rem]">
+        <p className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
+          Configurações
+        </p>
+
+        {[
+          { label: 'Nome do Cliente *', key: 'nomeCliente' as const, placeholder: 'Ex: João Psicologia' },
+          { label: 'Nicho *',           key: 'nicho'       as const, placeholder: 'Ex: Psicologia'       },
+          { label: 'Direção de Arte',   key: 'direcaoArte' as const, placeholder: 'Ex: moderna, tons earth' },
+        ].map(({ label, key, placeholder }) => (
+          <div key={key} className="mb-[1rem]">
+            <label className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold block mb-[0.375rem]">
+              {label}
+            </label>
+            <input
+              type="text"
+              value={builder[key]}
+              onChange={(e) => setBuilder({ ...builder, [key]: e.target.value })}
+              placeholder={placeholder}
+              className="w-full h-[2.25rem] px-[0.75rem] rounded dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+            />
+          </div>
+        ))}
+
+        <div className="mb-[1rem]">
+          <label className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold block mb-[0.375rem]">
+            Estilo Visual
+          </label>
+          <select
+            value={builder.estilo}
+            onChange={(e) => setBuilder({ ...builder, estilo: e.target.value })}
+            className="w-full h-[2.25rem] px-[0.75rem] rounded dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+          >
+            {['minimalista', 'corporativo', 'criativo', 'sofisticado'].map((o) => (
+              <option key={o}>{o}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-[1.5rem]">
+          <label className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold block mb-[0.375rem]">
+            Cor Primária
+          </label>
+          <div className="flex gap-[0.5rem] items-center">
+            <input
+              type="color"
+              value={builder.paleta.primaria}
+              onChange={(e) => setBuilder({ ...builder, paleta: { ...builder.paleta, primaria: e.target.value } })}
+              className="w-[2.25rem] h-[2.25rem] rounded cursor-pointer border-0 p-[0.125rem]"
+            />
+            <input
+              type="text"
+              value={builder.paleta.primaria}
+              onChange={(e) => setBuilder({ ...builder, paleta: { ...builder.paleta, primaria: e.target.value } })}
+              className="flex-1 h-[2.25rem] px-[0.75rem] rounded dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+            />
+          </div>
+        </div>
+
+        {/* Validação visual */}
+        {!camposObrigatoriosPreenchidos && (
+          <p className="text-xs text-status-orange mb-[0.75rem]">
+            Preencha nome, nicho e selecione ao menos 1 componente.
+          </p>
+        )}
+
+        <button
+          onClick={gerarManifesto}
+          disabled={!camposObrigatoriosPreenchidos || gerando}
+          className={`w-full flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded text-sm font-semibold transition-all
+            ${camposObrigatoriosPreenchidos
+              ? gerado
+                ? 'bg-brand/20 text-brand'
+                : 'dark:bg-brand dark:hover:bg-brand-dark dark:text-white bg-green-600 hover:bg-green-700 text-white'
+              : 'dark:bg-surface-hover dark:text-ink-disabled bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+        >
+          {gerando ? (
+            <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : gerado ? (
+            <><CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Manifesto gerado!</>
+          ) : (
+            <><Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Gerar Manifesto .md</>
+          )}
+        </button>
+      </div>
+
+      {/* ── SELETOR DE COMPONENTES ── */}
+      <div className="col-span-2">
+        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem]">
+          <p className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
+            Selecione os Componentes
+          </p>
+
+          <div className="flex flex-col gap-[1.5rem]">
+            {categorias.map((cat) => {
+              const comps = BIBLIOTECA_COMPONENTES.filter((c) => c.categoria === cat);
+              return (
+                <div key={cat}>
+                  <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.625rem]">
+                    {cat.replace(/_/g, ' ')}
                   </p>
-                  <button
-                    onClick={() => setMostrandoPreview(!mostrandoPreview)}
-                    className="dark:bg-primary bg-green-500 dark:text-white text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90"
-                  >
-                    {mostrandoPreview ? 'Ver Código' : 'Ver Preview'}
-                  </button>
+                  <div className="grid grid-cols-2 gap-[0.75rem]">
+                    {comps.map((c) => {
+                      const selecionado = builder.componentesSelecionados.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          onClick={() => toggleComponente(c.id)}
+                          className={`text-left p-[0.875rem] rounded-lg border-2 transition-all
+                            ${selecionado
+                              ? 'dark:bg-brand/10 dark:border-brand bg-green-50 border-green-500'
+                              : 'dark:bg-surface-bg dark:border-surface-border dark:hover:border-brand/40 bg-white border-gray-100 hover:border-green-200'}`}
+                        >
+                          <div className="flex items-center justify-between mb-[0.25rem]">
+                            <p className="dark:text-ink-primary text-gray-900 font-medium text-sm">{c.nome}</p>
+                            {selecionado && (
+                              <div className="w-[1rem] h-[1rem] rounded-full bg-brand flex items-center justify-center">
+                                <CheckCheck className="w-[0.625rem] h-[0.625rem] text-white" strokeWidth={3} />
+                              </div>
+                            )}
+                          </div>
+                          <p className="dark:text-ink-muted text-gray-400 text-xs">{c.descricao}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {mostrandoPreview ? (
-                  <div className="p-8 dark:bg-dark-bg bg-gray-50 min-h-96">
-                    <div className="dark:bg-dark-card bg-white rounded-lg border dark:border-dark-border border-gray-200 p-8">
-                      <div className="text-center dark:text-gray-400 text-gray-600">
-                        <Icons.Eye className="w-12 h-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />
-                        <p>Preview renderizado aqui no seu domínio</p>
-                        <p className="text-sm mt-2">Copie o código Astro para seu projeto</p>
-                      </div>
+          {/* Estrutura selecionada */}
+          {builder.componentesSelecionados.length > 0 && (
+            <div className="mt-[1.5rem] pt-[1.25rem] border-t dark:border-surface-border border-gray-100">
+              <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.625rem]">
+                Estrutura da Página ({builder.componentesSelecionados.length} seções)
+              </p>
+              <div className="flex flex-col gap-[0.375rem]">
+                {builder.componentesSelecionados.map((id, i) => {
+                  const c = BIBLIOTECA_COMPONENTES.find((x) => x.id === id);
+                  return (
+                    <div key={id} className="flex items-center gap-[0.625rem]">
+                      <span className="w-[1.25rem] h-[1.25rem] rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        {i + 1}
+                      </span>
+                      <p className="dark:text-ink-secondary text-gray-600 text-sm">{c?.nome}</p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="p-8 dark:bg-dark-bg bg-white overflow-x-auto">
-                    <pre className="dark:text-gray-300 text-gray-700 text-xs font-mono">
-                      {componenteSelecionadoObj.codigo_astro}
-                    </pre>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(componenteSelecionadoObj.codigo_astro);
-                        alert('Código copiado para a área de transferência!');
-                      }}
-                      className="mt-6 dark:bg-primary bg-green-500 dark:text-white text-white px-6 py-2 rounded-md font-medium hover:opacity-90 flex items-center gap-2"
-                    >
-                      <Icons.Copy className="w-4 h-4" strokeWidth={2} />
-                      Copiar Código
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Recomendações */}
-              <div className="dark:bg-dark-card bg-white rounded-lg p-8 border dark:border-dark-border border-gray-200">
-                <h3 className="dark:text-white text-gray-900 font-bold text-lg mb-4">
-                  ✨ Recomendações
-                </h3>
-                <ul className="space-y-3">
-                  {componenteSelecionadoObj.recomendacoes.map((rec, idx) => (
-                    <li key={idx} className="flex gap-3">
-                      <span className="dark:text-primary text-green-500 font-bold">✓</span>
-                      <span className="dark:text-gray-300 text-gray-700">{rec}</span>
-                    </li>
-                  ))}
-                </ul>
+                  );
+                })}
               </div>
             </div>
           )}
         </div>
       </div>
-    </MainLayout>
+    </div>
   );
 }
 ```
 
 ---
 
-## 3. GERADOR DE MANIFESTO: lib/manifesto-generator.ts
+## 3. GERADOR DE MANIFESTO — `src/lib/manifesto-generator.ts`
 
 ```typescript
 import { BIBLIOTECA_COMPONENTES } from './astro-components';
@@ -784,18 +1032,47 @@ export function downloadManifestoMD(manifesto: ManifestoProducao) {
 
 ---
 
-## 4. PÁGINA: Frankenstein Builder (Construtor Visual)
+## 4. CHECKLIST DE IMPLEMENTAÇÃO
+
+> A seção 4 (BuilderPage) foi consolidada dentro de `src/app/(app)/biblioteca/page.tsx` como `TabConstrutor`.
+> Não criar arquivo separado — está na Seção 2 acima.
+
+### Ordem de execução
+
+- [ ] **1.** Criar `src/lib/astro-components.ts` com o código da Seção 1
+- [ ] **2.** Criar `src/lib/manifesto-generator.ts` com o código da Seção 3
+- [ ] **3.** Criar `src/app/(app)/biblioteca/page.tsx` com o código da Seção 2 (inclui TabBiblioteca + TabConstrutor)
+- [ ] **4.** Adicionar link `/biblioteca` na Sidebar
+
+### Erros comuns a evitar
+
+| ❌ Errado | ✅ Correto |
+|---|---|
+| `import { MainLayout } from '@/components/MainLayout'` | `import { MainLayout } from '@/components/layout/MainLayout'` |
+| `import { Icons } from '@/components/Icons'` | `import { Copy, Eye, Zap, ... } from 'lucide-react'` |
+| `alert('Preencha...')` | Estado React `!camposObrigatoriosPreenchidos` com mensagem inline |
+| `dark:bg-dark-card` | `dark:bg-surface-card` |
+| `dark:bg-primary` | `dark:bg-brand` |
+| Duas páginas separadas (biblioteca + builder) | Uma página com tabs (Seção 2) |
+
+### O que este módulo entrega
+
+- Biblioteca de 6 componentes Astro categorizados (nav, hero, serviços, depoimentos, pricing, rodapé)
+- Visualizador de código com cópia via `navigator.clipboard` + estado visual de confirmação
+- Builder visual (tab Construtor) que gera manifesto .md pronto para uso no Cursor/Windsurf
+- Manifesto inclui: contexto estratégico, paleta de cores, estrutura de página, notas técnicas, checklist de QA
+- Sem banco de dados — 100% client-side
+
+**Status:** v2 — Pronto para implementação imediata.
+
+---
 
 ```typescript
-'use client';
+// NOTA: O código a seguir é obsoleto (tokens errados, alert(), imports errados).
+// Use APENAS o código da Seção 2 acima.
+// Esta seção foi mantida apenas como referência histórica.
 
-import React, { useState } from 'react';
-import { BIBLIOTECA_COMPONENTES } from '@/lib/astro-components';
-import { gerarManifestoProducao, downloadManifestoMD } from '@/lib/manifesto-generator';
-import { MainLayout } from '@/components/MainLayout';
-import { Icons } from '@/components/Icons';
-
-export default function BuilderPage() {
+export default function BuilderPage_OBSOLETO() {
   const [nomeCliente, setNomeCliente] = useState('');
   const [nicho, setNicho] = useState('');
   const [componentesSelecionados, setComponentesSelecionados] = useState<string[]>([]);
@@ -1030,17 +1307,4 @@ export default function BuilderPage() {
 
 ---
 
-## 5. RESUMO DA BIBLIOTECA ASTRO & MANIFESTO
-
-- ✅ Biblioteca com 6+ componentes Astro prontos
-- ✅ Página de visualização com 3 componentes máximo por tela
-- ✅ Preview e código lado a lado
-- ✅ Construtor visual (Frankenstein) para montar landing pages
-- ✅ Gerador automático de manifesto em Markdown
-- ✅ Export direto para arquivo .md
-- ✅ Manifesto inclui contexto estratégico, paleta, copy e notas técnicas
-- ✅ Pronto para ser inserido no Cursor/Roo Code
-- ✅ Garante uso obrigatório de REM
-- ✅ Documentação integrada com recomendações
-
-**Status:** Pronto para implementação imediata.
+<!-- Seção 5 consolidada no Checklist da Seção 4 acima -->
