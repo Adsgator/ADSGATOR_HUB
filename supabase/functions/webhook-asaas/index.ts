@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { TEST_MODE, TEST_CONFIG, logTest, maskSensitive } from '../_shared/test-mode.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,6 +22,10 @@ serve(async (req) => {
     const evento  = payload.event as string;
     const pagamento = payload.payment;
 
+    logTest(`Webhook recebido - Evento: ${evento}`);
+    if (TEST_MODE) {
+      console.log('[🧪 TEST_MODE] Processando em modo de teste - nenhum cliente real será afetado');
+    }
     console.log(`[ASAAS WEBHOOK] Evento: ${evento}`);
 
     // ============================================================
@@ -130,14 +135,21 @@ serve(async (req) => {
         });
 
         // Criar notificação de ação imediata
+        // 🧪 Em modo de teste, usa dados de teste
+        const notifWhatsApp = TEST_MODE 
+          ? TEST_CONFIG.testWhatsApp 
+          : novoCliente.whatsapp?.replace(/\D/g, '');
+        
         await supabase.from('notificacoes').insert({
           user_id:    novoCliente.user_id,
           cliente_id: novoCliente.id,
           tipo:       'urgente',
-          titulo:     'Novo cliente recebido!',
-          mensagem:   `${novoCliente.nome} aguarda #BOASVINDAS agora.`,
+          titulo:     TEST_MODE ? `${TEST_CONFIG.testPrefixo} Novo cliente recebido!` : 'Novo cliente recebido!',
+          mensagem:   TEST_MODE 
+            ? `[TESTE] ${novoCliente.nome} seria notificado. WhatsApp real: ${maskSensitive(novoCliente.whatsapp || 'N/A')}`
+            : `${novoCliente.nome} aguarda #BOASVINDAS agora.`,
           acao_label: '#BOASVINDAS',
-          acao_url:   `https://wa.me/${novoCliente.whatsapp?.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`,
+          acao_url:   `https://wa.me/${notifWhatsApp}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`,
         });
       }
     }
@@ -210,7 +222,7 @@ serve(async (req) => {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[WEBHOOK ERRO]', msg);
     return new Response(
-      JSON.stringify({ error: msg }),
+      JSON.stringify({ error: msg, test_mode: TEST_MODE }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }

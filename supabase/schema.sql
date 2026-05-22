@@ -186,6 +186,34 @@ CREATE INDEX IF NOT EXISTS idx_relatorios_mes     ON relatorios_mensais(mes_ano)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_relatorios_unique ON relatorios_mensais(cliente_id, mes_ano);
 
 -- ============================================================
+-- TABELA: RELATÓRIOS EXECUTIVOS (consolidado da agência)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS relatorios_executivos (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  mes_ano               TEXT NOT NULL,  -- Formato: 'YYYY-MM'
+  mrr_total             NUMERIC(10,2) NOT NULL DEFAULT 0,
+  churn_rate            NUMERIC(5,2) NOT NULL DEFAULT 0,
+  lucro                 NUMERIC(10,2) NOT NULL DEFAULT 0,
+  margem                NUMERIC(5,2) NOT NULL DEFAULT 0,
+  ltv_cac               NUMERIC(8,2) NOT NULL DEFAULT 0,
+  top_performers        JSONB DEFAULT '[]'::jsonb,
+  clientes_risco        JSONB DEFAULT '[]'::jsonb,
+  proximos_passos       JSONB DEFAULT '[]'::jsonb,
+  previsao_proximo_mes  JSONB DEFAULT '{}'::jsonb,
+  conteudo_markdown     TEXT,
+  enviado_email         BOOLEAN NOT NULL DEFAULT FALSE,
+  email_enviado_em      TIMESTAMPTZ,
+  visualizado           BOOLEAN NOT NULL DEFAULT FALSE,
+  visualizado_em        TIMESTAMPTZ,
+  created_at            TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_relatorios_exec_mes ON relatorios_executivos(mes_ano);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_relatorios_exec_unique ON relatorios_executivos(mes_ano);
+
+ALTER TABLE relatorios_executivos ENABLE ROW LEVEL SECURITY;
+
+-- ============================================================
 -- TABELA: ALERTAS DO SISTEMA
 -- ============================================================
 CREATE TABLE IF NOT EXISTS alertas (
@@ -267,7 +295,7 @@ BEGIN
   FOR t IN SELECT unnest(ARRAY[
     'clientes','assinaturas','estagios_operacionais','historico_acoes',
     'configuracoes_financeiras','custos_detalhados','campanhas_ads',
-    'relatorios_mensais','alertas','onboard_progresso'
+    'relatorios_mensais','relatorios_executivos','alertas','onboard_progresso'
   ]) LOOP
     EXECUTE format(
       'CREATE POLICY "acesso_autenticado_%s" ON %s FOR ALL TO authenticated USING (true) WITH CHECK (true)',

@@ -4,6 +4,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { TEST_MODE } from '../_shared/test-mode.ts'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -65,6 +66,15 @@ ${(historico ?? []).map(h => `- CPA: R$ ${h.cpa}, CTR: ${((h.ctr ?? 0) * 100).to
 
 Gere o insight focando em: o que está bom, o que precisa atenção, e qual ação tomar.
 `
+
+    // 🧪 Em modo de teste, retorna insight mockado sem consumir API
+    if (TEST_MODE) {
+      const mockInsight = `[🧪 TESTE] Insight simulado para ${snap.clientes?.nome}: CTR de ${((snap.ctr ?? 0) * 100).toFixed(2)}% e CPA de R$${snap.cpa} registrados. Em produção, o Gemini analisaria os dados históricos e identificaria a principal oportunidade de otimização para o nícho ${snap.clientes?.nicho}.`;
+      await supabase.from('analytics_snapshots').update({ insight_ia: mockInsight }).eq('id', snapshot_id);
+      return new Response(JSON.stringify({ insight: mockInsight, test_mode: true }), {
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
     if (!geminiApiKey) {

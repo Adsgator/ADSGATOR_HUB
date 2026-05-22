@@ -70,17 +70,18 @@ Você abre o ADSGATOR e **imediatamente sabe o que fazer hoje**. Tudo em uma ún
 [Morning Briefing (Gemini Pro)]  [Relógio + Clima]
 ```
 
-**Morning Briefing** (1x ao dia, 9h)
+**Morning Briefing** (1x ao dia, 9h com posibilidade de procurar novamente, procurar novamente não muda tudo só atualiza as informações)
 - Uma IA (Gemini 2.5 Pro) lê a memória de todos os clientes
 - Lê notificações do dia anterior
 - Lê alertas de campanhas Google Ads
 - Gera um parágrafo: "Hoje você tem X urgências, Y a revisar, Z para comunicar. Comece por..."
-- Não é um relatório — é um resumo de 3 linhas que guia o dia
+- Não é um relatório — é um resumo completo de 5 linhas que guia o dia. (Se tiver que ser maior que 5 linhas de a opção de clicar para abrir maior em uma modal).
 - Customizável: "Resumir por linguagem", "Por nicho", "Apenas urgências"
 
 **Relógio + Clima** 
-- Relógio digital (ou de ponteiro) mostrando hora atual
+- Relógio de ponteiro mostrando hora atual (customizável)
 - Clima da cidade do responsável (ou customizável)
+- Status API (🟢 verde / 🟡 atenção / 🔴 crítico) 
 - Probabilidade de chuva próximas 2h (Open-Meteo API)
 - Temperatura atual
 
@@ -111,14 +112,14 @@ Uma lista que responde: **"O que preciso fazer AGORA?"**
 Cada item mostra:
 - **Ícone de prioridade**: 🔴 Urgente | 🟡 Hoje | 🟢 Esta semana
 - **Cliente**: nome + nicho (ex: "Julia Martins / Adestramento")
-- **Ação**: "Agendar call", "Enviar GA4 brief", "Revisar CPA alto", "Lembrar pagamento"
+- **Ação**: "Agendar call", "Enviar GA4 brief", "Revisar CPA alto", "Lembrar pagamento", "Manutenção preventiva", "Outro"
 - **Tempo**: quando foi criada ou deadline
 - **Botão de ação rápida**: clica e já abre WhatsApp pre-preenchido, ou email, ou task
 
 A ordem é determinada por:
 1. Clientes com pagamento atrasado (dias_atraso DESC)
 2. Clientes com status "pendente_cliente" há mais de 48h
-3. Clientes com alerta de campanha (CPA alto, saldo baixo)
+3. Clientes com alerta de campanha (CPA alto, saldo baixo, CPC caro, Sem impressões, Sem conversão)
 4. Novos clientes criados na semana (warm onboarding)
 5. Clientes com checklist incompleto
 
@@ -190,22 +191,24 @@ Atualiza em **tempo real** (Supabase Realtime).
 [Chat Persistente com IA]
 ```
 
-Um chat simples (tipo ChatGPT) onde você conversa com a IA sobre:
+Um chat completo que entende tudo sobre a agência e o sistema (tipo Claude Chat) onde você conversa com a IA sobre:
 - "Qual é o CPA médio do Gabriel?"
 - "Que cliente não ativa há mais tempo?"
 - "Gerar copy para novo nicho X"
 - "Qual é a previsão de MRR para dezembro?"
+- E sobre o sistema em geral, ajudando com dicas, orientações, onde está as coisas...
 
 A IA (Gemini 2.5 Flash) lê:
 - Contexto do cliente (se perguntado sobre um específico)
 - Dados da agência (MRR, custos, alertas)
 - Memória do cliente (se relevante)
 - Histórico de conversas (session)
+- Consegue entender em tempo real e ler a tela que o usuario está visualizando e oferecer orientações (se perguntado sobre isso)
 
 Respostas são **conversacionais, não robóticas**. Exemplo:
 
-> **Você:** Qual é o CPA que deveria fazer o Gabriel fazer?  
-> **IA:** Gabriel (adestramento em SP) está com CPA de R$350. Dado que a maioria dos adestrados tem valor de vida > R$8k, eu recomendaria trazer pra R$200-250 para ter margem. Quer que eu analise os termos dele e ache onde tá o custo alto?
+> **Você:** O que está impedindo os anuncios do Gabriel Amaparo funcionar? (Pode ter como adicionar o cliente no contexto para saber exatamente a qual cliente está se refindo)
+> **IA:** Gabriel (adestramento em SP) está com CPC máximo muito baixo R$3.40. E como o CPC dos ultimos 3 dias está em R$3.33 é indicativo para aumentar, eu recomendaria trazer pra R$4.00 para ter margem e avaliar dentro de 3 dias. Quer que eu analise mais a fundo?
 
 O chat pode gerar tasks, criar notificações, buscar na memória, etc.
 
@@ -267,8 +270,8 @@ Ao clicar em um cliente, você entra na página dele. A página tem **4 abas pri
 └─────────────────────────────────────────────────┘
 
 ┌─ PRÓXIMA AÇÃO ──────────────────────────────────┐
-│ Agendar call de revisão mensal                   │
-│ [💬 WhatsApp] [📋 Task] [⏰ Adiar]               │
+│ Otimizar campanha Google Ads!                   │
+│ [🔗 Acessar Google Ads] [📋 Task] [⏰ Adiar]               │
 └─────────────────────────────────────────────────┘
 
 ┌─ STEPPER DE PROGRESSO ──────────────────────────┐
@@ -385,7 +388,9 @@ Todos os dados são **reais** (APIs Google Ads e GA4, não mocks).
 Botões diretos para:
 - Abrir no Google Ads (acesso delegado)
 - Abrir no GA4
+- Abrir no Tag Manager
 - Criar relatório PDF
+- Criar documento .md
 - Gerar recomendações com IA
 
 #### Aba 4: HISTÓRICO COMPLETO
@@ -504,6 +509,7 @@ Tudo aqui é **customizável**:
 - Moeda (BRL, USD, EUR)
 - Incluir/excluir clientes
 - Incluir/excluir tipos de custo
+- Marcar como cancelado ou pausado
 
 ### Gestão de Custos (Configuração)
 
@@ -627,7 +633,7 @@ O sistema é **automático** mas você pode:
 │                                                │
 │ Conversões (fracionadas): 12.5*               │
 │ CPA Médio: R$ 245    ↓ -3%                   │
-│ ROAS Médio: 2.8x     ↑ +4%                   │
+│ CPC Médio: 2.8x     ↑ +4%                   │
 │ Saldo Total: R$ 1.250  ⚠️ ALERTA             │
 └─────────────────────────────────────────────────┘
 
@@ -685,6 +691,7 @@ Alertas em Tempo Real:
 - **Saldo baixo** (< limite configurável)
 - **CPA acima de X%** vs média
 - **CTR abaixo de Y%**
+- **CPC muito alto de Z%**
 - **Campanha pausada inesperadamente**
 - **Qualidade score caindo**
 
@@ -826,7 +833,6 @@ O sistema usa **3 modelos diferentes**, cada um com papel específico:
 **Responsabilidades:**
 - Checar alertas de Google Ads (saldo, CPA alto, campanha pausada)
 - Verificar inadimplência (dias de atraso)
-- Buscar clima (Open-Meteo) e probabilidade de chuva
 - Criar notificações (toast + badge)
 - Gerenciar fila de tarefas rápidas
 
@@ -834,7 +840,7 @@ O sistema usa **3 modelos diferentes**, cada um com papel específico:
 - Edge Function disparada a cada 15 min (cron job)
 - Lê alertas do banco
 - Se houver alerta: notifica usuário (toast) + atualiza badge
-- Mantém cache de clima (atualiza a cada hora)
+- Mantém cache de clima (atualiza a cada 4 hora)
 - Resposta < 2 segundos
 
 **Exemplo:**
@@ -922,10 +928,7 @@ Paulo tá com CPA alto (revisar). Agência em alta
 (+12% MRR). Recomendo: morning call com Ana (resolver), 
 quick sync com Paulo (30 min), depois onboarding flow.
 
-Clima: 28°, 60% chance chuva 16h-18h (fique de olho 
-em eventos externos para os clientes).
-
-Vamo? 🚀"
+Clima: 28°, Nublado com 60% chance chuva 16h-18h"
 ```
 
 ### Sistema de Memória do Cliente
@@ -1003,14 +1006,7 @@ Geolocalização: Raio 25km de São Paulo
 
 ## PERFIL DE RELACIONAMENTO
 
-Tom: Informal e direto. Paulo é executivo, fala rápido, 
-não gosta de emails longos.
-Preferência: WhatsApp durante o dia (7-22h). Email só 
-para dados técnicos pesados.
-Decisão: Decide rápido, confia na nossa recomendação, 
-questiona pouco.
-Sensibilidade: Não é sensível a custos, quer resultado.
-Atenção: Não gosta de "achismo" — quer dados.
+Como ta o relacionamento do cliente com a agencia, baseando nas requisições do sistema para ele, são boas, são ruins, ta na média? O quanto de tarefas que são uma solução, melhoria, problema que eu trago como tarefa externa. Tudo isso cria o perfil de relacionamento dele, não é para ser nada complexo não é só para ter um parametro de satisfação.
 
 ---
 
@@ -1095,7 +1091,7 @@ Se clicar no bell:
 └─────────────────────────────────────┘
 
 Notificações desaparecem após 8 horas 
-(ou você arquiva)
+(ou você arquiva), menos as críticas
 ```
 
 ### 2. EMAIL
@@ -1115,7 +1111,7 @@ Investimento diário: R$ 36
 Ação sugerida: Recarregar hoje antes que a 
 campanha pause.
 
-[Recarregar Agora] [Ver Campanha]
+[Enviar e-mail de saldo baixo] [Ver Campanha]
 
 —
 ADSGATOR
@@ -1812,7 +1808,7 @@ Link em Configurações > Ajuda que abre:
 
 ### 3. Chat com IA
 
-Clique no "?" flutuante e converse com IA sobre como usar.
+Clique no "?" flutuante e converse com IA (gemini-2.5-flash-lite) sobre como usar.
 
 ---
 
