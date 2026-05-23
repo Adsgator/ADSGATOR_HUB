@@ -93,7 +93,7 @@ export function Sidebar() {
         <div className="w-[1.75rem] h-[1.75rem] rounded-[0.375rem] bg-ads-500 flex items-center justify-center shrink-0">
           <Zap className="w-[1rem] h-[1rem] text-white" strokeWidth={2.5} />
         </div>
-        <span className="text-ink-primary font-bold text-[1rem] tracking-tight opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
+        <span className="text-ink-primary font-bold text-[1rem] tracking-tight opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
           ADSGATOR
         </span>
       </div>
@@ -102,7 +102,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto overflow-x-hidden py-[1rem] px-[0.5rem] space-y-[1.5rem]">
         {NAV_ITEMS.map((group) => (
           <div key={group.group}>
-            <p className="text-ink-muted text-[0.625rem] font-semibold uppercase tracking-[0.08em] px-[0.5rem] mb-[0.375rem] opacity-0 w-0 h-0 group-hover:opacity-100 group-hover:w-auto group-hover:h-auto whitespace-nowrap overflow-hidden transition-all duration-200">
+            <p className="text-ink-muted text-[0.625rem] font-semibold uppercase tracking-[0.08em] px-[0.5rem] mb-[0.375rem] opacity-0 w-0 h-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto group-hover/sidebar:h-auto whitespace-nowrap overflow-hidden transition-all duration-200">
               {group.group}
             </p>
             <ul className="space-y-[0.125rem]">
@@ -136,7 +136,7 @@ export function Sidebar() {
                           </span>
                         )}
                       </div>
-                      <span className="opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
+                      <span className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
                         {label}
                       </span>
                     </Link>
@@ -154,14 +154,14 @@ export function Sidebar() {
           <div className="w-[1.75rem] h-[1.75rem] rounded-full bg-ads-500/20 border border-ads-500/30 flex items-center justify-center shrink-0">
             <span className="text-ads-500 text-[0.75rem] font-bold">A</span>
           </div>
-          <div className="flex-1 min-w-0 opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
+          <div className="flex-1 min-w-0 opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
             <p className="text-ink-primary text-[0.8125rem] font-medium truncate">Admin</p>
             <p className="text-ink-muted text-[0.6875rem] truncate">Adsgator</p>
           </div>
           <button
             onClick={handleLogout}
             title="Sair"
-            className="opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto whitespace-nowrap overflow-hidden transition-all duration-200"
+            className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200"
           >
             <LogOut
               className="w-[0.875rem] h-[0.875rem] text-ink-muted hover:text-ink-primary transition-colors"
