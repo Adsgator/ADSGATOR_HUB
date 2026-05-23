@@ -144,3 +144,312 @@ export async function obterPalavrasChavePerformance(
     return [];
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// NOVAS FUNÇÕES PARA ANALYTICS PREMIUM
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ─── 1. TERMOS DE PESQUISA ────────────────────────────────────────────────────
+
+export interface TermoPesquisa {
+  termo:       string;
+  impressoes:  number;
+  cliques:     number;
+  ctr:         number;
+  conversoes:  number;
+  custo:       number;
+}
+
+export async function obterTermosPesquisa(
+  customerId: string,
+  mesAno:     string,
+): Promise<TermoPesquisa[]> {
+  const [ano, mes] = mesAno.split('-').map(Number);
+  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
+  const ultimoDia    = new Date(ano, mes, 0);
+  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+
+  try {
+    const client   = criarClienteAds();
+    const customer = client.Customer({
+      customer_id:   customerId,
+      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
+      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
+    });
+
+    const results = await customer.query(`
+      SELECT
+        search_term_view.search_term,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.ctr,
+        metrics.conversions,
+        metrics.cost_micros
+      FROM search_term_view
+      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      ORDER BY metrics.clicks DESC
+      LIMIT 50
+    `);
+
+    return results.map((r: Record<string, any>) => ({
+      termo:      String(r.search_term_view?.search_term ?? ''),
+      impressoes: r.metrics?.impressions ?? 0,
+      cliques:    r.metrics?.clicks       ?? 0,
+      ctr:        (r.metrics?.ctr         ?? 0) * 100,
+      conversoes: r.metrics?.conversions  ?? 0,
+      custo:      (r.metrics?.cost_micros ?? 0) / 1_000_000,
+    }));
+  } catch (error) {
+    console.error('Erro ao obter termos de pesquisa:', error);
+    return [];
+  }
+}
+
+// ─── 2. DEMOGRAFIA (IDADE E GÊNERO) ───────────────────────────────────────────
+
+export interface DemografiaDados {
+  faixa_etaria: string;
+  genero:       string;
+  impressoes:   number;
+  cliques:      number;
+  conversoes:   number;
+  custo:        number;
+}
+
+export async function obterDemografia(
+  customerId: string,
+  mesAno:     string,
+): Promise<DemografiaDados[]> {
+  const [ano, mes] = mesAno.split('-').map(Number);
+  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
+  const ultimoDia    = new Date(ano, mes, 0);
+  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+
+  try {
+    const client   = criarClienteAds();
+    const customer = client.Customer({
+      customer_id:   customerId,
+      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
+      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
+    });
+
+    const results = await customer.query(`
+      SELECT
+        ad_group_criterion.age_range.type,
+        ad_group_criterion.gender.type,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.conversions,
+        metrics.cost_micros
+      FROM age_range_view
+      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+    `);
+
+    return results.map((r: Record<string, any>) => ({
+      faixa_etaria: String(r.ad_group_criterion?.age_range?.type ?? ''),
+      genero:       String(r.ad_group_criterion?.gender?.type ?? ''),
+      impressoes:   r.metrics?.impressions ?? 0,
+      cliques:      r.metrics?.clicks       ?? 0,
+      conversoes:   r.metrics?.conversions  ?? 0,
+      custo:        (r.metrics?.cost_micros ?? 0) / 1_000_000,
+    }));
+  } catch (error) {
+    console.error('Erro ao obter demografia:', error);
+    return [];
+  }
+}
+
+// ─── 3. GEOGRAFIA (REGIÕES) ────────────────────────────────────────────────────
+
+export interface GeografiaDados {
+  pais:        string;
+  estado:      string;
+  cidade:      string;
+  impressoes:  number;
+  cliques:     number;
+  conversoes:  number;
+  custo:       number;
+}
+
+export async function obterGeografia(
+  customerId: string,
+  mesAno:     string,
+): Promise<GeografiaDados[]> {
+  const [ano, mes] = mesAno.split('-').map(Number);
+  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
+  const ultimoDia    = new Date(ano, mes, 0);
+  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+
+  try {
+    const client   = criarClienteAds();
+    const customer = client.Customer({
+      customer_id:   customerId,
+      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
+      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
+    });
+
+    const results = await customer.query(`
+      SELECT
+        geographic_view.country_criterion_id,
+        geographic_view.location_name,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.conversions,
+        metrics.cost_micros
+      FROM geographic_view
+      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      ORDER BY metrics.clicks DESC
+      LIMIT 20
+    `);
+
+    return results.map((r: Record<string, any>) => ({
+      pais:       'Brasil',
+      estado:     String(r.geographic_view?.location_name ?? '').split(',')[0]?.trim() ?? '',
+      cidade:     String(r.geographic_view?.location_name ?? '').split(',')[1]?.trim() ?? '',
+      impressoes: r.metrics?.impressions ?? 0,
+      cliques:    r.metrics?.clicks       ?? 0,
+      conversoes: r.metrics?.conversions  ?? 0,
+      custo:      (r.metrics?.cost_micros ?? 0) / 1_000_000,
+    }));
+  } catch (error) {
+    console.error('Erro ao obter geografia:', error);
+    return [];
+  }
+}
+
+// ─── 4. DISPOSITIVOS ──────────────────────────────────────────────────────────
+
+export interface DeviceDados {
+  device:      string;
+  impressoes:  number;
+  cliques:     number;
+  ctr:         number;
+  conversoes:  number;
+  custo:       number;
+}
+
+export async function obterDevice(
+  customerId: string,
+  mesAno:     string,
+): Promise<DeviceDados[]> {
+  const [ano, mes] = mesAno.split('-').map(Number);
+  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
+  const ultimoDia    = new Date(ano, mes, 0);
+  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+
+  try {
+    const client   = criarClienteAds();
+    const customer = client.Customer({
+      customer_id:   customerId,
+      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
+      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
+    });
+
+    const results = await customer.query(`
+      SELECT
+        segments.device,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.ctr,
+        metrics.conversions,
+        metrics.cost_micros
+      FROM campaign
+      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+    `);
+
+    const agrupado = new Map<string, { impressoes: number; cliques: number; conversoes: number; custo: number }>();
+
+    for (const r of results) {
+      const device = String(r.segments?.device ?? 'UNKNOWN');
+      const atual = agrupado.get(device) ?? { impressoes: 0, cliques: 0, conversoes: 0, custo: 0 };
+      agrupado.set(device, {
+        impressoes: atual.impressoes + (r.metrics?.impressions ?? 0),
+        cliques:    atual.cliques    + (r.metrics?.clicks       ?? 0),
+        conversoes: atual.conversoes + (r.metrics?.conversions  ?? 0),
+        custo:      atual.custo      + ((r.metrics?.cost_micros ?? 0) / 1_000_000),
+      });
+    }
+
+    return Array.from(agrupado.entries()).map(([device, dados]) => ({
+      device,
+      impressoes: dados.impressoes,
+      cliques:    dados.cliques,
+      ctr:        dados.impressoes > 0 ? (dados.cliques / dados.impressoes) * 100 : 0,
+      conversoes: dados.conversoes,
+      custo:      dados.custo,
+    }));
+  } catch (error) {
+    console.error('Erro ao obter dispositivos:', error);
+    return [];
+  }
+}
+
+// ─── 5. HORÁRIO/DIA DA SEMANA ─────────────────────────────────────────────────
+
+export interface HorarioDados {
+  dia_semana:  string;
+  hora:        number;
+  impressoes:  number;
+  cliques:     number;
+  conversoes:  number;
+  custo:       number;
+}
+
+export async function obterHorario(
+  customerId: string,
+  mesAno:     string,
+): Promise<HorarioDados[]> {
+  const [ano, mes] = mesAno.split('-').map(Number);
+  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
+  const ultimoDia    = new Date(ano, mes, 0);
+  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+
+  try {
+    const client   = criarClienteAds();
+    const customer = client.Customer({
+      customer_id:   customerId,
+      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
+      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
+    });
+
+    const results = await customer.query(`
+      SELECT
+        segments.day_of_week,
+        segments.hour,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.conversions,
+        metrics.cost_micros
+      FROM campaign
+      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+    `);
+
+    const agrupado = new Map<string, { impressoes: number; cliques: number; conversoes: number; custo: number }>();
+
+    for (const r of results) {
+      const chave = `${r.segments?.day_of_week ?? ''}-${r.segments?.hour ?? 0}`;
+      const atual = agrupado.get(chave) ?? { impressoes: 0, cliques: 0, conversoes: 0, custo: 0 };
+      agrupado.set(chave, {
+        impressoes: atual.impressoes + (r.metrics?.impressions ?? 0),
+        cliques:    atual.cliques    + (r.metrics?.clicks       ?? 0),
+        conversoes: atual.conversoes + (r.metrics?.conversions  ?? 0),
+        custo:      atual.custo      + ((r.metrics?.cost_micros ?? 0) / 1_000_000),
+      });
+    }
+
+    return Array.from(agrupado.entries()).map(([chave, dados]) => {
+      const [dia, hora] = chave.split('-');
+      return {
+        dia_semana: dia,
+        hora:       parseInt(hora, 10),
+        impressoes: dados.impressoes,
+        cliques:    dados.cliques,
+        conversoes: dados.conversoes,
+        custo:      dados.custo,
+      };
+    });
+  } catch (error) {
+    console.error('Erro ao obter horário:', error);
+    return [];
+  }
+}

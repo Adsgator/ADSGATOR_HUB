@@ -87,6 +87,30 @@ export default function ClientesPage() {
         </Link>
       }
     >
+      {/* ── MINI KPIs BENTO ────────────────────────────────────────── */}
+      {!loading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-[0.75rem] mb-[1.5rem]">
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+            <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Total</p>
+            <p className="text-[1.5rem] font-bold text-ink-primary">{metricas.total}</p>
+          </div>
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+            <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Ativos</p>
+            <p className="text-[1.5rem] font-bold text-status-green">{metricas.ativos}</p>
+          </div>
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+            <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">MRR</p>
+            <p className="text-[1.5rem] font-bold text-ads-500">
+              R$ {(metricas.mrr / 1000).toFixed(1)}k
+            </p>
+          </div>
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+            <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Inadimplentes</p>
+            <p className="text-[1.5rem] font-bold text-status-orange">{metricas.inadimplentes}</p>
+          </div>
+        </div>
+      )}
+
       {/* ── ALERTAS RÁPIDOS ─────────────────────────────────────────── */}
       {metricas.inadimplentes > 0 && !loading && (
         <div className="flex items-center gap-[0.625rem] bg-status-orange/10 border border-status-orange/30 rounded-xl px-[1rem] py-[0.75rem] mb-[1.5rem]">

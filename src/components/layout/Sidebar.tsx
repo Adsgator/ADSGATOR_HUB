@@ -81,7 +81,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'group fixed left-0 top-0 h-screen z-40',
+        'group/sidebar fixed left-0 top-0 h-screen z-40',
         'flex flex-col',
         'bg-surface-card border-r border-surface-border',
         'w-[3.5rem] hover:w-[15rem]',

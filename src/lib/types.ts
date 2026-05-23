@@ -33,16 +33,24 @@ export interface Cliente {
   whatsapp?:       string
   nicho?:          string
   dominio?:        string
+  website?:        string
   status:          ClienteStatus
   mrr?:            number
   plano?:          string
   asaas_id?:       string
   dias_atraso:     number
   data_vencimento?: string
+  // Google Ads
   google_ads_id?:  string
   google_ads_customer_id?: string | null
+  google_ads_enabled?:     boolean
+  // GA4
   ga4_property_id?:        string | null
-  saldo_google?:   number
+  ga4_enabled?:            boolean
+  // Outras integrações
+  gmb_id?:          string
+  looker_url?:      string
+  saldo_google?:    number
   congelado_em?:    string
   data_criacao?:    string
   data_atualizacao?: string

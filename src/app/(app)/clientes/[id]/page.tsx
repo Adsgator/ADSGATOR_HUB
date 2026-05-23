@@ -10,6 +10,9 @@ import {
 import { MainLayout }      from '@/components/layout/MainLayout'
 import { ChecklistCard }   from '@/components/clientes/ChecklistCard'
 import { AuditTimeline }   from '@/components/clientes/AuditTimeline'
+import { AcessoRapido }    from '@/components/clientes/AcessoRapido'
+import { ClientePerformance } from '@/components/clientes/ClientePerformance'
+import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { supabase }        from '@/lib/supabase'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -243,6 +246,36 @@ export default function ClienteDetalhe() {
             </div>
             <ExternalLink className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-ads-500 transition-colors" strokeWidth={1.5} />
           </a>
+
+          {/* Acesso Rápido — Links Externos */}
+          {cliente && (
+            <AcessoRapido
+              links={{
+                google_ads_customer_id: cliente.google_ads_customer_id || undefined,
+                ga4_property_id: cliente.ga4_property_id || undefined,
+                gmb_id: cliente.gmb_id || undefined,
+                looker_url: cliente.looker_url || undefined,
+                website: cliente.website || undefined,
+              }}
+            />
+          )}
+
+          {/* Performance Inline — Ads + GA4 */}
+          {cliente && (
+            <ClientePerformance
+              clienteId={cliente.id}
+              googleAdsEnabled={cliente.google_ads_enabled || false}
+              ga4Enabled={cliente.ga4_enabled || false}
+            />
+          )}
+
+          {/* Integrações & Links */}
+          {cliente && (
+            <ClienteIntegracoes
+              cliente={cliente}
+              onUpdate={(updated) => setCliente(updated)}
+            />
+          )}
 
           {/* Memória do Cliente */}
           <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">

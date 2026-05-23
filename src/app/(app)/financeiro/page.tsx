@@ -229,18 +229,37 @@ export default function FinanceiroPage() {
         </div>
       }
     >
-      {/* ── KPIs ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem] mb-[2rem]">
-        {kpis.map(({ label, valor, sub, icon: Icon, cor }) => (
-          <div key={label} className="bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[1rem]">
-            <div className="flex items-start justify-between mb-[0.5rem]">
-              <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">{label}</p>
-              <Icon className={`w-[1rem] h-[1rem] ${cor}`} strokeWidth={1.5} />
-            </div>
-            <p className={`text-[1.75rem] font-bold leading-none mb-[0.375rem] ${cor}`}>{valor}</p>
-            <p className="text-ink-muted text-[0.75rem]">{sub}</p>
+      {/* ══ KPIs BENTO GRID ═══════════════════════════════════════ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1rem] mb-[2rem]">
+        {/* Card principal — MRR */}
+        <div className="col-span-2 bg-gradient-to-br from-ads-500/20 to-ads-600/10 border border-ads-500/30 rounded-xl p-[1.25rem]">
+          <div className="flex items-start justify-between mb-[0.5rem]">
+            <p className="text-ads-400 text-[0.6875rem] uppercase tracking-wide font-semibold">MRR Mensal</p>
+            <TrendingUp className="w-[1.25rem] h-[1.25rem] text-ads-500" strokeWidth={2} />
           </div>
-        ))}
+          <p className="text-[2.5rem] font-bold leading-none text-ads-400 mb-[0.5rem]">{fmt(dre.mrr)}</p>
+          <p className="text-ads-500/70 text-[0.8125rem]">Receita Recorrente Mensal</p>
+        </div>
+        
+        {/* Lucro Bruto */}
+        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+          <div className="flex items-start justify-between mb-[0.5rem]">
+            <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Lucro Bruto</p>
+            <DollarSign className="w-[1rem] h-[1rem] text-status-green" strokeWidth={1.5} />
+          </div>
+          <p className="text-[1.75rem] font-bold leading-none text-status-green mb-[0.375rem]">{fmt(dre.lucro_bruto)}</p>
+          <p className="text-ink-muted text-[0.75rem]">{pct(dre.lucro_bruto, dre.mrr)}% da receita</p>
+        </div>
+        
+        {/* Lucro Líquido */}
+        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+          <div className="flex items-start justify-between mb-[0.5rem]">
+            <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Lucro Líquido</p>
+            <TrendingUp className={`w-[1rem] h-[1rem] ${dre.lucro_liquido >= 0 ? 'text-status-green' : 'text-status-red'}`} strokeWidth={1.5} />
+          </div>
+          <p className={`text-[1.75rem] font-bold leading-none mb-[0.375rem] ${dre.lucro_liquido >= 0 ? 'text-status-green' : 'text-status-red'}`}>{fmt(dre.lucro_liquido)}</p>
+          <p className="text-ink-muted text-[0.75rem]">Margem {dre.margem.toFixed(1)}%</p>
+        </div>
       </div>
 
       {/* ══ SAÚDE SAAS ════════════════════════════════════════════ */}

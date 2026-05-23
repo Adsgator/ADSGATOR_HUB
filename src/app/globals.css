@@ -2,28 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── TEMA ESCURO — Paleta Gator ────────────────────────────────────────── */
+/* ─── TEMA ESCURO — Dark Theme Padrão (Zinc/Slate) ──────────────────────── */
 :root {
-  --surface-base:   31 39 27;     /* #141A12 Gator Dark Green */
-  --surface-card:   42 53 39;     /* #1F271B */
-  --surface-hover:  55 66 51;     /* #374233 */
-  --surface-border: 68 82 63;     /* #44523F */
+  --surface-base:   9 9 11;       /* #09090B Zinc-950 */
+  --surface-card:   24 24 27;     /* #18181B Zinc-900 */
+  --surface-hover:  39 39 42;     /* #27272A Zinc-800 */
+  --surface-border: 63 63 70;     /* #3F3F46 Zinc-700 */
 
-  --ink-primary:    240 243 239;  /* #F0F3EF */
-  --ink-secondary:  163 174 160;  /* #A3AEA0 */
-  --ink-muted:      92 101 88;    /* #5C6558 */
+  --ink-primary:    250 250 250;  /* #FAFAFA Zinc-50 */
+  --ink-secondary:  161 161 170;  /* #A1A1AA Zinc-400 */
+  --ink-muted:      113 113 122;  /* #71717A Zinc-500 */
 }
 
-/* ─── TEMA CLARO — Paleta Gator ─────────────────────────────────────────── */
+/* ─── TEMA CLARO — Light Theme Padrão (Zinc) ────────────────────────────── */
 .light {
-  --surface-base:   252 253 252;  /* #FCFDFC */
+  --surface-base:   250 250 250;  /* #FAFAFA Zinc-50 */
   --surface-card:   255 255 255;  /* #FFFFFF */
-  --surface-hover:  243 246 243;  /* #F3F6F3 */
-  --surface-border: 220 228 218;  /* #DCE4DA */
+  --surface-hover:  244 244 245;  /* #F4F4F5 Zinc-100 */
+  --surface-border: 228 228 231;  /* #E4E4E7 Zinc-200 */
 
-  --ink-primary:    31 39 27;     /* #141a12 */
-  --ink-secondary:  92 110 90;    /* #5C6E5A */
-  --ink-muted:      140 158 136;  /* #8C9E88 */
+  --ink-primary:    24 24 27;     /* #18181B Zinc-900 */
+  --ink-secondary:  82 82 91;     /* #52525B Zinc-600 */
+  --ink-muted:      161 161 170;  /* #A1A1AA Zinc-400 */
 }
 
 /* ─── BASE STYLES ───────────────────────────────────────────────────────── */

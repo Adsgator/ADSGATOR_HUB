@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react'
 import {
   Save, User, Bell, Plug, DollarSign,
-  Palette, Users, Check,
+  Palette, Users, Check, History,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { supabase }   from '@/lib/supabase'
+import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 
-type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe'
+type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'auditoria'
 
 const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'perfil',        label: 'Perfil',         icon: User       },
@@ -17,6 +18,7 @@ const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'financeiro',    label: 'Financeiro',      icon: DollarSign },
   { id: 'aparencia',     label: 'Aparência',       icon: Palette    },
   { id: 'equipe',        label: 'Equipe',          icon: Users      },
+  { id: 'auditoria',     label: 'Auditoria',       icon: History    },
 ]
 
 interface ConfigFinanceira {
@@ -409,6 +411,7 @@ export default function ConfiguracoesPage() {
     financeiro:   <AbaFinanceiro />,
     aparencia:    <AbaAparencia />,
     equipe:       <AbaEquipe />,
+    auditoria:    <AuditLogViewer />,
   }
 
   return (

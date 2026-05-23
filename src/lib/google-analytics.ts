@@ -168,3 +168,104 @@ export async function obterFontesTrafego(
     return [];
   }
 }
+
+// ═════════════════════════════════════════════════════════════════════════════
+// NOVAS FUNÇÕES PARA ANALYTICS PREMIUM
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ─── GEOGRAFIA GA4 ───────────────────────────────────────────────────────────
+
+export interface GeoGA4 {
+  pais:        string;
+  estado:      string;
+  cidade:      string;
+  sessoes:     number;
+  usuarios:    number;
+  taxa_engajamento: number;
+}
+
+export async function obterGeoGA4(
+  propertyId: string,
+  mesAno:     string,
+): Promise<GeoGA4[]> {
+  const { startDate, endDate } = intervaloMes(mesAno);
+
+  try {
+    const client = criarClienteGA4();
+    const [response] = await client.runReport({
+      property:   `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [
+        { name: 'country'   },
+        { name: 'region'    },
+        { name: 'city'      },
+      ],
+      metrics: [
+        { name: 'sessions'       },
+        { name: 'activeUsers'    },
+        { name: 'engagementRate' },
+      ],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 20,
+    });
+
+    return (response?.rows ?? []).map((row: Record<string, any>) => ({
+      pais:        row.dimensionValues?.[0]?.value ?? '',
+      estado:      row.dimensionValues?.[1]?.value ?? '',
+      cidade:      row.dimensionValues?.[2]?.value ?? '',
+      sessoes:     parseFloat(row.metricValues?.[0]?.value ?? '0'),
+      usuarios:    parseFloat(row.metricValues?.[1]?.value ?? '0'),
+      taxa_engajamento: parseFloat(row.metricValues?.[2]?.value ?? '0') * 100,
+    }));
+  } catch (error) {
+    console.error('Erro ao obter geo GA4:', error);
+    return [];
+  }
+}
+
+// ─── DISPOSITIVOS GA4 ────────────────────────────────────────────────────────
+
+export interface DeviceGA4 {
+  device:           string;
+  sistema_operacional: string;
+  sessoes:          number;
+  usuarios:         number;
+  taxa_engajamento: number;
+}
+
+export async function obterDeviceGA4(
+  propertyId: string,
+  mesAno:     string,
+): Promise<DeviceGA4[]> {
+  const { startDate, endDate } = intervaloMes(mesAno);
+
+  try {
+    const client = criarClienteGA4();
+    const [response] = await client.runReport({
+      property:   `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [
+        { name: 'deviceCategory' },
+        { name: 'operatingSystem' },
+      ],
+      metrics: [
+        { name: 'sessions'       },
+        { name: 'activeUsers'    },
+        { name: 'engagementRate' },
+      ],
+      orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+      limit: 10,
+    });
+
+    return (response?.rows ?? []).map((row: Record<string, any>) => ({
+      device:           row.dimensionValues?.[0]?.value ?? '',
+      sistema_operacional: row.dimensionValues?.[1]?.value ?? '',
+      sessoes:          parseFloat(row.metricValues?.[0]?.value ?? '0'),
+      usuarios:         parseFloat(row.metricValues?.[1]?.value ?? '0'),
+      taxa_engajamento: parseFloat(row.metricValues?.[2]?.value ?? '0') * 100,
+    }));
+  } catch (error) {
+    console.error('Erro ao obter device GA4:', error);
+    return [];
+  }
+}
