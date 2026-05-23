@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
@@ -13,9 +14,12 @@ import {
   HelpCircle,
   LogOut,
   Zap,
+  CheckSquare,
+  Megaphone,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { logout } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 
 const NAV_ITEMS = [
   {
@@ -23,6 +27,8 @@ const NAV_ITEMS = [
     items: [
       { href: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
       { href: '/clientes',     icon: Users,           label: 'Clientes'     },
+      { href: '/tarefas',      icon: CheckSquare,     label: 'Tarefas'      },
+      { href: '/marketing',    icon: Megaphone,       label: 'Marketing'    },
       { href: '/analytics',    icon: BarChart2,       label: 'Analytics'    },
       { href: '/financeiro',   icon: DollarSign,      label: 'Financeiro'   },
       { href: '/relatorios',   icon: FileText,        label: 'Relatórios'   },
@@ -41,6 +47,17 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
+  const [tarefasUrgentes, setTarefasUrgentes] = useState(0)
+
+  useEffect(() => {
+    const hoje = new Date().toISOString().slice(0, 10)
+    supabase
+      .from('tarefas')
+      .select('id', { count: 'exact', head: true })
+      .lte('data_prazo', hoje + 'T23:59:59')
+      .neq('status', 'feito')
+      .then(({ count }) => setTarefasUrgentes(count ?? 0))
+  }, [pathname])
 
   async function handleLogout() {
     await logout()
@@ -99,7 +116,13 @@ export function Sidebar() {
                       />
                       <span>{label}</span>
 
-                      {isActive && (
+                      {href === '/tarefas' && tarefasUrgentes > 0 && (
+                        <span className="ml-auto min-w-[1.125rem] h-[1.125rem] px-[0.25rem] rounded-full bg-status-red text-white text-[0.625rem] font-bold flex items-center justify-center">
+                          {tarefasUrgentes > 9 ? '9+' : tarefasUrgentes}
+                        </span>
+                      )}
+
+                      {isActive && tarefasUrgentes === 0 && (
                         <span className="ml-auto w-[0.1875rem] h-[1rem] rounded-full bg-ads-500" />
                       )}
                     </Link>

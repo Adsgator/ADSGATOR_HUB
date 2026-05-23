@@ -57,10 +57,14 @@ serve(async (req) => {
 
   try {
     const hoje = new Date();
-    const mesAtual = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-    const mesAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+    // 18.9 fix: relatório é sempre do mês ANTERIOR (dia 1 do mês corrente fecha o mês passado)
+    const mesAnterior    = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
     const mesAnteriorStr = `${mesAnterior.getFullYear()}-${String(mesAnterior.getMonth() + 1).padStart(2, '0')}`;
-    const nomeMes = hoje.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+    const mesAtual       = mesAnteriorStr; // renomear para não quebrar código abaixo
+    const nomeMes        = mesAnterior.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+    // Ref ao mês anterior ao relatório (para comparativo)
+    const mesRef    = new Date(mesAnterior.getFullYear(), mesAnterior.getMonth() - 1, 1);
+    const mesRefStr = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, '0')}`;
 
     // Buscar dados de assinaturas e clientes
     const { data: assinaturas } = await supabase
@@ -92,14 +96,23 @@ serve(async (req) => {
       .select('*')
       .eq('ativo', true);
 
-    // Buscar relatório do mês anterior para comparativo
+    // Buscar relatório do mês de referência para comparativo
     const { data: relatorioAnterior } = await supabase
       .from('relatorios_executivos')
       .select('mrr_total, conteudo_markdown')
-      .eq('mes_ano', mesAnteriorStr)
+      .eq('mes_ano', mesRefStr)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
+
+    // 18.8 fix: buscar CAC real de lançamentos de aquisição
+    const { data: lancamentosAquisicao } = await supabase
+      .from('financeiro_lancamentos')
+      .select('valor')
+      .eq('categoria', 'aquisicao')
+      .eq('tipo', 'despesa')
+      .gte('data', `${mesAnterior.getFullYear()}-${String(mesAnterior.getMonth() + 1).padStart(2, '0')}-01`);
+    const cacReal = (lancamentosAquisicao ?? []).reduce((s: number, l: { valor: number }) => s + (l.valor ?? 0), 0);
 
     // Calcular métricas
     const assinaturasAtivas = assinaturas?.filter(a => a.status === 'ativa') || [];
@@ -120,9 +133,8 @@ serve(async (req) => {
     const lucro = mrrTotal - custosTotais;
     const margem = mrrTotal > 0 ? (lucro / mrrTotal) * 100 : 0;
 
-    // LTV/CAC simplificado (assumindo CAC = 20% do MRR como média)
-    const cacEstimado = mrrTotal * 0.2;
-    const ltvCac = cacEstimado > 0 ? (mrrTotal * 12) / cacEstimado : 0;
+    // 18.8 fix: LTV/CAC com dados reais (null se sem dados)
+    const ltvCac = cacReal > 0 ? (mrrTotal * 12) / cacReal : 0;
 
     // Agregar métricas por cliente
     const metricasPorCliente: Record<string, MetricasCliente> = {};
@@ -224,10 +236,10 @@ serve(async (req) => {
       }
     });
 
-    // Salvar relatório
+    // 18.7 fix: UPSERT em vez de INSERT — idempotente (não falha no 2º run)
     const { data: relatorio, error } = await supabase
       .from('relatorios_executivos')
-      .insert({
+      .upsert({
         mes_ano: mesAtual,
         mrr_total: mrrTotal,
         churn_rate: churnRate,

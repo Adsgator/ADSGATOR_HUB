@@ -1,139 +1,440 @@
-'use client';
+'use client'
 
-import React, { useEffect, useState } from 'react';
-import { Save, Settings } from 'lucide-react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { supabase } from '@/lib/supabase';
+import React, { useEffect, useState } from 'react'
+import {
+  Save, User, Bell, Plug, DollarSign,
+  Palette, Users, Check,
+} from 'lucide-react'
+import { MainLayout } from '@/components/layout/MainLayout'
+import { supabase }   from '@/lib/supabase'
+
+type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe'
+
+const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
+  { id: 'perfil',        label: 'Perfil',         icon: User       },
+  { id: 'notificacoes',  label: 'Notificações',    icon: Bell       },
+  { id: 'integracoes',   label: 'Integrações',     icon: Plug       },
+  { id: 'financeiro',    label: 'Financeiro',      icon: DollarSign },
+  { id: 'aparencia',     label: 'Aparência',       icon: Palette    },
+  { id: 'equipe',        label: 'Equipe',          icon: Users      },
+]
 
 interface ConfigFinanceira {
-  custos_fixos_mensais:           number;
-  custos_variaveis_percentual:    number;
-  margem_lucro_minima:            number;
-  saldo_google_ads_limite_alerta: number;
+  custos_fixos_mensais:           number
+  custos_variaveis_percentual:    number
+  margem_lucro_minima:            number
+  saldo_google_ads_limite_alerta: number
 }
 
-export default function ConfiguracoesPage() {
-  const [config,   setConfig]   = useState<ConfigFinanceira>({
-    custos_fixos_mensais:           0,
-    custos_variaveis_percentual:    0,
-    margem_lucro_minima:            30,
-    saldo_google_ads_limite_alerta: 50,
-  });
-  const [loading,  setLoading]  = useState(true);
-  const [salvando, setSalvando] = useState(false);
-  const [salvo,    setSalvo]    = useState(false);
-  const [erro,     setErro]     = useState('');
+function FeedbackSalvo({ ok, erro }: { ok: boolean; erro: string }) {
+  if (erro) return <p className="text-[0.8125rem] text-status-red">{erro}</p>
+  if (ok)   return <p className="text-[0.8125rem] text-status-green flex items-center gap-[0.25rem]"><Check className="w-[0.75rem] h-[0.75rem]" strokeWidth={2.5} /> Salvo com sucesso</p>
+  return null
+}
+
+function BtnSalvar({ salvando }: { salvando: boolean }) {
+  return (
+    <button
+      type="submit"
+      disabled={salvando}
+      className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50"
+    >
+      {salvando
+        ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
+        : <Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+      }
+      {salvando ? 'Salvando…' : 'Salvar'}
+    </button>
+  )
+}
+
+function Campo({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-ink-secondary text-[0.875rem] font-medium mb-[0.375rem]">{label}</label>
+      {children}
+    </div>
+  )
+}
+
+function InputText({ value, onChange, placeholder, type = 'text' }: { value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+  return (
+    <input
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors"
+    />
+  )
+}
+
+function Toggle({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <label className="flex items-center justify-between cursor-pointer py-[0.5rem]">
+      <span className="text-ink-secondary text-[0.875rem]">{label}</span>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative w-[2.75rem] h-[1.5rem] rounded-full transition-colors ${checked ? 'bg-ads-500' : 'bg-surface-hover border border-surface-border'}`}
+      >
+        <span className={`absolute top-[0.1875rem] left-[0.1875rem] w-[1.125rem] h-[1.125rem] rounded-full bg-white shadow transition-transform ${checked ? 'translate-x-[1.25rem]' : ''}`} />
+      </button>
+    </label>
+  )
+}
+
+// ── ABA PERFIL ──────────────────────────────────────────────────────────────
+function AbaPerfil() {
+  const [nome,     setNome]     = useState('')
+  const [email,    setEmail]    = useState('')
+  const [telefone, setTelefone] = useState('')
+  const [cidade,   setCidade]   = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [salvo,    setSalvo]    = useState(false)
+  const [erro,     setErro]     = useState('')
 
   useEffect(() => {
-    async function carregar() {
-      const { data } = await supabase
-        .from('configuracoes_financeiras')
-        .select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta')
-        .eq('agencia_id', 'adsgator-main')
-        .single();
-      if (data) setConfig(data as ConfigFinanceira);
-      setLoading(false);
-    }
-    carregar();
-  }, []);
+    supabase.auth.getUser().then(({ data }) => {
+      const u = data.user
+      if (u) {
+        setEmail(u.email ?? '')
+        setNome((u.user_metadata?.full_name ?? '') as string)
+        setTelefone((u.user_metadata?.telefone ?? '') as string)
+        setCidade((u.user_metadata?.cidade ?? '') as string)
+      }
+    })
+  }, [])
 
   async function salvar(e: React.FormEvent) {
-    e.preventDefault();
-    setSalvando(true); setErro(''); setSalvo(false);
-    try {
-      const { error } = await supabase
-        .from('configuracoes_financeiras')
-        .update(config)
-        .eq('agencia_id', 'adsgator-main');
-      if (error) throw error;
-      setSalvo(true);
-      setTimeout(() => setSalvo(false), 3000);
-    } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Erro ao salvar');
-    } finally {
-      setSalvando(false);
+    e.preventDefault()
+    setSalvando(true); setErro(''); setSalvo(false)
+    const { error } = await supabase.auth.updateUser({ data: { full_name: nome, telefone, cidade } })
+    if (error) setErro(error.message)
+    else { setSalvo(true); setTimeout(() => setSalvo(false), 3000) }
+    setSalvando(false)
+  }
+
+  return (
+    <form onSubmit={salvar} className="flex flex-col gap-[1.25rem] max-w-[28rem]">
+      <Campo label="Nome completo"><InputText value={nome} onChange={setNome} placeholder="Seu nome" /></Campo>
+      <Campo label="E-mail"><InputText value={email} onChange={() => {}} type="email" placeholder="email@agencia.com" /></Campo>
+      <Campo label="Telefone"><InputText value={telefone} onChange={setTelefone} placeholder="+55 11 9 9999-9999" /></Campo>
+      <Campo label="Cidade"><InputText value={cidade} onChange={setCidade} placeholder="São Paulo, SP" /></Campo>
+      <div className="flex items-center gap-[1rem]">
+        <BtnSalvar salvando={salvando} />
+        <FeedbackSalvo ok={salvo} erro={erro} />
+      </div>
+    </form>
+  )
+}
+
+// ── ABA NOTIFICAÇÕES ────────────────────────────────────────────────────────
+function AbaNotificacoes() {
+  const [prefs, setPrefs] = useState({
+    email_alertas_criticos:  true,
+    email_relatorio_semanal: false,
+    email_relatorio_mensal:  true,
+    inapp_criticos:          true,
+    inapp_conversoes:        false,
+    inapp_verbose:           false,
+    dnd_ativo:               false,
+    dnd_inicio:              '22:00',
+    dnd_fim:                 '08:00',
+  })
+  const [salvando, setSalvando] = useState(false)
+  const [salvo, setSalvo] = useState(false)
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvando(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('configuracoes_usuario').upsert({ user_id: user.id, preferencias: prefs }, { onConflict: 'user_id' })
     }
+    setSalvo(true)
+    setTimeout(() => setSalvo(false), 3000)
+    setSalvando(false)
+  }
+
+  function set<K extends keyof typeof prefs>(k: K, v: (typeof prefs)[K]) {
+    setPrefs((p) => ({ ...p, [k]: v }))
+  }
+
+  return (
+    <form onSubmit={salvar} className="flex flex-col gap-[2rem] max-w-[28rem]">
+      <div>
+        <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.75rem]">E-mail</p>
+        <Toggle checked={prefs.email_alertas_criticos}  onChange={(v) => set('email_alertas_criticos', v)}  label="Alertas críticos por e-mail"     />
+        <Toggle checked={prefs.email_relatorio_semanal} onChange={(v) => set('email_relatorio_semanal', v)} label="Resumo semanal (sexta-feira)"     />
+        <Toggle checked={prefs.email_relatorio_mensal}  onChange={(v) => set('email_relatorio_mensal', v)}  label="Relatório mensal executivo"        />
+      </div>
+      <div>
+        <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.75rem]">In-app</p>
+        <Toggle checked={prefs.inapp_criticos}   onChange={(v) => set('inapp_criticos', v)}   label="Notificações críticas"           />
+        <Toggle checked={prefs.inapp_conversoes} onChange={(v) => set('inapp_conversoes', v)} label="Novas conversões"                />
+        <Toggle checked={prefs.inapp_verbose}    onChange={(v) => set('inapp_verbose', v)}    label="Todas as notificações (verbose)" />
+      </div>
+      <div>
+        <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.75rem]">Não Perturbe (DND)</p>
+        <Toggle checked={prefs.dnd_ativo} onChange={(v) => set('dnd_ativo', v)} label="Ativar silêncio noturno" />
+        {prefs.dnd_ativo && (
+          <div className="flex gap-[1rem] mt-[0.75rem]">
+            <Campo label="Início"><InputText type="time" value={prefs.dnd_inicio} onChange={(v) => set('dnd_inicio', v)} /></Campo>
+            <Campo label="Fim"><InputText type="time" value={prefs.dnd_fim} onChange={(v) => set('dnd_fim', v)} /></Campo>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-[1rem]">
+        <BtnSalvar salvando={salvando} />
+        <FeedbackSalvo ok={salvo} erro="" />
+      </div>
+    </form>
+  )
+}
+
+// ── ABA INTEGRAÇÕES ─────────────────────────────────────────────────────────
+function AbaIntegracoes() {
+  const integracoes = [
+    { nome: 'Google Ads',   status: !!process.env.NEXT_PUBLIC_GOOGLE_ADS_CONNECTED, detalhe: 'OAuth configurado via variável de ambiente' },
+    { nome: 'GA4',          status: !!process.env.NEXT_PUBLIC_GA4_CONNECTED,        detalhe: 'Property ID configurado' },
+    { nome: 'Asaas',        status: !!process.env.NEXT_PUBLIC_ASAAS_CONNECTED,      detalhe: 'Webhook ativo' },
+    { nome: 'Vertex AI',    status: !!process.env.NEXT_PUBLIC_VERTEX_CONNECTED,     detalhe: 'Gemini 2.0 Flash + 2.5 Pro' },
+    { nome: 'WhatsApp',     status: false,                                            detalhe: 'Não configurado' },
+  ]
+
+  return (
+    <div className="flex flex-col gap-[0.75rem] max-w-[32rem]">
+      {integracoes.map((i) => (
+        <div key={i.nome} className="flex items-center justify-between bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+          <div>
+            <p className="text-ink-primary font-semibold text-[0.9375rem]">{i.nome}</p>
+            <p className="text-ink-muted text-[0.75rem]">{i.detalhe}</p>
+          </div>
+          <div className="flex items-center gap-[0.75rem]">
+            <span className={`text-[0.75rem] font-semibold px-[0.5rem] py-[0.125rem] rounded-full ${i.status ? 'bg-status-green/15 text-status-green' : 'bg-surface-hover text-ink-muted'}`}>
+              {i.status ? '✓ Conectado' : '— Desconectado'}
+            </span>
+          </div>
+        </div>
+      ))}
+      <p className="text-ink-muted text-[0.75rem] mt-[0.5rem]">Configure as variáveis de ambiente no painel Supabase ou no arquivo <code className="bg-surface-hover px-[0.25rem] rounded">.env.local</code> para ativar cada integração.</p>
+    </div>
+  )
+}
+
+// ── ABA FINANCEIRO ──────────────────────────────────────────────────────────
+function AbaFinanceiro() {
+  const [config,   setConfig]   = useState<ConfigFinanceira>({ custos_fixos_mensais: 0, custos_variaveis_percentual: 0, margem_lucro_minima: 30, saldo_google_ads_limite_alerta: 50 })
+  const [loading,  setLoading]  = useState(true)
+  const [salvando, setSalvando] = useState(false)
+  const [salvo,    setSalvo]    = useState(false)
+  const [erro,     setErro]     = useState('')
+
+  useEffect(() => {
+    supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta').eq('agencia_id', 'adsgator-main').single()
+      .then(({ data }) => { if (data) setConfig(data as ConfigFinanceira); setLoading(false) })
+  }, [])
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvando(true); setErro(''); setSalvo(false)
+    const { error } = await supabase.from('configuracoes_financeiras').update(config).eq('agencia_id', 'adsgator-main')
+    if (error) setErro(error.message)
+    else { setSalvo(true); setTimeout(() => setSalvo(false), 3000) }
+    setSalvando(false)
   }
 
   const campos = [
-    { key: 'custos_fixos_mensais',           label: 'Custos Fixos Mensais (R$)',       tipo: 'moeda'      },
-    { key: 'custos_variaveis_percentual',     label: 'Custos Variáveis (%)',            tipo: 'percentual' },
-    { key: 'margem_lucro_minima',             label: 'Margem de Lucro Mínima (%)',      tipo: 'percentual' },
-    { key: 'saldo_google_ads_limite_alerta',  label: 'Alerta Saldo Google Ads (R$)',    tipo: 'moeda'      },
-  ] as const;
+    { key: 'custos_fixos_mensais'          as const, label: 'Custos Fixos Mensais (R$)',    prefix: 'R$', suffix: ''  },
+    { key: 'custos_variaveis_percentual'   as const, label: 'Custos Variáveis (%)',          prefix: '',   suffix: '%' },
+    { key: 'margem_lucro_minima'           as const, label: 'Margem de Lucro Mínima (%)',    prefix: '',   suffix: '%' },
+    { key: 'saldo_google_ads_limite_alerta'as const, label: 'Alerta Saldo Google Ads (R$)', prefix: 'R$', suffix: ''  },
+  ]
+
+  if (loading) return <div className="h-[12rem] flex items-center justify-center"><div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" /></div>
 
   return (
-    <MainLayout>
-      <div className="mb-[2rem] flex items-center gap-[0.75rem]">
-        <Settings className="w-[1.5rem] h-[1.5rem] dark:text-ink-muted text-gray-400" strokeWidth={1.5} />
-        <div>
-          <h1 className="dark:text-ink-primary text-gray-900 text-[1.875rem] font-bold tracking-tight">
-            Configurações
-          </h1>
-          <p className="dark:text-ink-secondary text-gray-500 text-sm">Parâmetros financeiros da agência</p>
+    <form onSubmit={salvar} className="flex flex-col gap-[1.25rem] max-w-[28rem]">
+      {campos.map(({ key, label, prefix, suffix }) => (
+        <Campo key={key} label={label}>
+          <div className="relative">
+            {prefix && <span className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{prefix}</span>}
+            <input
+              type="number" step="0.01" min="0"
+              value={config[key]}
+              onChange={(e) => setConfig((p) => ({ ...p, [key]: parseFloat(e.target.value) || 0 }))}
+              className={`w-full h-[2.5rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors ${prefix ? 'pl-[2.5rem]' : 'pl-[0.75rem]'} ${suffix ? 'pr-[2rem]' : 'pr-[0.75rem]'}`}
+            />
+            {suffix && <span className="absolute right-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{suffix}</span>}
+          </div>
+        </Campo>
+      ))}
+      <div className="flex items-center gap-[1rem]">
+        <BtnSalvar salvando={salvando} />
+        <FeedbackSalvo ok={salvo} erro={erro} />
+      </div>
+    </form>
+  )
+}
+
+// ── ABA APARÊNCIA ───────────────────────────────────────────────────────────
+function AbaAparencia() {
+  const [tema,    setTema]    = useState<'dark' | 'light' | 'system'>('dark')
+  const [idioma,  setIdioma]  = useState('pt-BR')
+  const [fuso,    setFuso]    = useState('America/Sao_Paulo')
+  const [salvando, setSalvando] = useState(false)
+  const [salvo, setSalvo] = useState(false)
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvando(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      await supabase.from('configuracoes_usuario').upsert({ user_id: user.id, preferencias: { tema, idioma, fuso } }, { onConflict: 'user_id' })
+    }
+    setSalvo(true)
+    setTimeout(() => setSalvo(false), 3000)
+    setSalvando(false)
+  }
+
+  return (
+    <form onSubmit={salvar} className="flex flex-col gap-[1.5rem] max-w-[28rem]">
+      <Campo label="Tema">
+        <div className="grid grid-cols-3 gap-[0.5rem]">
+          {(['dark', 'light', 'system'] as const).map((t) => (
+            <button
+              key={t} type="button" onClick={() => setTema(t)}
+              className={`h-[2.5rem] rounded-lg border text-[0.875rem] font-medium transition-colors capitalize ${tema === t ? 'border-ads-500 bg-ads-500/10 text-ads-500' : 'border-surface-border bg-surface-hover text-ink-secondary hover:text-ink-primary'}`}
+            >
+              {t === 'dark' ? 'Escuro' : t === 'light' ? 'Claro' : 'Sistema'}
+            </button>
+          ))}
+        </div>
+      </Campo>
+      <Campo label="Idioma">
+        <select value={idioma} onChange={(e) => setIdioma(e.target.value)} className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30">
+          <option value="pt-BR">Português (Brasil)</option>
+          <option value="en-US">English (US)</option>
+          <option value="es">Español</option>
+        </select>
+      </Campo>
+      <Campo label="Fuso Horário">
+        <select value={fuso} onChange={(e) => setFuso(e.target.value)} className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30">
+          <option value="America/Sao_Paulo">América/São Paulo (UTC-3)</option>
+          <option value="America/Manaus">América/Manaus (UTC-4)</option>
+          <option value="America/Belem">América/Belém (UTC-3)</option>
+          <option value="America/Fortaleza">América/Fortaleza (UTC-3)</option>
+        </select>
+      </Campo>
+      <div className="flex items-center gap-[1rem]">
+        <BtnSalvar salvando={salvando} />
+        <FeedbackSalvo ok={salvo} erro="" />
+      </div>
+    </form>
+  )
+}
+
+// ── ABA EQUIPE ──────────────────────────────────────────────────────────────
+function AbaEquipe() {
+  const [email,     setEmail]     = useState('')
+  const [papel,     setPapel]     = useState<'gerenciador' | 'analista' | 'viewer'>('analista')
+  const [enviando,  setEnviando]  = useState(false)
+  const [feedbackI, setFeedbackI] = useState('')
+
+  async function convidar(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email.trim()) return
+    setEnviando(true); setFeedbackI('')
+    const { error } = await supabase.auth.admin?.inviteUserByEmail
+      ? await (supabase.auth as { admin?: { inviteUserByEmail: (email: string) => Promise<{ error: unknown }> } }).admin!.inviteUserByEmail(email)
+      : { error: new Error('Admin API não disponível client-side') }
+    if (error) setFeedbackI('Use o painel Supabase para convidar membros.')
+    else { setFeedbackI(`Convite enviado para ${email}`); setEmail('') }
+    setEnviando(false)
+  }
+
+  const PAPEIS = [
+    { value: 'proprietario', label: 'Proprietário',  desc: 'Acesso total'             },
+    { value: 'gerenciador',  label: 'Gerenciador',   desc: 'CRUD completo de clientes' },
+    { value: 'analista',     label: 'Analista',      desc: 'Leitura + relatórios'      },
+    { value: 'viewer',       label: 'Viewer',        desc: 'Somente leitura'           },
+  ]
+
+  return (
+    <div className="max-w-[32rem] flex flex-col gap-[2rem]">
+      <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+        <p className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">Papéis disponíveis</p>
+        <div className="flex flex-col gap-[0.5rem]">
+          {PAPEIS.map((p) => (
+            <div key={p.value} className="flex items-center justify-between">
+              <span className="text-ink-secondary text-[0.875rem] font-medium">{p.label}</span>
+              <span className="text-ink-muted text-[0.75rem]">{p.desc}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="max-w-[32rem]">
-        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
-          <h2 className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
-            Parâmetros Financeiros
-          </h2>
-
-          {loading ? (
-            <div className="flex flex-col gap-[1rem]">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-[4rem] rounded dark:bg-surface-hover bg-gray-100 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <form onSubmit={salvar} className="flex flex-col gap-[1rem]">
-              {campos.map(({ key, label, tipo }) => (
-                <div key={key}>
-                  <label className="block dark:text-ink-secondary text-gray-700 text-sm font-medium mb-[0.375rem]">
-                    {label}
-                  </label>
-                  <div className="relative">
-                    {tipo === 'moeda' && (
-                      <span className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 dark:text-ink-muted text-gray-400 text-sm">R$</span>
-                    )}
-                    <input
-                      type="number"
-                      step={tipo === 'percentual' ? '0.1' : '0.01'}
-                      min="0"
-                      value={config[key]}
-                      onChange={(e) => setConfig((prev) => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                      className={`w-full h-[2.5rem] pr-[0.75rem] rounded dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors ${tipo === 'moeda' ? 'pl-[2.25rem]' : 'pl-[0.75rem]'}`}
-                    />
-                    {tipo === 'percentual' && (
-                      <span className="absolute right-[0.75rem] top-1/2 -translate-y-1/2 dark:text-ink-muted text-gray-400 text-sm">%</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-
-              {erro && (
-                <p className="text-sm dark:text-status-red text-red-600">{erro}</p>
-              )}
-              {salvo && (
-                <p className="text-sm text-brand">Configurações salvas com sucesso.</p>
-              )}
-
-              <button
-                type="submit"
-                disabled={salvando}
-                className="flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded bg-brand hover:bg-brand-dark text-white text-sm font-semibold transition-colors disabled:opacity-50 mt-[0.5rem]"
-              >
-                {salvando
-                  ? <div className="w-[1rem] h-[1rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  : <Save className="w-[1rem] h-[1rem]" strokeWidth={2} />
-                }
-                {salvando ? 'Salvando…' : 'Salvar Configurações'}
-              </button>
-            </form>
-          )}
+      <form onSubmit={convidar} className="flex flex-col gap-[1rem]">
+        <p className="text-ink-primary font-semibold text-[0.9375rem]">Convidar membro</p>
+        <Campo label="E-mail"><InputText type="email" value={email} onChange={setEmail} placeholder="membro@agencia.com" /></Campo>
+        <Campo label="Papel">
+          <select value={papel} onChange={(e) => setPapel(e.target.value as typeof papel)} className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30">
+            <option value="gerenciador">Gerenciador</option>
+            <option value="analista">Analista</option>
+            <option value="viewer">Viewer</option>
+          </select>
+        </Campo>
+        <div className="flex items-center gap-[1rem]">
+          <button type="submit" disabled={enviando || !email} className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50">
+            {enviando ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Users className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+            Enviar Convite
+          </button>
+          {feedbackI && <p className="text-ink-muted text-[0.8125rem]">{feedbackI}</p>}
         </div>
+        <p className="text-ink-muted text-[0.75rem]">Para convidar via painel, acesse Authentication → Users no Supabase Dashboard.</p>
+      </form>
+    </div>
+  )
+}
+
+// ── PÁGINA PRINCIPAL ────────────────────────────────────────────────────────
+export default function ConfiguracoesPage() {
+  const [aba, setAba] = useState<AbaId>('perfil')
+
+  const ABA_CONTENT: Record<AbaId, React.ReactNode> = {
+    perfil:       <AbaPerfil />,
+    notificacoes: <AbaNotificacoes />,
+    integracoes:  <AbaIntegracoes />,
+    financeiro:   <AbaFinanceiro />,
+    aparencia:    <AbaAparencia />,
+    equipe:       <AbaEquipe />,
+  }
+
+  return (
+    <MainLayout title="Configurações" subtitle="Personalize a Adsgator conforme sua operação">
+      <div className="flex flex-col gap-[2rem]">
+        {/* Tabs */}
+        <div className="flex gap-[0.25rem] flex-wrap border-b border-surface-border pb-[0.25rem]">
+          {ABAS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setAba(id)}
+              className={`flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-t-lg text-[0.875rem] font-medium transition-colors ${
+                aba === id
+                  ? 'text-ads-500 border-b-2 border-ads-500 -mb-[0.3125rem]'
+                  : 'text-ink-muted hover:text-ink-secondary'
+              }`}
+            >
+              <Icon className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Conteúdo da aba ativa */}
+        <div>{ABA_CONTENT[aba]}</div>
       </div>
     </MainLayout>
-  );
+  )
 }

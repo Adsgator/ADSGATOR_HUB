@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, MessageCircle, ExternalLink,
   Clock, ChevronRight, RefreshCw, BarChart3,
+  Brain, Pencil, Save, X,
 } from 'lucide-react'
 import { MainLayout }      from '@/components/layout/MainLayout'
 import { ChecklistCard }   from '@/components/clientes/ChecklistCard'
@@ -37,17 +38,46 @@ export default function ClienteDetalhe() {
   const [estagios,  setEstagios]  = useState<Estagio[]>([])
   const [loading,   setLoading]   = useState(true)
   const [avancando, setAvancando] = useState(false)
+  const [memoria,         setMemoria]         = useState<string>('')
+  const [memoriaVersao,   setMemoriaVersao]   = useState<number>(0)
+  const [memoriaEditando, setMemoriaEditando] = useState(false)
+  const [memoriaTexto,    setMemoriaTexto]    = useState<string>('')
+  const [memoriaSalvando, setMemoriaSalvando] = useState(false)
+  const [memoriaAt,       setMemoriaAt]       = useState<string | null>(null)
 
   async function carregar() {
-    const [{ data: c }, { data: ests }] = await Promise.all([
+    const [{ data: c }, { data: ests }, { data: mem }] = await Promise.all([
       supabase.from('clientes').select('*').eq('id', id).single(),
-      supabase.from('estagios_operacionais').select('*').eq('cliente_id', id).order('data_entrada', { ascending: false }),
+      supabase.from('estagios').select('*').eq('cliente_id', id).order('created_at', { ascending: false }),
+      supabase.from('memoria_clientes').select('conteudo_md, versao, atualizado_em').eq('cliente_id', id).maybeSingle(),
     ])
     setCliente(c as Cliente ?? null)
     const lista = (ests ?? []) as Estagio[]
     setEstagios(lista)
-    setEstagio(lista.find((e) => e.data_saida === null || e.data_saida === undefined) ?? null)
+    setEstagio(lista.find((e) => e.ativo) ?? null)
+    const md = (mem as { conteudo_md: string; versao: number; atualizado_em: string } | null)
+    setMemoria(md?.conteudo_md ?? '')
+    setMemoriaVersao(md?.versao ?? 0)
+    setMemoriaAt(md?.atualizado_em ?? null)
     setLoading(false)
+  }
+
+  async function salvarMemoria() {
+    setMemoriaSalvando(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const novaVersao = memoriaVersao + 1
+    await supabase.from('memoria_clientes').upsert({
+      cliente_id:    id,
+      conteudo_md:   memoriaTexto,
+      versao:        novaVersao,
+      atualizado_em: new Date().toISOString(),
+      user_id:       user?.id,
+    }, { onConflict: 'cliente_id' })
+    setMemoria(memoriaTexto)
+    setMemoriaVersao(novaVersao)
+    setMemoriaAt(new Date().toISOString())
+    setMemoriaEditando(false)
+    setMemoriaSalvando(false)
   }
 
   useEffect(() => { if (id) carregar() }, [id])
@@ -60,12 +90,13 @@ export default function ClienteDetalhe() {
     try {
       await supabase.from('clientes').update({ status: proximo }).eq('id', id)
       if (estagio) {
-        await supabase.from('estagios_operacionais').update({ data_saida: new Date().toISOString() }).eq('id', estagio.id)
+        await supabase.from('estagios').update({ ativo: false, concluido_em: new Date().toISOString() }).eq('id', estagio.id)
       }
-      await supabase.from('estagios_operacionais').insert({
-        cliente_id:   id,
-        estagio:      proximo,
-        acao_proxima: STATUS_LABEL[proximo] ?? proximo,
+      await supabase.from('estagios').insert({
+        cliente_id: id,
+        nome:       proximo,
+        acao_label: STATUS_LABEL[proximo] ?? proximo,
+        ativo:      true,
       })
       await carregar()
     } finally {
@@ -158,7 +189,7 @@ export default function ClienteDetalhe() {
             <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
               <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.5rem]">Ação atual</p>
               <h2 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">
-                {estagio.acao_proxima ?? estagio.estagio}
+                {estagio.acao_label ?? estagio.nome}
               </h2>
               <div className="flex flex-wrap gap-[0.625rem]">
                 {estagio.acao_url && (
@@ -213,6 +244,71 @@ export default function ClienteDetalhe() {
             <ExternalLink className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-ads-500 transition-colors" strokeWidth={1.5} />
           </a>
 
+          {/* Memória do Cliente */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+            <div className="flex items-center justify-between mb-[1rem]">
+              <div className="flex items-center gap-[0.5rem]">
+                <Brain className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
+                <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Memória do Cliente</h3>
+                {memoriaVersao > 0 && (
+                  <span className="text-ink-muted text-[0.6875rem] bg-surface-hover px-[0.375rem] py-[0.0625rem] rounded-full">
+                    v{memoriaVersao}
+                    {memoriaAt ? ` · ${new Date(memoriaAt).toLocaleDateString('pt-BR')}` : ''}
+                  </span>
+                )}
+              </div>
+              {!memoriaEditando ? (
+                <button
+                  onClick={() => { setMemoriaTexto(memoria); setMemoriaEditando(true) }}
+                  className="flex items-center gap-[0.25rem] text-ink-muted hover:text-ink-secondary text-[0.8125rem] transition-colors"
+                >
+                  <Pencil className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                  Editar
+                </button>
+              ) : (
+                <div className="flex items-center gap-[0.5rem]">
+                  <button onClick={() => setMemoriaEditando(false)} className="text-ink-muted hover:text-ink-secondary transition-colors">
+                    <X className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                  </button>
+                  <button
+                    onClick={salvarMemoria}
+                    disabled={memoriaSalvando}
+                    className="flex items-center gap-[0.25rem] h-[1.875rem] px-[0.75rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.8125rem] font-semibold transition-colors disabled:opacity-50"
+                  >
+                    {memoriaSalvando
+                      ? <div className="w-[0.75rem] h-[0.75rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <Save className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                    }
+                    Salvar
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {memoriaEditando ? (
+              <textarea
+                value={memoriaTexto}
+                onChange={(e) => setMemoriaTexto(e.target.value)}
+                rows={10}
+                placeholder="Escreva notas, contexto, histórico de reuniões, preferências do cliente…"
+                className="w-full px-[0.75rem] py-[0.625rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors leading-relaxed"
+              />
+            ) : memoria ? (
+              <pre className="text-ink-secondary text-[0.875rem] leading-relaxed whitespace-pre-wrap break-words font-sans">{memoria}</pre>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-[2rem] text-center">
+                <Brain className="w-[2rem] h-[2rem] text-ink-muted mb-[0.5rem]" strokeWidth={1} />
+                <p className="text-ink-muted text-[0.875rem]">Nenhuma memória registrada.</p>
+                <button
+                  onClick={() => { setMemoriaTexto(''); setMemoriaEditando(true) }}
+                  className="mt-[0.75rem] text-ads-500 hover:text-ads-600 text-[0.8125rem] font-medium transition-colors"
+                >
+                  + Adicionar memória
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Audit Timeline */}
           <AuditTimeline clienteId={id} />
         </div>
@@ -263,17 +359,17 @@ export default function ClienteDetalhe() {
           </div>
 
           {/* Estágios anteriores */}
-          {estagios.filter((e) => e.data_saida).length > 0 && (
+          {estagios.filter((e) => !e.ativo).length > 0 && (
             <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
               <h3 className="text-ink-primary font-semibold text-[0.875rem] mb-[0.75rem]">Etapas concluídas</h3>
               <ul className="space-y-[0.5rem]">
-                {estagios.filter((e) => e.data_saida).map((e) => (
+                {estagios.filter((e) => !e.ativo).map((e) => (
                   <li key={e.id} className="flex items-center gap-[0.5rem] text-ink-muted text-[0.8125rem]">
                     <div className="w-[0.375rem] h-[0.375rem] rounded-full bg-ads-500/50 shrink-0" />
-                    {STATUS_LABEL[e.estagio] ?? e.estagio}
-                    {e.data_saida && (
+                    {STATUS_LABEL[e.nome] ?? e.nome}
+                    {e.concluido_em && (
                       <span className="ml-auto text-[0.6875rem]">
-                        {new Date(e.data_saida).toLocaleDateString('pt-BR')}
+                        {new Date(e.concluido_em).toLocaleDateString('pt-BR')}
                       </span>
                     )}
                   </li>

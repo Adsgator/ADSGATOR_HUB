@@ -2,9 +2,20 @@
 // POST /functions/v1/gerar-insight-ia
 // Body: { cliente_id, snapshot_id }
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { TEST_MODE } from '../_shared/test-mode.ts'
+import { VertexAI }     from 'https://esm.sh/@google-cloud/vertexai@1'
+import { TEST_MODE }    from '../_shared/test-mode.ts'
+
+const GEMINI_FLASH = 'gemini-2.5-flash'
+
+function criarVertexAI() {
+  return new VertexAI({
+    project:  Deno.env.get('VERTEX_AI_PROJECT_ID')!,
+    location: Deno.env.get('VERTEX_AI_LOCATION') ?? 'us-central1',
+    googleAuthOptions: { keyFilename: Deno.env.get('VERTEX_AI_CREDENTIALS') },
+  })
+}
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -62,7 +73,7 @@ DADOS ATUAIS:
 - CPA: R$ ${snap.cpa}
 
 HISTÓRICO (últimas semanas):
-${(historico ?? []).map(h => `- CPA: R$ ${h.cpa}, CTR: ${((h.ctr ?? 0) * 100).toFixed(1)}%, Conv: ${h.conversoes}`).join('\n')}
+${(historico ?? []).map((h: { cpa: number; ctr: number; conversoes: number }) => `- CPA: R$ ${h.cpa}, CTR: ${((h.ctr ?? 0) * 100).toFixed(1)}%, Conv: ${h.conversoes}`).join('\n')}
 
 Gere o insight focando em: o que está bom, o que precisa atenção, e qual ação tomar.
 `
@@ -76,25 +87,13 @@ Gere o insight focando em: o que está bom, o que precisa atenção, e qual aç�
       });
     }
 
-    const geminiApiKey = Deno.env.get('GEMINI_API_KEY')
-    if (!geminiApiKey) {
-      return new Response(JSON.stringify({ error: 'GEMINI_API_KEY não configurada' }), { status: 500 })
-    }
-
-    const vertexResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiApiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
-        })
-      }
-    )
-
-    const vertexData = await vertexResponse.json()
-    const insight = vertexData?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'Insight não disponível'
+    const vertex = criarVertexAI()
+    const model  = vertex.preview.getGenerativeModel({
+      model: GEMINI_FLASH,
+      generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
+    })
+    const result = await model.generateContent(prompt)
+    const insight = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? 'Insight não disponível'
 
     // Salvar insight no snapshot
     await supabase
@@ -107,7 +106,8 @@ Gere o insight focando em: o que está bom, o que precisa atenção, e qual aç�
     })
 
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
     console.error('[gerar-insight-ia]', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: msg }), { status: 500 })
   }
 })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Users,
   DollarSign,
@@ -13,6 +13,11 @@ import { MainLayout }            from '@/components/layout/MainLayout'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
 import { ClienteProgressCard }   from '@/components/dashboard/ClienteProgressCard'
+import { MorningBriefing }       from '@/components/dashboard/MorningBriefing'
+import { WeatherClock }          from '@/components/dashboard/WeatherClock'
+import { DRESparkline }          from '@/components/dashboard/DRESparkline'
+import { AlertasCriticos }       from '@/components/dashboard/AlertasCriticos'
+import { GeminiChat }            from '@/components/dashboard/GeminiChat'
 import { useClientes }           from '@/lib/hooks/useClientes'
 import { supabase }              from '@/lib/supabase'
 import type { Cliente, Estagio } from '@/lib/types'
@@ -28,14 +33,20 @@ interface AcaoItem {
   whatsapp?: string
 }
 
-// ── DADOS MOCK DE SPARKLINE (substitua com dados reais do Supabase) ────
-const SPARK_ATIVOS   = [18, 20, 19, 21, 22, 21, 24]
-const SPARK_MRR      = [38200, 39400, 41000, 42300, 43100, 44600, 45200]
-const SPARK_RETENCAO = [88, 86, 85, 84, 83, 82, 82]
-const SPARK_SALDO    = [2100, 1800, 2400, 1950, 1400, 1600, 1250]
-
 export default function DashboardPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
+  const [saldoGoogle, setSaldoGoogle] = useState<number | null>(null)
+
+  useEffect(() => {
+    supabase
+      .from('clientes')
+      .select('saldo_google')
+      .eq('status', 'ativo')
+      .then(({ data }) => {
+        const total = ((data ?? []) as { saldo_google?: number }[]).reduce((s, c) => s + (c.saldo_google ?? 0), 0)
+        setSaldoGoogle(total)
+      })
+  }, [])
 
   // ── SEPARAÇÕES ──────────────────────────────────────────────────────
   const retidos   = dados.filter((d) => d.cliente.status === 'congelado')
@@ -148,40 +159,28 @@ export default function DashboardPage() {
             <KpiCard
               label="Clientes Ativos"
               value={metricas.ativos}
-              delta="+3 esta semana"
-              deltaDir="up"
-              sparkData={SPARK_ATIVOS}
               accentColor="#FFA500"
               icon={<Users className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
             />
             <KpiCard
               label="MRR"
               value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`}
-              delta="+12%"
-              deltaDir="up"
-              deltaLabel="vs mês passado"
-              sparkData={SPARK_MRR}
               accentColor="#10B981"
               icon={<DollarSign className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
             />
             <KpiCard
               label="Taxa de Retenção"
               value={`${metricas.taxaRetencao}%`}
-              delta="-5%"
-              deltaDir="down"
-              deltaLabel="vs semana"
-              sparkData={SPARK_RETENCAO}
               accentColor="#EF4444"
               icon={<Percent className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
             />
             <KpiCard
               label="Saldo Google"
-              value="R$ 1.250"
-              delta="⚠️ Baixo"
-              deltaDir="down"
-              sparkData={SPARK_SALDO}
+              value={saldoGoogle !== null ? `R$ ${saldoGoogle.toLocaleString('pt-BR')}` : '…'}
+              delta={saldoGoogle !== null && saldoGoogle < 200 ? '⚠️ Baixo' : undefined}
+              deltaDir={saldoGoogle !== null && saldoGoogle < 200 ? 'down' : undefined}
               accentColor="#F59E0B"
-              alert={true}
+              alert={saldoGoogle !== null && saldoGoogle < 200}
               alertLabel="Envie #SALDOGOOGLE"
               icon={<CreditCard className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
             />
@@ -244,7 +243,7 @@ export default function DashboardPage() {
           BLOCO 4 — CLIENTES RETIDOS
       ════════════════════════════════════════════════ */}
       {retidos.length > 0 && (
-        <section>
+        <section className="mb-[2rem]">
           <div className="flex items-center gap-[0.5rem] mb-[0.75rem]">
             <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-status-orange animate-pulse-slow" />
             <h2 className="text-ink-primary font-semibold text-[0.9375rem]">
@@ -267,6 +266,29 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
+
+      {/* ════════════════════════════════════════════════
+          BLOCO 5 — MORNING BRIEFING + WEATHER
+      ════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-[1rem] mb-[1.5rem]">
+        <div className="md:col-span-2">
+          <MorningBriefing />
+        </div>
+        <WeatherClock />
+      </div>
+
+      {/* ════════════════════════════════════════════════
+          BLOCO 6 — DRE + ALERTAS
+      ════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-[1rem] mb-[1.5rem]">
+        <DRESparkline />
+        <AlertasCriticos />
+      </div>
+
+      {/* ════════════════════════════════════════════════
+          BLOCO 7 — GEMINI CHAT
+      ════════════════════════════════════════════════ */}
+      <GeminiChat />
     </MainLayout>
   )
 }

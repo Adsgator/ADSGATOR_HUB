@@ -30,7 +30,9 @@ function criarVertexAI() {
   });
 }
 
-const MODELO = 'gemini-1.5-pro';
+export const MODELO_PRO   = 'gemini-2.5-pro'
+export const MODELO_FLASH = 'gemini-2.5-flash'
+export const MODELO_LITE  = 'gemini-2.5-flash-lite'
 
 // ─── GERAR COPY PARA LANDING PAGE ────────────────────────────────────────────
 
@@ -61,7 +63,7 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
 
   try {
     const vertex  = criarVertexAI();
-    const model   = vertex.preview.getGenerativeModel({ model: MODELO });
+    const model   = vertex.preview.getGenerativeModel({ model: MODELO_FLASH });
     const result  = await model.generateContent(prompt);
     const text    = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
     return JSON.parse(text.trim()) as CopyGerada;
@@ -115,7 +117,7 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações):
 
   try {
     const vertex  = criarVertexAI();
-    const model   = vertex.preview.getGenerativeModel({ model: MODELO });
+    const model   = vertex.preview.getGenerativeModel({ model: MODELO_PRO });
     const result  = await model.generateContent(prompt);
     const text    = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
     return JSON.parse(text.trim()) as AnaliseRelatorio;

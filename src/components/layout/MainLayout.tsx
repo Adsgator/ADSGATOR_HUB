@@ -1,8 +1,9 @@
 'use client'
 
 import React from 'react'
-import { Sidebar } from './Sidebar'
-import { TopBar } from './TopBar'
+import { Sidebar }         from './Sidebar'
+import { TopBar }          from './TopBar'
+import { HelpChatButton } from '@/components/ui/HelpChatButton'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -24,6 +25,7 @@ export function MainLayout({ children, title, subtitle, actions }: MainLayoutPro
           {children}
         </main>
       </div>
+      <HelpChatButton />
     </div>
   )
 }

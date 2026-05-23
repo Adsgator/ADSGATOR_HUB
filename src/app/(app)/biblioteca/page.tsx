@@ -38,16 +38,16 @@ export default function BibliotecaPage() {
     <MainLayout>
       {/* HEADER */}
       <div className="mb-[2rem]">
-        <h1 className="dark:text-ink-primary text-gray-900 text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
+        <h1 className="text-ink-primary text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
           Biblioteca Astro & Construtor
         </h1>
-        <p className="dark:text-ink-secondary text-gray-500 text-sm">
+        <p className="text-ink-secondary text-[0.875rem]">
           Componentes prontos para landing pages + gerador de manifesto de produção
         </p>
       </div>
 
       {/* TABS */}
-      <div className="flex gap-[0.25rem] mb-[1.5rem] dark:bg-surface-hover bg-gray-100 p-[0.25rem] rounded-lg w-fit">
+      <div className="flex gap-[0.25rem] mb-[1.5rem] bg-surface-hover p-[0.25rem] rounded-lg w-fit">
         {([
           { id: 'biblioteca' as Aba, label: 'Biblioteca', icon: BookOpen },
           { id: 'construtor' as Aba, label: 'Construtor',  icon: Wrench  },
@@ -55,10 +55,10 @@ export default function BibliotecaPage() {
           <button
             key={id}
             onClick={() => setAba(id)}
-            className={`flex items-center gap-[0.5rem] px-[1rem] h-[2.25rem] rounded text-sm font-medium transition-colors
+            className={`flex items-center gap-[0.5rem] px-[1rem] h-[2.25rem] rounded text-[0.875rem] font-medium transition-colors
               ${aba === id
-                ? 'dark:bg-surface-card dark:text-ink-primary bg-white text-gray-900 shadow-sm'
-                : 'dark:text-ink-muted text-gray-500 dark:hover:text-ink-secondary hover:text-gray-700'}`}
+                ? 'bg-surface-card text-ink-primary shadow-sm'
+                : 'text-ink-muted hover:text-ink-secondary'}`}
           >
             <Icon className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
             {label}
@@ -97,8 +97,8 @@ function TabBiblioteca() {
   return (
     <div className="grid grid-cols-4 gap-[1.5rem]">
       {/* SIDEBAR */}
-      <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1rem] h-fit sticky top-[1rem]">
-        <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.75rem]">
+      <div className="bg-surface-card rounded-lg border border-surface-border p-[1rem] h-fit sticky top-[1rem]">
+        <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.75rem]">
           Categorias
         </p>
         <div className="flex flex-col gap-[0.125rem] mb-[1.25rem]">
@@ -110,17 +110,17 @@ function TabBiblioteca() {
                 const primeiro = BIBLIOTECA_COMPONENTES.find((c) => c.categoria === cat);
                 if (primeiro) setComponenteSel(primeiro.id);
               }}
-              className={`w-full text-left px-[0.75rem] h-[2rem] rounded text-sm font-medium transition-colors
+              className={`w-full text-left px-[0.75rem] h-[2rem] rounded text-[0.875rem] font-medium transition-colors
                 ${categoriaSel === cat
-                  ? 'dark:bg-brand/15 dark:text-brand bg-green-50 text-green-700'
-                  : 'dark:text-ink-secondary text-gray-600 dark:hover:bg-surface-hover hover:bg-gray-50'}`}
+                  ? 'bg-ads-500/15 text-ads-500'
+                  : 'text-ink-secondary hover:bg-surface-hover'}`}
             >
               {cat.replace(/_/g, ' ')}
             </button>
           ))}
         </div>
 
-        <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.5rem]">
+        <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.5rem]">
           {categoriaSel.replace(/_/g, ' ')}
         </p>
         <div className="flex flex-col gap-[0.125rem]">
@@ -128,10 +128,10 @@ function TabBiblioteca() {
             <button
               key={c.id}
               onClick={() => setComponenteSel(c.id)}
-              className={`w-full text-left px-[0.75rem] h-[2rem] rounded text-xs font-medium transition-colors
+              className={`w-full text-left px-[0.75rem] h-[2rem] rounded text-[0.75rem] font-medium transition-colors
                 ${componenteSel === c.id
-                  ? 'dark:bg-surface-hover dark:text-ink-primary bg-gray-100 text-gray-900'
-                  : 'dark:text-ink-muted text-gray-500 dark:hover:bg-surface-hover hover:bg-gray-50'}`}
+                  ? 'bg-surface-hover text-ink-primary'
+                  : 'text-ink-muted hover:bg-surface-hover'}`}
             >
               {c.nome}
             </button>
@@ -142,19 +142,19 @@ function TabBiblioteca() {
       {/* PAINEL PRINCIPAL */}
       <div className="col-span-3 flex flex-col gap-[1rem]">
         {/* Meta */}
-        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 px-[1.5rem] py-[1.25rem]">
+        <div className="bg-surface-card rounded-lg border border-surface-border px-[1.5rem] py-[1.25rem]">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="dark:text-ink-primary text-gray-900 font-semibold text-lg">{comp.nome}</h2>
-              <p className="dark:text-ink-secondary text-gray-500 text-sm">{comp.descricao}</p>
+              <h2 className="text-ink-primary font-semibold text-[1.125rem]">{comp.nome}</h2>
+              <p className="text-ink-secondary text-[0.875rem]">{comp.descricao}</p>
             </div>
-            <span className="dark:bg-surface-hover bg-gray-100 dark:text-ink-muted text-gray-500 text-xs font-medium px-[0.5rem] py-[0.25rem] rounded">
+            <span className="bg-surface-hover text-ink-muted text-[0.75rem] font-medium px-[0.5rem] py-[0.25rem] rounded">
               v{comp.versao}
             </span>
           </div>
           <div className="flex gap-[0.375rem] flex-wrap mt-[0.875rem]">
             {comp.variacoes.map((v) => (
-              <span key={v} className="dark:bg-surface-hover bg-gray-100 dark:text-ink-muted text-gray-500 text-xs font-medium px-[0.5rem] py-[0.125rem] rounded">
+              <span key={v} className="bg-surface-hover text-ink-muted text-[0.75rem] font-medium px-[0.5rem] py-[0.125rem] rounded">
                 {v}
               </span>
             ))}
@@ -162,17 +162,17 @@ function TabBiblioteca() {
         </div>
 
         {/* Código / Recomendações */}
-        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 overflow-hidden">
-          <div className="flex items-center justify-between px-[1.25rem] py-[0.75rem] border-b dark:border-surface-border border-gray-100">
+        <div className="bg-surface-card rounded-lg border border-surface-border overflow-hidden">
+          <div className="flex items-center justify-between px-[1.25rem] py-[0.75rem] border-b border-surface-border">
             <div className="flex items-center gap-[0.5rem]">
-              <Eye className="w-[0.875rem] h-[0.875rem] dark:text-ink-muted text-gray-400" strokeWidth={1.5} />
-              <p className="dark:text-ink-primary text-gray-900 text-sm font-medium">
+              <Eye className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.5} />
+              <p className="text-ink-primary text-[0.875rem] font-medium">
                 {mostrandoCodigo ? 'Código Astro' : 'Recomendações'}
               </p>
             </div>
             <button
               onClick={() => setMostrandoCodigo(!mostrandoCodigo)}
-              className="text-xs font-semibold dark:text-ink-secondary text-gray-500 dark:hover:text-ink-primary hover:text-gray-800 transition-colors"
+              className="text-[0.75rem] font-semibold text-ink-secondary hover:text-ink-primary transition-colors"
             >
               {mostrandoCodigo ? 'Ver recomendações' : 'Ver código'}
             </button>
@@ -180,15 +180,15 @@ function TabBiblioteca() {
 
           {mostrandoCodigo ? (
             <div className="relative">
-              <pre className="dark:bg-surface-bg bg-gray-50 text-xs font-mono dark:text-ink-secondary text-gray-700 p-[1.25rem] overflow-x-auto max-h-[28rem]">
+              <pre className="bg-surface-base text-[0.75rem] font-mono text-ink-secondary p-[1.25rem] overflow-x-auto max-h-[28rem]">
                 {comp.codigo_astro}
               </pre>
               <button
                 onClick={copiarCodigo}
                 className={`absolute top-[0.75rem] right-[0.75rem] flex items-center gap-[0.375rem] text-xs font-semibold px-[0.625rem] h-[1.75rem] rounded transition-all
                   ${copiado
-                    ? 'dark:bg-brand/20 dark:text-brand bg-green-50 text-green-700'
-                    : 'dark:bg-surface-hover dark:text-ink-secondary bg-white border border-gray-100 text-gray-600 hover:text-gray-800'}`}
+                    ? 'bg-ads-500/20 text-ads-500'
+                    : 'bg-surface-hover text-ink-secondary hover:text-ink-primary border border-surface-border'}`}
               >
                 {copiado
                   ? <><CheckCheck className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Copiado!</>
@@ -200,8 +200,8 @@ function TabBiblioteca() {
               <ul className="flex flex-col gap-[0.5rem]">
                 {comp.recomendacoes.map((rec, i) => (
                   <li key={i} className="flex items-start gap-[0.5rem]">
-                    <span className="text-brand font-bold text-xs mt-[0.125rem]">✓</span>
-                    <span className="dark:text-ink-secondary text-gray-600 text-sm">{rec}</span>
+                    <span className="text-ads-500 font-bold text-[0.75rem] mt-[0.125rem]">✓</span>
+                    <span className="text-ink-secondary text-[0.875rem]">{rec}</span>
                   </li>
                 ))}
               </ul>
@@ -285,8 +285,8 @@ function TabConstrutor() {
   return (
     <div className="grid grid-cols-3 gap-[1.5rem]">
       {/* CONFIGURAÇÃO */}
-      <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem] h-fit sticky top-[1rem]">
-        <p className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
+      <div className="bg-surface-card rounded-lg border border-surface-border p-[1.25rem] h-fit sticky top-[1rem]">
+        <p className="text-ink-primary font-semibold text-[1rem] mb-[1.25rem]">
           Configurações
         </p>
 
@@ -296,7 +296,7 @@ function TabConstrutor() {
           { label: 'Direção de Arte',   key: 'direcaoArte' as const, placeholder: 'Ex: moderna, tons earth' },
         ]).map(({ label, key, placeholder }) => (
           <div key={key} className="mb-[1rem]">
-            <label className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold block mb-[0.375rem]">
+            <label className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold block mb-[0.375rem]">
               {label}
             </label>
             <input
@@ -304,19 +304,19 @@ function TabConstrutor() {
               value={builder[key]}
               onChange={(e) => setBuilder({ ...builder, [key]: e.target.value })}
               placeholder={placeholder}
-              className="w-full h-[2.25rem] px-[0.75rem] rounded dark:bg-surface-hover dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+              className="w-full h-[2.25rem] px-[0.75rem] rounded bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/40 focus:border-ads-500 transition-colors"
             />
           </div>
         ))}
 
         <div className="mb-[1rem]">
-          <label className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold block mb-[0.375rem]">
+          <label className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold block mb-[0.375rem]">
             Estilo Visual
           </label>
           <select
             value={builder.estilo}
             onChange={(e) => setBuilder({ ...builder, estilo: e.target.value })}
-            className="w-full h-[2.25rem] px-[0.75rem] rounded dark:bg-surface-hover dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+            className="w-full h-[2.25rem] px-[0.75rem] rounded bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/40 focus:border-ads-500 transition-colors"
           >
             {['minimalista', 'corporativo', 'criativo', 'sofisticado'].map((o) => (
               <option key={o}>{o}</option>
@@ -325,7 +325,7 @@ function TabConstrutor() {
         </div>
 
         <div className="mb-[1.5rem]">
-          <label className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold block mb-[0.375rem]">
+          <label className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold block mb-[0.375rem]">
             Cor Primária
           </label>
           <div className="flex gap-[0.5rem] items-center">
@@ -339,7 +339,7 @@ function TabConstrutor() {
               type="text"
               value={builder.paleta.primaria}
               onChange={(e) => setBuilder({ ...builder, paleta: { ...builder.paleta, primaria: e.target.value } })}
-              className="flex-1 h-[2.25rem] px-[0.75rem] rounded dark:bg-surface-hover dark:border dark:border-surface-border dark:text-ink-primary bg-white border border-gray-200 text-gray-900 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors"
+              className="flex-1 h-[2.25rem] px-[0.75rem] rounded bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] font-mono focus:outline-none focus:ring-2 focus:ring-ads-500/40 focus:border-ads-500 transition-colors"
             />
           </div>
         </div>
@@ -349,7 +349,7 @@ function TabConstrutor() {
           <button
             onClick={gerarCopyIA}
             disabled={gerandoCopy}
-            className="w-full flex items-center justify-center gap-[0.5rem] h-[2.25rem] rounded text-sm font-medium dark:bg-status-purple/15 dark:text-status-purple bg-purple-50 text-purple-700 hover:opacity-80 transition-opacity disabled:opacity-50 mb-[0.75rem]"
+            className="w-full flex items-center justify-center gap-[0.5rem] h-[2.25rem] rounded text-[0.875rem] font-medium bg-status-purple/15 text-status-purple hover:opacity-80 transition-opacity disabled:opacity-50 mb-[0.75rem]"
           >
             {gerandoCopy
               ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -360,10 +360,10 @@ function TabConstrutor() {
         )}
 
         {copyGerada && (
-          <div className="dark:bg-surface-hover bg-gray-50 rounded border dark:border-surface-border border-gray-100 p-[0.75rem] mb-[0.75rem] text-xs">
-            <p className="dark:text-ink-muted text-gray-400 font-semibold uppercase tracking-wide mb-[0.5rem]">Copy gerada</p>
-            <p className="dark:text-ink-primary text-gray-900 font-semibold mb-[0.25rem]">{copyGerada.headline}</p>
-            <p className="dark:text-ink-secondary text-gray-600">{copyGerada.subtitulo}</p>
+          <div className="bg-surface-hover rounded border border-surface-border p-[0.75rem] mb-[0.75rem] text-[0.75rem]">
+            <p className="text-ink-muted font-semibold uppercase tracking-wide mb-[0.5rem]">Copy gerada</p>
+            <p className="text-ink-primary font-semibold mb-[0.25rem]">{copyGerada.headline}</p>
+            <p className="text-ink-secondary">{copyGerada.subtitulo}</p>
           </div>
         )}
 
@@ -376,12 +376,12 @@ function TabConstrutor() {
         <button
           onClick={gerarManifesto}
           disabled={!valido || gerando}
-          className={`w-full flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded text-sm font-semibold transition-all
+          className={`w-full flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded text-[0.875rem] font-semibold transition-all
             ${valido
               ? gerado
-                ? 'bg-brand/20 text-brand'
-                : 'dark:bg-brand dark:text-white bg-green-600 text-white hover:opacity-90'
-              : 'dark:bg-surface-hover dark:text-ink-disabled bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                ? 'bg-ads-500/20 text-ads-500'
+                : 'bg-ads-500 text-white hover:opacity-90'
+              : 'bg-surface-hover text-ink-muted cursor-not-allowed'}`}
         >
           {gerando
             ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -394,8 +394,8 @@ function TabConstrutor() {
 
       {/* SELETOR DE COMPONENTES */}
       <div className="col-span-2">
-        <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.25rem]">
-          <p className="dark:text-ink-primary text-gray-900 font-semibold text-base mb-[1.25rem]">
+        <div className="bg-surface-card rounded-lg border border-surface-border p-[1.25rem]">
+          <p className="text-ink-primary font-semibold text-[1rem] mb-[1.25rem]">
             Selecione os Componentes
           </p>
           <div className="flex flex-col gap-[1.5rem]">
@@ -403,7 +403,7 @@ function TabConstrutor() {
               const comps = BIBLIOTECA_COMPONENTES.filter((c) => c.categoria === cat);
               return (
                 <div key={cat}>
-                  <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.625rem]">
+                  <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.625rem]">
                     {cat.replace(/_/g, ' ')}
                   </p>
                   <div className="grid grid-cols-2 gap-[0.75rem]">
@@ -415,18 +415,18 @@ function TabConstrutor() {
                           onClick={() => toggleComponente(c.id)}
                           className={`text-left p-[0.875rem] rounded-lg border-2 transition-all
                             ${sel
-                              ? 'dark:bg-brand/10 dark:border-brand bg-green-50 border-green-500'
-                              : 'dark:bg-surface-bg dark:border-surface-border dark:hover:border-brand/40 bg-white border-gray-100 hover:border-green-200'}`}
+                              ? 'bg-ads-500/10 border-ads-500'
+                              : 'bg-surface-base border-surface-border hover:border-ads-500/40'}`}
                         >
                           <div className="flex items-center justify-between mb-[0.25rem]">
-                            <p className="dark:text-ink-primary text-gray-900 font-medium text-sm">{c.nome}</p>
+                            <p className="text-ink-primary font-medium text-[0.875rem]">{c.nome}</p>
                             {sel && (
-                              <div className="w-[1rem] h-[1rem] rounded-full bg-brand flex items-center justify-center shrink-0">
+                              <div className="w-[1rem] h-[1rem] rounded-full bg-ads-500 flex items-center justify-center shrink-0">
                                 <CheckCheck className="w-[0.625rem] h-[0.625rem] text-white" strokeWidth={3} />
                               </div>
                             )}
                           </div>
-                          <p className="dark:text-ink-muted text-gray-400 text-xs">{c.descricao}</p>
+                          <p className="text-ink-muted text-[0.75rem]">{c.descricao}</p>
                         </button>
                       );
                     })}
@@ -437,8 +437,8 @@ function TabConstrutor() {
           </div>
 
           {builder.componentesSelecionados.length > 0 && (
-            <div className="mt-[1.5rem] pt-[1.25rem] border-t dark:border-surface-border border-gray-100">
-              <p className="dark:text-ink-muted text-gray-400 text-xs uppercase tracking-wide font-semibold mb-[0.625rem]">
+            <div className="mt-[1.5rem] pt-[1.25rem] border-t border-surface-border">
+              <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mb-[0.625rem]">
                 Estrutura ({builder.componentesSelecionados.length} seções)
               </p>
               <div className="flex flex-col gap-[0.375rem]">
@@ -446,10 +446,10 @@ function TabConstrutor() {
                   const c = BIBLIOTECA_COMPONENTES.find((x) => x.id === id);
                   return (
                     <div key={id} className="flex items-center gap-[0.625rem]">
-                      <span className="w-[1.25rem] h-[1.25rem] rounded-full bg-brand flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      <span className="w-[1.25rem] h-[1.25rem] rounded-full bg-ads-500 flex items-center justify-center text-white text-[0.75rem] font-bold shrink-0">
                         {i + 1}
                       </span>
-                      <p className="dark:text-ink-secondary text-gray-600 text-sm">{c?.nome}</p>
+                      <p className="text-ink-secondary text-[0.875rem]">{c?.nome}</p>
                     </div>
                   );
                 })}

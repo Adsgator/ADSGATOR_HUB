@@ -80,7 +80,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
           Próxima ação
         </p>
         <p className="text-xs dark:text-ink-secondary text-gray-700 leading-snug">
-          {estagio?.acao_proxima ?? fluxoEtapa.instrucao}
+          {estagio?.acao_label ?? fluxoEtapa.instrucao}
         </p>
       </div>
 

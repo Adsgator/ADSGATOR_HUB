@@ -35,10 +35,10 @@ export function useClientes() {
 
       const ids = lista.map((c) => c.id)
       const { data: estagios } = await supabase
-        .from('estagios_operacionais')
+        .from('estagios')
         .select('*')
         .in('cliente_id', ids)
-        .is('data_saida', null)
+        .eq('ativo', true)
 
       const estagiosPorCliente = new Map<string, Estagio>()
       for (const e of (estagios ?? []) as Estagio[]) {
@@ -68,7 +68,7 @@ export function useClientes() {
     const channel = supabase
       .channel('clientes-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => carregar())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'estagios_operacionais' }, () => carregar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'estagios' }, () => carregar())
       .subscribe()
 
     return () => {

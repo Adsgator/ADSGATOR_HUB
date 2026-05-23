@@ -3,8 +3,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import {
   TrendingUp, DollarSign, AlertCircle,
-  MessageCircle, RefreshCw, Users,
+  MessageCircle, RefreshCw, Users, Download,
+  Target, Clock, Zap,
 } from 'lucide-react'
+import {
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine,
+} from 'recharts'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { supabase }   from '@/lib/supabase'
 import type { FinanceiroLancamento, Cliente } from '@/lib/types'
@@ -20,15 +25,61 @@ interface DRE {
   custos_fixos:      number
   custos_variaveis:  number
   lucro_bruto:       number
+  imposto_estimado:  number
+  tipo_tributacao:   string
   lucro_liquido:     number
   margem:            number
 }
 
+interface SaudeSaaS {
+  ltv:           number
+  cac:           number
+  ltv_cac:       number
+  payback_meses: number
+  churn_rate:    number
+  novos_mes:     number
+}
+
+interface SparkMes {
+  mes:   string
+  mrr:   number
+  lucro: number
+}
+
+interface ProjecaoMes {
+  mes:    string
+  mrr:    number
+  lucro:  number
+}
+
+function gerarCSV(lancamentos: FinanceiroLancamento[]): void {
+  const header = ['Data', 'Descrição', 'Tipo', 'Valor', 'Status']
+  const rows   = lancamentos.map((l) => [
+    new Date(l.data).toLocaleDateString('pt-BR'),
+    `"${l.descricao}"`,
+    l.tipo,
+    l.valor.toFixed(2).replace('.', ','),
+    l.status ?? '',
+  ])
+  const csv  = [header, ...rows].map((r) => r.join(';')).join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `financeiro_${new Date().toISOString().slice(0, 7)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function FinanceiroPage() {
-  const [dre,       setDre]       = useState<DRE | null>(null)
-  const [lancamentos, setLancamentos] = useState<FinanceiroLancamento[]>([])
-  const [atrasados, setAtrasados] = useState<Cliente[]>([])
-  const [loading,   setLoading]   = useState(true)
+  const [dre,          setDre]          = useState<DRE | null>(null)
+  const [saude,        setSaude]        = useState<SaudeSaaS | null>(null)
+  const [lancamentos,  setLancamentos]  = useState<FinanceiroLancamento[]>([])
+  const [todosLancs,   setTodosLancs]   = useState<FinanceiroLancamento[]>([])
+  const [atrasados,    setAtrasados]    = useState<Cliente[]>([])
+  const [sparkData,    setSparkData]    = useState<SparkMes[]>([])
+  const [projecao,     setProjecao]     = useState<ProjecaoMes[]>([])
+  const [loading,      setLoading]      = useState(true)
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -37,29 +88,100 @@ export default function FinanceiroPage() {
       mesInicio.setDate(1)
       const mesInicioStr = mesInicio.toISOString().split('T')[0]
 
-      const [{ data: lancs }, { data: atr }] = await Promise.all([
-        supabase
-          .from('financeiro_lancamentos')
-          .select('*')
-          .gte('data', mesInicioStr)
-          .order('data', { ascending: false }),
-        supabase
-          .from('clientes')
-          .select('*')
-          .gt('dias_atraso', 0)
-          .neq('status', 'cancelado'),
+      const doze = new Date()
+      doze.setMonth(doze.getMonth() - 12)
+      const dozeStr = doze.toISOString().split('T')[0]
+
+      const [{ data: lancs }, { data: todosL }, { data: atr }, { data: config }, { data: historico }] = await Promise.all([
+        supabase.from('financeiro_lancamentos').select('*').gte('data', mesInicioStr).order('data', { ascending: false }),
+        supabase.from('financeiro_lancamentos').select('*').gte('data', dozeStr).order('data', { ascending: true }),
+        supabase.from('clientes').select('*').gt('dias_atraso', 0).neq('status', 'cancelado'),
+        supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,tipo_tributacao,imposto_percentual').eq('agencia_id', 'adsgator-main').single(),
+        supabase.from('historico_acoes').select('tipo, created_at').in('tipo', ['cliente_criado', 'cancelado']).order('created_at', { ascending: true }),
       ])
 
       const lista = (lancs ?? []) as FinanceiroLancamento[]
+      const todos = (todosL ?? []) as FinanceiroLancamento[]
       setLancamentos(lista)
+      setTodosLancs(todos)
       setAtrasados((atr ?? []) as Cliente[])
 
-      const mrr     = lista.filter((l) => l.tipo === 'receita' && l.status === 'confirmado').reduce((s, l) => s + l.valor, 0)
-      const fixos   = lista.filter((l) => l.tipo === 'custo_fixo').reduce((s, l) => s + l.valor, 0)
-      const variav  = lista.filter((l) => l.tipo === 'custo_variavel').reduce((s, l) => s + l.valor, 0)
-      const lucroB  = mrr - fixos
-      const lucroL  = lucroB - variav
-      setDre({ mrr, custos_fixos: fixos, custos_variaveis: variav, lucro_bruto: lucroB, lucro_liquido: lucroL, margem: mrr > 0 ? (lucroL / mrr) * 100 : 0 })
+      // ── DRE do mês ──────────────────────────────────────────────────
+      const mrr       = lista.filter((l) => l.tipo === 'receita' && l.status === 'confirmado').reduce((s, l) => s + l.valor, 0)
+      const fixos     = lista.filter((l) => l.tipo === 'custo_fixo').reduce((s, l) => s + l.valor, 0)
+      const variav    = lista.filter((l) => l.tipo === 'custo_variavel').reduce((s, l) => s + l.valor, 0)
+      const cfgTyped  = config as { custos_fixos_mensais?: number; custos_variaveis_percentual?: number; tipo_tributacao?: string; imposto_percentual?: number } | null
+      const impostoP  = cfgTyped?.imposto_percentual ?? 11.0
+      const tipoTrib  = cfgTyped?.tipo_tributacao ?? 'MEI'
+      const imposto   = mrr * (impostoP / 100)
+      const lucroB    = mrr - fixos
+      const lucroL    = lucroB - variav - imposto
+      setDre({ mrr, custos_fixos: fixos, custos_variaveis: variav, lucro_bruto: lucroB, imposto_estimado: imposto, tipo_tributacao: tipoTrib, lucro_liquido: lucroL, margem: mrr > 0 ? (lucroL / mrr) * 100 : 0 })
+
+      // ── Sparkline 12 meses ──────────────────────────────────────────
+      const porMes: Record<string, { receita: number; custo: number }> = {}
+      for (const l of todos) {
+        const mes = l.data.slice(0, 7)
+        if (!porMes[mes]) porMes[mes] = { receita: 0, custo: 0 }
+        if (l.tipo === 'receita') porMes[mes].receita += l.valor
+        else porMes[mes].custo += l.valor
+      }
+      const spark = Object.entries(porMes).sort(([a], [b]) => a.localeCompare(b)).map(([mes, v]) => ({
+        mes: new Date(mes + '-01').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+        mrr: Math.round(v.receita),
+        lucro: Math.round(v.receita - v.custo),
+      }))
+      setSparkData(spark)
+
+      // ── Projeção 6 meses ────────────────────────────────────────────
+      const ultimos3 = spark.slice(-3)
+      const trendMrr = ultimos3.length >= 2
+        ? (ultimos3[ultimos3.length - 1].mrr - ultimos3[0].mrr) / Math.max(ultimos3.length - 1, 1)
+        : 0
+      const mrrBase  = spark[spark.length - 1]?.mrr ?? mrr
+      const fixosCfg = cfgTyped?.custos_fixos_mensais ?? fixos
+      const varPct   = cfgTyped?.custos_variaveis_percentual ?? 0
+
+      const proj: ProjecaoMes[] = Array.from({ length: 6 }, (_, i) => {
+        const d    = new Date()
+        d.setMonth(d.getMonth() + i + 1)
+        const mrrP = Math.max(0, mrrBase + trendMrr * (i + 1))
+        const custP = fixosCfg + mrrP * (varPct / 100)
+        return {
+          mes:   d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+          mrr:   Math.round(mrrP),
+          lucro: Math.round(mrrP - custP),
+        }
+      })
+      setProjecao(proj)
+
+      // ── Saúde SaaS ──────────────────────────────────────────────────
+      const hist = (historico ?? []) as { tipo: string; created_at: string }[]
+      const criados    = hist.filter((h) => h.tipo === 'cliente_criado')
+      const cancelados = hist.filter((h) => h.tipo === 'cancelado')
+
+      const vidaMedia = criados.length > 0 && cancelados.length > 0
+        ? cancelados.reduce((sum, c) => {
+            const criacao = criados.find((cr) => cr.created_at < c.created_at)
+            if (!criacao) return sum
+            return sum + (new Date(c.created_at).getTime() - new Date(criacao.created_at).getTime()) / (1000 * 60 * 60 * 24 * 30)
+          }, 0) / cancelados.length
+        : 24
+
+      const mrrMedio = mrr > 0 && criados.length > 0 ? mrr / criados.length : mrr
+      const ltv      = mrrMedio * vidaMedia
+      const cac      = fixos > 0 ? fixos * 0.3 : 500
+      const novosMs  = criados.filter((c) => c.created_at >= mesInicioStr).length
+      const churn    = criados.length > 0 ? (cancelados.filter((c) => c.created_at >= mesInicioStr).length / criados.length) * 100 : 0
+
+      setSaude({
+        ltv,
+        cac,
+        ltv_cac:       cac > 0 ? ltv / cac : 0,
+        payback_meses: mrrMedio > 0 ? cac / mrrMedio : 0,
+        churn_rate:    churn,
+        novos_mes:     novosMs,
+      })
     } catch (e) {
       console.error(e)
     } finally {
@@ -91,10 +213,20 @@ export default function FinanceiroPage() {
       title="Financeiro"
       subtitle="Saúde financeira em tempo real"
       actions={
-        <button onClick={carregar} className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
-          <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-          Atualizar
-        </button>
+        <div className="flex items-center gap-[0.5rem]">
+          <button
+            onClick={() => gerarCSV(todosLancs)}
+            disabled={todosLancs.length === 0}
+            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors disabled:opacity-40"
+          >
+            <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+            CSV
+          </button>
+          <button onClick={carregar} className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
+            <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+            Atualizar
+          </button>
+        </div>
       }
     >
       {/* ── KPIs ── */}
@@ -111,6 +243,31 @@ export default function FinanceiroPage() {
         ))}
       </div>
 
+      {/* ══ SAÚDE SAAS ════════════════════════════════════════════ */}
+      {saude && (
+        <div className="mb-[2rem]">
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">Métricas de Saúde SaaS</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-[0.75rem]">
+            {[
+              { label: 'LTV',          valor: fmt(saude.ltv),                          icon: DollarSign, cor: 'text-status-green',  tip: 'Valor vitalicio médio' },
+              { label: 'CAC',          valor: fmt(saude.cac),                          icon: Target,     cor: 'text-status-orange', tip: 'Custo de aquisição' },
+              { label: 'LTV/CAC',      valor: `${saude.ltv_cac.toFixed(1)}x`,          icon: Zap,        cor: saude.ltv_cac >= 30 ? 'text-status-green' : saude.ltv_cac >= 10 ? 'text-ads-500' : 'text-status-red', tip: 'Meta: > 30x' },
+              { label: 'Payback',      valor: `${saude.payback_meses.toFixed(1)}m`,    icon: Clock,      cor: saude.payback_meses <= 12 ? 'text-status-green' : 'text-status-orange', tip: 'Meses para recuperar CAC' },
+              { label: 'Churn Rate',   valor: `${saude.churn_rate.toFixed(1)}%`,       icon: AlertCircle,cor: saude.churn_rate <= 2 ? 'text-status-green' : 'text-status-red', tip: 'Taxa de cancelamento' },
+              { label: 'Novos/Mês',   valor: String(saude.novos_mes),                 icon: Users,      cor: 'text-status-blue', tip: 'Novos clientes este mês' },
+            ].map(({ label, valor, icon: Icon, cor, tip }) => (
+              <div key={label} className="bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.875rem]" title={tip}>
+                <div className="flex items-center justify-between mb-[0.375rem]">
+                  <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold">{label}</p>
+                  <Icon className={`w-[0.75rem] h-[0.75rem] ${cor}`} strokeWidth={1.5} />
+                </div>
+                <p className={`text-[1.25rem] font-bold leading-none ${cor}`}>{valor}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[2rem]">
         {/* ── DRE DISTRIBUIÇÃO ── */}
         <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
@@ -118,9 +275,10 @@ export default function FinanceiroPage() {
             Distribuição da Receita
           </h3>
           {[
-            { label: 'Custos Variáveis', valor: dre.custos_variaveis,           cor: 'bg-status-orange' },
-            { label: 'Custos Fixos',     valor: dre.custos_fixos,               cor: 'bg-status-blue'   },
-            { label: 'Lucro Líquido',    valor: Math.max(dre.lucro_liquido, 0), cor: 'bg-ads-500'       },
+            { label: 'Custos Variáveis',                                 valor: dre.custos_variaveis,           cor: 'bg-status-orange' },
+            { label: 'Custos Fixos',                                     valor: dre.custos_fixos,               cor: 'bg-status-blue'   },
+            { label: `Imposto Est. (${dre.tipo_tributacao} ${((dre.imposto_estimado / (dre.mrr || 1)) * 100).toFixed(0)}%)`, valor: dre.imposto_estimado, cor: 'bg-status-purple' },
+            { label: 'Lucro Líquido',                                    valor: Math.max(dre.lucro_liquido, 0), cor: 'bg-ads-500'       },
           ].map(({ label, valor, cor }) => (
             <div key={label} className="mb-[1rem]">
               <div className="flex justify-between items-center mb-[0.375rem]">
@@ -138,7 +296,7 @@ export default function FinanceiroPage() {
           ))}
         </div>
 
-        {/* ── ÚMTIMOS LANÇAMENTOS ── */}
+        {/* ── ÚCTIMOS LANÇAMENTOS ── */}
         <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
           <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1.25rem]">
             Últimos lançamentos do mês
@@ -163,6 +321,74 @@ export default function FinanceiroPage() {
           </div>
         </div>
       </div>
+
+      {/* ══ RECHARTS MRR 12 MESES ═══════════════════════════════════ */}
+      {sparkData.length > 1 && (
+        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1.25rem]">
+            Evolução MRR — 12 meses
+          </h3>
+          <div className="h-[14rem]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={sparkData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  contentStyle={{ background: 'var(--surface-card)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
+                  formatter={(v: unknown, name: unknown) => [fmt(Number(v)), (name as string) === 'mrr' ? 'MRR' : 'Lucro'] as [string, string]}
+                />
+                <ReferenceLine y={0} stroke="var(--status-red)" strokeDasharray="4 2" />
+                <Line type="monotone" dataKey="mrr"   stroke="#FFA500" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                <Line type="monotone" dataKey="lucro" stroke="#10B981" strokeWidth={2} dot={false} activeDot={{ r: 4 }} strokeDasharray="4 2" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex items-center gap-[1.5rem] mt-[0.75rem]">
+            {[{ cor: '#FFA500', label: 'MRR' }, { cor: '#10B981', label: 'Lucro Líquido' }].map(({ cor, label }) => (
+              <div key={label} className="flex items-center gap-[0.375rem]">
+                <div className="w-[1.5rem] h-[0.125rem] rounded-full" style={{ background: cor }} />
+                <span className="text-ink-muted text-[0.75rem]">{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ══ PROJEÇÃO 6 MESES ══════════════════════════════════════ */}
+      {projecao.length > 0 && (
+        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
+          <div className="flex items-center justify-between mb-[1.25rem]">
+            <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Projeção 6 meses</h3>
+            <span className="text-ink-muted text-[0.75rem]">
+              Baseado no trend dos últimos 3 meses
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[0.875rem]">
+              <thead>
+                <tr className="border-b border-surface-border">
+                  {['Mês', 'MRR Proj.', 'Lucro Proj.', 'Margem'].map((h) => (
+                    <th key={h} className="text-left pb-[0.75rem] text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {projecao.map((p) => (
+                  <tr key={p.mes} className="border-b border-surface-border last:border-0">
+                    <td className="py-[0.75rem] text-ink-secondary font-medium capitalize">{p.mes}</td>
+                    <td className="py-[0.75rem] text-ads-500 font-semibold">{fmt(p.mrr)}</td>
+                    <td className={`py-[0.75rem] font-semibold ${p.lucro >= 0 ? 'text-status-green' : 'text-status-red'}`}>{fmt(p.lucro)}</td>
+                    <td className="py-[0.75rem] text-ink-muted">
+                      {p.mrr > 0 ? `${((p.lucro / p.mrr) * 100).toFixed(1)}%` : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* ── CLIENTES EM ATRASO ── */}
       {atrasados.length > 0 && (

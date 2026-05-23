@@ -42,7 +42,8 @@ serve(async (req) => {
 | Investimento | R$ ${Number(snap.investimento ?? 0).toLocaleString('pt-BR')} |
 | Cliques | ${Number(snap.cliques ?? 0).toLocaleString('pt-BR')} |
 | CTR | ${((snap.ctr ?? 0) * 100).toFixed(2)}% |
-| Conversões | ${snap.conversoes} |
+| Conversões | ${snap.conversoes % 1 !== 0 ? `${snap.conversoes}*` : snap.conversoes} |
+> \* Conversões data-driven (atribuição fracionada pelo Google Ads)
 | CPA | R$ ${Number(snap.cpa ?? 0).toFixed(2)} |
 
 ## Insight da IA
@@ -103,27 +104,49 @@ ${copy_estrategico ?? 'Copy a ser definido com base no briefing.'}
 *Manifesto gerado pela Adsgator. Insira este arquivo como contexto no Cursor.*`
     }
 
-    // Salvar relatório
-    const { data: relatorio, error: relError } = await supabase
-      .from('relatorios')
-      .insert({
-        user_id,
-        cliente_id,
-        tipo,
-        titulo: `${tipo === 'analytics' ? 'Relatório Analytics' : 'Manifesto Landing'} — ${cliente?.nome}`,
-        conteudo_md: conteudo,
-      })
-      .select()
-      .single()
-
-    if (relError) throw relError
+    // 18.10 fix: analytics salva em relatorios_mensais (onde a UI lê);
+    // manifestos continuam em relatorios
+    let relatorio: Record<string, unknown> = {}
+    if (tipo === 'analytics' && dados?.mes_ano) {
+      const { data: rm, error: rmErr } = await supabase
+        .from('relatorios_mensais')
+        .upsert({
+          cliente_id,
+          mes_ano:           dados.mes_ano,
+          status_geracao:    'gerado',
+          conteudo_markdown: conteudo,
+          investimento_ads:  dados.investimento ?? null,
+          conversoes:        dados.conversoes   ?? null,
+          roi:               dados.roi          ?? null,
+          sessoes_ga4:       dados.sessoes_ga4  ?? null,
+        }, { onConflict: 'cliente_id,mes_ano' })
+        .select()
+        .single()
+      if (rmErr) throw rmErr
+      relatorio = rm ?? {}
+    } else {
+      const { data: rel, error: relError } = await supabase
+        .from('relatorios')
+        .insert({
+          user_id,
+          cliente_id,
+          tipo,
+          titulo: `${tipo === 'analytics' ? 'Relatório Analytics' : 'Manifesto Landing'} — ${cliente?.nome}`,
+          conteudo_md: conteudo,
+        })
+        .select()
+        .single()
+      if (relError) throw relError
+      relatorio = rel ?? {}
+    }
 
     return new Response(JSON.stringify({ relatorio, conteudo }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     })
 
   } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
     console.error('[gerar-relatorio-md]', error)
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: msg }), { status: 500 })
   }
 })

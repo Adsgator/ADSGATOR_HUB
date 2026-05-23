@@ -99,7 +99,7 @@ export function ClienteProgressCard({
           <div className="flex items-start gap-[0.375rem]">
             <ArrowRight className="w-[0.875rem] h-[0.875rem] text-ads-500 shrink-0 mt-[0.0625rem]" strokeWidth={2} />
             <p className="text-ink-secondary text-[0.8125rem] leading-snug">
-              {estagio.acao_proxima ?? estagio.estagio ?? 'Verificar próxima ação'}
+              {estagio.acao_label ?? estagio.nome ?? 'Verificar próxima ação'}
             </p>
           </div>
         ) : (

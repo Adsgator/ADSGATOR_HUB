@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Cliente, Estagio, HistoricoAcao, Assinatura } from './types';
+import type { Cliente, Estagio, HistoricoAcao, Assinatura, ChecklistItem } from './types';
 
 // ============================================================
 // CLIENTES
@@ -17,9 +17,8 @@ export async function criarCliente(dados: Omit<Cliente, 'id' | 'user_id' | 'dias
   // Criar estágio inicial
   await criarEstagio({
     cliente_id: data.id,
-    estagio: 'recebido',
-    acao_proxima: 'Enviar mensagem de boas-vindas via WhatsApp com template #BOASVINDAS',
-    pendente_cliente: false,
+    nome:       'recebido',
+    acao_label: 'Enviar mensagem de boas-vindas via WhatsApp com template #BOASVINDAS',
   });
 
   // Registrar no histórico
@@ -65,8 +64,8 @@ export async function avancarEstagio(clienteId: string, novoEstagio: string, aca
   const estagioAtivo = await obterEstagioAtivo(clienteId);
   if (estagioAtivo) {
     await supabase
-      .from('estagios_operacionais')
-      .update({ data_saida: new Date().toISOString() })
+      .from('estagios')
+      .update({ ativo: false, concluido_em: new Date().toISOString() })
       .eq('id', estagioAtivo.id);
   }
 
@@ -78,6 +77,7 @@ export async function avancarEstagio(clienteId: string, novoEstagio: string, aca
     ativo:         'ativo',
     congelado:     'congelado',
     cancelado:     'cancelado',
+    inativo:       'inativo',
   };
 
   const novoStatus = statusMap[novoEstagio] ?? novoEstagio;
@@ -85,10 +85,9 @@ export async function avancarEstagio(clienteId: string, novoEstagio: string, aca
 
   // Cria novo estágio
   const novoEsTagioData = await criarEstagio({
-    cliente_id:      clienteId,
-    estagio:         novoEstagio,
-    acao_proxima:    acaoProxima,
-    pendente_cliente: false,
+    cliente_id: clienteId,
+    nome:       novoEstagio,
+    acao_label: acaoProxima,
   });
 
   // Registra no histórico
@@ -102,18 +101,20 @@ export async function avancarEstagio(clienteId: string, novoEstagio: string, aca
 }
 
 // ============================================================
-// ESTAGIOS OPERACIONAIS
+// ESTAGIOS
 // ============================================================
 
 export async function criarEstagio(dados: {
-  cliente_id:       string;
-  estagio:          string;
-  acao_proxima:     string;
-  pendente_cliente?: boolean;
+  cliente_id:  string;
+  nome:        string;
+  acao_label?: string;
+  descricao?:  string;
+  acao_url?:   string;
+  checklist?:  ChecklistItem[];
 }): Promise<Estagio> {
   const { data, error } = await supabase
-    .from('estagios_operacionais')
-    .insert([dados])
+    .from('estagios')
+    .insert([{ ...dados, ativo: true }])
     .select()
     .single();
 
@@ -123,11 +124,11 @@ export async function criarEstagio(dados: {
 
 export async function obterEstagioAtivo(clienteId: string): Promise<Estagio | null> {
   const { data, error } = await supabase
-    .from('estagios_operacionais')
+    .from('estagios')
     .select('*')
     .eq('cliente_id', clienteId)
-    .is('data_saida', null)
-    .order('data_entrada', { ascending: false })
+    .eq('ativo', true)
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -137,7 +138,7 @@ export async function obterEstagioAtivo(clienteId: string): Promise<Estagio | nu
 
 export async function congelarCliente(clienteId: string) {
   const estagioAtivo = await obterEstagioAtivo(clienteId);
-  const estagioAnterior = estagioAtivo?.estagio ?? 'desconhecido';
+  const estagioAnterior = estagioAtivo?.nome ?? 'desconhecido';
 
   await avancarEstagio(
     clienteId,

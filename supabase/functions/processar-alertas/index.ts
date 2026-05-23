@@ -40,6 +40,18 @@ serve(async (req) => {
         descricao:  alerta.mensagem,
         metadata:   { alerta_id: alerta.id },
       });
+
+      // 18.6 fix: criar notificação para o NotificationBell
+      await supabase.from('notificacoes').insert({
+        user_id:    alerta.clientes?.user_id ?? null,
+        cliente_id: alerta.cliente_id,
+        tipo:       alerta.tipo_alerta === 'urgente' ? 'urgente' : 'atencao',
+        titulo:     alerta.mensagem?.slice(0, 80) ?? `Alerta: ${alerta.tipo_alerta}`,
+        mensagem:   alerta.mensagem,
+        acao_url:   `/clientes/${alerta.cliente_id}`,
+        acao_label: 'Ver cliente',
+        lida:       false,
+      });
     }
 
     return new Response(

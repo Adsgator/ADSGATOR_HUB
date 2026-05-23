@@ -11,7 +11,7 @@ interface RelatorioMensal {
   id:                    string;
   cliente_id:            string;
   mes_ano:               string;
-  status_geracao:        'pendente' | 'gerado' | 'erro';
+  status_geracao:        'pendente' | 'processando' | 'gerado' | 'erro';
   investimento_ads?:     number;
   conversoes?:           number;
   roi?:                  number;
@@ -30,6 +30,9 @@ interface RelatorioMensal {
 
 const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+const fmtConversoes = (n: number): string =>
+  n % 1 !== 0 ? `${n.toFixed(1)}*` : String(n);
 
 // ─── PÁGINA ───────────────────────────────────────────────────────────────────
 
@@ -103,7 +106,7 @@ export default function RelatoriosPage() {
 
   const kpis = selecionado ? [
     { label: 'Investimento',  valor: fmt(selecionado.investimento_ads ?? 0),             sub: 'Google Ads',     icon: TrendingUp,  cor: 'text-status-blue'   },
-    { label: 'Conversões',    valor: String(selecionado.conversoes ?? 0),                 sub: 'Leads/vendas',   icon: ArrowUpRight, cor: 'text-brand'        },
+    { label: 'Conversões',    valor: fmtConversoes(selecionado.conversoes ?? 0),           sub: 'Leads/vendas',   icon: ArrowUpRight, cor: 'text-brand'        },
     { label: 'ROI',           valor: `${(selecionado.roi ?? 0).toFixed(2)}x`,             sub: 'Retorno',        icon: BarChart3,   cor: 'text-status-purple' },
     { label: 'Sessões (GA4)', valor: (selecionado.sessoes_ga4 ?? 0).toLocaleString(),     sub: 'Visitas ao site', icon: Calendar,   cor: 'text-status-orange' },
   ] : [];
@@ -216,7 +219,7 @@ export default function RelatoriosPage() {
               </div>
               {[
                 { label: 'Investimento', valor: fmt(selecionado.investimento_ads ?? 0) },
-                { label: 'Conversões',   valor: String(selecionado.conversoes ?? 0)   },
+                { label: 'Conversões',   valor: fmtConversoes(selecionado.conversoes ?? 0) },
                 { label: 'ROI',          valor: `${(selecionado.roi ?? 0).toFixed(2)}x` },
               ].map(({ label, valor }) => (
                 <div key={label} className="flex justify-between items-center py-[0.75rem] border-b border-surface-border last:border-0">
@@ -224,6 +227,11 @@ export default function RelatoriosPage() {
                   <p className="text-ink-primary font-semibold text-[0.875rem]">{valor}</p>
                 </div>
               ))}
+              {(selecionado.conversoes ?? 0) % 1 !== 0 && (
+                <p className="text-ink-muted text-[0.6875rem] mt-[0.5rem]">
+                  * Conversões data-driven (atribuição fracionada pelo Google)
+                </p>
+              )}
             </div>
 
             <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">

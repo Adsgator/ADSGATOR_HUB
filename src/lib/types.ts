@@ -8,6 +8,7 @@ export type ClienteStatus =
   | 'congelado'
   | 'cancelado_debito'
   | 'cancelado'
+  | 'inativo'
 
 export type AssinaturaStatus =
   | 'ativa'
@@ -50,22 +51,16 @@ export interface Cliente {
 // ─── ESTAGIO ──────────────────────────────────────────────────────────────────
 
 export interface Estagio {
-  id:               string
-  cliente_id:       string
-  estagio:          string
-  acao_proxima?:    string
-  pendente_cliente?: boolean
-  data_entrada?:    string
-  data_saida?:      string | null
-  created_at?:      string
-  // campos extras usados pela UI (não persistidos no schema básico)
-  nome?:            string
-  descricao?:       string
-  acao_label?:      string
-  acao_url?:        string
-  checklist?:       ChecklistItem[]
-  ativo?:           boolean
-  concluido_em?:    string
+  id:           string
+  cliente_id:   string
+  nome:         string
+  descricao?:   string
+  acao_label?:  string
+  acao_url?:    string
+  checklist?:   ChecklistItem[]
+  ativo:        boolean
+  concluido_em?: string
+  created_at?:  string
 }
 
 // ─── NOTIFICACAO ──────────────────────────────────────────────────────────────
@@ -74,7 +69,7 @@ export interface Notificacao {
   id:           string
   user_id:      string
   cliente_id?:  string
-  tipo:         'urgente' | 'atencao' | 'info' | 'sucesso'
+  tipo:         'urgente' | 'atencao' | 'info' | 'sucesso' | 'alerta'
   titulo:       string
   mensagem?:    string
   acao_label?:  string
@@ -99,6 +94,7 @@ export interface AnalyticsSnapshot {
   conversoes?:    number  // aceita decimais: 0.5, 1.5 — CORRETO por data-driven
   cpa?:           number
   roas?:          number
+  cpc_medio?:     number
   usuarios?:      number
   sessoes?:       number
   taxa_conversao?: number
@@ -177,6 +173,8 @@ export interface ConfigFinanceira {
   custos_variaveis_percentual:    number
   margem_lucro_minima:            number
   saldo_google_ads_limite_alerta: number
+  tipo_tributacao?:               string
+  imposto_percentual?:            number
 }
 
 export interface OnboardProgresso {
@@ -184,6 +182,72 @@ export interface OnboardProgresso {
   progresso:  Record<string, boolean>
   updated_at: string
 }
+
+// ─── TAREFA ───────────────────────────────────────────────────────────────────
+
+export type TarefaPrioridade = 'critico' | 'alto' | 'normal' | 'baixo'
+export type TarefaStatus     = 'pendente' | 'em_progresso' | 'feito' | 'adiado'
+
+export interface Tarefa {
+  id:              string
+  user_id:         string
+  cliente_id?:     string
+  titulo:          string
+  descricao?:      string
+  prioridade:      TarefaPrioridade
+  status:          TarefaStatus
+  data_prazo?:     string
+  responsavel_id?: string
+  checklist?:      ChecklistItem[]
+  created_at:      string
+  updated_at:      string
+}
+
+// ─── MEMÓRIA DE CLIENTES ──────────────────────────────────────────────────────
+
+export interface MemoriaCliente {
+  id:          string
+  cliente_id:  string
+  conteudo_md: string
+  versao:      number
+  updated_at:  string
+}
+
+// ─── CONFIGURAÇÃO DO USUÁRIO ──────────────────────────────────────────────────
+
+export interface ConfiguracaoUsuario {
+  id:           string
+  user_id:      string
+  preferencias: Record<string, unknown>
+  notif_config: Record<string, unknown>
+  created_at:   string
+  updated_at:   string
+}
+
+// ─── API KEY ──────────────────────────────────────────────────────────────────
+
+export interface ApiKey {
+  id:         string
+  user_id:    string
+  nome:       string
+  chave_hash: string
+  ativo:      boolean
+  ultimo_uso?: string
+  created_at: string
+}
+
+// ─── CHAT MENSAGEM (IA Contextual) ────────────────────────────────────────────
+
+export type ChatRole = 'user' | 'assistant' | 'system'
+
+export interface ChatMensagem {
+  id:         string
+  role:       ChatRole
+  content:    string
+  created_at: string
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export interface RelatorioMensal {
   id:               string
