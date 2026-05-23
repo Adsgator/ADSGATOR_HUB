@@ -4,8 +4,8 @@
 
 /* ─── TEMA ESCURO — Paleta Gator ────────────────────────────────────────── */
 :root {
-  --surface-base:   31 39 27;     /* #1F271B Gator Dark Green */
-  --surface-card:   42 53 39;     /* #2A3527 */
+  --surface-base:   31 39 27;     /* #141A12 Gator Dark Green */
+  --surface-card:   42 53 39;     /* #1F271B */
   --surface-hover:  55 66 51;     /* #374233 */
   --surface-border: 68 82 63;     /* #44523F */
 
@@ -21,7 +21,7 @@
   --surface-hover:  243 246 243;  /* #F3F6F3 */
   --surface-border: 220 228 218;  /* #DCE4DA */
 
-  --ink-primary:    31 39 27;     /* #1F271B */
+  --ink-primary:    31 39 27;     /* #141a12 */
   --ink-secondary:  92 110 90;    /* #5C6E5A */
   --ink-muted:      140 158 136;  /* #8C9E88 */
 }

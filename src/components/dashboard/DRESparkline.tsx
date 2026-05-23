@@ -116,7 +116,7 @@ export function DRESparkline() {
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#2A3527',
+                  backgroundColor: '#141A12',
                   border: '1px solid #44523F',
                   borderRadius: '0.5rem',
                   padding: '0.5rem 0.75rem',
