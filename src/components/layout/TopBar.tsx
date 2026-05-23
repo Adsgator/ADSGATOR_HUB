@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Search } from 'lucide-react'
+import { Search, AlertCircle } from 'lucide-react'
 import { NotificationBell } from '@/components/layout/NotificationBell'
 import { ThemeToggle }      from '@/components/ui/ThemeToggle'
 import { GlobalSearch }     from '@/components/ui/GlobalSearch'
+import { supabase } from '@/lib/supabase'
 
 interface TopBarProps {
   title?: string
@@ -12,8 +13,18 @@ interface TopBarProps {
   actions?: React.ReactNode
 }
 
+function getSaudacao(nome?: string): string {
+  const hora = new Date().getHours()
+  const base = nome ? `, ${nome}` : ''
+  if (hora < 12) return `Bom dia${base}! ☀️`
+  if (hora < 18) return `Boa tarde${base}! 🌤️`
+  return `Boa noite${base}! 🌙`
+}
+
 export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const [searchAberto, setSearchAberto] = useState(false)
+  const [alertasCount, setAlertasCount] = useState(0)
+  const [userName, setUserName] = useState<string>()
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -26,18 +37,58 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Buscar alertas críticos em tempo real
+  useEffect(() => {
+    const fetchAlertas = async () => {
+      const { count } = await supabase
+        .from('clientes')
+        .select('id', { count: 'exact', head: true })
+        .gt('dias_atraso', 0)
+      setAlertasCount(count ?? 0)
+    }
+    fetchAlertas()
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('alertas-topbar')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, fetchAlertas)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  // Buscar nome do usuário
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const nome = data.user?.user_metadata?.nome ?? data.user?.email?.split('@')[0]
+      setUserName(nome)
+    })
+  }, [])
+
+  // Determinar título a exibir
+  const isDashboard = title === 'Dashboard'
+  const displayTitle = isDashboard ? getSaudacao(userName) : title
+
   return (
     <>
       <header className="h-[3.5rem] border-b border-surface-border bg-surface-card/80 backdrop-blur-sm sticky top-0 z-30 flex items-center px-[2rem] gap-[1rem]">
         {/* ── TÍTULO ────────────────────────────────── */}
         <div className="flex-1">
-          {title && (
+          {displayTitle && (
             <div>
-              <h1 className="text-ink-primary font-bold text-[1.125rem] leading-tight">{title}</h1>
+              <h1 className="text-ink-primary font-bold text-[1.125rem] leading-tight">{displayTitle}</h1>
               {subtitle && <p className="text-ink-muted text-[0.75rem]">{subtitle}</p>}
             </div>
           )}
         </div>
+
+        {/* ── ALERTAS CRÍTICOS ─────────────────────── */}
+        {alertasCount > 0 && (
+          <div className="flex items-center gap-[0.5rem] px-[0.625rem] py-[0.25rem] rounded-full bg-status-red/10 border border-status-red/20">
+            <AlertCircle className="w-[0.875rem] h-[0.875rem] text-status-red" strokeWidth={2} />
+            <span className="text-[0.75rem] font-medium text-status-red">{alertasCount} inadimplente{alertasCount > 1 ? 's' : ''}</span>
+          </div>
+        )}
 
         {/* ── AÇÕES CUSTOMIZADAS ─────────────────────── */}
         {actions && <div className="flex items-center gap-[0.5rem]">{actions}</div>}

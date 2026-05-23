@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { AlertTriangle, Clock, CreditCard, ExternalLink } from 'lucide-react'
+import { AlertTriangle, Clock, CreditCard, Zap, MessageCircle, ExternalLink, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 interface AlertaItem {
   id:       string
@@ -56,18 +57,32 @@ export function AlertasCriticos() {
   }, [carregar])
 
   const ICONE = {
-    inadimplente: <Clock       className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={2} />,
-    saldo:        <CreditCard  className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={1.75} />,
-    alerta:       <AlertTriangle className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={1.75} />,
+    inadimplente: <Clock         className="w-4 h-4 shrink-0" strokeWidth={2} />,
+    saldo:        <CreditCard    className="w-4 h-4 shrink-0" strokeWidth={2} />,
+    alerta:       <Zap           className="w-4 h-4 shrink-0" strokeWidth={2} />,
+  }
+
+  const COR_BORDA = {
+    urgente:  'border-l-status-red',
+    alto:     'border-l-ads-500',
+    normal:   'border-l-status-orange',
+  }
+
+  const handleCobrar = (nome: string) => {
+    toast.success(`Abrindo WhatsApp para cobrar ${nome.split(' ')[0]}...`)
+  }
+
+  const handleResolver = (id: string) => {
+    toast.success('Alerta marcado como resolvido')
   }
 
   return (
     <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
       <div className="flex items-center gap-[0.5rem] mb-[1rem]">
-        <AlertTriangle className="w-[0.875rem] h-[0.875rem] text-status-orange" strokeWidth={2} />
-        <p className="text-ink-primary font-semibold text-[0.875rem]">Alertas Críticos</p>
+        <AlertTriangle className="w-4 h-4 text-status-red" strokeWidth={2} />
+        <p className="text-ink-primary font-bold text-base">Alertas Críticos</p>
         {alertas.length > 0 && (
-          <span className="ml-auto text-[0.6875rem] font-semibold bg-status-red/15 text-status-red px-[0.375rem] py-[0.0625rem] rounded-full">
+          <span className="ml-auto text-xs font-bold bg-status-red text-white px-2 py-0.5 rounded-full">
             {alertas.length}
           </span>
         )}
@@ -75,27 +90,57 @@ export function AlertasCriticos() {
 
       {loading ? (
         <div className="space-y-[0.625rem]">
-          {[1, 2, 3].map((i) => <div key={i} className="h-[2.5rem] rounded bg-surface-hover animate-pulse" />)}
+          {[1, 2, 3].map((i) => <div key={i} className="h-14 rounded bg-surface-hover animate-pulse" />)}
         </div>
       ) : alertas.length === 0 ? (
-        <p className="text-ink-muted text-[0.8125rem] italic text-center py-[1rem]">Sem alertas no momento ✓</p>
+        <p className="text-ink-muted text-sm italic text-center py-[1rem]">Sem alertas no momento ✓</p>
       ) : (
         <ul className="flex flex-col gap-[0.5rem]">
           {alertas.map((a) => {
-            const cor = a.urgente ? 'text-status-red bg-status-red/10' : 'text-status-orange bg-status-orange/10'
-            const conteudo = (
-              <div className={`flex items-start gap-[0.625rem] p-[0.625rem] rounded-lg ${cor}`}>
-                <span className={a.urgente ? 'text-status-red' : 'text-status-orange'}>{ICONE[a.tipo]}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[0.8125rem] font-semibold leading-tight truncate">{a.label}</p>
-                  <p className="text-[0.75rem] opacity-80 leading-snug">{a.detalhe}</p>
-                </div>
-                {a.href && <ExternalLink className="w-[0.75rem] h-[0.75rem] shrink-0 opacity-60" strokeWidth={1.5} />}
-              </div>
-            )
+            const bordaCor = a.urgente ? COR_BORDA.urgente : a.tipo === 'saldo' ? COR_BORDA.alto : COR_BORDA.normal
+            const iconeCor = a.urgente ? 'text-status-red' : a.tipo === 'saldo' ? 'text-ads-500' : 'text-status-orange'
+
             return (
-              <li key={a.id}>
-                {a.href ? <a href={a.href}>{conteudo}</a> : conteudo}
+              <li
+                key={a.id}
+                className={`flex items-center gap-3 p-3 rounded-lg bg-surface-hover border-l-4 ${bordaCor}`}
+              >
+                <span className={iconeCor}>{ICONE[a.tipo]}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold leading-tight truncate text-ink-primary">{a.label}</p>
+                  <p className="text-xs text-ink-secondary leading-snug">{a.detalhe}</p>
+                </div>
+
+                {/* Botões de ação direta — 1 clique */}
+                <div className="flex items-center gap-1 shrink-0">
+                  {a.tipo === 'inadimplente' && (
+                    <button
+                      onClick={() => handleCobrar(a.label)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#25D366]/10 text-[#25D366] text-xs font-medium hover:bg-[#25D366]/20 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" strokeWidth={2} />
+                      Cobrar
+                    </button>
+                  )}
+
+                  {a.href && (
+                    <a
+                      href={a.href}
+                      className="flex items-center justify-center w-7 h-7 rounded-md text-ink-muted hover:bg-surface-border hover:text-ink-primary transition-colors"
+                      title="Ver cliente"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
+                    </a>
+                  )}
+
+                  <button
+                    onClick={() => handleResolver(a.id)}
+                    className="flex items-center justify-center w-7 h-7 rounded-md text-ink-muted hover:bg-surface-border hover:text-status-green transition-colors"
+                    title="Resolver"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />
+                  </button>
+                </div>
               </li>
             )
           })}

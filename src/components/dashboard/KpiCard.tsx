@@ -1,8 +1,11 @@
 'use client'
 
+import Link from 'next/link'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { cn } from '@/lib/utils'
+
+type AccentColor = 'green' | 'amber' | 'red' | 'blue'
 
 interface KpiCardProps {
   label:       string
@@ -11,10 +14,18 @@ interface KpiCardProps {
   deltaDir?:   'up' | 'down' | 'neutral'
   deltaLabel?: string
   sparkData?:  number[]
-  accentColor?: string
+  accentColor?: AccentColor
   alert?:      boolean
   alertLabel?: string
   icon?:       React.ReactNode
+  href?:       string
+}
+
+const ACCENT_COLORS: Record<AccentColor, string> = {
+  green: '#10B981',
+  amber: '#FFB100',
+  red:   '#EF4444',
+  blue:  '#3B82F6',
 }
 
 const GRADIENT_ID = (label: string) =>
@@ -27,12 +38,14 @@ export function KpiCard({
   deltaDir = 'neutral',
   deltaLabel,
   sparkData,
-  accentColor = '#FFA500',
+  accentColor = 'amber',
   alert = false,
   alertLabel,
   icon,
+  href,
 }: KpiCardProps) {
   const chartData = sparkData?.map((v, i) => ({ i, v })) ?? []
+  const colorHex = ACCENT_COLORS[accentColor]
 
   const deltaColors = {
     up:      'text-status-green',
@@ -46,17 +59,25 @@ export function KpiCard({
     neutral: Minus,
   }[deltaDir]
 
+  const CardWrapper = href ? Link : 'div'
+
   return (
-    <div
+    <CardWrapper
+      href={href || ''}
       className={cn(
         'relative flex flex-col justify-between',
         'bg-surface-card rounded-xl border',
         'p-[1.25rem] overflow-hidden',
-        'hover:border-surface-border/80 transition-all duration-200',
+        'border-t-4',
+        'hover:-translate-y-[0.125rem] hover:shadow-xl hover:shadow-black/25',
+        'transition-all duration-200',
         alert
-          ? 'border-status-red/40 hover:border-status-red/60'
-          : 'border-surface-border',
+          ? 'border-t-status-red border-status-red/40 hover:border-status-red/60'
+          : 'border-t-' + accentColor + '-500 border-surface-border',
       )}
+      style={{
+        borderTopColor: alert ? undefined : colorHex,
+      }}
     >
       {/* ── LABEL ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-[0.75rem]">
@@ -73,7 +94,7 @@ export function KpiCard({
       {/* ── VALOR PRINCIPAL ───────────────────────────────── */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-ink-primary text-[2rem] font-bold leading-none tracking-tight mb-[0.375rem]">
+          <p className="text-ink-primary text-[2.5rem] font-black leading-none tracking-tight mb-[0.375rem]">
             {value}
           </p>
 
@@ -101,15 +122,15 @@ export function KpiCard({
               <AreaChart data={chartData} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id={GRADIENT_ID(label)} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={accentColor} stopOpacity={0.3} />
-                    <stop offset="95%" stopColor={accentColor} stopOpacity={0}   />
+                    <stop offset="5%"  stopColor={colorHex} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={colorHex} stopOpacity={0}   />
                   </linearGradient>
                 </defs>
                 <Area
                   type="monotone"
                   dataKey="v"
-                  stroke={accentColor}
-                  strokeWidth={1.5}
+                  stroke={colorHex}
+                  strokeWidth={2}
                   fill={`url(#${GRADIENT_ID(label)})`}
                   dot={false}
                   activeDot={false}
@@ -124,6 +145,6 @@ export function KpiCard({
       {alert && (
         <div className="absolute inset-0 rounded-xl ring-1 ring-status-red/20 pointer-events-none" />
       )}
-    </div>
+    </CardWrapper>
   )
 }

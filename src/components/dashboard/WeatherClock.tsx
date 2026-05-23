@@ -50,40 +50,43 @@ export function WeatherClock() {
   }, [])
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] flex flex-col gap-[1rem]">
+    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] flex flex-col gap-[0.75rem]">
       {/* Relógio */}
       <div>
-        <p className="text-ink-primary text-[2rem] font-bold tabular-nums leading-none">{hora}</p>
-        <p className="text-ink-muted text-[0.75rem] capitalize mt-[0.25rem]">{data}</p>
+        <p className="text-ink-primary text-[3.5rem] font-black tabular-nums leading-none tracking-tight">{hora}</p>
+        <p className="text-ink-secondary text-sm capitalize mt-[0.25rem]">{data}</p>
       </div>
+
+      {/* Separador */}
+      <div className="h-px bg-surface-border my-[0.25rem]" />
 
       {/* Clima */}
       {weather.temp !== null && (
         <div className="flex items-center gap-[1rem]">
-          <div className="flex items-center gap-[0.375rem]">
-            <Thermometer className="w-[0.875rem] h-[0.875rem] text-status-orange" strokeWidth={1.75} />
-            <span className="text-ink-secondary text-[0.875rem] font-medium">{weather.temp}°C</span>
+          <div className="flex items-center gap-[0.5rem]">
+            <Thermometer className="w-5 h-5 text-status-orange" strokeWidth={1.75} />
+            <span className="text-ink-primary text-lg font-semibold">{weather.temp}°C</span>
           </div>
-          {weather.chuva2h !== null && (
-            <div className="flex items-center gap-[0.375rem]">
-              <CloudRain className="w-[0.875rem] h-[0.875rem] text-status-blue" strokeWidth={1.75} />
-              <span className="text-ink-secondary text-[0.875rem]">{weather.chuva2h}% chuva/2h</span>
-            </div>
+          {weather.chuva2h !== null && weather.chuva2h > 0 && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-status-blue/10 text-status-blue text-xs font-medium">
+              <CloudRain className="w-3 h-3 mr-1" strokeWidth={1.75} />
+              {weather.chuva2h}% chuva
+            </span>
           )}
         </div>
       )}
 
       {/* Status das APIs */}
       <div>
-        <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold mb-[0.375rem]">Status APIs</p>
-        <div className="flex flex-col gap-[0.25rem]">
+        <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold mb-[0.5rem]">Status APIs</p>
+        <div className="grid grid-cols-3 gap-2">
           {API_STATUS.map(({ label, status }) => (
-            <div key={label} className="flex items-center justify-between">
-              <span className="text-ink-secondary text-[0.75rem]">{label}</span>
+            <div key={label} className="flex items-center gap-[0.375rem]" title={label}>
               <Circle
-                className={`w-[0.5rem] h-[0.5rem] fill-current ${STATUS_COLOR[status]}`}
+                className={`w-2 h-2 fill-current ${STATUS_COLOR[status]}`}
                 strokeWidth={0}
               />
+              <span className="text-ink-secondary text-[0.6875rem] truncate">{label}</span>
             </div>
           ))}
         </div>

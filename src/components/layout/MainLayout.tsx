@@ -14,14 +14,14 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, title, subtitle, actions }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-surface-base">
+    <div className="group/layout min-h-screen bg-surface-base">
       <Sidebar />
 
       {/* ── CONTEÚDO PRINCIPAL ──────────────────────── */}
-      <div className="ml-sidebar">
+      <div className="ml-[3.5rem] group-hover/layout:ml-[15rem] transition-all duration-300 ease-in-out">
         <TopBar title={title} subtitle={subtitle} actions={actions} />
 
-        <main className="p-[2rem]">
+        <main className="p-[2rem] overflow-y-auto">
           {children}
         </main>
       </div>

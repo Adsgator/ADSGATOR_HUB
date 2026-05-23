@@ -4,10 +4,12 @@ import {
   ArrowRight,
   PauseCircle,
   MessageCircle,
-  MoreHorizontal,
   Clock,
+  CheckSquare,
+  ExternalLink,
 } from 'lucide-react'
-import { cn }       from '@/lib/utils'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 
 const STATUS_CONFIG: Record<string, {
@@ -33,10 +35,18 @@ const NICHO_EMOJI: Record<string, string> = {
 }
 
 interface ClienteProgressCardProps {
-  cliente:    Cliente
+  cliente:    Cliente & { mrr?: number; dias_atraso?: number; updated_at?: string }
   estagio:    Estagio | null
   onCongelar: (id: string) => void
   isRetido?:  boolean
+}
+
+function diasDesde(data?: string): string {
+  if (!data) return '—'
+  const diff = Math.floor((Date.now() - new Date(data).getTime()) / (1000 * 60 * 60 * 24))
+  if (diff === 0) return 'hoje'
+  if (diff === 1) return 'ontem'
+  return `há ${diff} dias`
 }
 
 export function ClienteProgressCard({
@@ -55,10 +65,27 @@ export function ClienteProgressCard({
     .join('')
     .toUpperCase()
 
+  const mrr = cliente.mrr ?? 0
+  const diasAtraso = cliente.dias_atraso ?? 0
+  const ultimaInteracao = diasDesde(cliente.updated_at)
+
+  const handleWhatsApp = () => {
+    if (!cliente.whatsapp) {
+      toast.error('Cliente sem WhatsApp cadastrado')
+      return
+    }
+    const texto = `Olá ${cliente.nome.split(' ')[0]}, tudo bem? Aqui é da Adsgator. `
+    window.open(`https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(texto)}`, '_blank')
+  }
+
+  const handleAdiar = () => {
+    toast.success(`Ação adiada para ${cliente.nome.split(' ')[0]}`)
+  }
+
   return (
     <article
       className={cn(
-        'group relative flex flex-col',
+        'relative flex flex-col',
         'bg-surface-card rounded-xl border border-surface-border',
         'p-[1.25rem]',
         'hover:border-surface-border/60 hover:shadow-lg hover:shadow-black/20',
@@ -67,79 +94,107 @@ export function ClienteProgressCard({
       )}
     >
       {/* ── HEADER ────────────────────────────────────────── */}
-      <div className="flex items-start justify-between mb-[1rem]">
-        <div className="flex items-center gap-[0.625rem]">
+      <div className="flex items-start justify-between mb-[0.75rem]">
+        <div className="flex items-center gap-[0.625rem] min-w-0">
           <div className="w-[2.25rem] h-[2.25rem] rounded-full bg-ads-500/15 border border-ads-500/20 flex items-center justify-center shrink-0">
             <span className="text-ads-500 text-[0.8125rem] font-bold">{iniciais}</span>
           </div>
-          <div>
-            <p className="text-ink-primary text-[0.875rem] font-semibold leading-tight">
+          <div className="min-w-0">
+            <p className="text-ink-primary text-[0.875rem] font-semibold leading-tight truncate">
               {cliente.nome}
             </p>
-            <p className="text-ink-muted text-[0.75rem]">
+            <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full bg-ads-500/10 text-ads-500 text-xs font-medium">
               {emoji} {cliente.nicho}
-            </p>
+            </span>
           </div>
         </div>
 
-        <button className="w-[1.75rem] h-[1.75rem] rounded-[0.25rem] flex items-center justify-center text-ink-muted opacity-0 group-hover:opacity-100 hover:bg-surface-hover transition-all">
-          <MoreHorizontal className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-        </button>
+        {/* MRR badge */}
+        {mrr > 0 && (
+          <span className="text-status-green text-sm font-bold whitespace-nowrap ml-2">
+            R$ {mrr.toLocaleString('pt-BR')}
+          </span>
+        )}
       </div>
 
-      {/* ── STATUS BADGE ──────────────────────────────────── */}
-      <div className="flex items-center gap-[0.375rem] mb-[0.875rem]">
-        <span className={cn('w-[0.4375rem] h-[0.4375rem] rounded-full shrink-0', status.dot)} />
-        <span className={cn('text-[0.75rem] font-medium', status.text)}>{status.label}</span>
+      {/* ── SUB-HEADER: Status + Atraso ───────────────────── */}
+      <div className="flex items-center gap-[0.5rem] mb-[0.75rem] flex-wrap">
+        <span className={cn('inline-flex items-center gap-[0.375rem] text-xs font-medium px-2 py-0.5 rounded-full bg-surface-hover', status.text)}>
+          <span className={cn('w-1.5 h-1.5 rounded-full', status.dot)} />
+          {status.label}
+        </span>
+        {diasAtraso > 0 && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-status-red/10 text-status-red text-xs font-medium">
+            {diasAtraso}d atraso
+          </span>
+        )}
       </div>
 
       {/* ── PRÓXIMA AÇÃO ──────────────────────────────────── */}
-      <div className="flex-1 mb-[1rem]">
+      <div className="flex-1 mb-[0.75rem]">
         {estagio ? (
           <div className="flex items-start gap-[0.375rem]">
-            <ArrowRight className="w-[0.875rem] h-[0.875rem] text-ads-500 shrink-0 mt-[0.0625rem]" strokeWidth={2} />
-            <p className="text-ink-secondary text-[0.8125rem] leading-snug">
+            <ArrowRight className="w-4 h-4 text-ads-500 shrink-0 mt-[0.0625rem]" strokeWidth={2} />
+            <p className="text-ink-secondary text-sm leading-snug">
               {estagio.acao_label ?? estagio.nome ?? 'Verificar próxima ação'}
             </p>
           </div>
         ) : (
-          <p className="text-ink-muted text-[0.8125rem] italic">
+          <p className="text-ink-muted text-sm italic">
             Sem ação definida
           </p>
         )}
+        <p className="text-ink-muted text-xs mt-1">
+          Última interação: {ultimaInteracao}
+        </p>
       </div>
 
-      {/* ── FOOTER — BOTÕES ───────────────────────────────── */}
-      <div className="flex items-center gap-[0.375rem] pt-[0.875rem] border-t border-surface-border">
+      {/* ── FOOTER — 4 BOTÕES SEMPRE VISÍVEIS ─────────────── */}
+      <div className="flex items-center gap-[0.375rem] pt-[0.75rem] border-t border-surface-border">
+        {/* WhatsApp */}
+        <button
+          onClick={handleWhatsApp}
+          className="flex-1 flex items-center justify-center gap-[0.375rem] h-[2rem] rounded-md bg-[#25D366]/10 text-[#25D366] text-xs font-medium hover:bg-[#25D366]/20 transition-colors"
+        >
+          <MessageCircle className="w-3.5 h-3.5" strokeWidth={2} />
+          <span className="hidden sm:inline">WhatsApp</span>
+        </button>
+
+        {/* Ver cliente */}
         <a
           href={`/clientes/${cliente.id}`}
-          className="flex-1 flex items-center justify-center gap-[0.375rem] h-[1.875rem] rounded-[0.375rem] bg-ads-500/10 text-ads-500 text-[0.8125rem] font-medium hover:bg-ads-500/20 transition-colors"
+          className="flex-1 flex items-center justify-center gap-[0.375rem] h-[2rem] rounded-md bg-surface-hover text-ink-secondary text-xs font-medium hover:bg-surface-border transition-colors"
         >
-          Abrir
-          <ArrowRight className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+          <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
+          <span className="hidden sm:inline">Ver</span>
         </a>
 
-        {cliente.whatsapp && (
-          <a
-            href={`https://wa.me/${cliente.whatsapp}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-[1.875rem] h-[1.875rem] rounded-[0.375rem] flex items-center justify-center text-ink-muted hover:bg-surface-hover hover:text-[#25D366] transition-colors"
-          >
-            <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-          </a>
-        )}
+        {/* Adiar ação */}
+        <button
+          onClick={handleAdiar}
+          className="flex-1 flex items-center justify-center gap-[0.375rem] h-[2rem] rounded-md bg-surface-hover text-ink-secondary text-xs font-medium hover:bg-surface-border transition-colors"
+        >
+          <CheckSquare className="w-3.5 h-3.5" strokeWidth={2} />
+          <span className="hidden sm:inline">Adiar</span>
+        </button>
 
+        {/* Congelar/Reativar */}
         <button
           onClick={() => onCongelar(cliente.id)}
-          className="w-[1.875rem] h-[1.875rem] rounded-[0.375rem] flex items-center justify-center text-ink-muted hover:bg-surface-hover hover:text-status-orange transition-colors"
+          className={cn(
+            'flex-1 flex items-center justify-center gap-[0.375rem] h-[2rem] rounded-md text-xs font-medium transition-colors',
+            isRetido
+              ? 'bg-status-orange/10 text-status-orange hover:bg-status-orange/20'
+              : 'bg-surface-hover text-ink-secondary hover:bg-surface-border'
+          )}
           title={isRetido ? 'Reativar' : 'Congelar'}
         >
           {isRetido ? (
-            <Clock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+            <Clock className="w-3.5 h-3.5" strokeWidth={2} />
           ) : (
-            <PauseCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+            <PauseCircle className="w-3.5 h-3.5" strokeWidth={2} />
           )}
+          <span className="hidden sm:inline">{isRetido ? 'Reativar' : 'Congelar'}</span>
         </button>
       </div>
     </article>

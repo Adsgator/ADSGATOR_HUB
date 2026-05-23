@@ -60,57 +60,85 @@ export function DRESparkline() {
   if (!dre) return null
 
   const positivo = dre.lucro >= 0
+  const corLinha = positivo ? '#10B981' : '#EF4444'
 
   return (
-    <a href="/financeiro" className="group block bg-surface-card border border-surface-border rounded-xl p-[1.25rem] hover:border-ads-500/30 transition-colors">
+    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
       <div className="flex items-center justify-between mb-[1rem]">
-        <p className="text-ink-primary font-semibold text-[0.875rem]">DRE Resumo</p>
-        <ChevronRight className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-ads-500 transition-colors" strokeWidth={1.5} />
+        <p className="text-ink-primary font-bold text-base">DRE Resumo</p>
       </div>
 
-      {/* Árvore DRE */}
-      <div className="flex flex-col gap-[0.375rem] mb-[1rem]">
-        {[
-          { label: 'MRR',            value: dre.mrr,     color: 'text-ink-primary'  },
-          { label: 'Custos',         value: -dre.custos, color: 'text-status-red'   },
-          { label: 'Lucro Líquido',  value: dre.lucro,   color: positivo ? 'text-status-green' : 'text-status-red' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="flex items-center justify-between">
-            <span className="text-ink-muted text-[0.75rem]">{label}</span>
-            <span className={`text-[0.875rem] font-semibold ${color}`}>{fmt(Math.abs(value))}</span>
-          </div>
-        ))}
-        <div className="flex items-center justify-between border-t border-surface-border pt-[0.375rem]">
-          <span className="text-ink-muted text-[0.75rem]">Margem</span>
-          <div className={`flex items-center gap-[0.25rem] ${positivo ? 'text-status-green' : 'text-status-red'}`}>
+      {/* Árvore DRE com números premium */}
+      <div className="flex flex-col gap-[0.5rem] mb-[1.25rem]">
+        {/* MRR - destaque principal */}
+        <div className="flex items-center justify-between">
+          <span className="text-ink-muted text-sm">MRR</span>
+          <span className="text-[2rem] font-black text-ink-primary">{fmt(dre.mrr)}</span>
+        </div>
+
+        {/* Custos */}
+        <div className="flex items-center justify-between">
+          <span className="text-ink-muted text-sm">Custos</span>
+          <span className="text-lg font-semibold text-status-red">-{fmt(dre.custos)}</span>
+        </div>
+
+        {/* Lucro Líquido */}
+        <div className="flex items-center justify-between border-t border-surface-border pt-2">
+          <span className="text-ink-muted text-sm">Lucro Líquido</span>
+          <span className={`text-[1.5rem] font-bold ${positivo ? 'text-status-green' : 'text-status-red'}`}>
+            {fmt(dre.lucro)}
+          </span>
+        </div>
+
+        {/* Margem como badge */}
+        <div className="flex items-center justify-end">
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${positivo ? 'bg-status-green/10 text-status-green' : 'bg-status-red/10 text-status-red'}`}>
             {positivo
-              ? <TrendingUp  className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
-              : <TrendingDown className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+              ? <TrendingUp className="w-3 h-3" strokeWidth={2} />
+              : <TrendingDown className="w-3 h-3" strokeWidth={2} />
             }
-            <span className="text-[0.875rem] font-semibold">{dre.margem.toFixed(1)}%</span>
-          </div>
+            Margem {dre.margem.toFixed(1)}%
+          </span>
         </div>
       </div>
 
-      {/* Sparkline */}
+      {/* Sparkline premium */}
       {dre.spark.length > 1 && (
-        <div className="h-[3.5rem]">
+        <div className="h-[3.5rem] mb-[1rem]">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={dre.spark}>
               <Line
                 type="monotone"
                 dataKey="lucro"
-                stroke={positivo ? '#10B981' : '#EF4444'}
-                strokeWidth={1.5}
+                stroke={corLinha}
+                strokeWidth={2}
                 dot={false}
               />
               <Tooltip
-                contentStyle={{ display: 'none' }}
+                contentStyle={{
+                  backgroundColor: '#2A3527',
+                  border: '1px solid #44523F',
+                  borderRadius: '0.5rem',
+                  padding: '0.5rem 0.75rem',
+                }}
+                labelStyle={{ color: '#F0F3EF', fontSize: '0.75rem', marginBottom: '0.25rem' }}
+                itemStyle={{ color: '#F0F3EF', fontSize: '0.8125rem' }}
+                formatter={(value) => [fmt(Number(value) || 0), 'Lucro']}
+                labelFormatter={(label) => `Mês: ${label}`}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
-    </a>
+
+      {/* Link rodapé */}
+      <a
+        href="/financeiro"
+        className="group flex items-center justify-center gap-1 text-sm text-ads-500 hover:text-ads-400 transition-colors"
+      >
+        Ver DRE completo
+        <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" strokeWidth={2} />
+      </a>
+    </div>
   )
 }
