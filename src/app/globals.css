@@ -2,28 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ─── TEMA ESCURO (padrão Adsgator) ────────────────────────────────────── */
+/* ─── TEMA ESCURO — Paleta Gator ────────────────────────────────────────── */
 :root {
-  --surface-base:   10 10 10;
-  --surface-card:   21 21 21;
-  --surface-hover:  30 30 30;
-  --surface-border: 45 45 45;
+  --surface-base:   31 39 27;     /* #1F271B Gator Dark Green */
+  --surface-card:   42 53 39;     /* #2A3527 */
+  --surface-hover:  55 66 51;     /* #374233 */
+  --surface-border: 68 82 63;     /* #44523F */
 
-  --ink-primary:    255 255 255;
-  --ink-secondary:  160 160 160;
-  --ink-muted:      90 90 90;
+  --ink-primary:    240 243 239;  /* #F0F3EF */
+  --ink-secondary:  163 174 160;  /* #A3AEA0 */
+  --ink-muted:      92 101 88;    /* #5C6558 */
 }
 
-/* ─── TEMA CLARO ────────────────────────────────────────────────────────── */
+/* ─── TEMA CLARO — Paleta Gator ─────────────────────────────────────────── */
 .light {
-  --surface-base:   249 250 251;
-  --surface-card:   255 255 255;
-  --surface-hover:  243 244 246;
-  --surface-border: 229 231 235;
+  --surface-base:   252 253 252;  /* #FCFDFC */
+  --surface-card:   255 255 255;  /* #FFFFFF */
+  --surface-hover:  243 246 243;  /* #F3F6F3 */
+  --surface-border: 220 228 218;  /* #DCE4DA */
 
-  --ink-primary:    17 24 39;
-  --ink-secondary:  107 114 128;
-  --ink-muted:      156 163 175;
+  --ink-primary:    31 39 27;     /* #1F271B */
+  --ink-secondary:  92 110 90;    /* #5C6E5A */
+  --ink-muted:      140 158 136;  /* #8C9E88 */
 }
 
 /* ─── BASE STYLES ───────────────────────────────────────────────────────── */
