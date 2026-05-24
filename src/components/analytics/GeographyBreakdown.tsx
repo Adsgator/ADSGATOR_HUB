@@ -3,12 +3,17 @@
 import { MapPin } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-interface GeographyData {
+export interface GeographyData {
+  pais?: string
   estado: string
   cidade: string
-  sessoes: number
-  usuarios: number
+  sessoes?: number
+  usuarios?: number
+  impressoes?: number
   cliques?: number
+  conversoes?: number
+  custo?: number
+  taxa_engajamento?: number
 }
 
 interface GeographyBreakdownProps {

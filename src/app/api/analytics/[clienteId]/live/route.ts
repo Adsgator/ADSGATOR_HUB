@@ -20,9 +20,9 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { clienteId: string } },
+  { params }: { params: Promise<{ clienteId: string }> },
 ) {
-  const { clienteId } = params;
+  const { clienteId } = await params;
 
   // Verificar autenticação via cookie/headers
   const { data: { user } } = await supabase.auth.getUser();

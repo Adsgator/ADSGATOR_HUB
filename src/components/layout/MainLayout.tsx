@@ -3,7 +3,9 @@
 import React from 'react'
 import { Sidebar }         from './Sidebar'
 import { TopBar }          from './TopBar'
-import { HelpChatButton } from '@/components/ui/HelpChatButton'
+import { RightSidebar }    from './RightSidebar'
+import { StatusBar }       from './StatusBar'
+import { RightSidebarProvider } from '@/lib/store/right-sidebar-context'
 
 interface MainLayoutProps {
   children: React.ReactNode
@@ -14,20 +16,29 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, title, subtitle, actions }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-surface-base [&:has(aside:hover)_.main-content]:ml-[15rem]">
-      <Sidebar />
+    <RightSidebarProvider>
+      <div className="h-screen w-screen overflow-hidden bg-surface-base grid grid-rows-[var(--topbar-h)_1fr_var(--statusbar-h)] grid-cols-[var(--sidebar-w)_1fr_var(--right-sidebar-w)]">
+        {/* ── ROW 1: TOP BAR (ocupa 3 colunas) ──────── */}
+        <div className="col-span-3 z-50">
+          <TopBar title={title} subtitle={subtitle} actions={actions} />
+        </div>
 
-      {/* ── CONTEÚDO PRINCIPAL ──────────────────────── */}
-      <div className="main-content ml-[3.5rem] transition-all duration-300 ease-in-out">
-        <TopBar title={title} subtitle={subtitle} actions={actions} />
+        {/* ── ROW 2 COL 1: SIDEBAR ESQUERDA ──────────── */}
+        <Sidebar />
 
-        <main className="p-[2rem] overflow-y-auto">
+        {/* ── ROW 2 COL 2: ÁREA DE CONTEÚDO ──────────── */}
+        <main className="overflow-y-auto overflow-x-hidden p-[2rem]">
           <div className="max-w-[1400px] mx-auto w-full">
             {children}
           </div>
         </main>
+
+        {/* ── ROW 2 COL 3: SIDEBAR DIREITA ───────────── */}
+        <RightSidebar />
+
+        {/* ── ROW 3: STATUS BAR (ocupa 3 colunas) ──── */}
+        <StatusBar />
       </div>
-      <HelpChatButton />
-    </div>
+    </RightSidebarProvider>
   )
 }

@@ -29,6 +29,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const ativo = t === 'system' ? prefersD : t === 'dark';
     setIsDark(ativo);
     document.documentElement.classList.toggle('dark', ativo);
+    document.documentElement.classList.toggle('light', !ativo);
   }
 
   return (

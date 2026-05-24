@@ -133,7 +133,7 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
         .select()
         .single()
 
-      if (error) throw error
+      if (error) throw new Error(`${error.message} (${error.code})`)
 
       if (data) {
         onUpdate(data as Cliente)

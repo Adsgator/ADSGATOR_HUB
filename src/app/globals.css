@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── LAYOUT — Editor Shell ──────────────────────────────────────────────── */
+:root {
+  --topbar-h:         3.5rem;
+  --sidebar-w:        3.5rem;
+  --sidebar-expanded: 15rem;
+  --right-sidebar-w:  3rem;
+  --statusbar-h:      1.5rem;
+}
+
 /* ─── TEMA ESCURO — Dark Theme Padrão (Zinc/Slate) ──────────────────────── */
 :root {
   --surface-base:   9 9 11;       /* #09090B Zinc-950 */
@@ -29,6 +38,15 @@
 /* ─── BASE STYLES ───────────────────────────────────────────────────────── */
 * {
   box-sizing: border-box;
+}
+
+/* ─── TRANSIÇÃO DE TEMA — suave e satisfatório ─────────────────────────── */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 html {

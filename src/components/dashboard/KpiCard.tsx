@@ -59,26 +59,22 @@ export function KpiCard({
     neutral: Minus,
   }[deltaDir]
 
-  const CardWrapper = href ? Link : 'div'
+  const cardClassName = cn(
+    'relative flex flex-col justify-between',
+    'bg-surface-card rounded-xl border',
+    'p-[1.25rem] overflow-hidden',
+    'border-t-4',
+    'hover:-translate-y-[0.125rem] hover:shadow-xl hover:shadow-black/25',
+    'transition-all duration-200',
+    alert
+      ? 'border-t-status-red border-status-red/40 hover:border-status-red/60'
+      : 'border-t-' + accentColor + '-500 border-surface-border',
+  )
 
-  return (
-    <CardWrapper
-      href={href || ''}
-      className={cn(
-        'relative flex flex-col justify-between',
-        'bg-surface-card rounded-xl border',
-        'p-[1.25rem] overflow-hidden',
-        'border-t-4',
-        'hover:-translate-y-[0.125rem] hover:shadow-xl hover:shadow-black/25',
-        'transition-all duration-200',
-        alert
-          ? 'border-t-status-red border-status-red/40 hover:border-status-red/60'
-          : 'border-t-' + accentColor + '-500 border-surface-border',
-      )}
-      style={{
-        borderTopColor: alert ? undefined : colorHex,
-      }}
-    >
+  const cardStyle = { borderTopColor: alert ? undefined : colorHex }
+
+  const content = (
+    <>
       {/* ── LABEL ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-[0.75rem]">
         <p className="text-ink-muted text-[0.75rem] font-semibold uppercase tracking-wide">
@@ -145,6 +141,20 @@ export function KpiCard({
       {alert && (
         <div className="absolute inset-0 rounded-xl ring-1 ring-status-red/20 pointer-events-none" />
       )}
-    </CardWrapper>
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link href={href} className={cardClassName} style={cardStyle}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={cardClassName} style={cardStyle}>
+      {content}
+    </div>
   )
 }

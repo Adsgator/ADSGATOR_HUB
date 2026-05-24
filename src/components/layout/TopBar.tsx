@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { Search, AlertCircle } from 'lucide-react'
-import { NotificationBell } from '@/components/layout/NotificationBell'
-import { ThemeToggle }      from '@/components/ui/ThemeToggle'
 import { GlobalSearch }     from '@/components/ui/GlobalSearch'
+import { useTheme } from '@/providers/ThemeProvider'
 import { supabase } from '@/lib/supabase'
 
 interface TopBarProps {
@@ -22,6 +22,7 @@ function getSaudacao(nome?: string): string {
 }
 
 export function TopBar({ title, subtitle, actions }: TopBarProps) {
+  const { isDark } = useTheme()
   const [searchAberto, setSearchAberto] = useState(false)
   const [alertasCount, setAlertasCount] = useState(0)
   const [userName, setUserName] = useState<string>()
@@ -37,7 +38,6 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  // Buscar alertas críticos em tempo real
   useEffect(() => {
     const fetchAlertas = async () => {
       const { count } = await supabase
@@ -48,7 +48,6 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
     }
     fetchAlertas()
 
-    // Realtime subscription
     const channel = supabase
       .channel('alertas-topbar')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, fetchAlertas)
@@ -57,7 +56,6 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  // Buscar nome do usuário
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       const nome = data.user?.user_metadata?.nome ?? data.user?.email?.split('@')[0]
@@ -65,38 +63,50 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
     })
   }, [])
 
-  // Determinar título a exibir
   const isDashboard = title === 'Dashboard'
   const displayTitle = isDashboard ? getSaudacao(userName) : title
 
   return (
     <>
-      <header className="h-[3.5rem] border-b border-surface-border bg-surface-card/80 backdrop-blur-sm sticky top-0 z-30 flex items-center px-[2rem] gap-[1rem]">
+      <header className="h-[var(--topbar-h)] border-b border-surface-border bg-surface-card/80 backdrop-blur-sm z-50 flex items-center px-[1.25rem] gap-[1rem]">
+        {/* ── LOGO ─────────────────────────────────── */}
+        <Image
+          src={isDark ? '/logo/logo-dark.svg' : '/logo/logo-light.svg'}
+          alt="Adsgator"
+          width={120}
+          height={28}
+          className="shrink-0 h-[1.5rem] w-auto"
+          priority
+        />
+
+        {/* ── DIVISÓRIA ────────────────────────────── */}
+        <div className="w-[1px] h-[1.5rem] bg-surface-border shrink-0" />
+
         {/* ── TÍTULO ────────────────────────────────── */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {displayTitle && (
             <div>
-              <h1 className="text-ink-primary font-bold text-[1.125rem] leading-tight">{displayTitle}</h1>
-              {subtitle && <p className="text-ink-muted text-[0.75rem]">{subtitle}</p>}
+              <h1 className="text-ink-primary font-bold text-[1.125rem] leading-tight truncate">{displayTitle}</h1>
+              {subtitle && <p className="text-ink-muted text-[0.75rem] truncate">{subtitle}</p>}
             </div>
           )}
         </div>
 
         {/* ── ALERTAS CRÍTICOS ─────────────────────── */}
         {alertasCount > 0 && (
-          <div className="flex items-center gap-[0.5rem] px-[0.625rem] py-[0.25rem] rounded-full bg-status-red/10 border border-status-red/20">
+          <div className="flex items-center gap-[0.5rem] px-[0.625rem] py-[0.25rem] rounded-full bg-status-red/10 border border-status-red/20 shrink-0">
             <AlertCircle className="w-[0.875rem] h-[0.875rem] text-status-red" strokeWidth={2} />
             <span className="text-[0.75rem] font-medium text-status-red">{alertasCount} inadimplente{alertasCount > 1 ? 's' : ''}</span>
           </div>
         )}
 
         {/* ── AÇÕES CUSTOMIZADAS ─────────────────────── */}
-        {actions && <div className="flex items-center gap-[0.5rem]">{actions}</div>}
+        {actions && <div className="flex items-center gap-[0.5rem] shrink-0">{actions}</div>}
 
         {/* ── SEARCH ────────────────────────────────── */}
         <button
           onClick={() => setSearchAberto(true)}
-          className="flex items-center gap-[0.5rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-muted text-[0.8125rem] hover:border-ads-500/40 hover:text-ink-secondary transition-colors"
+          className="flex items-center gap-[0.5rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-muted text-[0.8125rem] hover:border-ads-500/40 hover:text-ink-secondary transition-colors shrink-0"
         >
           <Search className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
           <span className="hidden sm:inline">Buscar...</span>
@@ -104,12 +114,6 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
             ⌘K
           </kbd>
         </button>
-
-        {/* ── THEME TOGGLE ──────────────────────────── */}
-        <ThemeToggle />
-
-        {/* ── NOTIFICAÇÕES ──────────────────────────── */}
-        <NotificationBell />
       </header>
 
       {searchAberto && <GlobalSearch onClose={() => setSearchAberto(false)} />}
