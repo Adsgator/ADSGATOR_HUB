@@ -86,9 +86,9 @@ export function ClienteProgressCard({
     <article
       className={cn(
         'relative flex flex-col',
-        'bg-surface-card rounded-xl border border-surface-border',
+        'bg-surface-card rounded-2xl dark:border dark:border-surface-border card-shadow',
         'p-[1.25rem]',
-        'hover:border-surface-border/60 hover:shadow-lg hover:shadow-black/20',
+        'hover:shadow-lg hover:shadow-black/15',
         'transition-all duration-200',
         isRetido && 'opacity-70 hover:opacity-100',
       )}

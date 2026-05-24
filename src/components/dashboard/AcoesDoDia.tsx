@@ -142,8 +142,8 @@ export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
               key={cliente.id}
               className={cn(
                 'flex items-center gap-[1rem]',
-                'rounded-xl border border-surface-border px-[1rem] py-[0.875rem]',
-                'bg-surface-card hover:shadow-md transition-all duration-200',
+                'rounded-xl dark:border dark:border-surface-border px-[1rem] py-[0.875rem]',
+                'bg-surface-card card-shadow hover:shadow-md transition-all duration-200',
                 'relative overflow-hidden',
               )}
             >

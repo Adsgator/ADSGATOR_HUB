@@ -74,7 +74,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
 
   return (
     <>
-      <header className="topbar-shell h-[var(--topbar-h)] border-b border-surface-border dark:border-surface-border bg-surface-card z-50 flex items-center px-[1.25rem] gap-[1rem]">
+      <header className="topbar-shell h-[var(--topbar-h)] dark:border-b dark:border-surface-border bg-surface-card z-50 flex items-center px-[1.25rem] gap-[1rem]">
         {/* ── LOGO ─────────────────────────────────── */}
         <Image
           src={isDark ? '/logo/logo-dark.svg' : '/logo/logo-light.svg'}

@@ -65,7 +65,7 @@ export function AnalyticsMap({ data, loading, metric = 'sessoes' }: AnalyticsMap
   const maxVal = Math.max(...points.map((p) => p.value), 1)
 
   return (
-    <div className="h-[14rem] rounded-xl overflow-hidden border border-surface-border">
+    <div className="h-[14rem] rounded-xl overflow-hidden dark:border dark:border-surface-border">
       <MapContainer
         center={[-15.0, -52.0]}
         zoom={4}
