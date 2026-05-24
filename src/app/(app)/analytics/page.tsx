@@ -173,10 +173,12 @@ export default function AnalyticsPage() {
     setLoadingLive(true)
     try {
       const res = await fetch(`/api/analytics/${clienteSel}/live?periodo=${periodo}`)
-      if (res.ok) {
-        const data = await res.json()
-        setLiveData(data)
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }))
+        throw new Error(errorData.error || `HTTP ${res.status}`)
       }
+      const data = await res.json()
+      setLiveData(data)
     } catch (error) {
       console.error('Erro ao carregar dados live:', error)
       toast.error('Erro ao carregar dados em tempo real')
@@ -186,8 +188,10 @@ export default function AnalyticsPage() {
   }, [clienteSel, periodo])
 
   useEffect(() => {
-    carregarLive()
-  }, [carregarLive])
+    if (clienteSel) {
+      carregarLive()
+    }
+  }, [clienteSel, carregarLive])
 
   // Auto-refresh a cada 5 minutos
   useEffect(() => {
