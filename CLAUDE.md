@@ -317,20 +317,27 @@ supabase/functions/
 - [x] Shell de layout (TopBar + Sidebar + RightSidebar + StatusBar)
 - [x] Tema dark/light com CSS vars + ThemeToggle
 - [x] Autenticação Supabase (login, logout, sessão)
-- [x] Módulo Clientes — lista, detalhe, novo, progresso (stepper)
+- [x] Módulo Clientes — lista, novo (página de detalhe `[id]` tem bug — ver Pendente)
 - [x] Módulo Financeiro — DRE, transações, inadimplentes
 - [x] Módulo Relatórios — solicitação e histórico
+- [x] Módulo Dashboard — Bento Grid (react-grid-layout), Morning Briefing, KPIs, Ações do Dia, WeatherClock, DRE Sparkline, Alertas Críticos, Gemini Chat
+- [x] Módulo Tarefas — lista com filtros/grouping, criar/editar/concluir/deletar, adiar, TaskModal, context menu
+- [x] Módulo Marketing — calendário semanal 4 semanas, criar/editar posts, KPIs, status (rascunho/agendado/publicado)
+- [x] Módulo Biblioteca — browse componentes Astro por categoria, construtor visual, gerador manifesto .md
+- [x] Módulo Configurações — 7 abas (Perfil, Notificações, Integrações, Financeiro, Aparência, Equipe, Auditoria)
+- [x] Módulo Analytics — UI completa, Google Ads + GA4 com dados reais quando credenciais configuradas
 - [x] Design system completo (tokens, animações, utilitários)
 - [x] Seed de dados de teste (8 clientes)
+- [x] Edge Functions: morning-briefing, gerar-insight-ia, gerar-relatorio-executivo, gerar-relatorio-md, gerar-relatorios-mensais, webhook-asaas, regua-cobranca, memoria-cliente, processar-alertas, sentinela
 
-## O que Está Pendente
+## O que Está Pendente (Lacunas Reais)
 
-- [ ] Dashboard home (Morning Briefing + KPIs + Bento)
-- [ ] Analytics (Google Ads + GA4 com dados reais)
-- [ ] Módulo Tarefas (UI completa)
-- [ ] Módulo Marketing (calendário social)
-- [ ] Biblioteca (componentes Astro)
-- [ ] Chat com IA (Gemini Flash no dashboard)
-- [ ] Notificações WhatsApp/email automáticas
-- [ ] RBAC completo (múltiplos usuários)
-- [ ] Configurações (UI completa)
+- [ ] **BUG:** `clientes/[id]/page.tsx` tem conteúdo de `clientes/novo/page.tsx` — página de detalhe do cliente não existe
+- [ ] `/api/ia/hashtags` — rota ausente (botão "Gerar Hashtags" em Marketing não funciona)
+- [ ] Analytics — integração real Google Ads + GA4 (UI pronta, falta configurar credenciais e data binding)
+- [ ] Notificações WhatsApp via Twilio (templates existem, envio real pendente)
+- [ ] Notificações Email automáticas (Resend SDK — cron + templates)
+- [ ] RBAC completo — regras RLS no Supabase para múltiplos usuários
+- [ ] Drag/drop persistente em Tarefas (reorder salvo no Supabase)
+- [ ] Publicação real de posts via Meta API
+- [ ] TEST_MODE=false para webhook-asaas e regua-cobranca (requer checklist em docs/MODO_TESTE.md)

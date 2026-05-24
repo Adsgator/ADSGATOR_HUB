@@ -1,8 +1,8 @@
 # 📘 ARQUIVO MESTRE ADSGATOR
 ## Visão Definitiva e Completa do Sistema
 
-**Versão:** 3.0 Final  
-**Data:** 21 de maio de 2026  
+**Versão:** 3.1  
+**Data:** 24 de maio de 2026  
 **Status:** Documento Guia Supremo + Checklist de Implementação  
 **Propósito:** Zero Carga Mental da Operação Diária + Gestão Completa da Agência
 
@@ -1842,7 +1842,7 @@ Sem pensar. Só seguindo o sistema.
 
 **Este documento é a bíblia do ADSGATOR. Use como referência absoluta.**
 
-**Última atualização: 24/mai/2026**
+**Última atualização: 24/mai/2026 — v3.1 (status de implementação sincronizado com a realidade)**
 
 ---
 
@@ -2024,14 +2024,51 @@ O sistema usa um layout tipo IDE: moldura fixa ao redor de uma área de conteúd
 | `NotificationBell`      | `src/components/layout/NotificationBell.tsx`  |
 | `NotificationDrawer`    | `src/components/layout/NotificationDrawer.tsx`|
 
+### Dashboard
+
+| Componente              | Arquivo                                          |
+|-------------------------|--------------------------------------------------|
+| `BentoCard`             | `src/components/dashboard/BentoCard.tsx`         |
+| `KpiCard`               | `src/components/dashboard/KpiCard.tsx`           |
+| `MorningBriefing`       | `src/components/dashboard/MorningBriefing.tsx`   |
+| `AcoesDoDia`            | `src/components/dashboard/AcoesDoDia.tsx`        |
+| `WeatherClock`          | `src/components/dashboard/WeatherClock.tsx`      |
+| `DRESparkline`          | `src/components/dashboard/DRESparkline.tsx`      |
+| `AlertasCriticos`       | `src/components/dashboard/AlertasCriticos.tsx`   |
+| `GeminiChat`            | `src/components/dashboard/GeminiChat.tsx`        |
+| `ClienteProgressCard`   | `src/components/dashboard/ClienteProgressCard.tsx` |
+
 ### Clientes
 
-| Componente              | Arquivo                                            |
-|-------------------------|----------------------------------------------------|
-| `ClienteCard`           | `src/components/clientes/ClienteCard.tsx`          |
-| `ClienteProgressCard`   | `src/components/clientes/ClienteProgressCard.tsx`  |
-| `ChecklistCard`         | `src/components/clientes/ChecklistCard.tsx`        |
-| `AuditTimeline`         | `src/components/clientes/AuditTimeline.tsx`        |
+| Componente              | Arquivo                                              |
+|-------------------------|------------------------------------------------------|
+| `ClienteCard`           | `src/components/clientes/ClienteCard.tsx`            |
+| `ChecklistCard`         | `src/components/clientes/ChecklistCard.tsx`          |
+| `AuditTimeline`         | `src/components/clientes/AuditTimeline.tsx`          |
+| `ClienteIntegracoes`    | `src/components/clientes/ClienteIntegracoes.tsx`     |
+| `ClientePerformance`    | `src/components/clientes/ClientePerformance.tsx`     |
+| `AcessoRapido`          | `src/components/clientes/AcessoRapido.tsx`           |
+| `WhatsAppTemplateModal` | `src/components/clientes/WhatsAppTemplateModal.tsx`  |
+| `OnboardChecklist`      | `src/components/clientes/OnboardChecklist.tsx`       |
+
+### Analytics
+
+| Componente              | Arquivo                                              |
+|-------------------------|------------------------------------------------------|
+| `AdsOverviewKpis`       | `src/components/analytics/AdsOverviewKpis.tsx`       |
+| `GA4Panel`              | `src/components/analytics/GA4Panel.tsx`              |
+| `SearchTermsTable`      | `src/components/analytics/SearchTermsTable.tsx`      |
+| `DemographicsCard`      | `src/components/analytics/DemographicsCard.tsx`      |
+| `GeographyBreakdown`    | `src/components/analytics/GeographyBreakdown.tsx`    |
+| `DeviceBreakdown`       | `src/components/analytics/DeviceBreakdown.tsx`       |
+| `TrafficSources`        | `src/components/analytics/TrafficSources.tsx`        |
+| `AnalyticsMap`          | `src/components/analytics/AnalyticsMap.tsx`          |
+
+### Configurações
+
+| Componente              | Arquivo                                                |
+|-------------------------|--------------------------------------------------------|
+| `AuditLogViewer`        | `src/components/configuracoes/AuditLogViewer.tsx`      |
 
 ### UI Primitivos
 
@@ -2045,24 +2082,37 @@ O sistema usa um layout tipo IDE: moldura fixa ao redor de uma área de conteúd
 |-------------------|----------------------------------|--------------------------------------------------|
 | `useClientes`     | `src/lib/hooks/useClientes.ts`   | Realtime + métricas (total/ativos/mrr/etc.)      |
 
+### API Routes (Next.js)
+
+| Rota                                       | Método | Descrição                              |
+|--------------------------------------------|--------|----------------------------------------|
+| `/api/analytics/[clienteId]`               | GET    | Lista relatórios salvos do cliente     |
+| `/api/analytics/[clienteId]/live`          | GET    | Dados live Google Ads + GA4            |
+| `/api/ia/chat`                             | POST   | Chat conversacional (Gemini Flash)     |
+| `/api/ia/copy`                             | POST   | Gera copy para landing pages           |
+| `/api/ia/morning-briefing`                 | GET    | Retorna briefing diário (cache/gera)   |
+| `/api/ia/hashtags`                         | POST   | Gera hashtags para post (Gemini Flash) |
+| `/api/weather`                             | GET    | Clima da cidade (Open-Meteo)           |
+| `/api/search`                              | GET    | Busca global (Ctrl+K)                  |
+
 ---
 
 ## 📁 ESTRUTURA DE ROTAS
 
-| Rota                       | Módulo           | Status       |
-|----------------------------|------------------|--------------|
-| `/dashboard`               | Home / Morning Briefing | ⏳ Parcial |
-| `/clientes`                | Lista clientes   | ✅ Feito     |
-| `/clientes/novo`           | Criar cliente    | ✅ Feito     |
-| `/clientes/[id]`           | Detalhe cliente  | ✅ Feito     |
-| `/financeiro`              | DRE + finanças   | ✅ Feito     |
-| `/relatorios`              | Relatórios IA    | ✅ Feito     |
-| `/analytics`               | Google Ads + GA4 | ⏳ Pendente  |
-| `/tarefas`                 | Task manager     | ⏳ Pendente  |
-| `/marketing`               | Calendário social| ⏳ Pendente  |
-| `/biblioteca`              | Componentes Astro| ⏳ Pendente  |
-| `/configuracoes`           | Configurações    | ⏳ Pendente  |
-| `/ajuda`                   | Help center      | ⏳ Pendente  |
+| Rota                       | Módulo                  | Status                                          |
+|----------------------------|-------------------------|-------------------------------------------------|
+| `/dashboard`               | Home / Morning Briefing | ✅ Feito (Bento Grid, KPIs, Chat IA, WeatherClock) |
+| `/clientes`                | Lista clientes          | ✅ Feito                                        |
+| `/clientes/novo`           | Criar cliente           | ✅ Feito                                        |
+| `/clientes/[id]`           | Detalhe cliente         | ✅ Feito (4 abas: Visão Geral, Checklists, Campanhas, Histórico) |
+| `/financeiro`              | DRE + finanças          | ✅ Feito                                        |
+| `/relatorios`              | Relatórios IA           | ✅ Feito                                        |
+| `/analytics`               | Google Ads + GA4        | ✅ Feito (UI completa; dados reais quando credenciais configuradas) |
+| `/tarefas`                 | Task manager            | ✅ Feito (filtros, grouping, prioridades, adiar, modal) |
+| `/marketing`               | Calendário social       | ✅ Feito (calendário 4 semanas, criar/editar posts) |
+| `/biblioteca`              | Componentes Astro       | ✅ Feito (browse, construtor visual, manifesto .md) |
+| `/configuracoes`           | Configurações           | ✅ Feito (7 abas: Perfil, Notif, Integrações, Financeiro, Aparência, Equipe, Auditoria) |
+| `/ajuda`                   | Help center             | ✅ Feito                                        |
 
 ---
 
@@ -2158,9 +2208,14 @@ Para ir para produção: seguir `docs/MODO_TESTE.md`.
 supabase/functions/
 ├── gerar-insight-ia/           — análise de campanha (Gemini Flash)
 ├── gerar-relatorio-executivo/  — relatório semanal/mensal (Gemini Pro)
+├── gerar-relatorio-md/         — exporta relatório em Markdown
+├── gerar-relatorios-mensais/   — batch mensal automático
 ├── webhook-asaas/              — eventos de pagamento (TEST_MODE = true)
 ├── regua-cobranca/             — automação de cobrança (TEST_MODE = true)
 ├── morning-briefing/           — briefing diário 9h (Gemini Pro)
+├── memoria-cliente/            — mantém arquivo .md por cliente (contexto IA)
+├── processar-alertas/          — detecta alertas críticos, envia notificações
+├── sentinela/                  — monitora saúde geral (cron job 15 min)
 └── _shared/                    — utils compartilhados entre functions
 ```
 
@@ -2187,29 +2242,30 @@ ASAAS_API_KEY=
 - Shell de layout completo (TopBar + Sidebar + RightSidebar + StatusBar)
 - Sistema de tema dark/light (CSS vars + ThemeProvider)
 - Autenticação Supabase (login, logout, sessão)
-- Módulo Clientes — lista, detalhe, novo, stepper de progresso
-- Módulo Financeiro — DRE calculada, transações, clientes inadimplentes
-- Módulo Relatórios — solicitação, histórico
+- Módulo **Dashboard** — Bento Grid (react-grid-layout, 12 colunas, drag/resize persistido em localStorage), Morning Briefing (Gemini Pro, cache 6h), KPI cards, Ações do Dia, Clientes em Progresso, WeatherClock, DRE Sparkline, Alertas Críticos, GeminiChat
+- Módulo **Clientes** — lista, novo, detalhe completo (4 abas: Visão Geral, Checklists, Campanhas/Analytics, Histórico), congelar/descongelar, WhatsApp templates
+- Módulo **Financeiro** — DRE calculada, transações, clientes inadimplentes
+- Módulo **Relatórios** — solicitação, histórico
+- Módulo **Analytics** — UI completa, Google Ads + GA4 com dados reais quando credenciais configuradas, mapa geográfico, demographics, devices, search terms
+- Módulo **Tarefas** — lista com filtros (Todas/Hoje/Semana/Críticas), grouping por data, prioridades, adiar (+1h/+1d/+1s), TaskModal, context menu
+- Módulo **Marketing** — calendário semanal 4 semanas, criar/editar posts (Instagram/Facebook), status (rascunho/agendado/publicado), geração de hashtags com IA
+- Módulo **Biblioteca** — browse de componentes Astro por categoria com preview e código, construtor visual com drag-reorder, gerador de manifesto .md
+- Módulo **Configurações** — 7 abas (Perfil, Notificações, Integrações, Financeiro, Aparência, Equipe/RBAC, Auditoria)
 - Design system completo (tokens, animações, utilitários)
 - Seed de dados de teste (8 clientes via `npm run db:seed`)
 - Notificações in-app (NotificationBell + NotificationDrawer)
+- Edge Functions (10): morning-briefing, gerar-insight-ia, gerar-relatorio-executivo, gerar-relatorio-md, gerar-relatorios-mensais, webhook-asaas, regua-cobranca, memoria-cliente, processar-alertas, sentinela
+- API Routes: `/api/ia/chat`, `/api/ia/copy`, `/api/ia/morning-briefing`, `/api/ia/hashtags`, `/api/analytics/[id]`, `/api/analytics/[id]/live`, `/api/weather`, `/api/search`
 
-### ⏳ Pendente de Implementação
+### ⚠️ Lacunas Reais (o que falta de fato)
 
-| Feature                          | Módulo          | Prioridade |
-|----------------------------------|-----------------|------------|
-| Dashboard home (Bento Grid)      | Home            | Alta       |
-| Morning Briefing (Gemini Pro)    | IA              | Alta       |
-| KPI cards com dados reais        | Home            | Alta       |
-| Analytics Google Ads (dados reais) | Analytics     | Alta       |
-| Analytics GA4 (dados reais)      | Analytics       | Alta       |
-| UI completa de Tarefas           | Tarefas         | Média      |
-| Calendário Marketing             | Marketing       | Média      |
-| Biblioteca de componentes Astro  | Biblioteca      | Baixa      |
-| Chat IA no dashboard             | IA              | Alta       |
-| Configurações (UI completa)      | Config          | Média      |
-| RBAC (múltiplos usuários)        | Segurança       | Média      |
-| WhatsApp/email automático        | Notificações    | Média      |
-| Alerta saldo Google (#SALDOGOOGLE) | Analytics     | Alta       |
-| Deploy Edge Functions            | Infra           | Alta       |
+| Feature                                          | Módulo        | Prioridade |
+|--------------------------------------------------|---------------|------------|
+| Analytics — binding real Google Ads + GA4        | Analytics     | Alta       |
+| Notificações Email automáticas (Resend SDK)      | Notificações  | Média      |
+| Notificações WhatsApp via Twilio                 | Notificações  | Média      |
+| RBAC — políticas RLS no Supabase por role        | Segurança     | Média      |
+| Drag/drop persistente em Tarefas (ordem no DB)   | Tarefas       | Baixa      |
+| Publicação real de posts via Meta API            | Marketing     | Baixa      |
+| TEST_MODE=false (seguir docs/MODO_TESTE.md)      | Infra         | Alta       |
 
