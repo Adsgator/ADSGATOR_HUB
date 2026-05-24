@@ -69,11 +69,13 @@ export function GeographyBreakdown({ data, loading, title = 'Geografia' }: Geogr
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: '#2A3527',
-                border: '1px solid #44523F',
+                background: 'var(--surface-card)',
+                border: '1px solid var(--surface-border)',
                 borderRadius: '0.5rem',
+                fontSize: '0.75rem',
               }}
-              itemStyle={{ color: '#F0F3EF' }}
+              itemStyle={{ color: 'var(--ink-primary)' }}
+              labelStyle={{ color: 'var(--ink-secondary)', marginBottom: '0.125rem' }}
               formatter={(value, _name, props) => [
                 `${Number(value || 0).toLocaleString('pt-BR')} sessões`,
                 (props?.payload as { fullName: string })?.fullName || ''

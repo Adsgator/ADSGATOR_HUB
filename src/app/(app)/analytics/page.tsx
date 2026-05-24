@@ -24,6 +24,7 @@ import { GeographyBreakdown } from '@/components/analytics/GeographyBreakdown'
 import { DeviceBreakdown } from '@/components/analytics/DeviceBreakdown'
 import { GA4Panel } from '@/components/analytics/GA4Panel'
 import { TrafficSources } from '@/components/analytics/TrafficSources'
+import { AnalyticsMap } from '@/components/analytics/AnalyticsMap'
 
 const fmt  = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 const fmtN = (v: number) => new Intl.NumberFormat('pt-BR').format(v)
@@ -458,15 +459,22 @@ export default function AnalyticsPage() {
               </div>
             )}
 
-            {/* Geografia */}
+            {/* Geografia — mapa + breakdown */}
             {(liveData.googleAds.geografia.length > 0 || liveData.ga4.geografia.length > 0) && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem] lg:col-span-2">
                 <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Geografia</h4>
-                <GeographyBreakdown
-                  data={liveData.ga4.enabled ? liveData.ga4.geografia : liveData.googleAds.geografia}
-                  loading={loadingLive}
-                  title={liveData.ga4.enabled ? 'Sessões por região' : 'Cliques por região'}
-                />
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_14rem] gap-[1rem]">
+                  <AnalyticsMap
+                    data={liveData.ga4.enabled ? liveData.ga4.geografia : liveData.googleAds.geografia}
+                    loading={loadingLive}
+                    metric={liveData.ga4.enabled ? 'sessoes' : 'cliques'}
+                  />
+                  <GeographyBreakdown
+                    data={liveData.ga4.enabled ? liveData.ga4.geografia : liveData.googleAds.geografia}
+                    loading={loadingLive}
+                    title={liveData.ga4.enabled ? 'Top estados' : 'Cliques por estado'}
+                  />
+                </div>
               </div>
             )}
 
