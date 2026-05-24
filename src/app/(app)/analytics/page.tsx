@@ -248,23 +248,26 @@ export default function AnalyticsPage() {
       subtitle={selData ? `Cliente: ${selData.cliente.nome}` : 'Selecione um cliente para ver detalhes'}
       actions={
         <div className="flex items-center gap-[0.5rem]">
-          {/* Seletor de período */}
-          <div className="relative">
-            <select
-              value={periodo}
-              onChange={(e) => setPeriodo(e.target.value as Periodo)}
-              className="appearance-none bg-surface-hover border border-surface-border rounded-[0.375rem] pl-[0.75rem] pr-[2rem] h-[2rem] text-[0.8125rem] text-ink-secondary focus:outline-none focus:border-ads-500 transition-colors"
-            >
-              <option value="7d">Últimos 7 dias</option>
-              <option value="30d">Últimos 30 dias</option>
-              <option value="90d">Últimos 90 dias</option>
-            </select>
-            <Calendar className="absolute right-[0.5rem] top-1/2 -translate-y-1/2 w-[0.875rem] h-[0.875rem] text-ink-muted pointer-events-none" strokeWidth={1.5} />
+          {/* Pills de período */}
+          <div className="flex bg-surface-hover border border-surface-border rounded-[0.5rem] p-[0.1875rem] gap-[0.125rem]">
+            {(['7d', '30d', '90d'] as Periodo[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriodo(p)}
+                className={`h-[1.625rem] px-[0.625rem] rounded-[0.3125rem] text-[0.75rem] font-medium transition-all ${
+                  periodo === p
+                    ? 'bg-surface-card text-ink-primary shadow-sm'
+                    : 'text-ink-muted hover:text-ink-secondary'
+                }`}
+              >
+                {p === '7d' ? '7d' : p === '30d' ? '30d' : '90d'}
+              </button>
+            ))}
           </div>
           <button
             onClick={() => { carregar(); carregarLive(); }}
             disabled={loading || loadingLive}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors disabled:opacity-50"
+            className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />
           </button>
@@ -294,52 +297,41 @@ export default function AnalyticsPage() {
         }
       </div>
 
-      {/* ══ SEÇÃO 2 — POR CLIENTE ══════════════════════════════════════ */}
-      <h2 className="text-ink-primary font-semibold text-[0.9375rem] mb-[0.875rem]">Por Cliente</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem] mb-[2rem]">
-        {loading
-          ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-[9rem] rounded-xl skeleton-shimmer border border-surface-border" />)
-          : dados.map(({ cliente: c, ultimo: u }) => {
-              const cpa  = (u?.conversoes ?? 0) > 0 ? (u?.investimento ?? 0) / u!.conversoes! : null
-              const ctr  = (u?.impressoes ?? 0) > 0 ? ((u?.cliques ?? 0) / u!.impressoes!) * 100 : null
-              const ativo = (u?.investimento ?? 0) > 0
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setClienteSel(c.id)}
-                  className={`text-left bg-surface-card border rounded-xl p-[1rem] transition-colors hover:border-ads-500/40 ${clienteSel === c.id ? 'border-ads-500' : 'border-surface-border'}`}
-                >
-                  <div className="flex items-center justify-between mb-[0.625rem]">
-                    <p className="text-ink-primary font-semibold text-[0.875rem] truncate">{c.nome}</p>
-                    <div className={`w-[0.5rem] h-[0.5rem] rounded-full shrink-0 ${ativo ? 'bg-status-green' : 'bg-ink-muted'}`} />
-                  </div>
-                  {u ? (
-                    <div className="grid grid-cols-2 gap-x-[1rem] gap-y-[0.25rem] text-[0.75rem]">
-                      <span className="text-ink-muted">Invest.</span>
-                      <span className="text-ink-secondary font-medium">{fmt(u.investimento ?? 0)}</span>
-                      <span className="text-ink-muted">Conversões</span>
-                      <span className="text-ink-secondary font-medium">{conv(u.conversoes ?? 0)}</span>
-                      <span className="text-ink-muted">CTR</span>
-                      <span className="text-ink-secondary font-medium">{ctr !== null ? `${ctr.toFixed(2)}%` : '—'}</span>
-                      <span className="text-ink-muted">CPA</span>
-                      <span className={`font-medium ${cpa !== null && cpa > 200 ? 'text-status-orange' : 'text-ink-secondary'}`}>{cpa !== null ? fmt(cpa) : '—'}</span>
-                    </div>
-                  ) : (
-                    <p className="text-ink-muted text-[0.75rem] italic">Sem snapshots ainda</p>
-                  )}
-                </button>
-              )
-            })
-        }
-      </div>
+      {/* ══ SEÇÃO 2 — SELETOR DE CLIENTE (pills) ═══════════════════ */}
+      {!loading && dados.length > 0 && (
+        <div className="flex items-center gap-[0.375rem] flex-wrap mb-[1.5rem]">
+          <span className="text-ink-muted text-[0.75rem] font-medium mr-[0.25rem]">Cliente:</span>
+          {dados.map(({ cliente: c, ultimo: u }) => {
+            const ativo = (u?.investimento ?? 0) > 0
+            return (
+              <button
+                key={c.id}
+                onClick={() => setClienteSel(c.id)}
+                className={`flex items-center gap-[0.375rem] h-[1.875rem] px-[0.75rem] rounded-full text-[0.8125rem] font-medium transition-all ${
+                  clienteSel === c.id
+                    ? 'bg-ads-500 text-white shadow-md shadow-ads-500/20'
+                    : 'bg-surface-card border border-surface-border text-ink-secondary hover:border-ads-500/40 hover:text-ink-primary'
+                }`}
+              >
+                <span className={`w-[0.375rem] h-[0.375rem] rounded-full shrink-0 ${ativo ? 'bg-status-green' : 'bg-ink-muted'}`} />
+                {c.nome.split(' ')[0]}
+              </button>
+            )
+          })}
+        </div>
+      )}
+      {loading && <div className="h-[2rem] mb-[1.5rem] skeleton-shimmer rounded-full w-[60%]" />}
 
       {/* ══ SEÇÃO 3 — DETALHE POR CAMPANHA ════════════════════════════ */}
       {selData && (
         <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
           <div className="flex items-center justify-between mb-[1.25rem]">
-            <h2 className="text-ink-primary font-semibold text-[0.9375rem]">
-              Detalhe — {selData.cliente.nome}
-            </h2>
+            <div>
+              <h2 className="text-ink-primary font-semibold text-[0.9375rem]">
+                Evolução — {selData.cliente.nome}
+              </h2>
+              <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">{periodoLabel[periodo]}</p>
+            </div>
             <a
               href={`/clientes/${selData.cliente.id}`}
               className="text-ads-500 text-[0.8125rem] hover:underline"
@@ -357,17 +349,57 @@ export default function AnalyticsPage() {
                   <YAxis yAxisId="left"  tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `R$${(v / 1000).toFixed(0)}k`} />
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} />
                   <Tooltip
-                    contentStyle={{ background: 'var(--surface-card)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
+                    contentStyle={{ background: 'var(--surface-elevated)', border: '1px solid var(--surface-border)', borderRadius: '0.625rem', fontSize: '0.75rem', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}
+                    labelStyle={{ color: 'var(--ink-primary)', fontWeight: 600, marginBottom: '0.25rem' }}
                     formatter={(v: unknown, name: unknown) => { const n = name as string; const val = Number(v); return [n === 'invest' ? fmt(val) : fmtN(val), n === 'invest' ? 'Investimento' : 'Conversões'] as [string, string] }}
                   />
                   <Legend formatter={(v) => v === 'invest' ? 'Investimento' : 'Conversões'} wrapperStyle={{ fontSize: '0.75rem' }} />
-                  <Bar  yAxisId="left"  dataKey="invest"     fill="#3B82F6" opacity={0.7} radius={[3, 3, 0, 0]} />
-                  <Line yAxisId="right" dataKey="conversoes" stroke="#10B981" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Bar  yAxisId="left"  dataKey="invest"     fill="#3B82F6" opacity={0.75} radius={[3, 3, 0, 0]} />
+                  <Line yAxisId="right" dataKey="conversoes" stroke="#FFA500" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#FFA500' }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
           ) : (
             <p className="text-ink-muted text-[0.875rem] italic text-center py-[2rem]">Snapshots insuficientes para gerar gráfico.</p>
+          )}
+
+          {/* Tabela de campanhas live */}
+          {liveData?.googleAds.enabled && liveData.googleAds.campanhas.length > 0 && (
+            <div className="mt-[1.5rem]">
+              <h3 className="text-ink-primary font-semibold text-[0.875rem] mb-[0.75rem]">Campanhas ativas</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[0.8125rem]">
+                  <thead>
+                    <tr className="border-b border-surface-border">
+                      {['Campanha', 'Impressões', 'Cliques', 'CTR', 'Custo', 'Conv.', 'CPA'].map((h) => (
+                        <th key={h} className="text-left pb-[0.625rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem] last:pr-0">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {liveData.googleAds.campanhas.map((c) => (
+                      <tr key={c.campanha_id} className="border-b border-surface-border last:border-0 hover:bg-surface-hover/50 transition-colors">
+                        <td className="py-[0.625rem] pr-[1rem] text-ink-primary font-medium max-w-[12rem] truncate">{c.campanha_nome}</td>
+                        <td className="py-[0.625rem] pr-[1rem] text-ink-secondary">{fmtN(c.impressoes)}</td>
+                        <td className="py-[0.625rem] pr-[1rem] text-ink-secondary">{fmtN(c.cliques)}</td>
+                        <td className="py-[0.625rem] pr-[1rem]">
+                          <span className={`font-semibold ${c.ctr > 5 ? 'text-status-green' : c.ctr > 2 ? 'text-ads-500' : 'text-ink-secondary'}`}>
+                            {c.ctr.toFixed(2)}%
+                          </span>
+                        </td>
+                        <td className="py-[0.625rem] pr-[1rem] text-status-blue font-medium">{fmt(c.custo_total)}</td>
+                        <td className="py-[0.625rem] pr-[1rem] text-ink-secondary">{conv(c.conversoes)}</td>
+                        <td className="py-[0.625rem]">
+                          <span className={`font-semibold ${c.cpa > 200 ? 'text-status-orange' : 'text-status-green'}`}>
+                            {c.conversoes > 0 ? fmt(c.cpa) : '—'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
         </div>
       )}
