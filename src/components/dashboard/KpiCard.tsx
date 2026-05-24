@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { cn } from '@/lib/utils'
+import { SkeletonLine } from '@/components/ui/SkeletonLine'
 
 type AccentColor = 'green' | 'amber' | 'red' | 'blue' | 'purple' | 'cyan'
 
@@ -20,6 +21,7 @@ interface KpiCardProps {
   icon?:       React.ReactNode
   href?:       string
   description?: string
+  loading?:    boolean
 }
 
 const ACCENT: Record<AccentColor, { hex: string; glow: string; icon: string; border: string }> = {
@@ -47,6 +49,7 @@ export function KpiCard({
   icon,
   href,
   description,
+  loading = false,
 }: KpiCardProps) {
   const chartData = sparkData?.map((v, i) => ({ i, v })) ?? []
   const acc = ACCENT[accentColor]
@@ -60,6 +63,18 @@ export function KpiCard({
     'p-[1.25rem]',
     alert ? 'dark:border dark:border-status-red/40 dark:hover:border-status-red/60' : 'dark:border dark:border-surface-border',
   )
+
+  if (loading) {
+    return (
+      <div className={cn(cardBase, 'min-h-[12rem]')}>
+        <div className="space-y-[0.75rem]">
+          <SkeletonLine width="50%" height="0.75rem" />
+          <SkeletonLine width="70%" height="2.5rem" />
+          <SkeletonLine width="60%" height="0.75rem" />
+        </div>
+      </div>
+    )
+  }
 
   const content = (
     <>

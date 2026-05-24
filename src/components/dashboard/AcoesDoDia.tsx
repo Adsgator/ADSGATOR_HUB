@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { Cliente, Estagio } from '@/lib/types'
 
 type Urgencia = 'critica' | 'atencao' | 'review'
@@ -65,13 +66,23 @@ interface AcoesDoDiaProps {
 }
 
 export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
-  if (items.length === 0) return null
-
   // Ordenação conforme arquivo mestre
   const ordenado = [...items].sort((a, b) => {
     const peso: Record<Urgencia, number> = { critica: 3, atencao: 2, review: 1 }
     return peso[b.urgencia] - peso[a.urgencia]
   })
+
+  if (ordenado.length === 0) {
+    return (
+      <section className="mb-[2rem]">
+        <EmptyState
+          icon={<CheckCircle2 className="w-[1.5rem] h-[1.5rem] text-status-green" strokeWidth={1.5} />}
+          title="Sem ações pendentes"
+          description="Todos os clientes estão em dia. Boa semana!"
+        />
+      </section>
+    )
+  }
 
   return (
     <section className="mb-[2rem]">

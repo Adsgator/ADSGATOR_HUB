@@ -20,9 +20,6 @@ import { BentoCard }             from '@/components/dashboard/BentoCard'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
 import { KpiCompactCard }        from '@/components/dashboard/KpiCompactCard'
-import { TrendingOnMarket }      from '@/components/dashboard/TrendingOnMarket'
-import { RecentTransactions }    from '@/components/dashboard/RecentTransactions'
-import { QuickExchange }         from '@/components/dashboard/QuickExchange'
 import { MorningBriefing }       from '@/components/dashboard/MorningBriefing'
 import { WeatherClock }          from '@/components/dashboard/WeatherClock'
 import { DRESparkline }          from '@/components/dashboard/DRESparkline'
@@ -250,19 +247,6 @@ export default function DashboardPage() {
             icon={<Users className="w-[1.25rem] h-[1.25rem] text-ads-500" strokeWidth={2} />}
           />
         </div>
-
-        {/* ════════════════════════════════════════════════════════════ */}
-        {/* SEÇÃO 1 — Trending + Quick Exchange (lado a lado)            */}
-        {/* ════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
-          <TrendingOnMarket />
-          <QuickExchange />
-        </div>
-
-        {/* ════════════════════════════════════════════════════════════ */}
-        {/* SEÇÃO 2 — Recent Transactions (full width)                   */}
-        {/* ════════════════════════════════════════════════════════════ */}
-        <RecentTransactions />
 
         {/* ════════════════════════════════════════════════════════════ */}
         {/* GRID CUSTOMIZÁVEL — (Rest da Dashboard anterior)            */}

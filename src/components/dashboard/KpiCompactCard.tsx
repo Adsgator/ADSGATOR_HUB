@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { TrendingUp, TrendingDown, LucideIcon } from 'lucide-react'
 
 interface KpiCompactCardProps {
@@ -13,13 +14,13 @@ interface KpiCompactCardProps {
   compact?: boolean
 }
 
-const ACCENT_MAP: Record<string, { bg: string; text: string; border: string }> = {
-  amber:  { bg: '#FFC857',  text: 'text-[#FFB100]', border: 'border-[#FFB100]/30' },
-  green:  { bg: '#10B981',  text: 'text-status-green', border: 'border-status-green/30' },
-  blue:   { bg: '#3B82F6',  text: 'text-status-blue', border: 'border-status-blue/30' },
-  red:    { bg: '#EF4444',  text: 'text-status-red', border: 'border-status-red/30' },
-  purple: { bg: '#8B5CF6',  text: 'text-status-purple', border: 'border-status-purple/30' },
-  cyan:   { bg: '#06B6D4',  text: 'text-status-cyan', border: 'border-status-cyan/30' },
+const ACCENT_MAP: Record<string, { bg: string; text: string; border: string; pillBg: string }> = {
+  amber:  { bg: '#FFC857',  text: 'text-[#FFB100]', border: 'border-[#FFB100]/30', pillBg: 'bg-[#FFB100]/10' },
+  green:  { bg: '#10B981',  text: 'text-status-green', border: 'border-status-green/30', pillBg: 'bg-status-green/10' },
+  blue:   { bg: '#3B82F6',  text: 'text-status-blue', border: 'border-status-blue/30', pillBg: 'bg-status-blue/10' },
+  red:    { bg: '#EF4444',  text: 'text-status-red', border: 'border-status-red/30', pillBg: 'bg-status-red/10' },
+  purple: { bg: '#8B5CF6',  text: 'text-status-purple', border: 'border-status-purple/30', pillBg: 'bg-status-purple/10' },
+  cyan:   { bg: '#06B6D4',  text: 'text-status-cyan', border: 'border-status-cyan/30', pillBg: 'bg-status-cyan/10' },
 }
 
 export function KpiCompactCard({
@@ -35,21 +36,17 @@ export function KpiCompactCard({
   const accent = ACCENT_MAP[accentColor] || ACCENT_MAP.amber
   const isLink = !!href
 
-  const Wrapper = isLink ? 'a' : 'div'
+  const classNameValue = `bg-surface-card border rounded-xl overflow-hidden transition-all ${
+    isLink ? 'cursor-pointer hover:border-surface-border hover:shadow-lg' : ''
+  } ${accent.border} border`
 
-  return (
-    <Wrapper
-      href={href}
-      className={`bg-surface-card border rounded-xl overflow-hidden transition-all ${
-        isLink ? 'cursor-pointer hover:border-surface-border hover:shadow-lg' : ''
-      } ${accent.border} border`}
-    >
-      <div className={`p-[1rem] ${compact ? '' : 'min-h-[8rem]'} flex flex-col justify-between`}>
+  const content = (
+    <div className={`p-[1rem] ${compact ? '' : 'min-h-[8rem]'} flex flex-col justify-between`}>
         {/* Header com label e delta */}
         <div className="flex items-start justify-between mb-[0.5rem]">
           <p className="text-ink-muted text-xs font-medium uppercase tracking-wider">{label}</p>
           {delta && (
-            <div className={`flex items-center gap-[0.25rem] px-[0.5rem] py-[0.25rem] rounded-full ${accent.text.replace('text-', 'bg-').replace('text-', 'bg-')}/10`}>
+            <div className={`flex items-center gap-[0.25rem] px-[0.5rem] py-[0.25rem] rounded-full ${accent.pillBg}`}>
               {deltaDir === 'up' ? (
                 <TrendingUp className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
               ) : (
@@ -75,6 +72,19 @@ export function KpiCompactCard({
           )}
         </div>
       </div>
-    </Wrapper>
+  )
+
+  if (isLink) {
+    return (
+      <Link href={href} className={classNameValue}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={classNameValue}>
+      {content}
+    </div>
   )
 }

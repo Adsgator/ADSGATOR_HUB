@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { RefreshCw, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { SkeletonLine } from '@/components/ui/SkeletonLine'
 
 interface BriefingData {
   texto:      string
@@ -74,11 +75,7 @@ export function MorningBriefing() {
 
         {/* Conteúdo */}
         {loading ? (
-          <div className="space-y-[0.5rem]">
-            {[100, 90, 80, 70, 60].map((w, i) => (
-              <div key={i} className={`h-[1rem] rounded bg-surface-hover animate-pulse`} style={{ width: `${w}%` }} />
-            ))}
-          </div>
+          <SkeletonLine width="85%" height="1rem" count={5} gap="0.5rem" />
         ) : briefing ? (
           <div>
             <div className="space-y-[0.5rem]">

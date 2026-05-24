@@ -105,7 +105,7 @@ export function AlertasCriticos() {
                 key={a.id}
                 className={`flex items-center gap-3 p-3 rounded-lg bg-surface-hover border-l-4 ${bordaCor}`}
               >
-                <span className={iconeCor}>{ICONE[a.tipo]}</span>
+                <span className={`${iconeCor} ${a.urgente ? 'animate-pulse' : ''}`}>{ICONE[a.tipo]}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold leading-tight truncate text-ink-primary">{a.label}</p>
                   <p className="text-xs text-ink-secondary leading-snug">{a.detalhe}</p>
