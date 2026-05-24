@@ -1,10 +1,8 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
-const { Responsive: ResponsiveBase, WidthProvider } = require('react-grid-layout') as any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const ResponsiveGridLayout = WidthProvider(ResponsiveBase) as React.ComponentType<any>
+const { Responsive: RGLResponsive } = require('react-grid-layout') as { Responsive: React.ComponentType<any> }
 import {
   Users,
   DollarSign,
@@ -107,6 +105,20 @@ export default function DashboardPage() {
   const [saldoGoogle, setSaldoGoogle] = useState<number | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [layouts, setLayouts] = useState<Record<string, any[]>>(DEFAULT_LAYOUTS)
+  const [containerWidth, setContainerWidth] = useState(1200)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Medir largura do container para passar ao RGL
+  const measureWidth = useCallback(() => {
+    if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth)
+  }, [])
+
+  useEffect(() => {
+    measureWidth()
+    const ro = new ResizeObserver(measureWidth)
+    if (containerRef.current) ro.observe(containerRef.current)
+    return () => ro.disconnect()
+  }, [measureWidth])
 
   // Carregar layout salvo
   useEffect(() => {
@@ -195,8 +207,8 @@ export default function DashboardPage() {
       subtitle={`Semana de ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
       actions={topBarActions}
     >
-      <div className="page-enter -mx-[2rem] px-[2rem]">
-        <ResponsiveGridLayout
+      <div className="page-enter -mx-[2rem] px-[2rem]" ref={containerRef}>
+        <RGLResponsive
           className="layout"
           layouts={layouts}
           breakpoints={BREAKPOINTS}
@@ -206,6 +218,7 @@ export default function DashboardPage() {
           containerPadding={[0, 0]}
           draggableHandle=".bento-drag-handle"
           onLayoutChange={handleLayoutChange}
+          width={containerWidth}
           useCSSTransforms
           isResizable
           isDraggable
@@ -317,7 +330,7 @@ export default function DashboardPage() {
               <GeminiChat />
             </BentoCard>
           </div>
-        </ResponsiveGridLayout>
+        </RGLResponsive>
       </div>
     </MainLayout>
   )
