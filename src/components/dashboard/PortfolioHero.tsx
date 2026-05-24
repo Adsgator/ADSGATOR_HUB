@@ -75,18 +75,18 @@ export function PortfolioHero() {
                 <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--tw-surface-border)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgb(206 208 222 / 0.4)" vertical={false} />
             <XAxis
               dataKey="mes"
-              stroke="var(--tw-ink-muted)"
+              stroke="rgb(161 161 170)"
               style={{ fontSize: '0.75rem' }}
-              tick={{ fill: 'var(--tw-ink-muted)' }}
+              tick={{ fill: 'rgb(161 161 170)' }}
             />
             <YAxis hide />
             <Tooltip
               contentStyle={{
-                backgroundColor: 'var(--tw-surface-elevated)',
-                border: '1px solid var(--tw-surface-border)',
+                backgroundColor: 'rgb(249 249 253)',
+                border: '1px solid rgb(206 208 222 / 0.4)',
                 borderRadius: '0.5rem',
                 boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
               }}
