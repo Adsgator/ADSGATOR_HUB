@@ -1,0 +1,104 @@
+# ADSGATOR HUB — Regras para Cline
+
+## Identidade do Projeto
+
+Sistema operacional interno da agência Adsgator.
+Next.js 15 + TypeScript + Supabase + TailwindCSS.
+Pasta raiz: `C:/PROJETOS/ADSGATOR/ADSGATOR_HUB`
+
+Leia o `CLAUDE.md` na raiz do projeto para contexto completo.
+
+---
+
+## Regras de Código (OBRIGATÓRIAS)
+
+### Espaçamento e Tamanho
+- SEMPRE usar `rem` para tamanhos, padding, margin, gap, border-radius
+- NUNCA usar `px` para espaçamentos — sem exceções
+- Exemplo correto: `p-[1.25rem]`, `gap-[0.5rem]`, `h-[2.25rem]`
+
+### Tailwind e Tema
+- NUNCA usar prefixo `dark:` em classes Tailwind
+- Os tokens CSS (`surface-*`, `ink-*`) já são dark/light aware automaticamente
+- Tema é controlado pela classe `.dark` no `<html>` via `ThemeProvider`
+
+### Imports Obrigatórios
+- `cn()` helper: sempre de `@/lib/utils`
+- Supabase client: sempre de `@/lib/supabase`
+- Ícones: sempre de `lucide-react` (import direto, nunca sublibrary)
+- MainLayout: de `@/components/layout/MainLayout`
+
+---
+
+## Design System Resumido
+
+### Cores Principais
+- Brand amarelo: `ads-500` = #FFB100 (principal), escala `ads-50` a `ads-900`
+- Superfícies: `surface-base`, `surface-card`, `surface-hover`, `surface-elevated`, `surface-border`
+- Texto: `ink-primary`, `ink-secondary`, `ink-muted`
+- Status: `status-green`, `status-orange`, `status-red`, `status-blue`, `status-purple`
+
+### Classes Utilitárias Importantes
+- `.card-shadow` — sombra em light, borda em dark
+- `.card-interactive` — hover lift suave
+- `.page-enter` — animação stagger de entrada
+- `.stagger` — filhos com delay crescente
+- `.skeleton-shimmer` — loading skeleton
+- `.focus-ring` — outline com glow amarelo
+- `.glow-{cor}` — efeito de brilho colorido
+
+### Sidebar
+- Largura: `var(--sidebar-w)` = 3.5rem (colapsado)
+- Hover expande para: `var(--sidebar-expanded)` = 15rem (overlay)
+
+---
+
+## Padrões de Componente
+
+### Página padrão
+```tsx
+'use client'
+import { MainLayout } from '@/components/layout/MainLayout'
+
+export default function Pagina() {
+  return (
+    <MainLayout title="Título" subtitle="Opcional">
+      <div className="page-enter">
+        {/* conteúdo */}
+      </div>
+    </MainLayout>
+  )
+}
+```
+
+### Card padrão
+```tsx
+<div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
+```
+
+### Badge de status
+```tsx
+<span className="px-[0.5rem] py-[0.125rem] rounded-full text-xs font-medium bg-status-green/10 text-status-green">
+  Ativo
+</span>
+```
+
+---
+
+## O que NÃO Fazer
+
+- Não criar arquivos que não foram pedidos
+- Não refatorar código não relacionado à tarefa
+- Não adicionar dependências sem perguntar
+- Não usar `px` em espaçamentos
+- Não usar `dark:` prefix em Tailwind
+- Não mudar convenções de import sem alinhar
+- Não adicionar comentários óbvios ao código
+- Não criar documentação extra não solicitada
+
+---
+
+## Modo de Teste Ativo
+
+As Edge Functions `webhook-asaas` e `regua-cobranca` têm `TEST_MODE = true`.
+Não alterar para produção sem seguir o checklist em `docs/MODO_TESTE.md`.

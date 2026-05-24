@@ -27,14 +27,19 @@ O sistema ADSGATOR é um **copiloto operacional** que deve fazer uma única cois
 ### Stack Técnico
 
 ```
-Frontend: Next.js 14 + React 18 + TypeScript
-Styling: Tailwind CSS com Design System próprio (rem-based)
-State: Zustand (local) + Supabase Realtime (sync)
-Backend: Supabase (PostgreSQL + Auth + Realtime)
-IA: Gemini 2.5 via Vertex AI (3 modelos: Lite, Flash, Pro)
-APIs: Google Ads, Google Analytics 4, Asaas, Open-Meteo
+Frontend: Next.js 15 + React 19 + TypeScript
+Styling: Tailwind CSS 3 com Design System próprio (rem-based, CSS vars)
+State: Zustand 5 (local) + Supabase Realtime (sync)
+Backend: Supabase (PostgreSQL + Auth + Realtime + Storage)
+IA: Gemini 2.5 via Vertex AI (@google-cloud/vertexai) — Flash, Pro
+APIs: Google Ads API, Google Analytics Data API, Asaas webhook, Open-Meteo
 Editor: Markdown para manifestos (Astro + componentes)
 Storage: Supabase Storage (imagens, memórias, manifestos)
+Fontes: Geist Sans + Geist Mono
+Icons: lucide-react
+Toasts: sonner
+Charts: recharts
+DnD: @hello-pangea/dnd + react-grid-layout
 ```
 
 ### Fluxo de Dados
@@ -1837,5 +1842,374 @@ Sem pensar. Só seguindo o sistema.
 
 **Este documento é a bíblia do ADSGATOR. Use como referência absoluta.**
 
-**Última atualização: 21/mai/2026**
+**Última atualização: 24/mai/2026**
+
+---
+
+## 🎨 DESIGN SYSTEM
+
+### Paleta Brand (Amarelo Adsgator)
+
+O amarelo é a cor identidade do sistema. Usado em ativo/selecionado, CTAs e destaques.
+
+```
+ads-50:  #FFF8E6   ads-100: #FFF0CD   ads-200: #FFE5A6   ads-300: #FFD67F
+ads-400: #FFC857   ads-500: #FFB100 ← PRINCIPAL   ads-600: #E6A000
+ads-700: #CC8E00   ads-800: #B37B00   ads-900: #8C6200
+```
+
+`ads-500` é usado em: item ativo na sidebar (borda + fundo 10%), ícones ativos, seleção de texto, focus ring, placeholder react-grid-layout.
+
+### Tokens de Superfície (CSS Variables — dark/light aware)
+
+Os tokens `surface-*` e `ink-*` são variáveis CSS que mudam automaticamente com o tema. **Nunca usar prefixo `dark:` no Tailwind** — o ThemeProvider gerencia a classe `.dark` no `<html>`.
+
+| Token                  | Light (`:root`)     | Dark (`.dark`)     |
+|------------------------|---------------------|--------------------|
+| `surface-base`         | `#DADCE9` (lavanda) | `#0a0a0b`          |
+| `surface-card`         | `#FFFFFF`           | `#141416`          |
+| `surface-hover`        | `#F4F4F8`           | `#1c1c1f`          |
+| `surface-elevated`     | `#F9F9FD`           | `#242428`          |
+| `surface-border`       | `#CED0DE`           | `#2a2a2e`          |
+| `ink-primary`          | `#111111`           | `#fafafa`          |
+| `ink-secondary`        | `#52525b`           | `#a1a1aa`          |
+| `ink-muted`            | `#a1a1aa`           | `#71717a`          |
+
+### Tokens de Status (fixos, sem variação de tema)
+
+```
+status-green:  #22c55e   status-orange: #f59e0b   status-red:    #ef4444
+status-blue:   #3b82f6   status-purple: #8b5cf6   status-cyan:   #06b6d4
+status-yellow: #eab308
+```
+
+Padrão de uso: `bg-status-green/10 text-status-green` para badges.
+
+### Glow Effects
+
+```css
+--glow-green  --glow-amber  --glow-cyan
+--glow-red    --glow-blue   --glow-purple
+```
+
+Classes utilitárias: `.glow-green`, `.glow-amber`, `.glow-cyan`, `.glow-red`, `.glow-blue`, `.glow-purple`
+
+### Tipografia
+
+Fonte principal: **Geist Sans** | Fonte code: **Geist Mono**
+
+Escala (rem-based):
+```
+2xs: 0.625rem | xs: 0.75rem | sm: 0.875rem | base: 1rem
+lg: 1.125rem  | xl: 1.25rem | 2xl: 1.5rem  | 3xl: 1.875rem | 4xl: 2.25rem
+```
+
+### Animações e Micro-interações
+
+| Classe / Animação          | Descrição                                             |
+|----------------------------|-------------------------------------------------------|
+| `animate-fade-in`          | Fade + translação leve para cima (0.25s)              |
+| `animate-fade-up`          | Fade + translação maior (0.35s) — entrada de conteúdo |
+| `animate-fade-scale`       | Fade + scale 0.97→1 (0.25s) — modais, cards          |
+| `animate-slide-in-left/right` | Slide lateral (0.25s)                             |
+| `animate-pulse-slow`       | Pulse suave 2s infinite — ícones de alerta            |
+| `.stagger > *`             | Filhos com delay crescente (30ms, 60ms... 240ms)      |
+| `.page-enter`              | Página inteira com stagger 20ms, 50ms... 290ms        |
+| `.skeleton-shimmer`        | Efeito shimmer para loading skeletons                 |
+| `.panel-slide-in`          | Drawer lateral com spring (cubic-bezier(0.34,1.56))   |
+
+### Classes Utilitárias CSS
+
+```
+.card-shadow        — sombra em light (0 1px 2px + 0 4px 16px), sem sombra em dark
+.card-interactive   — hover: lift -1px + sombra extra
+.focus-ring         — outline: 2px surface-base + 4px ads-400/40
+.sidebar-shell      — background surface-card para sidebar
+.topbar-shell       — background surface-card + shadow
+.bento-dragging     — estado de drag no grid (scale + shadow)
+```
+
+### Bordas e Raios
+
+```
+sm: 0.25rem | default: 0.375rem | lg: 0.5rem | xl: 0.75rem | 2xl: 1rem | 3xl: 1.5rem
+```
+
+### Scrollbar
+
+Customizada: 6px de largura, thumb `surface-border`, hover `ink-muted`, sem track visível.
+
+### Seleção de Texto
+
+Highlight com fundo `rgba(255,165,0,0.25)` e texto `#FFA500` — amarelo Adsgator.
+
+---
+
+## 🏗️ ARQUITETURA DO LAYOUT (Editor Shell)
+
+O sistema usa um layout tipo IDE: moldura fixa ao redor de uma área de conteúdo central com scroll independente.
+
+```
+┌─ TopBar (3.5rem) ────────────────────────────────────────────────────────────┐
+│  Logo | Título da página ativa | Search (Ctrl+K) | Alertas | Notif | Tema   │
+├──────────┬──────────────────────────────────────────────────┬────────────────┤
+│ Sidebar  │                                                  │ RightSidebar   │
+│ 3.5rem   │         ÁREA DE CONTEÚDO                        │   3rem         │
+│ hover→   │         scroll independente                     │   ações        │
+│ 15rem    │         isolada dos menus                       │   contextuais  │
+│          │                                                  │                │
+├──────────┴──────────────────────────────────────────────────┴────────────────┤
+│ StatusBar (1.5rem) — status das APIs, modo ativo, info contextual             │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Variáveis CSS do Shell
+
+```css
+--topbar-h:         3.5rem
+--sidebar-w:        3.5rem    /* colapsado */
+--sidebar-expanded: 15rem     /* hover expande como overlay */
+--right-sidebar-w:  3rem
+--statusbar-h:      1.5rem
+```
+
+### Sidebar Esquerda
+
+- **Slim** por padrão: 3.5rem (só ícones visíveis)
+- **Hover expande** para 15rem como overlay — não empurra o conteúdo
+- Labels e grupos de nav aparecem com fade + width transition
+- Item ativo: `border-l-[3px] border-ads-500 bg-ads-500/10 text-ads-500 rounded-l-none`
+- Ícone ativo: glow `drop-shadow(0 0 0.375rem rgba(255,177,0,0.4))`
+- Badge de tarefas pendentes no ícone de Tarefas (vermelho, max "9")
+
+### TopBar
+
+- Logo Adsgator à esquerda
+- Título da página atual (injetado via `MainLayout`)
+- Search global (Ctrl+K) — busca clientes, tasks, transações, histórico
+- Notificações: `NotificationBell` com badge de count
+- `NotificationDrawer`: panel lateral com alertas críticos, importantes e info
+- ThemeToggle (dark/light)
+
+### RightSidebar
+
+- Ações contextuais por página (muda conforme a rota)
+- Ícones de ação rápida
+
+### StatusBar
+
+- Barra 1.5rem na parte inferior
+- Status das APIs integradas
+- Informações contextuais da página
+
+### Área de Conteúdo
+
+- Sempre isolada: scroll independente, sem afetar a moldura
+- `MainLayout` injeta title/subtitle na TopBar via contexto/props
+- Animação de entrada: `.page-enter`
+
+---
+
+## 📦 COMPONENTES IMPLEMENTADOS
+
+### Layout Shell
+
+| Componente              | Arquivo                                       |
+|-------------------------|-----------------------------------------------|
+| `MainLayout`            | `src/components/layout/MainLayout.tsx`        |
+| `TopBar`                | `src/components/layout/TopBar.tsx`            |
+| `Sidebar`               | `src/components/layout/Sidebar.tsx`           |
+| `RightSidebar`          | `src/components/layout/RightSidebar.tsx`      |
+| `StatusBar`             | `src/components/layout/StatusBar.tsx`         |
+| `NotificationBell`      | `src/components/layout/NotificationBell.tsx`  |
+| `NotificationDrawer`    | `src/components/layout/NotificationDrawer.tsx`|
+
+### Clientes
+
+| Componente              | Arquivo                                            |
+|-------------------------|----------------------------------------------------|
+| `ClienteCard`           | `src/components/clientes/ClienteCard.tsx`          |
+| `ClienteProgressCard`   | `src/components/clientes/ClienteProgressCard.tsx`  |
+| `ChecklistCard`         | `src/components/clientes/ChecklistCard.tsx`        |
+| `AuditTimeline`         | `src/components/clientes/AuditTimeline.tsx`        |
+
+### UI Primitivos
+
+| Componente          | Arquivo                              |
+|---------------------|--------------------------------------|
+| `ThemeToggle`       | `src/components/ui/ThemeToggle.tsx`  |
+
+### Hooks
+
+| Hook              | Arquivo                          | Descrição                                        |
+|-------------------|----------------------------------|--------------------------------------------------|
+| `useClientes`     | `src/lib/hooks/useClientes.ts`   | Realtime + métricas (total/ativos/mrr/etc.)      |
+
+---
+
+## 📁 ESTRUTURA DE ROTAS
+
+| Rota                       | Módulo           | Status       |
+|----------------------------|------------------|--------------|
+| `/dashboard`               | Home / Morning Briefing | ⏳ Parcial |
+| `/clientes`                | Lista clientes   | ✅ Feito     |
+| `/clientes/novo`           | Criar cliente    | ✅ Feito     |
+| `/clientes/[id]`           | Detalhe cliente  | ✅ Feito     |
+| `/financeiro`              | DRE + finanças   | ✅ Feito     |
+| `/relatorios`              | Relatórios IA    | ✅ Feito     |
+| `/analytics`               | Google Ads + GA4 | ⏳ Pendente  |
+| `/tarefas`                 | Task manager     | ⏳ Pendente  |
+| `/marketing`               | Calendário social| ⏳ Pendente  |
+| `/biblioteca`              | Componentes Astro| ⏳ Pendente  |
+| `/configuracoes`           | Configurações    | ⏳ Pendente  |
+| `/ajuda`                   | Help center      | ⏳ Pendente  |
+
+---
+
+## 🧑‍💻 CONVENÇÕES DE CÓDIGO
+
+### Espaçamento
+
+**Sempre rem. Nunca px.** Sem exceções.
+
+```tsx
+// ✅ correto
+<div className="p-[1.25rem] gap-[0.5rem] h-[2.25rem] rounded-xl">
+
+// ❌ errado
+<div className="p-[20px] gap-[8px] h-[36px]">
+```
+
+### Tema / Dark Mode
+
+**Nunca usar `dark:` prefix.** Os tokens CSS já são dark/light aware.
+
+```tsx
+// ✅ correto
+<div className="bg-surface-card text-ink-primary border-surface-border">
+
+// ❌ errado
+<div className="bg-white dark:bg-gray-900 text-black dark:text-white">
+```
+
+### Imports
+
+```typescript
+import { cn }           from '@/lib/utils'
+import { supabase }     from '@/lib/supabase'
+import { MainLayout }   from '@/components/layout/MainLayout'
+import { XIcon }        from 'lucide-react'
+```
+
+### Padrão de Página
+
+```tsx
+'use client'
+
+import { MainLayout } from '@/components/layout/MainLayout'
+
+export default function NomeDaPagina() {
+  return (
+    <MainLayout title="Título" subtitle="Opcional" actions={<BotaoTopBar />}>
+      <div className="page-enter">
+        {/* conteúdo */}
+      </div>
+    </MainLayout>
+  )
+}
+```
+
+### Padrão de Card
+
+```tsx
+<div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow card-interactive">
+  <h3 className="text-ink-primary font-semibold text-sm">Título</h3>
+  <p className="text-ink-muted text-xs mt-[0.25rem]">Descrição</p>
+</div>
+```
+
+### Padrão de Badge de Status
+
+```tsx
+<span className="px-[0.5rem] py-[0.125rem] rounded-full text-xs font-medium bg-status-green/10 text-status-green">
+  Ativo
+</span>
+```
+
+---
+
+## 🔐 SEGURANÇA E AMBIENTE
+
+### Modo de Teste
+
+⚠️ **MODO DE TESTE ATIVO desde 22/mai/2026**
+
+- `webhook-asaas/index.ts` — `TEST_MODE = true`
+- `regua-cobranca/index.ts` — `TEST_MODE = true`
+- WhatsApp: redireciona para número de teste
+- Emails: redirecionados para email de teste
+- Cobranças: prefixadas com `[TESTE]`
+
+Para ir para produção: seguir `docs/MODO_TESTE.md`.
+
+### Edge Functions Supabase
+
+```
+supabase/functions/
+├── gerar-insight-ia/           — análise de campanha (Gemini Flash)
+├── gerar-relatorio-executivo/  — relatório semanal/mensal (Gemini Pro)
+├── webhook-asaas/              — eventos de pagamento (TEST_MODE = true)
+├── regua-cobranca/             — automação de cobrança (TEST_MODE = true)
+├── morning-briefing/           — briefing diário 9h (Gemini Pro)
+└── _shared/                    — utils compartilhados entre functions
+```
+
+### Variáveis de Ambiente Necessárias
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+GOOGLE_ADS_DEVELOPER_TOKEN=
+GOOGLE_ADS_CLIENT_ID=
+GOOGLE_ADS_CLIENT_SECRET=
+GOOGLE_ADS_REFRESH_TOKEN=
+GOOGLE_CLOUD_PROJECT=
+ASAAS_API_KEY=
+```
+
+---
+
+## 📊 STATUS DE IMPLEMENTAÇÃO
+
+### ✅ Implementado e Funcionando
+
+- Shell de layout completo (TopBar + Sidebar + RightSidebar + StatusBar)
+- Sistema de tema dark/light (CSS vars + ThemeProvider)
+- Autenticação Supabase (login, logout, sessão)
+- Módulo Clientes — lista, detalhe, novo, stepper de progresso
+- Módulo Financeiro — DRE calculada, transações, clientes inadimplentes
+- Módulo Relatórios — solicitação, histórico
+- Design system completo (tokens, animações, utilitários)
+- Seed de dados de teste (8 clientes via `npm run db:seed`)
+- Notificações in-app (NotificationBell + NotificationDrawer)
+
+### ⏳ Pendente de Implementação
+
+| Feature                          | Módulo          | Prioridade |
+|----------------------------------|-----------------|------------|
+| Dashboard home (Bento Grid)      | Home            | Alta       |
+| Morning Briefing (Gemini Pro)    | IA              | Alta       |
+| KPI cards com dados reais        | Home            | Alta       |
+| Analytics Google Ads (dados reais) | Analytics     | Alta       |
+| Analytics GA4 (dados reais)      | Analytics       | Alta       |
+| UI completa de Tarefas           | Tarefas         | Média      |
+| Calendário Marketing             | Marketing       | Média      |
+| Biblioteca de componentes Astro  | Biblioteca      | Baixa      |
+| Chat IA no dashboard             | IA              | Alta       |
+| Configurações (UI completa)      | Config          | Média      |
+| RBAC (múltiplos usuários)        | Segurança       | Média      |
+| WhatsApp/email automático        | Notificações    | Média      |
+| Alerta saldo Google (#SALDOGOOGLE) | Analytics     | Alta       |
+| Deploy Edge Functions            | Infra           | Alta       |
 
