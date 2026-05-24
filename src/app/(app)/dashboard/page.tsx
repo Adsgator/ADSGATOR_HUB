@@ -11,12 +11,15 @@ import {
   Download,
   RefreshCw,
   RotateCcw,
+  MessageCircle,
+  ExternalLink,
+  PauseCircle,
 } from 'lucide-react'
 import { MainLayout }            from '@/components/layout/MainLayout'
 import { BentoCard }             from '@/components/dashboard/BentoCard'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
-import { ClienteProgressCard }   from '@/components/dashboard/ClienteProgressCard'
+
 import { MorningBriefing }       from '@/components/dashboard/MorningBriefing'
 import { WeatherClock }          from '@/components/dashboard/WeatherClock'
 import { DRESparkline }          from '@/components/dashboard/DRESparkline'
@@ -296,8 +299,8 @@ export default function DashboardPage() {
               actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
             >
               {loading ? (
-                <div className="grid grid-cols-2 gap-[0.75rem]">
-                  {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[8rem] rounded-lg skeleton-shimmer" />)}
+                <div className="flex flex-col gap-[0.5rem]">
+                  {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-[2.75rem] rounded-lg skeleton-shimmer" />)}
                 </div>
               ) : progresso.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-ink-muted gap-[0.5rem]">
@@ -305,10 +308,51 @@ export default function DashboardPage() {
                   <p className="text-[0.8125rem]">Nenhum cliente em progresso</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-[0.75rem] overflow-y-auto h-full">
-                  {progresso.slice(0, 4).map(({ cliente, estagio }) => (
-                    <ClienteProgressCard key={cliente.id} cliente={cliente} estagio={estagio} onCongelar={handleCongelar} />
-                  ))}
+                <div className="flex flex-col overflow-y-auto h-full">
+                  {progresso.slice(0, 10).map(({ cliente }) => {
+                    const iniciais = cliente.nome.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
+                    const diasAtraso = cliente.dias_atraso ?? 0
+                    const STATUS_DOT: Record<string, string> = {
+                      ativo: 'bg-status-green', recebido: 'bg-status-blue',
+                      onboarding: 'bg-ads-500',  setup_trafego: 'bg-status-orange',
+                      congelado: 'bg-ink-muted',  cancelado: 'bg-status-red',
+                    }
+                    const STATUS_LABEL: Record<string, string> = {
+                      ativo: 'Ativo', recebido: 'Recebido', onboarding: 'Onboarding',
+                      setup_trafego: 'Setup Tráfego', congelado: 'Congelado', cancelado: 'Cancelado',
+                    }
+                    return (
+                      <div key={cliente.id} className="flex items-center gap-[0.75rem] py-[0.625rem] border-b border-surface-border/40 last:border-0 group">
+                        <div className="w-[2rem] h-[2rem] rounded-full bg-ads-500/15 flex items-center justify-center shrink-0">
+                          <span className="text-ads-500 text-[0.6875rem] font-bold">{iniciais}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-ink-primary text-[0.8125rem] font-semibold truncate leading-tight">{cliente.nome}</p>
+                          <div className="flex items-center gap-[0.375rem] mt-[0.125rem]">
+                            <span className={`w-[0.375rem] h-[0.375rem] rounded-full shrink-0 ${STATUS_DOT[cliente.status] ?? 'bg-ink-muted'}`} />
+                            <span className="text-ink-muted text-[0.6875rem]">{STATUS_LABEL[cliente.status] ?? cliente.status}</span>
+                            {diasAtraso > 0 && <span className="text-status-red text-[0.6875rem] font-medium">{diasAtraso}d atraso</span>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-[0.25rem] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                          {cliente.whatsapp && (
+                            <a href={`https://wa.me/${cliente.whatsapp}`} target="_blank" rel="noreferrer"
+                              className="w-[1.625rem] h-[1.625rem] flex items-center justify-center rounded-md bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors">
+                              <MessageCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                            </a>
+                          )}
+                          <a href={`/clientes/${cliente.id}`}
+                            className="w-[1.625rem] h-[1.625rem] flex items-center justify-center rounded-md bg-surface-hover text-ink-secondary hover:text-ink-primary transition-colors">
+                            <ExternalLink className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                          </a>
+                          <button onClick={() => handleCongelar(cliente.id)}
+                            className="w-[1.625rem] h-[1.625rem] flex items-center justify-center rounded-md bg-surface-hover text-ink-secondary hover:text-ink-primary transition-colors">
+                            <PauseCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </BentoCard>
