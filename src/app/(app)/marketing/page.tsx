@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -116,7 +116,7 @@ function PostModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-[1rem]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-card border border-surface-border rounded-xl shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col">
+      <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border shrink-0">
           <p className="text-ink-primary font-semibold">{post?.id ? 'Editar Post' : 'Criar Post'}</p>
           <button onClick={onClose} className="text-ink-muted hover:text-ink-primary transition-colors">
@@ -300,7 +300,7 @@ function Calendario({ posts, onEdit, onRefresh }: { posts: Post[]; onEdit: (p: P
               const StIcon   = STATUS_ICON[p.status]
               return (
                 <button key={p.id} onClick={() => onEdit(p)}
-                  className="flex items-center gap-[0.75rem] bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.625rem] hover:border-ads-500/30 transition-colors text-left">
+                  className="flex items-center gap-[0.75rem] bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1rem] py-[0.625rem] hover:border-ads-500/30 transition-colors text-left">
                   <RedeIcon className={`w-[1rem] h-[1rem] shrink-0 ${REDE_COR[p.rede]}`} strokeWidth={1.75} />
                   <TipoIcon className="w-[0.875rem] h-[0.875rem] text-ink-muted shrink-0" strokeWidth={1.75} />
                   <p className="flex-1 text-ink-primary text-[0.875rem] truncate">{p.texto ?? `(${p.tipo})`}</p>
@@ -371,7 +371,7 @@ export default function MarketingPage() {
           { label: 'Publicados',value: publicados, cor: 'text-status-green' },
           { label: 'Rascunhos', value: rascunhos,  cor: 'text-ink-muted'    },
         ].map(({ label, value, cor }) => (
-          <div key={label} className="bg-surface-card border border-surface-border rounded-xl p-[1rem] flex items-center gap-[0.75rem]">
+          <div key={label} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] flex items-center gap-[0.75rem]">
             <p className={`text-[1.5rem] font-bold ${cor}`}>{value}</p>
             <p className="text-ink-secondary text-[0.875rem]">{label}</p>
           </div>
@@ -401,7 +401,7 @@ export default function MarketingPage() {
       ) : (
         <div className="flex flex-col gap-[0.5rem]">
           {posts.length === 0 ? (
-            <div className="bg-surface-card border border-surface-border rounded-xl p-[4rem] text-center">
+            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[4rem] text-center">
               <Megaphone className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
               <p className="text-ink-primary font-semibold">Nenhum post ainda</p>
               <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Crie seu primeiro post para começar.</p>
@@ -412,7 +412,7 @@ export default function MarketingPage() {
             const StIcon   = STATUS_ICON[p.status]
             return (
               <button key={p.id} onClick={() => abrirEditar(p)}
-                className="flex items-center gap-[1rem] bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[0.875rem] hover:border-ads-500/30 transition-colors text-left">
+                className="flex items-center gap-[1rem] bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.25rem] py-[0.875rem] hover:border-ads-500/30 transition-colors text-left">
                 <RedeIcon className={`w-[1.25rem] h-[1.25rem] shrink-0 ${REDE_COR[p.rede]}`} strokeWidth={1.75} />
                 <TipoIcon className="w-[1rem] h-[1rem] text-ink-muted shrink-0" strokeWidth={1.75} />
                 <p className="flex-1 text-ink-primary text-[0.875rem] truncate">{p.texto ?? `(${p.tipo})`}</p>

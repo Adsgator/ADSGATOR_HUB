@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useCallback } from 'react'
 import { ChevronDown, ChevronUp, TrendingUp, Loader2 } from 'lucide-react'
@@ -73,7 +73,7 @@ export function ClientePerformance({
 
   if (!hasData) {
     return (
-      <div className="bg-surface-card border border-surface-border rounded-xl p-4">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-ink-muted" strokeWidth={2} />
@@ -86,7 +86,7 @@ export function ClientePerformance({
   }
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
       <button
         onClick={handleToggle}
         className="w-full flex items-center justify-between p-4 hover:bg-surface-hover transition-colors"

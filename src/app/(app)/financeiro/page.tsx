@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback } from 'react'
 import {
@@ -243,7 +243,7 @@ export default function FinanceiroPage() {
         </div>
         
         {/* Lucro Bruto */}
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
           <div className="flex items-start justify-between mb-[0.5rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Lucro Bruto</p>
             <DollarSign className="w-[1rem] h-[1rem] text-status-green" strokeWidth={1.5} />
@@ -253,7 +253,7 @@ export default function FinanceiroPage() {
         </div>
         
         {/* Lucro Líquido */}
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
           <div className="flex items-start justify-between mb-[0.5rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Lucro Líquido</p>
             <TrendingUp className={`w-[1rem] h-[1rem] ${dre.lucro_liquido >= 0 ? 'text-status-green' : 'text-status-red'}`} strokeWidth={1.5} />
@@ -276,7 +276,7 @@ export default function FinanceiroPage() {
               { label: 'Churn Rate',   valor: `${saude.churn_rate.toFixed(1)}%`,       icon: AlertCircle,cor: saude.churn_rate <= 2 ? 'text-status-green' : 'text-status-red', tip: 'Taxa de cancelamento' },
               { label: 'Novos/Mês',   valor: String(saude.novos_mes),                 icon: Users,      cor: 'text-status-blue', tip: 'Novos clientes este mês' },
             ].map(({ label, valor, icon: Icon, cor, tip }) => (
-              <div key={label} className="bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.875rem]" title={tip}>
+              <div key={label} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1rem] py-[0.875rem]" title={tip}>
                 <div className="flex items-center justify-between mb-[0.375rem]">
                   <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold">{label}</p>
                   <Icon className={`w-[0.75rem] h-[0.75rem] ${cor}`} strokeWidth={1.5} />
@@ -289,7 +289,7 @@ export default function FinanceiroPage() {
       )}
 
       {/* ══ DRE VISUAL — Demonstração de Resultado ══════════════════ */}
-      <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[2rem]">
         <div className="flex items-center justify-between mb-[1.25rem]">
           <div>
             <h3 className="text-ink-primary font-semibold text-[0.9375rem]">
@@ -382,7 +382,7 @@ export default function FinanceiroPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[2rem]">
         {/* ── DRE DISTRIBUIÇÃO ── */}
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1.25rem]">
             Distribuição da Receita
           </h3>
@@ -409,7 +409,7 @@ export default function FinanceiroPage() {
         </div>
 
         {/* ── ÚCTIMOS LANÇAMENTOS ── */}
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1.25rem]">
             Últimos lançamentos do mês
           </h3>
@@ -436,7 +436,7 @@ export default function FinanceiroPage() {
 
       {/* ══ RECHARTS MRR 12 MESES ═══════════════════════════════════ */}
       {sparkData.length > 1 && (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[2rem]">
           <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1.25rem]">
             Evolução MRR — 12 meses
           </h3>
@@ -469,7 +469,7 @@ export default function FinanceiroPage() {
 
       {/* ══ PROJEÇÃO 6 MESES ══════════════════════════════════════ */}
       {projecao.length > 0 && (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[2rem]">
           <div className="flex items-center justify-between mb-[1.25rem]">
             <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Projeção 6 meses</h3>
             <span className="text-ink-muted text-[0.75rem]">
@@ -504,7 +504,7 @@ export default function FinanceiroPage() {
 
       {/* ── CLIENTES EM ATRASO ── */}
       {atrasados.length > 0 && (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
             <Users className="w-[1rem] h-[1rem] text-status-red" strokeWidth={1.75} />
             <h3 className="text-ink-primary font-semibold text-[0.9375rem]">

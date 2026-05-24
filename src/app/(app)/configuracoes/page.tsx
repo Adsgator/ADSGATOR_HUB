@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import React, { useEffect, useState } from 'react'
 import {
@@ -208,7 +208,7 @@ function AbaIntegracoes() {
   return (
     <div className="flex flex-col gap-[0.75rem] max-w-[32rem]">
       {integracoes.map((i) => (
-        <div key={i.nome} className="flex items-center justify-between bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+        <div key={i.nome} className="flex items-center justify-between bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
           <div>
             <p className="text-ink-primary font-semibold text-[0.9375rem]">{i.nome}</p>
             <p className="text-ink-muted text-[0.75rem]">{i.detalhe}</p>
@@ -365,7 +365,7 @@ function AbaEquipe() {
 
   return (
     <div className="max-w-[32rem] flex flex-col gap-[2rem]">
-      <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
         <p className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">Papéis disponíveis</p>
         <div className="flex flex-col gap-[0.5rem]">
           {PAPEIS.map((p) => (

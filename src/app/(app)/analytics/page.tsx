@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -279,14 +279,14 @@ export default function AnalyticsPage() {
       {/* ══ SEÇÃO 1 — KPI RESUMO GERAL ════════════════════════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1rem] mb-[2rem]">
         {loading
-          ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[6rem] rounded-xl skeleton-shimmer border border-surface-border" />)
+          ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[6rem] rounded-xl skeleton-shimmer dark:border dark:border-surface-border" />)
           : [
               { label: 'Investimento Total', valor: fmt(totais.invest),   icon: DollarSign,       cor: 'text-status-blue'   },
               { label: 'Conversões',         valor: conv(totais.conversoes), icon: ArrowUpRight,  cor: 'text-ads-500',       sub: '* fracionadas' },
               { label: 'CTR Médio',          valor: `${ctrMedio.toFixed(2)}%`, icon: MousePointerClick, cor: 'text-status-purple' },
               { label: 'CPA Médio',          valor: fmt(cpaMedio),         icon: TrendingUp,       cor: 'text-status-orange' },
             ].map(({ label, valor, icon: Icon, cor, sub }) => (
-              <div key={label} className="bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[1rem]">
+              <div key={label} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.25rem] py-[1rem]">
                 <div className="flex items-start justify-between mb-[0.375rem]">
                   <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">{label}</p>
                   <Icon className={`w-[0.875rem] h-[0.875rem] ${cor}`} strokeWidth={1.5} />
@@ -325,7 +325,7 @@ export default function AnalyticsPage() {
 
       {/* ══ SEÇÃO 3 — DETALHE POR CAMPANHA ════════════════════════════ */}
       {selData && (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[2rem]">
           <div className="flex items-center justify-between mb-[1.25rem]">
             <div>
               <h2 className="text-ink-primary font-semibold text-[0.9375rem]">
@@ -445,7 +445,7 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
             {/* Termos de Pesquisa */}
             {liveData.googleAds.enabled && liveData.googleAds.termosPesquisa.length > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
                 <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Termos de Pesquisa</h4>
                 <SearchTermsTable data={liveData.googleAds.termosPesquisa} loading={loadingLive} maxRows={5} />
               </div>
@@ -453,7 +453,7 @@ export default function AnalyticsPage() {
 
             {/* Demografia */}
             {liveData.googleAds.enabled && liveData.googleAds.demografia.length > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
                 <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Demografia</h4>
                 <DemographicsCard data={liveData.googleAds.demografia} loading={loadingLive} />
               </div>
@@ -461,7 +461,7 @@ export default function AnalyticsPage() {
 
             {/* Geografia — mapa + breakdown */}
             {(liveData.googleAds.geografia.length > 0 || liveData.ga4.geografia.length > 0) && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem] lg:col-span-2">
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
                 <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Geografia</h4>
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_14rem] gap-[1rem]">
                   <AnalyticsMap
@@ -480,7 +480,7 @@ export default function AnalyticsPage() {
 
             {/* Dispositivos */}
             {(liveData.googleAds.device.length > 0 || liveData.ga4.device.length > 0) && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
                 <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Dispositivos</h4>
                 <DeviceBreakdown
                   data={liveData.ga4.enabled ? liveData.ga4.device : liveData.googleAds.device}
@@ -491,7 +491,7 @@ export default function AnalyticsPage() {
 
             {/* Fontes de Tráfego */}
             {liveData.ga4.enabled && liveData.ga4.fontesTrafego.length > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem] lg:col-span-2">
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
                 <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Fontes de Tráfego</h4>
                 <TrafficSources data={liveData.ga4.fontesTrafego} loading={loadingLive} />
               </div>
@@ -502,7 +502,7 @@ export default function AnalyticsPage() {
 
       {/* ══ SEÇÃO 5 — GA4 TOP TRÁFEGO ═════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[2rem]">
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
             <Globe className="w-[0.875rem] h-[0.875rem] text-status-blue" strokeWidth={1.75} />
             <h3 className="text-ink-primary font-semibold text-[0.9375rem]">GA4 — Sessões por Cliente</h3>
@@ -526,7 +526,7 @@ export default function AnalyticsPage() {
           )}
         </div>
 
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
             <Users className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
             <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Métricas GA4</h3>
@@ -551,7 +551,7 @@ export default function AnalyticsPage() {
 
       {/* ══ SEÇÃO 5 — ALERTAS EM TEMPO REAL ═══════════════════════════ */}
       {alertas.length > 0 && (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <div className="flex items-center gap-[0.5rem] mb-[1rem]">
             <AlertTriangle className="w-[0.875rem] h-[0.875rem] text-status-orange" strokeWidth={2} />
             <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Alertas em Tempo Real</h3>
@@ -573,7 +573,7 @@ export default function AnalyticsPage() {
       )}
 
       {dados.length === 0 && !loading && (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[4rem] text-center">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[4rem] text-center">
           <BarChart2 className="w-[3rem] h-[3rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
           <h3 className="text-ink-primary font-semibold text-[1rem] mb-[0.5rem]">Sem dados ainda</h3>
           <p className="text-ink-secondary text-[0.875rem] max-w-[24rem] mx-auto">

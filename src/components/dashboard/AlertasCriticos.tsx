@@ -77,7 +77,7 @@ export function AlertasCriticos() {
   }
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+    <div className="p-[1.25rem] h-full flex flex-col">
       <div className="flex items-center gap-[0.5rem] mb-[1rem]">
         <AlertTriangle className="w-4 h-4 text-status-red" strokeWidth={2} />
         <p className="text-ink-primary font-bold text-base">Alertas Críticos</p>

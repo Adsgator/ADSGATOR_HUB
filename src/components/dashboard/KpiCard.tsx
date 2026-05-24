@@ -55,10 +55,10 @@ export function KpiCard({
   const deltaColor = { up: 'text-status-green', down: 'text-status-red', neutral: 'text-ink-muted' }[deltaDir]
 
   const cardBase = cn(
-    'card-interactive group relative flex flex-col',
-    'bg-surface-card border rounded-xl overflow-hidden',
+    'card-interactive card-shadow group relative flex flex-col',
+    'bg-surface-card rounded-2xl overflow-hidden',
     'p-[1.25rem]',
-    alert ? 'border-status-red/40 hover:border-status-red/60' : 'border-surface-border hover:border-surface-elevated',
+    alert ? 'dark:border dark:border-status-red/40 dark:hover:border-status-red/60' : 'dark:border dark:border-surface-border',
   )
 
   const content = (
@@ -95,7 +95,7 @@ export function KpiCard({
       {/* ── VALOR + SPARKLINE ─────────────────────── */}
       <div className="flex items-end justify-between gap-[0.5rem]">
         <div className="min-w-0">
-          <p className="text-ink-primary text-[1.875rem] font-black leading-none tracking-tight mb-[0.375rem] truncate">
+          <p className="text-ink-primary text-[2.5rem] font-black leading-none tracking-tight mb-[0.375rem] truncate">
             {value}
           </p>
 

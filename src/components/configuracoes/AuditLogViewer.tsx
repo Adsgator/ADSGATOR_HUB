@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { History, User, Building2, Calendar, Filter, Download, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -108,7 +108,7 @@ export function AuditLogViewer() {
 
   if (!userRole || (userRole !== 'admin' && userRole !== 'manager')) {
     return (
-      <div className="bg-surface-card border border-surface-border rounded-xl p-6">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-6">
         <div className="text-center">
           <History className="w-12 h-12 text-ink-muted mx-auto mb-3" strokeWidth={1.5} />
           <h3 className="text-lg font-semibold text-ink-primary mb-1">Acesso Restrito</h3>
@@ -121,7 +121,7 @@ export function AuditLogViewer() {
   }
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b border-surface-border">
         <div className="flex items-center gap-2">
           <History className="w-5 h-5 text-ads-500" strokeWidth={2} />

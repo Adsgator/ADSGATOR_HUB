@@ -68,7 +68,7 @@ export function GeminiChat() {
   }
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+    <div className="overflow-hidden h-full flex flex-col">
       {/* Header / toggle */}
       <button
         onClick={() => setAberto((v) => !v)}

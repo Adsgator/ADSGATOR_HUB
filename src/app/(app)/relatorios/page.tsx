@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { TrendingUp, BarChart3, Download, RefreshCw, Calendar, ArrowUpRight, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -177,7 +177,7 @@ export default function RelatoriosPage() {
 
       {/* EMPTY */}
       {!loading && relatorios.length === 0 && (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[3rem] text-center">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[3rem] text-center">
           <BarChart3 className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
           <p className="text-ink-secondary text-[0.875rem]">
             Nenhum relatório encontrado. Clique em &quot;Solicitar&quot; para gerar o primeiro.
@@ -200,7 +200,7 @@ export default function RelatoriosPage() {
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem] mb-[1.5rem]">
             {kpis.map(({ label, valor, sub, icon: Icon, cor }) => (
-              <div key={label} className="bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[1rem]">
+              <div key={label} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.25rem] py-[1rem]">
                 <div className="flex items-start justify-between mb-[0.5rem]">
                   <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">{label}</p>
                   <Icon className={`w-[1rem] h-[1rem] ${cor}`} strokeWidth={1.5} />
@@ -213,7 +213,7 @@ export default function RelatoriosPage() {
 
           {/* DETALHE */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[1.5rem]">
-            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
               <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
                 <TrendingUp className="w-[1rem] h-[1rem] text-status-blue" strokeWidth={1.5} />
                 <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Google Ads</h3>
@@ -235,7 +235,7 @@ export default function RelatoriosPage() {
               )}
             </div>
 
-            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
               <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
                 <BarChart3 className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.5} />
                 <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Google Analytics 4</h3>
@@ -255,7 +255,7 @@ export default function RelatoriosPage() {
 
           {/* ANÁLISE IA */}
           {selecionado.analise_ia && (
-            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[1.5rem]">
+            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[1.5rem]">
               <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
                 <Sparkles className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.5} />
                 <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Análise IA — Gemini</h3>
@@ -315,7 +315,7 @@ export default function RelatoriosPage() {
 
           {/* DOWNLOAD */}
           {selecionado.conteudo_markdown && (
-            <div className="bg-surface-card border border-surface-border rounded-xl px-[1.5rem] py-[1.25rem] flex items-center justify-between">
+            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.5rem] py-[1.25rem] flex items-center justify-between">
               <div>
                 <p className="text-ink-primary font-semibold text-[0.875rem]">Relatório completo em Markdown</p>
                 <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">Pronto para compartilhar com o cliente</p>

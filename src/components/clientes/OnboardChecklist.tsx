@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
@@ -40,7 +40,7 @@ export function OnboardChecklist({ clienteId, estagio }: OnboardChecklistProps) 
   const percentual = Math.round((concluidos / itens.length) * 100);
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
       <div className="flex items-center justify-between mb-[1rem]">
         <h3 className="text-ink-primary font-semibold text-[0.9375rem]">
           Checklist de {etapa?.label}

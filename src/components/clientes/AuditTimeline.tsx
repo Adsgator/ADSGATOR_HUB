@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { Clock } from 'lucide-react'
@@ -28,7 +28,7 @@ export function AuditTimeline({ clienteId }: { clienteId: string }) {
   if (logs.length === 0) return null
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
       <div className="flex items-center gap-[0.5rem] mb-[1rem]">
         <Clock className="w-[1rem] h-[1rem] text-ink-muted" strokeWidth={1.75} />
         <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Histórico</h3>

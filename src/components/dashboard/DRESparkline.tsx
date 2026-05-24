@@ -54,7 +54,7 @@ export function DRESparkline() {
   }, [])
 
   if (loading) {
-    return <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] h-[10rem] animate-pulse" />
+    return <div className="p-[1.25rem] h-full animate-pulse bg-surface-hover rounded-xl" />
   }
 
   if (!dre) return null
@@ -63,7 +63,7 @@ export function DRESparkline() {
   const corLinha = positivo ? '#10B981' : '#EF4444'
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+    <div className="p-[1.25rem] h-full flex flex-col">
       <div className="flex items-center justify-between mb-[1rem]">
         <p className="text-ink-primary font-bold text-base">DRE Resumo</p>
       </div>
@@ -116,13 +116,13 @@ export function DRESparkline() {
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#141A12',
-                  border: '1px solid #44523F',
+                  backgroundColor: 'rgb(var(--surface-elevated))',
+                  border: '1px solid rgb(var(--surface-border))',
                   borderRadius: '0.5rem',
                   padding: '0.5rem 0.75rem',
                 }}
-                labelStyle={{ color: '#F0F3EF', fontSize: '0.75rem', marginBottom: '0.25rem' }}
-                itemStyle={{ color: '#F0F3EF', fontSize: '0.8125rem' }}
+                labelStyle={{ color: 'rgb(var(--ink-secondary))', fontSize: '0.75rem', marginBottom: '0.25rem' }}
+                itemStyle={{ color: 'rgb(var(--ink-primary))', fontSize: '0.8125rem' }}
                 formatter={(value) => [fmt(Number(value) || 0), 'Lucro']}
                 labelFormatter={(label) => `Mês: ${label}`}
               />

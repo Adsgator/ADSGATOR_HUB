@@ -13,11 +13,11 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme,  setThemeState] = useState<Theme>('dark');
-  const [isDark, setIsDark]     = useState(true);
+  const [theme,  setThemeState] = useState<Theme>('light');
+  const [isDark, setIsDark]     = useState(false);
 
   useEffect(() => {
-    const saved = (localStorage.getItem('adsgator-theme') as Theme) ?? 'dark';
+    const saved = (localStorage.getItem('adsgator-theme') as Theme) ?? 'light';
     aplicarTema(saved);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -29,7 +29,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const ativo = t === 'system' ? prefersD : t === 'dark';
     setIsDark(ativo);
     document.documentElement.classList.toggle('dark', ativo);
-    document.documentElement.classList.toggle('light', !ativo);
   }
 
   return (

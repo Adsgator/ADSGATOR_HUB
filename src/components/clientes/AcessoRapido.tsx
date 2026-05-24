@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { ExternalLink, BarChart3, Globe, MapPin, LineChart, FileSpreadsheet } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -70,7 +70,7 @@ export function AcessoRapido({ links }: AcessoRapidoProps) {
 
   if (!hasAnyLink) {
     return (
-      <div className="bg-surface-card border border-surface-border rounded-xl p-4">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-4">
         <h3 className="text-sm font-semibold text-ink-primary mb-3">Acesso Rápido</h3>
         <p className="text-sm text-ink-muted">Nenhum link externo configurado para este cliente.</p>
       </div>
@@ -78,7 +78,7 @@ export function AcessoRapido({ links }: AcessoRapidoProps) {
   }
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-4">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-4">
       <h3 className="text-sm font-semibold text-ink-primary mb-3">Acesso Rápido</h3>
       <div className="flex flex-wrap gap-2">
         {links.google_ads_customer_id && (

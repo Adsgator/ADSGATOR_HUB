@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -80,7 +80,7 @@ export default function NovoClientePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] flex flex-col gap-[1.25rem]">
+        <form onSubmit={handleSubmit} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] flex flex-col gap-[1.25rem]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-[1.25rem]">
             <div>
               <label className={labelClass}>Nome completo *</label>

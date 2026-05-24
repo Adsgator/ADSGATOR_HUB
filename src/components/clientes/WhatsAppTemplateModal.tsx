@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { X, MessageCircle, Send, Copy, CheckCheck } from 'lucide-react'
@@ -79,7 +79,7 @@ export function WhatsAppTemplateModal({ cliente, onClose }: Props) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative bg-surface-card border border-surface-border rounded-xl shadow-2xl w-full max-w-[34rem] max-h-[90vh] overflow-y-auto">
+      <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[34rem] max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border">
           <div className="flex items-center gap-[0.625rem]">

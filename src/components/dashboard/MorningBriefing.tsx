@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback } from 'react'
 import { RefreshCw, Sparkles, X } from 'lucide-react'
@@ -55,7 +55,7 @@ export function MorningBriefing() {
 
   return (
     <>
-      <div className="bg-surface-card border border-surface-border border-l-4 border-l-ads-500 rounded-xl rounded-l-none p-[1.25rem] flex flex-col gap-[0.75rem]">
+      <div className="border-l-4 border-l-ads-500 p-[1.25rem] flex flex-col gap-[0.75rem] h-full">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-[0.5rem]">
@@ -114,7 +114,7 @@ export function MorningBriefing() {
           onClick={() => setModalAberto(false)}
         >
           <div
-            className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200"
+            className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-[1rem]">

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { Bell, X, ExternalLink } from 'lucide-react'
@@ -77,7 +77,7 @@ export function NotificationBell() {
       </button>
 
       {aberto && (
-        <div className="absolute right-0 top-[2.5rem] w-[22rem] bg-surface-card border border-surface-border rounded-xl shadow-2xl shadow-black/40 z-50 overflow-hidden animate-fade-in">
+        <div className="absolute right-0 top-[2.5rem] w-[22rem] bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl shadow-black/40 z-50 overflow-hidden animate-fade-in">
           <div className="px-[1rem] py-[0.75rem] border-b border-surface-border flex items-center justify-between">
             <p className="text-ink-primary font-semibold text-[0.875rem]">Notificações</p>
             {naoLidas > 0 && (

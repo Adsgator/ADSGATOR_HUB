@@ -74,7 +74,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
 
   return (
     <>
-      <header className="topbar-shell h-[var(--topbar-h)] border-b border-surface-border bg-surface-card/80 backdrop-blur-sm z-50 flex items-center px-[1.25rem] gap-[1rem]">
+      <header className="topbar-shell h-[var(--topbar-h)] border-b border-surface-border dark:border-surface-border bg-surface-card z-50 flex items-center px-[1.25rem] gap-[1rem]">
         {/* ── LOGO ─────────────────────────────────── */}
         <Image
           src={isDark ? '/logo/logo-dark.svg' : '/logo/logo-light.svg'}
@@ -92,7 +92,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         <div className="flex-1 min-w-0">
           {displayTitle && (
             <div>
-              <h1 className="text-ink-primary font-semibold text-[0.9375rem] leading-tight truncate flex items-center gap-[0.375rem]">
+              <h1 className={`text-ink-primary leading-tight truncate flex items-center gap-[0.375rem] ${isDashboard ? 'font-bold text-[1.25rem]' : 'font-semibold text-[0.9375rem]'}`}>
               {saudacao && saudacao.icon}
               {displayTitle}
             </h1>

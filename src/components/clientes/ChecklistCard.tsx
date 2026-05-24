@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { CheckCircle, Circle } from 'lucide-react'
@@ -31,7 +31,7 @@ export function ChecklistCard({ clienteId: _clienteId, estagioId, items: itemsIn
   const progresso = total > 0 ? (feitos / total) * 100 : 0
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
       <div className="flex items-center justify-between mb-[0.75rem]">
         <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Checklist</h3>
         <span className="text-ink-muted text-[0.8125rem]">{feitos}/{total}</span>

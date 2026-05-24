@@ -17,7 +17,7 @@ export function BentoCard({ title, subtitle, actions, children, className, noPad
     <div
       className={cn(
         'group relative',
-        'bg-surface-card border border-surface-border rounded-xl h-full flex flex-col',
+        'bg-surface-card rounded-2xl h-full flex flex-col dark:border dark:border-surface-border',
         'card-shadow card-interactive',
         'overflow-hidden',
         className,

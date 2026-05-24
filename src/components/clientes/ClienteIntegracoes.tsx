@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { ExternalLink, BarChart3, LineChart, MapPin, FileSpreadsheet, Globe, Save, Pencil, X, Check } from 'lucide-react'
@@ -163,7 +163,7 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
   }
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b border-surface-border">
         <div className="flex items-center gap-2">
           <ExternalLink className="w-4 h-4 text-ads-500" strokeWidth={2} />

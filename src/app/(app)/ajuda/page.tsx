@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import {
@@ -111,7 +111,7 @@ export default function AjudaPage() {
         <div className="xl:col-span-2 flex flex-col gap-[1.5rem]">
 
           {/* Início rápido */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
             <div className="flex items-center gap-[0.75rem] mb-[1.25rem]">
               <div className="w-[2rem] h-[2rem] rounded-[0.375rem] bg-ads-500/10 flex items-center justify-center">
                 <Zap className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
@@ -141,7 +141,7 @@ export default function AjudaPage() {
           </div>
 
           {/* FAQ com accordion */}
-          <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
             <div className="flex items-center gap-[0.75rem] px-[1rem] py-[1rem] border-b border-surface-border">
               <Search className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
               <h2 className="text-ink-primary font-semibold text-[0.9375rem]">Perguntas Frequentes</h2>
@@ -157,7 +157,7 @@ export default function AjudaPage() {
         <div className="flex flex-col gap-[1.5rem]">
 
           {/* Status das integrações */}
-          <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
             <div className="flex items-center gap-[0.75rem] px-[1rem] py-[1rem] border-b border-surface-border">
               <Plug className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
               <h2 className="text-ink-primary font-semibold text-[0.9375rem]">Integrações</h2>
@@ -184,7 +184,7 @@ export default function AjudaPage() {
           </div>
 
           {/* Atalhos de teclado */}
-          <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
             <div className="flex items-center gap-[0.75rem] px-[1rem] py-[1rem] border-b border-surface-border">
               <Keyboard className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
               <h2 className="text-ink-primary font-semibold text-[0.9375rem]">Atalhos</h2>
@@ -206,7 +206,7 @@ export default function AjudaPage() {
           </div>
 
           {/* Contato */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
             <div className="flex items-center gap-[0.75rem] mb-[1rem]">
               <HelpCircle className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
               <h2 className="text-ink-primary font-semibold text-[0.9375rem]">Suporte</h2>

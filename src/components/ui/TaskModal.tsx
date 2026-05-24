@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { X, Save, Calendar, Flag, User } from 'lucide-react'
@@ -63,7 +63,7 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-[1rem]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-card border border-surface-border rounded-xl shadow-2xl w-full max-w-[28rem]">
+      <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[28rem]">
         {/* Header */}
         <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border">
           <p className="text-ink-primary font-semibold text-[0.9375rem]">

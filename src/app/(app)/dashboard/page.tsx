@@ -38,7 +38,7 @@ interface AcaoItem {
   whatsapp?: string
 }
 
-const STORAGE_KEY = 'adsgator-bento-layouts-v2'
+const STORAGE_KEY = 'adsgator-bento-layouts-v3'
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
 
@@ -47,56 +47,60 @@ type Layouts = Record<string, any[]>
 
 const DEFAULT_LAYOUTS: Layouts = {
   xl: [
-    { i: 'kpi-ativos',        x: 0,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
-    { i: 'kpi-mrr',           x: 3,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
-    { i: 'kpi-retencao',      x: 6,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
-    { i: 'kpi-saldo',         x: 9,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
-    { i: 'morning-briefing',  x: 0,  y: 2,  w: 8,  h: 3, minW: 4, minH: 2 },
-    { i: 'weather-clock',     x: 8,  y: 2,  w: 4,  h: 3, minW: 3, minH: 2 },
-    { i: 'acoes-dia',         x: 0,  y: 5,  w: 4,  h: 5, minW: 3, minH: 3 },
-    { i: 'clientes-progresso',x: 4,  y: 5,  w: 8,  h: 5, minW: 4, minH: 3 },
-    { i: 'dre-sparkline',     x: 0,  y: 10, w: 6,  h: 4, minW: 4, minH: 2 },
-    { i: 'alertas-criticos',  x: 6,  y: 10, w: 6,  h: 4, minW: 4, minH: 2 },
-    { i: 'gemini-chat',       x: 0,  y: 14, w: 12, h: 4, minW: 6, minH: 2 },
+    // ROW 0-5: Hero (DRE) + Lista (Clientes) — espelho da referência
+    { i: 'dre-sparkline',     x: 0,  y: 0,  w: 7,  h: 6, minW: 4, minH: 4 },
+    { i: 'clientes-progresso',x: 7,  y: 0,  w: 5,  h: 6, minW: 3, minH: 4 },
+    // ROW 6-8: Morning Briefing + Ações + Weather
+    { i: 'morning-briefing',  x: 0,  y: 6,  w: 5,  h: 4, minW: 3, minH: 3 },
+    { i: 'acoes-dia',         x: 5,  y: 6,  w: 4,  h: 4, minW: 3, minH: 3 },
+    { i: 'weather-clock',     x: 9,  y: 6,  w: 3,  h: 4, minW: 2, minH: 3 },
+    // ROW 10-11: 4 KPI cards
+    { i: 'kpi-ativos',        x: 0,  y: 10, w: 3,  h: 3, minW: 2, minH: 2 },
+    { i: 'kpi-mrr',           x: 3,  y: 10, w: 3,  h: 3, minW: 2, minH: 2 },
+    { i: 'kpi-retencao',      x: 6,  y: 10, w: 3,  h: 3, minW: 2, minH: 2 },
+    { i: 'kpi-saldo',         x: 9,  y: 10, w: 3,  h: 3, minW: 2, minH: 2 },
+    // ROW 13-15: Alertas + Gemini
+    { i: 'alertas-criticos',  x: 0,  y: 13, w: 6,  h: 4, minW: 4, minH: 2 },
+    { i: 'gemini-chat',       x: 6,  y: 13, w: 6,  h: 4, minW: 4, minH: 2 },
   ],
   lg: [
-    { i: 'kpi-ativos',        x: 0,  y: 0,  w: 3,  h: 2 },
-    { i: 'kpi-mrr',           x: 3,  y: 0,  w: 3,  h: 2 },
-    { i: 'kpi-retencao',      x: 6,  y: 0,  w: 2,  h: 2 },
-    { i: 'kpi-saldo',         x: 8,  y: 0,  w: 2,  h: 2 },
-    { i: 'morning-briefing',  x: 0,  y: 2,  w: 7,  h: 3 },
-    { i: 'weather-clock',     x: 7,  y: 2,  w: 3,  h: 3 },
-    { i: 'acoes-dia',         x: 0,  y: 5,  w: 4,  h: 5 },
-    { i: 'clientes-progresso',x: 4,  y: 5,  w: 6,  h: 5 },
-    { i: 'dre-sparkline',     x: 0,  y: 10, w: 5,  h: 4 },
-    { i: 'alertas-criticos',  x: 5,  y: 10, w: 5,  h: 4 },
-    { i: 'gemini-chat',       x: 0,  y: 14, w: 10, h: 4 },
+    { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 6 },
+    { i: 'clientes-progresso',x: 6,  y: 0,  w: 4,  h: 6 },
+    { i: 'morning-briefing',  x: 0,  y: 6,  w: 5,  h: 4 },
+    { i: 'acoes-dia',         x: 5,  y: 6,  w: 3,  h: 4 },
+    { i: 'weather-clock',     x: 8,  y: 6,  w: 2,  h: 4 },
+    { i: 'kpi-ativos',        x: 0,  y: 10, w: 3,  h: 3 },
+    { i: 'kpi-mrr',           x: 3,  y: 10, w: 3,  h: 3 },
+    { i: 'kpi-retencao',      x: 6,  y: 10, w: 2,  h: 3 },
+    { i: 'kpi-saldo',         x: 8,  y: 10, w: 2,  h: 3 },
+    { i: 'alertas-criticos',  x: 0,  y: 13, w: 5,  h: 4 },
+    { i: 'gemini-chat',       x: 5,  y: 13, w: 5,  h: 4 },
   ],
   md: [
-    { i: 'kpi-ativos',        x: 0,  y: 0,  w: 3,  h: 2 },
-    { i: 'kpi-mrr',           x: 3,  y: 0,  w: 3,  h: 2 },
-    { i: 'kpi-retencao',      x: 0,  y: 2,  w: 3,  h: 2 },
-    { i: 'kpi-saldo',         x: 3,  y: 2,  w: 3,  h: 2 },
-    { i: 'morning-briefing',  x: 0,  y: 4,  w: 6,  h: 3 },
-    { i: 'weather-clock',     x: 0,  y: 7,  w: 3,  h: 3 },
-    { i: 'acoes-dia',         x: 3,  y: 7,  w: 3,  h: 3 },
-    { i: 'clientes-progresso',x: 0,  y: 10, w: 6,  h: 5 },
-    { i: 'dre-sparkline',     x: 0,  y: 15, w: 3,  h: 4 },
-    { i: 'alertas-criticos',  x: 3,  y: 15, w: 3,  h: 4 },
-    { i: 'gemini-chat',       x: 0,  y: 19, w: 6,  h: 4 },
+    { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 5 },
+    { i: 'clientes-progresso',x: 0,  y: 5,  w: 6,  h: 5 },
+    { i: 'morning-briefing',  x: 0,  y: 10, w: 6,  h: 4 },
+    { i: 'acoes-dia',         x: 0,  y: 14, w: 3,  h: 4 },
+    { i: 'weather-clock',     x: 3,  y: 14, w: 3,  h: 4 },
+    { i: 'kpi-ativos',        x: 0,  y: 18, w: 3,  h: 3 },
+    { i: 'kpi-mrr',           x: 3,  y: 18, w: 3,  h: 3 },
+    { i: 'kpi-retencao',      x: 0,  y: 21, w: 3,  h: 3 },
+    { i: 'kpi-saldo',         x: 3,  y: 21, w: 3,  h: 3 },
+    { i: 'alertas-criticos',  x: 0,  y: 24, w: 3,  h: 4 },
+    { i: 'gemini-chat',       x: 3,  y: 24, w: 3,  h: 4 },
   ],
   sm: [
-    { i: 'kpi-ativos',        x: 0, y: 0,  w: 2, h: 2 },
-    { i: 'kpi-mrr',           x: 0, y: 2,  w: 2, h: 2 },
-    { i: 'kpi-retencao',      x: 0, y: 4,  w: 2, h: 2 },
-    { i: 'kpi-saldo',         x: 0, y: 6,  w: 2, h: 2 },
-    { i: 'morning-briefing',  x: 0, y: 8,  w: 2, h: 4 },
-    { i: 'weather-clock',     x: 0, y: 12, w: 2, h: 3 },
+    { i: 'dre-sparkline',     x: 0, y: 0,  w: 2, h: 5 },
+    { i: 'clientes-progresso',x: 0, y: 5,  w: 2, h: 6 },
+    { i: 'morning-briefing',  x: 0, y: 11, w: 2, h: 4 },
     { i: 'acoes-dia',         x: 0, y: 15, w: 2, h: 5 },
-    { i: 'clientes-progresso',x: 0, y: 20, w: 2, h: 6 },
-    { i: 'dre-sparkline',     x: 0, y: 26, w: 2, h: 4 },
-    { i: 'alertas-criticos',  x: 0, y: 30, w: 2, h: 4 },
-    { i: 'gemini-chat',       x: 0, y: 34, w: 2, h: 4 },
+    { i: 'weather-clock',     x: 0, y: 20, w: 2, h: 3 },
+    { i: 'kpi-ativos',        x: 0, y: 23, w: 2, h: 3 },
+    { i: 'kpi-mrr',           x: 0, y: 26, w: 2, h: 3 },
+    { i: 'kpi-retencao',      x: 0, y: 29, w: 2, h: 3 },
+    { i: 'kpi-saldo',         x: 0, y: 32, w: 2, h: 3 },
+    { i: 'alertas-criticos',  x: 0, y: 35, w: 2, h: 4 },
+    { i: 'gemini-chat',       x: 0, y: 39, w: 2, h: 4 },
   ],
 }
 

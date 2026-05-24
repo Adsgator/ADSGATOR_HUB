@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -91,21 +91,21 @@ export default function ClientesPage() {
       {/* ── MINI KPIs BENTO ────────────────────────────────────────── */}
       {!loading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[0.75rem] mb-[1.5rem]">
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Total</p>
             <p className="text-[1.5rem] font-bold text-ink-primary">{metricas.total}</p>
           </div>
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Ativos</p>
             <p className="text-[1.5rem] font-bold text-status-green">{metricas.ativos}</p>
           </div>
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">MRR</p>
             <p className="text-[1.5rem] font-bold text-ads-500">
               R$ {(metricas.mrr / 1000).toFixed(1)}k
             </p>
           </div>
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Inadimplentes</p>
             <p className="text-[1.5rem] font-bold text-status-orange">{metricas.inadimplentes}</p>
           </div>
@@ -199,7 +199,7 @@ export default function ClientesPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem]">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[10rem] rounded-xl skeleton-shimmer border border-surface-border" />
+            <div key={i} className="h-[10rem] rounded-xl skeleton-shimmer dark:border dark:border-surface-border" />
           ))}
         </div>
       ) : visiveis.length === 0 ? (
@@ -216,7 +216,7 @@ export default function ClientesPage() {
         </div>
       ) : modoLista ? (
         /* ── MODO LISTA (tabular) ── */
-        <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
           <table className="w-full text-[0.875rem]">
             <thead>
               <tr className="border-b border-surface-border">

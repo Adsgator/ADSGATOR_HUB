@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { Users, Eye, Clock, TrendingUp } from 'lucide-react'
 
@@ -54,7 +54,7 @@ export function GA4Panel({ data, loading }: GA4PanelProps) {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {kpis.map((kpi) => (
-        <div key={kpi.label} className="bg-surface-card border border-surface-border rounded-xl p-4">
+        <div key={kpi.label} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-4">
           <div className="flex items-center gap-2 mb-2">
             <kpi.icon className="w-4 h-4 text-ads-500" strokeWidth={2} />
             <span className="text-xs text-ink-muted">{kpi.label}</span>

@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { CreditCard, AlertTriangle, TrendingDown, Loader2, RefreshCw } from 'lucide-react'
@@ -119,7 +119,7 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
 
   if (loading) {
     return (
-      <div className="bg-surface-card border border-surface-border rounded-xl p-4 animate-pulse">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-4 animate-pulse">
         <div className="flex items-center gap-2 mb-3">
           <div className="w-4 h-4 bg-surface-hover rounded" />
           <div className="h-4 bg-surface-hover rounded w-32" />
@@ -133,7 +133,7 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
 
   if (alertas.length === 0) {
     return (
-      <div className="bg-surface-card border border-surface-border rounded-xl p-4">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <CreditCard className="w-4 h-4 text-status-green" strokeWidth={2} />
@@ -153,7 +153,7 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
   }
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl overflow-hidden">
+    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
       <div className="flex items-center justify-between p-4 border-b border-surface-border">
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-status-red" strokeWidth={2} />

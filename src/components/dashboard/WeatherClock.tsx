@@ -50,7 +50,7 @@ export function WeatherClock() {
   }, [])
 
   return (
-    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] flex flex-col gap-[0.75rem]">
+    <div className="p-[1.25rem] flex flex-col gap-[0.75rem] h-full">
       {/* Relógio */}
       <div>
         <p className="text-ink-primary text-[3.5rem] font-black tabular-nums leading-none tracking-tight">{hora}</p>

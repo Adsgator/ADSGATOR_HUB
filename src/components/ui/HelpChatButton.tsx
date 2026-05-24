@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { HelpCircle, X, Send, Loader2 } from 'lucide-react'
@@ -52,7 +52,7 @@ export function HelpChatButton() {
     <>
       {/* Chat overlay */}
       {aberto && (
-        <div className="fixed bottom-[5rem] right-[1.5rem] w-[22rem] h-[28rem] bg-surface-card border border-surface-border rounded-xl shadow-2xl shadow-black/50 z-50 flex flex-col overflow-hidden animate-fade-in">
+        <div className="fixed bottom-[5rem] right-[1.5rem] w-[22rem] h-[28rem] bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl shadow-black/50 z-50 flex flex-col overflow-hidden animate-fade-in">
           {/* Header */}
           <div className="flex items-center justify-between px-[1rem] py-[0.75rem] border-b border-surface-border bg-surface-hover">
             <div className="flex items-center gap-[0.5rem]">

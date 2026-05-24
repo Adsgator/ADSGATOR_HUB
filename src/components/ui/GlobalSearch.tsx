@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -81,7 +81,7 @@ export function GlobalSearch({ onClose }: Props) {
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-[1rem]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-surface-card border border-surface-border rounded-xl shadow-2xl w-full max-w-[38rem] overflow-hidden">
+      <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[38rem] overflow-hidden">
         {/* Input */}
         <div className="flex items-center gap-[0.75rem] px-[1rem] py-[0.875rem] border-b border-surface-border">
           <Search className="w-[1rem] h-[1rem] text-ink-muted shrink-0" strokeWidth={1.75} />

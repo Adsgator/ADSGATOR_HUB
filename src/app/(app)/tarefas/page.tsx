@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -97,7 +97,7 @@ function TarefaAccordion({
   return (
     <ContextMenu items={ctxItems}>
       <div className={cn(
-        'bg-surface-card border border-surface-border rounded-xl overflow-hidden',
+        'bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden',
         'border-l-[3px]', prio.border,
         'transition-all duration-200',
         expanded ? 'shadow-lg shadow-black/15' : 'hover:border-surface-elevated',
@@ -362,11 +362,11 @@ export default function TarefasPage() {
           {loading ? (
             <div className="flex flex-col gap-[0.625rem]">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-[4.25rem] rounded-xl skeleton-shimmer border border-surface-border" />
+                <div key={i} className="h-[4.25rem] rounded-xl skeleton-shimmer dark:border dark:border-surface-border" />
               ))}
             </div>
           ) : filtradas.length === 0 ? (
-            <div className="bg-surface-card border border-surface-border rounded-xl p-[4rem] text-center">
+            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[4rem] text-center">
               <CheckSquare className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
               <p className="text-ink-primary font-semibold">Tudo em dia!</p>
               <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Nenhuma tarefa pendente com esse filtro.</p>
@@ -414,7 +414,7 @@ export default function TarefasPage() {
         <div className="flex flex-col gap-[1rem] sticky top-[1.5rem]">
 
           {/* Energy Flow */}
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
+          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem] card-shadow">
             <div className="flex items-center justify-between mb-[1rem]">
               <div>
                 <p className="text-ink-primary font-semibold text-[0.875rem]">Fluxo de Energia</p>
@@ -436,7 +436,7 @@ export default function TarefasPage() {
               { label: 'Críticas / Altas', value: criticas,        color: 'text-status-orange',  icon: AlertTriangle },
               { label: 'Total pendentes',  value: tarefas.length,  color: 'text-ink-primary',    icon: CheckSquare   },
             ].map(({ label, value, color, icon: Icon }) => (
-              <div key={label} className="flex items-center justify-between bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.75rem] card-shadow">
+              <div key={label} className="flex items-center justify-between bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1rem] py-[0.75rem] card-shadow">
                 <div className="flex items-center gap-[0.5rem]">
                   <Icon className={cn('w-[0.875rem] h-[0.875rem]', color)} strokeWidth={1.75} />
                   <span className="text-ink-secondary text-[0.8125rem]">{label}</span>

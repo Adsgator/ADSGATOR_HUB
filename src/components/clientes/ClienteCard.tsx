@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import Link from 'next/link';
@@ -86,7 +86,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
     <ContextMenu items={contextItems}>
       <div className={cn(
         'card-interactive group relative flex flex-col',
-        'bg-surface-card border border-surface-border rounded-xl overflow-hidden',
+        'bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden',
         'border-l-[3px]',
         borderCor,
         'hover:border-surface-elevated hover:shadow-lg hover:shadow-black/20',
