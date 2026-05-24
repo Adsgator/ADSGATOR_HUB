@@ -229,6 +229,7 @@ export default function FinanceiroPage() {
         </div>
       }
     >
+      <div className="page-enter">
       {/* ══ KPIs BENTO GRID ═══════════════════════════════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1rem] mb-[2rem]">
         {/* Card principal — MRR */}
@@ -560,6 +561,7 @@ export default function FinanceiroPage() {
           </div>
         </div>
       )}
+      </div>
     </MainLayout>
   )
 }

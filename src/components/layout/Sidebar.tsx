@@ -78,13 +78,14 @@ export function Sidebar() {
     <div className="relative w-[var(--sidebar-w)] h-full">
       <aside
         className={cn(
-          'group/sidebar absolute inset-y-0 left-0 z-40',
+          'sidebar-shell group/sidebar absolute inset-y-0 left-0 z-40',
           'flex flex-col',
           'bg-surface-card border-r border-surface-border',
           'w-[var(--sidebar-w)] hover:w-[var(--sidebar-expanded)]',
           'hover:shadow-2xl hover:shadow-black/40',
-          'transition-all duration-300 ease-in-out',
+          'transition-all duration-300',
           'overflow-hidden',
+          '[transition-timing-function:cubic-bezier(0.34,1.56,0.64,1)]',
         )}
       >
         {/* ── NAVEGAÇÃO ───────────────────────────────── */}
@@ -118,6 +119,7 @@ export function Sidebar() {
                               isActive ? 'text-ads-500' : 'text-ink-muted',
                             )}
                             strokeWidth={isActive ? 2.25 : 1.75}
+                            style={isActive ? { filter: 'drop-shadow(0 0 0.375rem rgba(255,177,0,0.4))' } : undefined}
                           />
                           {href === '/tarefas' && badgeCount > 0 && (
                             <span className="absolute -top-1 -right-1 min-w-[0.875rem] h-[0.875rem] px-[0.125rem] rounded-full bg-status-red text-white text-[0.5rem] font-bold flex items-center justify-center">

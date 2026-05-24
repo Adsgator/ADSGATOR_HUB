@@ -330,118 +330,124 @@ export default function TarefasPage() {
         </div>
       }
     >
-      {/* ── BENTO TOPO: energy flow + mini KPIs ────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1rem] mb-[1.5rem] stagger">
-        {/* Energy Flow */}
-        <div className="lg:col-span-2 bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
-          <div className="flex items-center justify-between mb-[1rem]">
-            <div>
-              <p className="text-ink-primary font-semibold text-[0.9375rem]">Fluxo de Energia</p>
-              <p className="text-ink-muted text-[0.75rem]">Distribuição das tarefas por período</p>
-            </div>
-            <Zap className="w-[1.25rem] h-[1.25rem] text-ads-400" strokeWidth={1.75} />
+      <div className="page-enter grid grid-cols-1 xl:grid-cols-[1fr_18rem] gap-[1.5rem] items-start">
+
+        {/* ══ COLUNA PRINCIPAL — lista de tarefas ══════════════ */}
+        <div className="min-w-0">
+
+          {/* ── FILTROS ──────────────────────────────────────── */}
+          <div className="flex items-center gap-[0.375rem] mb-[1.25rem] flex-wrap">
+            {([
+              { id: 'todas',     label: 'Todas' },
+              { id: 'hoje',      label: `Hoje${urgentesHoje > 0 ? ` (${urgentesHoje})` : ''}` },
+              { id: 'semana',    label: 'Esta semana' },
+              { id: 'criticas',  label: `Críticas${criticas > 0 ? ` (${criticas})` : ''}` },
+            ] as { id: Filtro; label: string }[]).map(({ id, label }) => (
+              <button
+                key={id}
+                onClick={() => setFiltro(id)}
+                className={cn(
+                  'h-[1.875rem] px-[0.875rem] rounded-full text-[0.8125rem] font-medium transition-colors',
+                  filtro === id
+                    ? 'bg-ads-500 text-white shadow-md shadow-ads-500/20'
+                    : 'bg-surface-card border border-surface-border text-ink-secondary hover:text-ink-primary hover:border-surface-elevated',
+                )}
+              >
+                {label}
+              </button>
+            ))}
           </div>
-          <div className="flex flex-col gap-[0.625rem]">
-            <EnergyBar label="Urgente / Hoje"   pct={energyManha} color="bg-ads-400"        />
-            <EnergyBar label="Próx. semana"      pct={energyTarde} color="bg-status-blue"    />
-            <EnergyBar label="Mais tarde"        pct={energyNoite} color="bg-surface-border" />
-          </div>
-        </div>
 
-        {/* Mini KPIs */}
-        <div className="flex flex-col gap-[0.625rem]">
-          {[
-            { label: 'Urgentes hoje',   value: urgentesHoje, color: 'text-ads-400',       icon: Zap         },
-            { label: 'Críticas / Altas', value: criticas,    color: 'text-status-orange',  icon: AlertTriangle },
-            { label: 'Total pendentes',  value: tarefas.length, color: 'text-ink-primary', icon: CheckSquare },
-          ].map(({ label, value, color, icon: Icon }) => (
-            <div key={label} className="flex items-center justify-between bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.75rem]">
-              <div className="flex items-center gap-[0.5rem]">
-                <Icon className={cn('w-[0.875rem] h-[0.875rem]', color)} strokeWidth={1.75} />
-                <span className="text-ink-secondary text-[0.8125rem]">{label}</span>
-              </div>
-              <span className={cn('text-[1.125rem] font-black', color)}>{value}</span>
+          {/* ── LISTA ──────────────────────────────────────── */}
+          {loading ? (
+            <div className="flex flex-col gap-[0.625rem]">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-[4.25rem] rounded-xl skeleton-shimmer border border-surface-border" />
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── FILTROS ──────────────────────────────────────────── */}
-      <div className="flex items-center gap-[0.375rem] mb-[1.5rem] flex-wrap">
-        {([
-          { id: 'todas',     label: 'Todas' },
-          { id: 'hoje',      label: `Hoje${urgentesHoje > 0 ? ` (${urgentesHoje})` : ''}` },
-          { id: 'semana',    label: 'Esta semana' },
-          { id: 'criticas',  label: `Críticas${criticas > 0 ? ` (${criticas})` : ''}` },
-        ] as { id: Filtro; label: string }[]).map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setFiltro(id)}
-            className={cn(
-              'h-[1.875rem] px-[0.875rem] rounded-full text-[0.8125rem] font-medium transition-colors',
-              filtro === id
-                ? 'bg-ads-500 text-white shadow-md shadow-ads-500/20'
-                : 'bg-surface-card border border-surface-border text-ink-secondary hover:text-ink-primary hover:border-surface-elevated',
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── LISTA ──────────────────────────────────────────── */}
-      {loading ? (
-        <div className="flex flex-col gap-[0.625rem]">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-[4.25rem] rounded-xl skeleton-shimmer border border-surface-border" />
-          ))}
-        </div>
-      ) : filtradas.length === 0 ? (
-        <div className="bg-surface-card border border-surface-border rounded-xl p-[4rem] text-center">
-          <CheckSquare className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
-          <p className="text-ink-primary font-semibold">Tudo em dia!</p>
-          <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Nenhuma tarefa pendente com esse filtro.</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-[1.5rem]">
-          {Object.entries(grupos).map(([grupo, items]) => {
-            if (items.length === 0) return null
-            const gcfg = GRUPO_CONFIG[grupo]
-            const GrupoIcon = gcfg.icon
-            return (
-              <div key={grupo}>
-                {/* Cabeçalho do grupo */}
-                <div className="flex items-center gap-[0.5rem] mb-[0.625rem]">
-                  <div className={cn('w-[1.5rem] h-[1.5rem] rounded-[0.375rem] flex items-center justify-center', gcfg.glow)}>
-                    <GrupoIcon className={cn('w-[0.75rem] h-[0.75rem]', gcfg.color)} strokeWidth={2} />
+          ) : filtradas.length === 0 ? (
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[4rem] text-center">
+              <CheckSquare className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
+              <p className="text-ink-primary font-semibold">Tudo em dia!</p>
+              <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Nenhuma tarefa pendente com esse filtro.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-[1.5rem]">
+              {Object.entries(grupos).map(([grupo, items]) => {
+                if (items.length === 0) return null
+                const gcfg = GRUPO_CONFIG[grupo]
+                const GrupoIcon = gcfg.icon
+                return (
+                  <div key={grupo}>
+                    <div className="flex items-center gap-[0.5rem] mb-[0.625rem]">
+                      <div className={cn('w-[1.5rem] h-[1.5rem] rounded-[0.375rem] flex items-center justify-center', gcfg.glow)}>
+                        <GrupoIcon className={cn('w-[0.75rem] h-[0.75rem]', gcfg.color)} strokeWidth={2} />
+                      </div>
+                      <h3 className={cn('font-semibold text-[0.875rem]', gcfg.color)}>{grupo}</h3>
+                      <span className="text-[0.6875rem] text-ink-muted bg-surface-hover border border-surface-border px-[0.375rem] py-[0.0625rem] rounded-full">
+                        {items.length}
+                      </span>
+                      <div className="flex-1 h-[1px] bg-surface-border" />
+                    </div>
+                    <div className="flex flex-col gap-[0.5rem]">
+                      {items.map((t) => (
+                        <TarefaAccordion
+                          key={t.id}
+                          t={t}
+                          expanded={expanded === t.id}
+                          onToggle={() => setExpanded(expanded === t.id ? null : t.id)}
+                          onConcluir={() => concluir(t)}
+                          onAdiar={(d, u) => adiar(t, d, u)}
+                          onDeletar={() => deletar(t.id)}
+                          onEditar={() => { setTarefaEdit(t); setModalAberto(true) }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <h3 className={cn('font-semibold text-[0.875rem]', gcfg.color)}>{grupo}</h3>
-                  <span className="text-[0.6875rem] text-ink-muted bg-surface-hover border border-surface-border px-[0.375rem] py-[0.0625rem] rounded-full">
-                    {items.length}
-                  </span>
-                  <div className="flex-1 h-[1px] bg-surface-border" />
-                </div>
-
-                {/* Tarefas accordion */}
-                <div className="flex flex-col gap-[0.5rem]">
-                  {items.map((t) => (
-                    <TarefaAccordion
-                      key={t.id}
-                      t={t}
-                      expanded={expanded === t.id}
-                      onToggle={() => setExpanded(expanded === t.id ? null : t.id)}
-                      onConcluir={() => concluir(t)}
-                      onAdiar={(d, u) => adiar(t, d, u)}
-                      onDeletar={() => deletar(t.id)}
-                      onEditar={() => { setTarefaEdit(t); setModalAberto(true) }}
-                    />
-                  ))}
-                </div>
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          )}
         </div>
-      )}
+
+        {/* ══ COLUNA LATERAL — Smart Schedule ═════════════════ */}
+        <div className="flex flex-col gap-[1rem] sticky top-[1.5rem]">
+
+          {/* Energy Flow */}
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
+            <div className="flex items-center justify-between mb-[1rem]">
+              <div>
+                <p className="text-ink-primary font-semibold text-[0.875rem]">Fluxo de Energia</p>
+                <p className="text-ink-muted text-[0.6875rem]">Distribuição por período</p>
+              </div>
+              <Zap className="w-[1.125rem] h-[1.125rem] text-ads-400" strokeWidth={1.75} />
+            </div>
+            <div className="flex flex-col gap-[0.625rem]">
+              <EnergyBar label="Urgente / Hoje"   pct={energyManha} color="bg-ads-400"        />
+              <EnergyBar label="Próx. semana"      pct={energyTarde} color="bg-status-blue"    />
+              <EnergyBar label="Mais tarde"        pct={energyNoite} color="bg-surface-border" />
+            </div>
+          </div>
+
+          {/* Mini KPIs */}
+          <div className="flex flex-col gap-[0.5rem]">
+            {[
+              { label: 'Urgentes hoje',    value: urgentesHoje,    color: 'text-ads-400',        icon: Zap           },
+              { label: 'Críticas / Altas', value: criticas,        color: 'text-status-orange',  icon: AlertTriangle },
+              { label: 'Total pendentes',  value: tarefas.length,  color: 'text-ink-primary',    icon: CheckSquare   },
+            ].map(({ label, value, color, icon: Icon }) => (
+              <div key={label} className="flex items-center justify-between bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.75rem] card-shadow">
+                <div className="flex items-center gap-[0.5rem]">
+                  <Icon className={cn('w-[0.875rem] h-[0.875rem]', color)} strokeWidth={1.75} />
+                  <span className="text-ink-secondary text-[0.8125rem]">{label}</span>
+                </div>
+                <span className={cn('text-[1.125rem] font-black', color)}>{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+      </div>
 
       {modalAberto && (
         <TaskModal

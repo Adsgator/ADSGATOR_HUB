@@ -141,6 +141,7 @@ export default function RelatoriosPage() {
       }
     >
 
+      <div className="page-enter">
       {/* SELETOR DE MÊS */}
       {relatorios.length > 0 && (
         <div className="flex gap-[0.5rem] flex-wrap mb-[1.5rem]">
@@ -330,6 +331,7 @@ export default function RelatoriosPage() {
           )}
         </>
       )}
+      </div>
     </MainLayout>
   );
 }

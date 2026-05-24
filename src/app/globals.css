@@ -170,3 +170,93 @@ body {
 .card-interactive:hover {
   transform: translateY(-0.0625rem);
 }
+
+/* ─── PAGE ENTER — animação de entrada staggered ────────────────────────── */
+.page-enter {
+  animation: fade-scale 0.25s cubic-bezier(0.4,0,0.2,1) both;
+}
+.page-enter > * {
+  animation: fade-up 0.35s cubic-bezier(0.4,0,0.2,1) both;
+}
+.page-enter > *:nth-child(1)  { animation-delay:  20ms; }
+.page-enter > *:nth-child(2)  { animation-delay:  50ms; }
+.page-enter > *:nth-child(3)  { animation-delay:  80ms; }
+.page-enter > *:nth-child(4)  { animation-delay: 110ms; }
+.page-enter > *:nth-child(5)  { animation-delay: 140ms; }
+.page-enter > *:nth-child(6)  { animation-delay: 170ms; }
+.page-enter > *:nth-child(7)  { animation-delay: 200ms; }
+.page-enter > *:nth-child(8)  { animation-delay: 230ms; }
+.page-enter > *:nth-child(9)  { animation-delay: 260ms; }
+.page-enter > *:nth-child(10) { animation-delay: 290ms; }
+
+/* ─── LIGHT MODE — shell + cards ──────────────────────────────────────────── */
+.light .sidebar-shell     { background: #f0f0f2; border-color: #e4e4e7; }
+.light .topbar-shell      { background: white; border-color: #e4e4e7; box-shadow: 0 1px 0 rgba(0,0,0,0.06); }
+.light .rightsidebar-shell { background: #f0f0f2; border-color: #e4e4e7; }
+
+.light .card-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  transition: box-shadow 200ms ease;
+}
+.light .card-shadow:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+}
+.light .card-interactive:hover {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+}
+
+/* ─── PANEL SLIDE-IN — drawers laterais ────────────────────────────────── */
+@keyframes panel-slide-in {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.panel-slide-in {
+  animation: panel-slide-in 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ─── BENTO DRAGGING ─────────────────────────────────────────────────────── */
+.bento-dragging {
+  opacity: 0.85;
+  transform: scale(1.015);
+  box-shadow: 0 1.5rem 3rem rgba(0,0,0,0.4);
+  z-index: 999;
+}
+
+/* ─── REACT-GRID-LAYOUT OVERRIDES ───────────────────────────────────────── */
+.react-grid-item.react-grid-placeholder {
+  background: rgba(255,177,0,0.08) !important;
+  border: 2px dashed rgba(255,177,0,0.35) !important;
+  border-radius: 0.75rem !important;
+  opacity: 1 !important;
+}
+.react-grid-item > .react-resizable-handle {
+  opacity: 0;
+  transition: opacity 150ms;
+}
+.react-grid-item:hover > .react-resizable-handle {
+  opacity: 0.4;
+}
+.react-grid-item > .react-resizable-handle::after {
+  border-color: rgb(var(--ink-muted)) !important;
+}
+
+/* ─── LEAFLET PREMIUM ─────────────────────────────────────────────────────── */
+.leaflet-popup-content-wrapper {
+  background: rgb(var(--surface-elevated)) !important;
+  border: 1px solid rgb(var(--surface-border)) !important;
+  border-radius: 0.5rem !important;
+  color: rgb(var(--ink-primary)) !important;
+  font-size: 0.8125rem !important;
+  box-shadow: 0 0.5rem 2rem rgba(0,0,0,0.5) !important;
+}
+.leaflet-popup-tip { background: rgb(var(--surface-elevated)) !important; }
+.leaflet-container { background: #0a0a0b !important; border-radius: 0.75rem !important; }
+.leaflet-control-zoom a {
+  background: rgb(var(--surface-card)) !important;
+  color: rgb(var(--ink-secondary)) !important;
+  border-color: rgb(var(--surface-border)) !important;
+}
+.leaflet-control-zoom a:hover { background: rgb(var(--surface-hover)) !important; }
+.light .leaflet-container { background: #f4f4f5 !important; }
+@keyframes map-pulse { 0%,100% { opacity: 0.75; } 50% { opacity: 0.35; } }
+.map-pulse { animation: map-pulse 2s ease-in-out infinite; }

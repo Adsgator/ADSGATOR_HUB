@@ -271,6 +271,7 @@ export default function AnalyticsPage() {
         </div>
       }
     >
+      <div className="page-enter">
       {/* ══ SEÇÃO 1 — KPI RESUMO GERAL ════════════════════════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1rem] mb-[2rem]">
         {loading
@@ -540,6 +541,7 @@ export default function AnalyticsPage() {
           </p>
         </div>
       )}
+      </div>
     </MainLayout>
   )
 }

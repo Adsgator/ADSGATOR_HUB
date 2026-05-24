@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Search, AlertCircle } from 'lucide-react'
+import { Search, AlertCircle, Sun, Cloud, Moon } from 'lucide-react'
 import { GlobalSearch }     from '@/components/ui/GlobalSearch'
 import { useTheme } from '@/providers/ThemeProvider'
 import { supabase } from '@/lib/supabase'
@@ -13,12 +13,17 @@ interface TopBarProps {
   actions?: React.ReactNode
 }
 
-function getSaudacao(nome?: string): string {
+interface Saudacao {
+  texto: string
+  icon: React.ReactElement
+}
+
+function getSaudacao(nome?: string): Saudacao {
   const hora = new Date().getHours()
   const base = nome ? `, ${nome}` : ''
-  if (hora < 12) return `Bom dia${base}! ☀️`
-  if (hora < 18) return `Boa tarde${base}! 🌤️`
-  return `Boa noite${base}! 🌙`
+  if (hora < 12) return { texto: `Bom dia${base}`, icon: <Sun  className="w-[0.875rem] h-[0.875rem] text-ads-400 shrink-0" strokeWidth={1.75} /> }
+  if (hora < 18) return { texto: `Boa tarde${base}`, icon: <Cloud className="w-[0.875rem] h-[0.875rem] text-ads-400 shrink-0" strokeWidth={1.75} /> }
+  return         { texto: `Boa noite${base}`,  icon: <Moon  className="w-[0.875rem] h-[0.875rem] text-ads-400 shrink-0" strokeWidth={1.75} /> }
 }
 
 export function TopBar({ title, subtitle, actions }: TopBarProps) {
@@ -64,11 +69,12 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
   }, [])
 
   const isDashboard = title === 'Dashboard'
-  const displayTitle = isDashboard ? getSaudacao(userName) : title
+  const saudacao = isDashboard ? getSaudacao(userName) : null
+  const displayTitle = isDashboard ? saudacao?.texto : title
 
   return (
     <>
-      <header className="h-[var(--topbar-h)] border-b border-surface-border bg-surface-card/80 backdrop-blur-sm z-50 flex items-center px-[1.25rem] gap-[1rem]">
+      <header className="topbar-shell h-[var(--topbar-h)] border-b border-surface-border bg-surface-card/80 backdrop-blur-sm z-50 flex items-center px-[1.25rem] gap-[1rem]">
         {/* ── LOGO ─────────────────────────────────── */}
         <Image
           src={isDark ? '/logo/logo-dark.svg' : '/logo/logo-light.svg'}
@@ -86,7 +92,10 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
         <div className="flex-1 min-w-0">
           {displayTitle && (
             <div>
-              <h1 className="text-ink-primary font-bold text-[1.125rem] leading-tight truncate">{displayTitle}</h1>
+              <h1 className="text-ink-primary font-semibold text-[0.9375rem] leading-tight truncate flex items-center gap-[0.375rem]">
+              {saudacao && saudacao.icon}
+              {displayTitle}
+            </h1>
               {subtitle && <p className="text-ink-muted text-[0.75rem] truncate">{subtitle}</p>}
             </div>
           )}

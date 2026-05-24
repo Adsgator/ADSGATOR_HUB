@@ -87,6 +87,7 @@ export default function ClientesPage() {
         </Link>
       }
     >
+      <div className="page-enter">
       {/* ── MINI KPIs BENTO ────────────────────────────────────────── */}
       {!loading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[0.75rem] mb-[1.5rem]">
@@ -293,6 +294,7 @@ export default function ClientesPage() {
           onClose={() => setWhatsappCliente(null)}
         />
       )}
+      </div>
     </MainLayout>
   )
 }

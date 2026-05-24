@@ -1,6 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
+const { Responsive: ResponsiveBase, WidthProvider } = require('react-grid-layout') as any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ResponsiveGridLayout = WidthProvider(ResponsiveBase) as React.ComponentType<any>
 import {
   Users,
   DollarSign,
@@ -8,10 +12,10 @@ import {
   CreditCard,
   Download,
   RefreshCw,
-  GripVertical,
+  RotateCcw,
 } from 'lucide-react'
-import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
 import { MainLayout }            from '@/components/layout/MainLayout'
+import { BentoCard }             from '@/components/dashboard/BentoCard'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
 import { ClienteProgressCard }   from '@/components/dashboard/ClienteProgressCard'
@@ -36,62 +40,92 @@ interface AcaoItem {
   whatsapp?: string
 }
 
-type SectionId = 'kpis' | 'morning-briefing' | 'clientes-progresso' | 'acoes-dia' | 'clientes-retidos' | 'dre-alertas' | 'gemini-chat'
+const STORAGE_KEY = 'adsgator-bento-layouts-v2'
+const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
+const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
 
-interface Section {
-  id: SectionId
-  label: string
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Layouts = Record<string, any[]>
+
+const DEFAULT_LAYOUTS: Layouts = {
+  xl: [
+    { i: 'kpi-ativos',        x: 0,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
+    { i: 'kpi-mrr',           x: 3,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
+    { i: 'kpi-retencao',      x: 6,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
+    { i: 'kpi-saldo',         x: 9,  y: 0,  w: 3,  h: 2, minW: 2, minH: 2 },
+    { i: 'morning-briefing',  x: 0,  y: 2,  w: 8,  h: 3, minW: 4, minH: 2 },
+    { i: 'weather-clock',     x: 8,  y: 2,  w: 4,  h: 3, minW: 3, minH: 2 },
+    { i: 'acoes-dia',         x: 0,  y: 5,  w: 4,  h: 5, minW: 3, minH: 3 },
+    { i: 'clientes-progresso',x: 4,  y: 5,  w: 8,  h: 5, minW: 4, minH: 3 },
+    { i: 'dre-sparkline',     x: 0,  y: 10, w: 6,  h: 4, minW: 4, minH: 2 },
+    { i: 'alertas-criticos',  x: 6,  y: 10, w: 6,  h: 4, minW: 4, minH: 2 },
+    { i: 'gemini-chat',       x: 0,  y: 14, w: 12, h: 4, minW: 6, minH: 2 },
+  ],
+  lg: [
+    { i: 'kpi-ativos',        x: 0,  y: 0,  w: 3,  h: 2 },
+    { i: 'kpi-mrr',           x: 3,  y: 0,  w: 3,  h: 2 },
+    { i: 'kpi-retencao',      x: 6,  y: 0,  w: 2,  h: 2 },
+    { i: 'kpi-saldo',         x: 8,  y: 0,  w: 2,  h: 2 },
+    { i: 'morning-briefing',  x: 0,  y: 2,  w: 7,  h: 3 },
+    { i: 'weather-clock',     x: 7,  y: 2,  w: 3,  h: 3 },
+    { i: 'acoes-dia',         x: 0,  y: 5,  w: 4,  h: 5 },
+    { i: 'clientes-progresso',x: 4,  y: 5,  w: 6,  h: 5 },
+    { i: 'dre-sparkline',     x: 0,  y: 10, w: 5,  h: 4 },
+    { i: 'alertas-criticos',  x: 5,  y: 10, w: 5,  h: 4 },
+    { i: 'gemini-chat',       x: 0,  y: 14, w: 10, h: 4 },
+  ],
+  md: [
+    { i: 'kpi-ativos',        x: 0,  y: 0,  w: 3,  h: 2 },
+    { i: 'kpi-mrr',           x: 3,  y: 0,  w: 3,  h: 2 },
+    { i: 'kpi-retencao',      x: 0,  y: 2,  w: 3,  h: 2 },
+    { i: 'kpi-saldo',         x: 3,  y: 2,  w: 3,  h: 2 },
+    { i: 'morning-briefing',  x: 0,  y: 4,  w: 6,  h: 3 },
+    { i: 'weather-clock',     x: 0,  y: 7,  w: 3,  h: 3 },
+    { i: 'acoes-dia',         x: 3,  y: 7,  w: 3,  h: 3 },
+    { i: 'clientes-progresso',x: 0,  y: 10, w: 6,  h: 5 },
+    { i: 'dre-sparkline',     x: 0,  y: 15, w: 3,  h: 4 },
+    { i: 'alertas-criticos',  x: 3,  y: 15, w: 3,  h: 4 },
+    { i: 'gemini-chat',       x: 0,  y: 19, w: 6,  h: 4 },
+  ],
+  sm: [
+    { i: 'kpi-ativos',        x: 0, y: 0,  w: 2, h: 2 },
+    { i: 'kpi-mrr',           x: 0, y: 2,  w: 2, h: 2 },
+    { i: 'kpi-retencao',      x: 0, y: 4,  w: 2, h: 2 },
+    { i: 'kpi-saldo',         x: 0, y: 6,  w: 2, h: 2 },
+    { i: 'morning-briefing',  x: 0, y: 8,  w: 2, h: 4 },
+    { i: 'weather-clock',     x: 0, y: 12, w: 2, h: 3 },
+    { i: 'acoes-dia',         x: 0, y: 15, w: 2, h: 5 },
+    { i: 'clientes-progresso',x: 0, y: 20, w: 2, h: 6 },
+    { i: 'dre-sparkline',     x: 0, y: 26, w: 2, h: 4 },
+    { i: 'alertas-criticos',  x: 0, y: 30, w: 2, h: 4 },
+    { i: 'gemini-chat',       x: 0, y: 34, w: 2, h: 4 },
+  ],
 }
-
-const STORAGE_KEY = 'adsgator-dashboard-order'
-
-const DEFAULT_SECTIONS: Section[] = [
-  { id: 'kpis', label: 'KPIs' },
-  { id: 'morning-briefing', label: 'Morning Briefing' },
-  { id: 'clientes-progresso', label: 'Clientes em Progresso' },
-  { id: 'acoes-dia', label: 'Ações do Dia' },
-  { id: 'clientes-retidos', label: 'Clientes Retidos' },
-  { id: 'dre-alertas', label: 'DRE + Alertas' },
-  { id: 'gemini-chat', label: 'Gemini Chat' },
-]
 
 export default function DashboardPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
   const [saldoGoogle, setSaldoGoogle] = useState<number | null>(null)
-  const [sections, setSections] = useState<Section[]>(DEFAULT_SECTIONS)
-  const [isDragging, setIsDragging] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [layouts, setLayouts] = useState<Record<string, any[]>>(DEFAULT_LAYOUTS)
 
-  // Carregar ordem salva
+  // Carregar layout salvo
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) {
-        const parsed = JSON.parse(saved) as Section[]
-        setSections(parsed)
-      }
-    } catch {
-      // Fallback para ordem padrão
-    }
+      if (saved) setLayouts(JSON.parse(saved) as Layouts)
+    } catch {}
   }, [])
 
-  // Salvar ordem quando mudar
-  useEffect(() => {
-    if (isDragging) return // Não salvar durante drag
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(sections))
-    } catch {}
-  }, [sections, isDragging])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleLayoutChange = (_: any[], allLayouts: Record<string, any[]>) => {
+    setLayouts(allLayouts)
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allLayouts)) } catch {}
+  }
 
-  const handleDragEnd = (result: DropResult) => {
-    setIsDragging(false)
-    if (!result.destination) return
-
-    const items = Array.from(sections)
-    const [reordered] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reordered)
-
-    setSections(items)
-    toast.success('Dashboard reorganizado!')
+  const handleReset = () => {
+    setLayouts(DEFAULT_LAYOUTS)
+    try { localStorage.removeItem(STORAGE_KEY) } catch {}
+    toast.success('Layout resetado')
   }
 
   useEffect(() => {
@@ -105,82 +139,42 @@ export default function DashboardPage() {
       })
   }, [])
 
-  // ── SEPARAÇÕES ──────────────────────────────────────────────────────
-  const retidos   = dados.filter((d) => d.cliente.status === 'congelado')
   const progresso = dados.filter((d) =>
     d.cliente.status !== 'congelado' && d.cliente.status !== 'cancelado'
   )
 
-  // ── AÇÕES DO DIA ─────────────────────────────────────────────────────
   const acoesDoDia = useMemo(() => {
     const acoes: AcaoItem[] = []
-
     dados.forEach(({ cliente, estagio }) => {
       const dias = cliente.dias_atraso ?? 0
-
-      // D+15 CRÍTICO: quebra de contrato
       if (dias >= 15) {
-        acoes.push({
-          cliente, estagio,
-          urgencia:  'critica',
-          descricao: `${dias} dias sem pagamento — envie notificação de rescisão`,
-          acaoLabel: '#COBRANÇA',
-          whatsapp:  cliente.whatsapp
-            ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}. Em razão do atraso de ${dias} dias, comunicamos a rescisão contratual.`)}`
-            : undefined,
-        })
-      // D+7 ATENÇÃO: suspensão iminente
+        acoes.push({ cliente, estagio, urgencia: 'critica', descricao: `${dias} dias sem pagamento — envie notificação de rescisão`, acaoLabel: '#COBRANÇA', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}. Em razão do atraso de ${dias} dias, comunicamos a rescisão contratual.`)}` : undefined })
       } else if (dias >= 7) {
-        acoes.push({
-          cliente, estagio,
-          urgencia:  'atencao',
-          descricao: `${dias} dias em atraso — campanha em risco de suspensão`,
-          acaoLabel: '#ALERTA D+7',
-          whatsapp:  cliente.whatsapp
-            ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Seu pagamento está em atraso há ${dias} dias.`)}`
-            : undefined,
-        })
-      // Novo cliente recebido
+        acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: `${dias} dias em atraso — campanha em risco de suspensão`, acaoLabel: '#ALERTA D+7', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Seu pagamento está em atraso há ${dias} dias.`)}` : undefined })
       } else if (cliente.status === 'recebido') {
-        acoes.push({
-          cliente, estagio,
-          urgencia:  'atencao',
-          descricao: 'Novo cliente — envie o #BOASVINDAS agora',
-          acaoLabel: '#BOASVINDAS',
-          whatsapp:  cliente.whatsapp
-            ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`
-            : undefined,
-        })
-      // Congelado sem resposta
+        acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: 'Novo cliente — envie o #BOASVINDAS agora', acaoLabel: '#BOASVINDAS', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator!')}` : undefined })
       } else if (cliente.status === 'congelado') {
-        acoes.push({
-          cliente, estagio,
-          urgencia:  'review',
-          descricao: 'Cliente retido — envie lembrete de retorno',
-          acaoLabel: 'Lembrete',
-          whatsapp:  cliente.whatsapp
-            ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Ainda aguardamos seu retorno.`)}`
-            : undefined,
-        })
+        acoes.push({ cliente, estagio, urgencia: 'review', descricao: 'Cliente retido — envie lembrete de retorno', acaoLabel: 'Lembrete', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Ainda aguardamos seu retorno.`)}` : undefined })
       }
     })
-
-    // Ordenar: critica > atencao > review
     const ORDEM: Record<string, number> = { critica: 0, atencao: 1, review: 2 }
     return acoes.sort((a, b) => ORDEM[a.urgencia] - ORDEM[b.urgencia]).slice(0, 5)
   }, [dados])
 
   async function handleCongelar(clienteId: string) {
-    await supabase
-      .from('clientes')
-      .update({ status: 'congelado' })
-      .eq('id', clienteId)
+    await supabase.from('clientes').update({ status: 'congelado' }).eq('id', clienteId)
     recarregar()
   }
 
-  // ── ACTIONS DA TOPBAR ────────────────────────────────────────────────
   const topBarActions = (
     <div className="flex items-center gap-[0.5rem]">
+      <button
+        onClick={handleReset}
+        title="Resetar layout"
+        className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors"
+      >
+        <RotateCcw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+      </button>
       <button
         onClick={recarregar}
         disabled={loading}
@@ -195,196 +189,136 @@ export default function DashboardPage() {
     </div>
   )
 
-  // Renderizar seção baseada no ID
-  const renderSection = (section: Section) => {
-    switch (section.id) {
-      case 'kpis':
-        return (
-          <div className="grid grid-cols-2 xl:grid-cols-4 gap-[1rem]">
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-[8rem] rounded-xl skeleton-shimmer border border-surface-border" />
-              ))
-            ) : (
-              <>
-                <KpiCard
-                  label="Clientes Ativos"
-                  value={metricas.ativos}
-                  accentColor="amber"
-                  icon={<Users className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
-                  href="/clientes"
-                />
-                <KpiCard
-                  label="MRR"
-                  value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`}
-                  accentColor="green"
-                  icon={<DollarSign className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
-                  href="/financeiro"
-                />
-                <KpiCard
-                  label="Taxa de Retenção"
-                  value={`${metricas.taxaRetencao}%`}
-                  accentColor="red"
-                  icon={<Percent className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
-                />
-                <KpiCard
-                  label="Saldo Google"
-                  value={saldoGoogle !== null ? `R$ ${saldoGoogle.toLocaleString('pt-BR')}` : '…'}
-                  delta={saldoGoogle !== null && saldoGoogle < 200 ? 'Baixo' : undefined}
-                  deltaDir={saldoGoogle !== null && saldoGoogle < 200 ? 'down' : undefined}
-                  accentColor="blue"
-                  alert={saldoGoogle !== null && saldoGoogle < 200}
-                  alertLabel="Envie #SALDOGOOGLE"
-                  icon={<CreditCard className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
-                />
-              </>
-            )}
-          </div>
-        )
-
-      case 'morning-briefing':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-[1rem]">
-            <div className="md:col-span-2">
-              <MorningBriefing />
-            </div>
-            <WeatherClock />
-          </div>
-        )
-
-      case 'acoes-dia':
-        if (loading || acoesDoDia.length === 0) return null
-        return <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} />
-
-      case 'clientes-progresso':
-        return (
-          <section>
-            <div className="flex items-center justify-between mb-[0.75rem]">
-              <h2 className="text-ink-primary font-semibold text-[0.9375rem]">
-                Clientes em Progresso
-                <span className="ml-[0.5rem] text-ink-muted text-[0.8125rem] font-normal">
-                  ({progresso.length}/{metricas.total})
-                </span>
-              </h2>
-              <a href="/clientes" className="text-ads-500 text-[0.8125rem] hover:underline">
-                Ver todos →
-              </a>
-            </div>
-            {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1rem]">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-[12rem] rounded-xl skeleton-shimmer border border-surface-border" />
-                ))}
-              </div>
-            ) : progresso.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-[4rem] text-ink-muted">
-                <Users className="w-[3rem] h-[3rem] mb-[1rem]" strokeWidth={1} />
-                <p className="text-[0.9375rem] font-medium">Nenhum cliente em progresso</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1rem]">
-                {progresso.slice(0, 6).map(({ cliente, estagio }) => (
-                  <ClienteProgressCard
-                    key={cliente.id}
-                    cliente={cliente}
-                    estagio={estagio}
-                    onCongelar={handleCongelar}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-        )
-
-      case 'clientes-retidos':
-        if (retidos.length === 0) return null
-        return (
-          <section>
-            <div className="flex items-center gap-[0.5rem] mb-[0.75rem]">
-              <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-status-orange animate-pulse-slow" />
-              <h2 className="text-ink-primary font-semibold text-[0.9375rem]">
-                Clientes Retidos
-                <span className="ml-[0.5rem] text-ink-muted text-[0.8125rem] font-normal">
-                  ({retidos.length})
-                </span>
-              </h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1rem]">
-              {retidos.map(({ cliente, estagio }) => (
-                <ClienteProgressCard
-                  key={cliente.id}
-                  cliente={cliente}
-                  estagio={estagio}
-                  onCongelar={handleCongelar}
-                  isRetido
-                />
-              ))}
-            </div>
-          </section>
-        )
-
-      case 'dre-alertas':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-[1rem]">
-            <DRESparkline />
-            <AlertasCriticos />
-          </div>
-        )
-
-      case 'gemini-chat':
-        return <GeminiChat />
-
-      default:
-        return null
-    }
-  }
-
   return (
     <MainLayout
       title="Dashboard"
       subtitle={`Semana de ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
       actions={topBarActions}
     >
+      <div className="page-enter -mx-[2rem] px-[2rem]">
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={layouts}
+          breakpoints={BREAKPOINTS}
+          cols={COLS}
+          rowHeight={80}
+          margin={[16, 16]}
+          containerPadding={[0, 0]}
+          draggableHandle=".bento-drag-handle"
+          onLayoutChange={handleLayoutChange}
+          useCSSTransforms
+          isResizable
+          isDraggable
+        >
+          {/* ── KPIs ─────────────────────────────── */}
+          <div key="kpi-ativos">
+            <BentoCard noPadding>
+              {loading
+                ? <div className="h-full rounded-xl skeleton-shimmer" />
+                : <KpiCard label="Clientes Ativos" value={metricas.ativos} accentColor="amber" icon={<Users className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/clientes" />
+              }
+            </BentoCard>
+          </div>
 
-      {/* ════════════════════════════════════════════════
-          DRAG-TO-REORDER DASHBOARD
-      ════════════════════════════════════════════════ */}
-      <DragDropContext onDragEnd={handleDragEnd} onDragStart={() => setIsDragging(true)}>
-        <Droppable droppableId="dashboard">
-          {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className="space-y-[1.5rem]"
+          <div key="kpi-mrr">
+            <BentoCard noPadding>
+              {loading
+                ? <div className="h-full rounded-xl skeleton-shimmer" />
+                : <KpiCard label="MRR" value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} accentColor="green" icon={<DollarSign className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/financeiro" />
+              }
+            </BentoCard>
+          </div>
+
+          <div key="kpi-retencao">
+            <BentoCard noPadding>
+              {loading
+                ? <div className="h-full rounded-xl skeleton-shimmer" />
+                : <KpiCard label="Taxa de Retenção" value={`${metricas.taxaRetencao}%`} accentColor="red" icon={<Percent className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
+              }
+            </BentoCard>
+          </div>
+
+          <div key="kpi-saldo">
+            <BentoCard noPadding>
+              {loading
+                ? <div className="h-full rounded-xl skeleton-shimmer" />
+                : <KpiCard label="Saldo Google" value={saldoGoogle !== null ? `R$ ${saldoGoogle.toLocaleString('pt-BR')}` : '…'} delta={saldoGoogle !== null && saldoGoogle < 200 ? 'Baixo' : undefined} deltaDir={saldoGoogle !== null && saldoGoogle < 200 ? 'down' : undefined} accentColor="blue" alert={saldoGoogle !== null && saldoGoogle < 200} alertLabel="Envie #SALDOGOOGLE" icon={<CreditCard className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
+              }
+            </BentoCard>
+          </div>
+
+          {/* ── MORNING BRIEFING ─────────────────── */}
+          <div key="morning-briefing">
+            <BentoCard noPadding>
+              <MorningBriefing />
+            </BentoCard>
+          </div>
+
+          {/* ── WEATHER CLOCK ────────────────────── */}
+          <div key="weather-clock">
+            <BentoCard noPadding>
+              <WeatherClock />
+            </BentoCard>
+          </div>
+
+          {/* ── AÇÕES DO DIA ─────────────────────── */}
+          <div key="acoes-dia">
+            <BentoCard title="Ações do Dia" subtitle="Prioridades de hoje">
+              {loading || acoesDoDia.length === 0
+                ? <div className="flex items-center justify-center h-full text-ink-muted text-[0.8125rem]">Nenhuma ação pendente</div>
+                : <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} />
+              }
+            </BentoCard>
+          </div>
+
+          {/* ── CLIENTES EM PROGRESSO ────────────── */}
+          <div key="clientes-progresso">
+            <BentoCard
+              title="Clientes em Progresso"
+              subtitle={`${progresso.length} de ${metricas.total} clientes`}
+              actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
             >
-              {sections.map((section, index) => (
-                <Draggable key={section.id} draggableId={section.id} index={index}>
-                  {(provided, snapshot) => (
-                    <div
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      className={`relative ${snapshot.isDragging ? 'opacity-80' : ''}`}
-                    >
-                      {/* Drag handle */}
-                      <div
-                        {...provided.dragHandleProps}
-                        className="absolute -left-[2rem] top-[0.5rem] p-[0.375rem] rounded hover:bg-surface-hover cursor-grab active:cursor-grabbing text-ink-muted hover:text-ink-secondary transition-colors"
-                        title="Arraste para reordenar"
-                      >
-                        <GripVertical className="w-[1rem] h-[1rem]" strokeWidth={2} />
-                      </div>
+              {loading ? (
+                <div className="grid grid-cols-2 gap-[0.75rem]">
+                  {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[8rem] rounded-lg skeleton-shimmer" />)}
+                </div>
+              ) : progresso.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-ink-muted gap-[0.5rem]">
+                  <Users className="w-[2rem] h-[2rem]" strokeWidth={1} />
+                  <p className="text-[0.8125rem]">Nenhum cliente em progresso</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-[0.75rem] overflow-y-auto h-full">
+                  {progresso.slice(0, 4).map(({ cliente, estagio }) => (
+                    <ClienteProgressCard key={cliente.id} cliente={cliente} estagio={estagio} onCongelar={handleCongelar} />
+                  ))}
+                </div>
+              )}
+            </BentoCard>
+          </div>
 
-                      {/* Conteúdo da seção */}
-                      {renderSection(section)}
-                    </div>
-                  )}
-                </Draggable>
-              ))}
-              {provided.placeholder}
-            </div>
-          )}
-        </Droppable>
-      </DragDropContext>
+          {/* ── DRE SPARKLINE ────────────────────── */}
+          <div key="dre-sparkline">
+            <BentoCard noPadding>
+              <DRESparkline />
+            </BentoCard>
+          </div>
+
+          {/* ── ALERTAS CRÍTICOS ─────────────────── */}
+          <div key="alertas-criticos">
+            <BentoCard noPadding>
+              <AlertasCriticos />
+            </BentoCard>
+          </div>
+
+          {/* ── GEMINI CHAT ──────────────────────── */}
+          <div key="gemini-chat">
+            <BentoCard noPadding>
+              <GeminiChat />
+            </BentoCard>
+          </div>
+        </ResponsiveGridLayout>
+      </div>
     </MainLayout>
   )
 }

@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { Bell, MessageCircle, HelpCircle, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
 import { useRightSidebar } from '@/lib/store/right-sidebar-context'
+import { NotificationDrawer } from './NotificationDrawer'
 import { cn } from '@/lib/utils'
 
 interface SidebarIconButtonProps {
@@ -39,14 +41,16 @@ function SidebarIconButton({ icon: Icon, label, active, badge, onClick }: Sideba
 export function RightSidebar() {
   const { theme, setTheme } = useTheme()
   const { contextActions, activeDrawer, openDrawer } = useRightSidebar()
+  const [notifOpen, setNotifOpen] = useState(false)
 
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
   const ThemeIcon = theme === 'dark' ? Sun : Moon
 
   return (
+    <>
     <aside
       className={cn(
-        'w-[var(--right-sidebar-w)] h-full',
+        'rightsidebar-shell w-[var(--right-sidebar-w)] h-full',
         'flex flex-col items-center',
         'bg-surface-card border-l border-surface-border',
         'py-[0.75rem]',
@@ -57,8 +61,8 @@ export function RightSidebar() {
         <SidebarIconButton
           icon={Bell}
           label="Notificações"
-          active={activeDrawer === 'notifications'}
-          onClick={() => openDrawer('notifications')}
+          active={notifOpen || activeDrawer === 'notifications'}
+          onClick={() => setNotifOpen((v) => !v)}
         />
         <SidebarIconButton
           icon={MessageCircle}
@@ -100,5 +104,7 @@ export function RightSidebar() {
         onClick={() => setTheme(nextTheme)}
       />
     </aside>
+    <NotificationDrawer open={notifOpen} onClose={() => setNotifOpen(false)} />
+    </>
   )
 }
