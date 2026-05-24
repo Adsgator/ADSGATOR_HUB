@@ -19,7 +19,11 @@ import { MainLayout }            from '@/components/layout/MainLayout'
 import { BentoCard }             from '@/components/dashboard/BentoCard'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
-
+import { PortfolioHero }         from '@/components/dashboard/PortfolioHero'
+import { KpiCompactCard }        from '@/components/dashboard/KpiCompactCard'
+import { TrendingOnMarket }      from '@/components/dashboard/TrendingOnMarket'
+import { RecentTransactions }    from '@/components/dashboard/RecentTransactions'
+import { QuickExchange }         from '@/components/dashboard/QuickExchange'
 import { MorningBriefing }       from '@/components/dashboard/MorningBriefing'
 import { WeatherClock }          from '@/components/dashboard/WeatherClock'
 import { DRESparkline }          from '@/components/dashboard/DRESparkline'
@@ -47,6 +51,9 @@ const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Layouts = Record<string, any[]>
+
+const fmt = (v: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 
 const DEFAULT_LAYOUTS: Layouts = {
   xl: [
@@ -214,22 +221,75 @@ export default function DashboardPage() {
       subtitle={`Semana de ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
       actions={topBarActions}
     >
-      <div className="page-enter -mx-[2rem] px-[2rem]" ref={containerRef}>
-        <RGLResponsive
-          className="layout"
-          layouts={layouts}
-          breakpoints={BREAKPOINTS}
-          cols={COLS}
-          rowHeight={80}
-          margin={[16, 16]}
-          containerPadding={[0, 0]}
-          draggableHandle=".bento-drag-handle"
-          onLayoutChange={handleLayoutChange}
-          width={containerWidth}
-          useCSSTransforms
-          isResizable
-          isDraggable
-        >
+      <div className="page-enter space-y-[1.5rem]" ref={containerRef}>
+        {/* ════════════════════════════════════════════════════════════ */}
+        {/* HERO SECTION — Portfolio Overview (Fixo)                     */}
+        {/* ════════════════════════════════════════════════════════════ */}
+        <PortfolioHero />
+
+        {/* ════════════════════════════════════════════════════════════ */}
+        {/* KPIs Compactos (3 cards) — Fixo                             */}
+        {/* ════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1rem]">
+          <KpiCompactCard
+            label="Total Balance"
+            value={fmt(saldoGoogle !== null ? saldoGoogle : 0)}
+            delta={saldoGoogle !== null && saldoGoogle > 0 ? '+5.2%' : undefined}
+            deltaDir={saldoGoogle !== null && saldoGoogle > 0 ? 'up' : 'down'}
+            accentColor="blue"
+            icon={<CreditCard className="w-[1.25rem] h-[1.25rem] text-status-blue" strokeWidth={2} />}
+          />
+          <KpiCompactCard
+            label="Profit"
+            value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`}
+            delta={metricas.ativos > 0 ? '+12.5%' : undefined}
+            deltaDir="up"
+            accentColor="green"
+            icon={<DollarSign className="w-[1.25rem] h-[1.25rem] text-status-green" strokeWidth={2} />}
+          />
+          <KpiCompactCard
+            label="Clientes Ativos"
+            value={metricas.ativos}
+            delta={metricas.ativos > 0 ? `${metricas.taxaRetencao}%` : undefined}
+            deltaDir="up"
+            accentColor="amber"
+            icon={<Users className="w-[1.25rem] h-[1.25rem] text-ads-500" strokeWidth={2} />}
+          />
+        </div>
+
+        {/* ════════════════════════════════════════════════════════════ */}
+        {/* SEÇÃO 1 — Trending + Quick Exchange (lado a lado)            */}
+        {/* ════════════════════════════════════════════════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
+          <TrendingOnMarket />
+          <QuickExchange />
+        </div>
+
+        {/* ════════════════════════════════════════════════════════════ */}
+        {/* SEÇÃO 2 — Recent Transactions (full width)                   */}
+        {/* ════════════════════════════════════════════════════════════ */}
+        <RecentTransactions />
+
+        {/* ════════════════════════════════════════════════════════════ */}
+        {/* GRID CUSTOMIZÁVEL — (Rest da Dashboard anterior)            */}
+        {/* ════════════════════════════════════════════════════════════ */}
+        <div>
+          <p className="text-ink-muted text-xs font-medium uppercase tracking-wider mb-[1rem]">Mais widgets</p>
+          <RGLResponsive
+            className="layout"
+            layouts={layouts}
+            breakpoints={BREAKPOINTS}
+            cols={COLS}
+            rowHeight={80}
+            margin={[16, 16]}
+            containerPadding={[0, 0]}
+            draggableHandle=".bento-drag-handle"
+            onLayoutChange={handleLayoutChange}
+            width={containerWidth}
+            useCSSTransforms
+            isResizable
+            isDraggable
+          >
           {/* ── KPIs ─────────────────────────────── */}
           <div key="kpi-ativos">
             <BentoCard noPadding>
@@ -379,6 +439,7 @@ export default function DashboardPage() {
             </BentoCard>
           </div>
         </RGLResponsive>
+        </div>
       </div>
     </MainLayout>
   )
