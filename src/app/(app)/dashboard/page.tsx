@@ -19,7 +19,6 @@ import { MainLayout }            from '@/components/layout/MainLayout'
 import { BentoCard }             from '@/components/dashboard/BentoCard'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
-import { PortfolioHero }         from '@/components/dashboard/PortfolioHero'
 import { KpiCompactCard }        from '@/components/dashboard/KpiCompactCard'
 import { TrendingOnMarket }      from '@/components/dashboard/TrendingOnMarket'
 import { RecentTransactions }    from '@/components/dashboard/RecentTransactions'
@@ -222,11 +221,6 @@ export default function DashboardPage() {
       actions={topBarActions}
     >
       <div className="page-enter space-y-[1.5rem]" ref={containerRef}>
-        {/* ════════════════════════════════════════════════════════════ */}
-        {/* HERO SECTION — Portfolio Overview (Fixo)                     */}
-        {/* ════════════════════════════════════════════════════════════ */}
-        <PortfolioHero />
-
         {/* ════════════════════════════════════════════════════════════ */}
         {/* KPIs Compactos (3 cards) — Fixo                             */}
         {/* ════════════════════════════════════════════════════════════ */}
