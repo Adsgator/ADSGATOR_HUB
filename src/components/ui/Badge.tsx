@@ -7,8 +7,8 @@ interface BadgeProps {
 }
 
 const variants = {
-  default: 'dark:bg-surface-hover dark:text-ink-secondary bg-gray-100 text-gray-600',
-  success: 'bg-brand/15 text-brand',
+  default: 'bg-surface-hover text-ink-secondary',
+  success: 'bg-ads-500/15 text-ads-500',
   warning: 'bg-status-orange/15 text-status-orange',
   danger:  'bg-status-red/15 text-status-red',
   info:    'bg-status-blue/15 text-status-blue',

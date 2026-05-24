@@ -35,17 +35,10 @@ export default function BibliotecaPage() {
   const [aba, setAba] = useState<Aba>('biblioteca');
 
   return (
-    <MainLayout>
-      {/* HEADER */}
-      <div className="mb-[2rem]">
-        <h1 className="text-ink-primary text-[1.875rem] font-bold tracking-tight mb-[0.25rem]">
-          Biblioteca Astro & Construtor
-        </h1>
-        <p className="text-ink-secondary text-[0.875rem]">
-          Componentes prontos para landing pages + gerador de manifesto de produção
-        </p>
-      </div>
-
+    <MainLayout
+      title="Biblioteca Astro"
+      subtitle="Componentes prontos para landing pages + gerador de manifesto de produção"
+    >
       {/* TABS */}
       <div className="flex gap-[0.25rem] mb-[1.5rem] bg-surface-hover p-[0.25rem] rounded-lg w-fit">
         {([
@@ -200,7 +193,7 @@ function TabBiblioteca() {
               <ul className="flex flex-col gap-[0.5rem]">
                 {comp.recomendacoes.map((rec, i) => (
                   <li key={i} className="flex items-start gap-[0.5rem]">
-                    <span className="text-ads-500 font-bold text-[0.75rem] mt-[0.125rem]">✓</span>
+                    <CheckCheck className="w-[0.75rem] h-[0.75rem] text-ads-500 mt-[0.0625rem] shrink-0" strokeWidth={2.5} />
                     <span className="text-ink-secondary text-[0.875rem]">{rec}</span>
                   </li>
                 ))}

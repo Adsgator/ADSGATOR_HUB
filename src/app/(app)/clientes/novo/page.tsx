@@ -58,39 +58,29 @@ export default function NovoClientePage() {
     }
   }
 
-  const inputClass = `
-    w-full h-[2.5rem] px-[0.75rem] rounded
-    dark:bg-surface-input dark:border dark:border-surface-border dark:text-ink-primary dark:placeholder-ink-muted
-    bg-white border border-gray-200 text-gray-900 placeholder-gray-400
-    focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand
-    text-sm transition-colors
-  `;
+  const inputClass = 'w-full h-[2.5rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-primary placeholder:text-ink-muted text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors';
 
-  const labelClass = 'block dark:text-ink-secondary text-gray-700 text-sm font-medium mb-[0.375rem]';
+  const labelClass = 'block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]';
 
   return (
-    <MainLayout>
+    <MainLayout title="Novo Cliente" subtitle="Preencha os dados básicos">
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-[0.375rem] dark:text-ink-muted text-gray-400 hover:dark:text-ink-secondary hover:text-gray-600 text-sm mb-[1.5rem] transition-colors"
+        className="flex items-center gap-[0.375rem] text-ink-muted hover:text-ink-secondary text-[0.875rem] mb-[1.5rem] transition-colors"
       >
         <ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
         Voltar
       </button>
 
       <div className="max-w-[40rem]">
-        <h1 className="dark:text-ink-primary text-gray-900 text-[1.5rem] font-bold mb-[0.25rem]">Novo Cliente</h1>
-        <p className="dark:text-ink-secondary text-gray-500 text-sm mb-[2rem]">
-          Preencha os dados básicos. O cliente entrará automaticamente no fluxo operacional.
-        </p>
 
         {erro && (
-          <div className="mb-[1.5rem] dark:bg-status-red/10 bg-red-50 border dark:border-status-red/20 border-red-200 rounded px-[1rem] py-[0.75rem]">
-            <p className="text-sm dark:text-status-red text-red-700">{erro}</p>
+          <div className="mb-[1.5rem] bg-status-red/10 border border-status-red/20 rounded-[0.375rem] px-[1rem] py-[0.75rem]">
+            <p className="text-[0.8125rem] text-status-red">{erro}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem] flex flex-col gap-[1.25rem]">
+        <form onSubmit={handleSubmit} className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] flex flex-col gap-[1.25rem]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-[1.25rem]">
             <div>
               <label className={labelClass}>Nome completo *</label>
@@ -121,8 +111,8 @@ export default function NovoClientePage() {
             </div>
           </div>
 
-          <div className="border-t dark:border-surface-border border-gray-100 pt-[1.25rem]">
-            <p className="text-xs dark:text-ink-muted text-gray-400 font-semibold uppercase tracking-wide mb-[1rem]">
+          <div className="border-t border-surface-border pt-[1.25rem]">
+            <p className="text-[0.6875rem] text-ink-muted font-semibold uppercase tracking-wide mb-[1rem]">
               Assinatura (opcional)
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-[1.25rem]">
@@ -140,13 +130,7 @@ export default function NovoClientePage() {
           <button
             type="submit"
             disabled={salvando}
-            className="
-              flex items-center justify-center gap-[0.5rem]
-              dark:bg-brand dark:hover:bg-brand-dark dark:text-white
-              bg-green-600 hover:bg-green-700 text-white
-              h-[2.5rem] rounded font-semibold text-sm transition-colors
-              disabled:opacity-50 disabled:cursor-not-allowed
-            "
+            className="flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-600 text-white font-semibold text-[0.875rem] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {salvando
               ? <><div className="w-[1rem] h-[1rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> Criando…</>

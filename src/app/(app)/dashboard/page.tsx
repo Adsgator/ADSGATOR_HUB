@@ -184,10 +184,9 @@ export default function DashboardPage() {
       <button
         onClick={recarregar}
         disabled={loading}
-        className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors disabled:opacity-50"
+        className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors disabled:opacity-50"
       >
         <RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading ? 'animate-spin' : ''}`} strokeWidth={1.75} />
-        <span className="hidden sm:inline">Atualizar</span>
       </button>
       <button className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-ads-500 text-white text-[0.8125rem] font-medium hover:bg-ads-600 transition-colors">
         <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
@@ -204,7 +203,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-[1rem]">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-[8rem] rounded-xl bg-surface-card border border-surface-border animate-pulse" />
+                <div key={i} className="h-[8rem] rounded-xl skeleton-shimmer border border-surface-border" />
               ))
             ) : (
               <>
@@ -231,7 +230,7 @@ export default function DashboardPage() {
                 <KpiCard
                   label="Saldo Google"
                   value={saldoGoogle !== null ? `R$ ${saldoGoogle.toLocaleString('pt-BR')}` : '…'}
-                  delta={saldoGoogle !== null && saldoGoogle < 200 ? '⚠️ Baixo' : undefined}
+                  delta={saldoGoogle !== null && saldoGoogle < 200 ? 'Baixo' : undefined}
                   deltaDir={saldoGoogle !== null && saldoGoogle < 200 ? 'down' : undefined}
                   accentColor="blue"
                   alert={saldoGoogle !== null && saldoGoogle < 200}
@@ -274,7 +273,7 @@ export default function DashboardPage() {
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[1rem]">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-[12rem] rounded-xl bg-surface-card border border-surface-border animate-pulse" />
+                  <div key={i} className="h-[12rem] rounded-xl skeleton-shimmer border border-surface-border" />
                 ))}
               </div>
             ) : progresso.length === 0 ? (
@@ -369,10 +368,10 @@ export default function DashboardPage() {
                       {/* Drag handle */}
                       <div
                         {...provided.dragHandleProps}
-                        className="absolute -left-8 top-2 p-1.5 rounded hover:bg-surface-hover cursor-grab active:cursor-grabbing text-ink-muted hover:text-ink-secondary transition-colors"
+                        className="absolute -left-[2rem] top-[0.5rem] p-[0.375rem] rounded hover:bg-surface-hover cursor-grab active:cursor-grabbing text-ink-muted hover:text-ink-secondary transition-colors"
                         title="Arraste para reordenar"
                       >
-                        <GripVertical className="w-4 h-4" strokeWidth={2} />
+                        <GripVertical className="w-[1rem] h-[1rem]" strokeWidth={2} />
                       </div>
 
                       {/* Conteúdo da seção */}

@@ -287,6 +287,98 @@ export default function FinanceiroPage() {
         </div>
       )}
 
+      {/* ══ DRE VISUAL — Demonstração de Resultado ══════════════════ */}
+      <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] mb-[2rem]">
+        <div className="flex items-center justify-between mb-[1.25rem]">
+          <div>
+            <h3 className="text-ink-primary font-semibold text-[0.9375rem]">
+              Demonstração do Resultado
+            </h3>
+            <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">
+              {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <span className={`text-[0.75rem] font-semibold px-[0.625rem] py-[0.25rem] rounded-full ${
+            dre.margem >= 30 ? 'bg-status-green/10 text-status-green'
+            : dre.margem >= 15 ? 'bg-ads-500/10 text-ads-400'
+            : 'bg-status-red/10 text-status-red'
+          }`}>
+            Margem {dre.margem.toFixed(1)}%
+          </span>
+        </div>
+
+        <div className="space-y-[0]">
+          {/* Receita */}
+          <div className="flex items-center justify-between py-[0.75rem] border-b border-surface-border">
+            <div className="flex items-center gap-[0.75rem]">
+              <div className="w-[0.1875rem] h-[2rem] rounded-full bg-ads-400" />
+              <div>
+                <p className="text-ink-primary font-semibold text-[0.9375rem]">Receita Operacional</p>
+                <p className="text-ink-muted text-[0.6875rem]">MRR confirmado do período</p>
+              </div>
+            </div>
+            <p className="text-ads-400 font-black text-[1.25rem] font-mono">{fmt(dre.mrr)}</p>
+          </div>
+
+          {/* Custos fixos */}
+          <div className="flex items-center justify-between py-[0.625rem] pl-[1rem]">
+            <div className="flex items-center gap-[0.5rem]">
+              <div className="w-[0.125rem] h-[1.5rem] rounded-full bg-status-blue/40" />
+              <p className="text-ink-secondary text-[0.875rem]">Custos Fixos</p>
+            </div>
+            <p className="text-status-blue font-semibold font-mono text-[0.9375rem]">({fmt(dre.custos_fixos)})</p>
+          </div>
+
+          {/* Custos variáveis */}
+          <div className="flex items-center justify-between py-[0.625rem] pl-[1rem] border-b border-surface-border">
+            <div className="flex items-center gap-[0.5rem]">
+              <div className="w-[0.125rem] h-[1.5rem] rounded-full bg-status-orange/40" />
+              <p className="text-ink-secondary text-[0.875rem]">Custos Variáveis</p>
+            </div>
+            <p className="text-status-orange font-semibold font-mono text-[0.9375rem]">({fmt(dre.custos_variaveis)})</p>
+          </div>
+
+          {/* = Lucro Bruto */}
+          <div className="flex items-center justify-between py-[0.75rem] border-b border-surface-border bg-surface-hover/50 px-[0.5rem] rounded-[0.375rem] my-[0.25rem]">
+            <div className="flex items-center gap-[0.75rem]">
+              <div className="w-[0.1875rem] h-[2rem] rounded-full bg-status-green" />
+              <div>
+                <p className="text-ink-primary font-semibold text-[0.9375rem]">= Lucro Bruto</p>
+                <p className="text-ink-muted text-[0.6875rem]">{pct(dre.lucro_bruto, dre.mrr)}% da receita</p>
+              </div>
+            </div>
+            <p className="text-status-green font-black text-[1.125rem] font-mono">{fmt(dre.lucro_bruto)}</p>
+          </div>
+
+          {/* Imposto */}
+          <div className="flex items-center justify-between py-[0.625rem] pl-[1rem] border-b border-surface-border">
+            <div className="flex items-center gap-[0.5rem]">
+              <div className="w-[0.125rem] h-[1.5rem] rounded-full bg-status-purple/40" />
+              <p className="text-ink-secondary text-[0.875rem]">
+                Imposto ({dre.tipo_tributacao} · {((dre.imposto_estimado / (dre.mrr || 1)) * 100).toFixed(0)}%)
+              </p>
+            </div>
+            <p className="text-status-purple font-semibold font-mono text-[0.9375rem]">({fmt(dre.imposto_estimado)})</p>
+          </div>
+
+          {/* = Lucro Líquido */}
+          <div className={`flex items-center justify-between py-[0.875rem] px-[0.75rem] rounded-[0.5rem] mt-[0.25rem] ${
+            dre.lucro_liquido >= 0 ? 'bg-status-green/5 border border-status-green/20' : 'bg-status-red/5 border border-status-red/20'
+          }`}>
+            <div className="flex items-center gap-[0.75rem]">
+              <div className={`w-[0.25rem] h-[2.5rem] rounded-full ${dre.lucro_liquido >= 0 ? 'bg-status-green' : 'bg-status-red'}`} />
+              <div>
+                <p className="text-ink-primary font-bold text-[1rem]">= Lucro Líquido</p>
+                <p className="text-ink-muted text-[0.6875rem]">Após impostos e todos os custos</p>
+              </div>
+            </div>
+            <p className={`font-black text-[1.5rem] font-mono ${dre.lucro_liquido >= 0 ? 'text-status-green' : 'text-status-red'}`}>
+              {fmt(dre.lucro_liquido)}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[2rem]">
         {/* ── DRE DISTRIBUIÇÃO ── */}
         <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">

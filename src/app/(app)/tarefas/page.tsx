@@ -2,13 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Plus, CheckSquare, Square, Clock, Flag,
-  ChevronDown, Trash2, RefreshCw, User,
+  Plus, CheckSquare, Square, Clock, User,
+  ChevronDown, Trash2, RefreshCw, AlarmClock,
+  Zap, CheckCheck, AlertTriangle, ChevronRight,
+  Tag,
 } from 'lucide-react'
-import { MainLayout }  from '@/components/layout/MainLayout'
-import { TaskModal }   from '@/components/ui/TaskModal'
-import { supabase }    from '@/lib/supabase'
-import type { Tarefa, TarefaPrioridade, TarefaStatus } from '@/lib/types'
+import { MainLayout } from '@/components/layout/MainLayout'
+import { TaskModal }  from '@/components/ui/TaskModal'
+import { Tooltip }    from '@/components/ui/Tooltip'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { cn }         from '@/lib/utils'
+import { supabase }   from '@/lib/supabase'
+import type { Tarefa, TarefaPrioridade } from '@/lib/types'
 
 interface TarefaComCliente extends Tarefa {
   cliente_nome?: string
@@ -16,15 +21,18 @@ interface TarefaComCliente extends Tarefa {
 
 type Filtro = 'todas' | 'hoje' | 'semana' | 'criticas'
 
-const PRIO_COR: Record<TarefaPrioridade, string> = {
-  baixo:   'bg-ink-muted/20 text-ink-muted',
-  normal:  'bg-status-blue/15 text-status-blue',
-  alto:    'bg-status-orange/15 text-status-orange',
-  critico: 'bg-status-red/15 text-status-red',
+const PRIO_CONFIG: Record<TarefaPrioridade, { label: string; color: string; dot: string; border: string }> = {
+  baixo:   { label: 'Baixo',   color: 'text-ink-muted',          dot: 'bg-ink-muted',          border: 'border-l-ink-muted'        },
+  normal:  { label: 'Normal',  color: 'text-status-blue',        dot: 'bg-status-blue',        border: 'border-l-status-blue'      },
+  alto:    { label: 'Alto',    color: 'text-status-orange',      dot: 'bg-status-orange',      border: 'border-l-status-orange'    },
+  critico: { label: 'Crítico', color: 'text-status-red',         dot: 'bg-status-red',         border: 'border-l-status-red'       },
 }
 
-const PRIO_LABEL: Record<TarefaPrioridade, string> = {
-  baixo: 'Baixo', normal: 'Normal', alto: 'Alto', critico: 'Crítico',
+const GRUPO_CONFIG: Record<string, { icon: typeof Clock; color: string; glow: string }> = {
+  'Hoje':            { icon: Zap,          color: 'text-ads-400',        glow: 'bg-ads-500/10'       },
+  'Próxima Semana':  { icon: Clock,        color: 'text-status-blue',    glow: 'bg-status-blue/10'   },
+  'Mais Tarde':      { icon: AlarmClock,   color: 'text-ink-secondary',  glow: 'bg-surface-hover'    },
+  'Sem prazo':       { icon: Tag,          color: 'text-ink-muted',      glow: 'bg-surface-hover'    },
 }
 
 function hojeSt() { return new Date().toISOString().slice(0, 10) }
@@ -35,23 +43,202 @@ function semanaFim() {
 function grupar(tarefas: TarefaComCliente[]): Record<string, TarefaComCliente[]> {
   const hoje = hojeSt()
   const semana = semanaFim()
-  const grupos: Record<string, TarefaComCliente[]> = { 'Hoje': [], 'Próxima Semana': [], 'Mais Tarde': [], 'Sem prazo': [] }
+  const grupos: Record<string, TarefaComCliente[]> = {
+    'Hoje': [], 'Próxima Semana': [], 'Mais Tarde': [], 'Sem prazo': [],
+  }
   for (const t of tarefas) {
     const d = t.data_prazo?.slice(0, 10)
-    if (!d) grupos['Sem prazo'].push(t)
-    else if (d <= hoje) grupos['Hoje'].push(t)
+    if (!d)           grupos['Sem prazo'].push(t)
+    else if (d <= hoje)   grupos['Hoje'].push(t)
     else if (d <= semana) grupos['Próxima Semana'].push(t)
-    else grupos['Mais Tarde'].push(t)
+    else                  grupos['Mais Tarde'].push(t)
   }
   return grupos
 }
 
+/* ─── Energy bar ────────────────────────────────────────── */
+function EnergyBar({ label, pct, color }: { label: string; pct: number; color: string }) {
+  return (
+    <div className="flex items-center gap-[0.625rem]">
+      <span className="text-[0.6875rem] text-ink-muted w-[4.5rem] shrink-0">{label}</span>
+      <div className="flex-1 h-[0.25rem] rounded-full bg-surface-hover overflow-hidden">
+        <div
+          className={cn('h-full rounded-full transition-all duration-700', color)}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="text-[0.6875rem] text-ink-muted w-[2rem] text-right">{pct}%</span>
+    </div>
+  )
+}
+
+/* ─── Accordion de tarefa ────────────────────────────────── */
+function TarefaAccordion({
+  t, expanded, onToggle, onConcluir, onAdiar, onDeletar, onEditar,
+}: {
+  t: TarefaComCliente
+  expanded: boolean
+  onToggle: () => void
+  onConcluir: () => void
+  onAdiar: (delta: number, unit: 'h' | 'd' | 'w') => void
+  onDeletar: () => void
+  onEditar: () => void
+}) {
+  const prio    = PRIO_CONFIG[t.prioridade]
+  const atrasada = (t.data_prazo?.slice(0, 10) ?? '') < hojeSt() && t.status !== 'feito'
+
+  const ctxItems = [
+    { label: 'Editar',    icon: <ChevronRight className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />, onClick: onEditar },
+    { label: 'Adiar 1h',  icon: <AlarmClock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,  onClick: () => onAdiar(1, 'h') },
+    { label: 'Adiar 1d',  icon: <AlarmClock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,  onClick: () => onAdiar(1, 'd'), separator: true },
+    { label: 'Deletar',   icon: <Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,       onClick: onDeletar, variant: 'danger' as const },
+  ]
+
+  return (
+    <ContextMenu items={ctxItems}>
+      <div className={cn(
+        'bg-surface-card border border-surface-border rounded-xl overflow-hidden',
+        'border-l-[3px]', prio.border,
+        'transition-all duration-200',
+        expanded ? 'shadow-lg shadow-black/15' : 'hover:border-surface-elevated',
+      )}>
+        {/* ── HEADER (sempre visível) ── */}
+        <button
+          onClick={onToggle}
+          className="w-full flex items-center gap-[0.875rem] px-[1rem] py-[0.875rem] text-left"
+        >
+          {/* Checkbox */}
+          <span
+            role="button"
+            onClick={(e) => { e.stopPropagation(); onConcluir() }}
+            className="shrink-0 text-ink-muted hover:text-status-green transition-colors"
+          >
+            <Square className="w-[1.25rem] h-[1.25rem]" strokeWidth={1.5} />
+          </span>
+
+          {/* Título + meta */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-[0.5rem] flex-wrap">
+              <span className="text-ink-primary font-medium text-[0.9375rem] truncate">{t.titulo}</span>
+              <span className={cn(
+                'inline-flex items-center gap-[0.1875rem] text-[0.625rem] font-semibold px-[0.375rem] py-[0.0625rem] rounded-full',
+                prio.color, 'bg-surface-hover',
+              )}>
+                <span className={cn('w-[0.3125rem] h-[0.3125rem] rounded-full', prio.dot)} />
+                {prio.label}
+              </span>
+              {atrasada && (
+                <span className="inline-flex items-center gap-[0.1875rem] text-[0.625rem] font-semibold px-[0.375rem] py-[0.0625rem] rounded-full bg-status-red/10 text-status-red">
+                  <AlertTriangle className="w-[0.5rem] h-[0.5rem]" strokeWidth={2.5} />
+                  Atrasada
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-[0.625rem] mt-[0.1875rem] text-[0.6875rem] text-ink-muted flex-wrap">
+              {t.cliente_nome && (
+                <span className="flex items-center gap-[0.1875rem]">
+                  <User className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2} />
+                  {t.cliente_nome}
+                </span>
+              )}
+              {t.data_prazo && (
+                <span className={cn('flex items-center gap-[0.1875rem]', atrasada && 'text-status-red font-semibold')}>
+                  <Clock className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2} />
+                  {new Date(t.data_prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Chevron */}
+          <ChevronDown
+            className={cn('w-[1rem] h-[1rem] text-ink-muted shrink-0 transition-transform duration-200', expanded && 'rotate-180')}
+            strokeWidth={1.75}
+          />
+        </button>
+
+        {/* ── EXPANDED BODY (accordion) ── */}
+        {expanded && (
+          <div className="px-[1rem] pb-[1rem] border-t border-surface-border animate-fade-up">
+            {/* Descrição */}
+            {t.descricao && (
+              <div className="mt-[0.75rem] p-[0.75rem] rounded-[0.375rem] bg-surface-hover border-l-[2px] border-ads-500/30">
+                <p className="text-[0.8125rem] text-ink-secondary leading-relaxed">{t.descricao}</p>
+              </div>
+            )}
+
+            {/* Why it's here */}
+            <div className="mt-[0.75rem] p-[0.75rem] rounded-[0.375rem] bg-surface-base border border-surface-border">
+              <p className="text-[0.625rem] text-ink-muted font-semibold uppercase tracking-wide mb-[0.25rem]">Contexto</p>
+              <p className="text-[0.75rem] text-ink-muted leading-relaxed">
+                {t.prioridade === 'critico' && 'Tarefa crítica — requer atenção imediata para não afetar a operação do cliente.'}
+                {t.prioridade === 'alto'    && 'Alta prioridade — impacta diretamente os resultados esperados.'}
+                {t.prioridade === 'normal'  && 'Prioridade normal — parte do fluxo operacional padrão.'}
+                {t.prioridade === 'baixo'   && 'Baixa prioridade — pode ser realizada quando houver disponibilidade.'}
+              </p>
+            </div>
+
+            {/* Ações */}
+            <div className="flex items-center gap-[0.5rem] mt-[0.875rem]">
+              <Tooltip content="Concluir" side="top">
+                <button
+                  onClick={onConcluir}
+                  className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-status-green/10 text-status-green hover:bg-status-green/20 text-[0.8125rem] font-medium transition-colors"
+                >
+                  <CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                  Concluir
+                </button>
+              </Tooltip>
+
+              <div className="relative group/adiar">
+                <button className="flex items-center gap-[0.25rem] h-[2rem] px-[0.625rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
+                  <AlarmClock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                  Adiar
+                  <ChevronDown className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
+                </button>
+                <div className="absolute left-0 top-full mt-[0.25rem] bg-surface-elevated border border-surface-border rounded-[0.5rem] shadow-xl z-20 min-w-[8rem] hidden group-hover/adiar:block animate-fade-scale">
+                  {[
+                    { label: '+1 hora',   delta: 1, unit: 'h' as const },
+                    { label: '+1 dia',    delta: 1, unit: 'd' as const },
+                    { label: '+1 semana', delta: 1, unit: 'w' as const },
+                  ].map(({ label, delta, unit }) => (
+                    <button
+                      key={label}
+                      onClick={() => onAdiar(delta, unit)}
+                      className="w-full text-left px-[0.75rem] py-[0.4375rem] text-ink-secondary text-[0.8125rem] hover:bg-surface-hover hover:text-ink-primary transition-colors"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex-1" />
+
+              <Tooltip content="Deletar" side="top">
+                <button
+                  onClick={onDeletar}
+                  className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover text-ink-muted hover:text-status-red hover:bg-status-red/10 transition-colors"
+                >
+                  <Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                </button>
+              </Tooltip>
+            </div>
+          </div>
+        )}
+      </div>
+    </ContextMenu>
+  )
+}
+
+/* ─── Page ──────────────────────────────────────────────── */
 export default function TarefasPage() {
-  const [tarefas,    setTarefas]    = useState<TarefaComCliente[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [filtro,     setFiltro]     = useState<Filtro>('todas')
-  const [modalAberto,setModalAberto]= useState(false)
-  const [tarefaEdit, setTarefaEdit] = useState<Partial<Tarefa> | undefined>()
+  const [tarefas,     setTarefas]     = useState<TarefaComCliente[]>([])
+  const [loading,     setLoading]     = useState(true)
+  const [filtro,      setFiltro]      = useState<Filtro>('todas')
+  const [expanded,    setExpanded]    = useState<string | null>(null)
+  const [modalAberto, setModalAberto] = useState(false)
+  const [tarefaEdit,  setTarefaEdit]  = useState<Partial<Tarefa> | undefined>()
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -75,11 +262,12 @@ export default function TarefasPage() {
     await supabase.from('tarefas').update({ status: 'feito' }).eq('id', t.id)
     if (t.cliente_id) {
       await supabase.from('historico_acoes').insert({
-        cliente_id:  t.cliente_id,
-        tipo:        'tarefa_concluida',
-        descricao:   `Tarefa concluída: ${t.titulo}`,
+        cliente_id: t.cliente_id,
+        tipo:       'tarefa_concluida',
+        descricao:  `Tarefa concluída: ${t.titulo}`,
       })
     }
+    setExpanded(null)
     carregar()
   }
 
@@ -94,31 +282,47 @@ export default function TarefasPage() {
   async function deletar(id: string) {
     if (!confirm('Deletar esta tarefa?')) return
     await supabase.from('tarefas').delete().eq('id', id)
+    if (expanded === id) setExpanded(null)
     carregar()
   }
 
   const filtradas = tarefas.filter((t) => {
-    if (filtro === 'hoje')    return (t.data_prazo?.slice(0, 10) ?? '') <= hojeSt()
-    if (filtro === 'semana')  return (t.data_prazo?.slice(0, 10) ?? '9') <= semanaFim()
+    if (filtro === 'hoje')     return (t.data_prazo?.slice(0, 10) ?? '') <= hojeSt()
+    if (filtro === 'semana')   return (t.data_prazo?.slice(0, 10) ?? '9') <= semanaFim()
     if (filtro === 'criticas') return t.prioridade === 'critico' || t.prioridade === 'alto'
     return true
   })
 
   const grupos = grupar(filtradas)
   const urgentesHoje = tarefas.filter((t) => (t.data_prazo?.slice(0, 10) ?? '') <= hojeSt()).length
+  const criticas = tarefas.filter((t) => t.prioridade === 'critico' || t.prioridade === 'alto').length
+
+  /* Energy flow calculado pela distribuição */
+  const totalHoje    = grupos['Hoje'].length
+  const totalSemana  = grupos['Próxima Semana'].length
+  const totalMais    = grupos['Mais Tarde'].length + grupos['Sem prazo'].length
+  const totalGeral   = totalHoje + totalSemana + totalMais || 1
+  const energyManha  = Math.round(Math.min(100, (totalHoje / totalGeral) * 150))
+  const energyTarde  = Math.round(Math.min(100, (totalSemana / totalGeral) * 110))
+  const energyNoite  = Math.round(Math.min(100, (totalMais / totalGeral) * 100))
 
   return (
     <MainLayout
       title="Tarefas"
-      subtitle="Organize sua operação"
+      subtitle={`${filtradas.length} pendente${filtradas.length !== 1 ? 's' : ''}`}
       actions={
         <div className="flex items-center gap-[0.5rem]">
-          <button onClick={carregar} className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
-            <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-          </button>
+          <Tooltip content="Atualizar" side="bottom">
+            <button
+              onClick={carregar}
+              className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-muted hover:text-ink-primary transition-colors"
+            >
+              <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+            </button>
+          </Tooltip>
           <button
             onClick={() => { setTarefaEdit(undefined); setModalAberto(true) }}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-600 text-white text-[0.8125rem] font-semibold transition-colors"
+            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-400 text-white text-[0.8125rem] font-semibold transition-colors shadow-lg shadow-ads-500/20"
           >
             <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
             Nova Tarefa
@@ -126,121 +330,117 @@ export default function TarefasPage() {
         </div>
       }
     >
-      {/* Filtros */}
+      {/* ── BENTO TOPO: energy flow + mini KPIs ────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-[1rem] mb-[1.5rem] stagger">
+        {/* Energy Flow */}
+        <div className="lg:col-span-2 bg-surface-card border border-surface-border rounded-xl p-[1.25rem]">
+          <div className="flex items-center justify-between mb-[1rem]">
+            <div>
+              <p className="text-ink-primary font-semibold text-[0.9375rem]">Fluxo de Energia</p>
+              <p className="text-ink-muted text-[0.75rem]">Distribuição das tarefas por período</p>
+            </div>
+            <Zap className="w-[1.25rem] h-[1.25rem] text-ads-400" strokeWidth={1.75} />
+          </div>
+          <div className="flex flex-col gap-[0.625rem]">
+            <EnergyBar label="Urgente / Hoje"   pct={energyManha} color="bg-ads-400"        />
+            <EnergyBar label="Próx. semana"      pct={energyTarde} color="bg-status-blue"    />
+            <EnergyBar label="Mais tarde"        pct={energyNoite} color="bg-surface-border" />
+          </div>
+        </div>
+
+        {/* Mini KPIs */}
+        <div className="flex flex-col gap-[0.625rem]">
+          {[
+            { label: 'Urgentes hoje',   value: urgentesHoje, color: 'text-ads-400',       icon: Zap         },
+            { label: 'Críticas / Altas', value: criticas,    color: 'text-status-orange',  icon: AlertTriangle },
+            { label: 'Total pendentes',  value: tarefas.length, color: 'text-ink-primary', icon: CheckSquare },
+          ].map(({ label, value, color, icon: Icon }) => (
+            <div key={label} className="flex items-center justify-between bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.75rem]">
+              <div className="flex items-center gap-[0.5rem]">
+                <Icon className={cn('w-[0.875rem] h-[0.875rem]', color)} strokeWidth={1.75} />
+                <span className="text-ink-secondary text-[0.8125rem]">{label}</span>
+              </div>
+              <span className={cn('text-[1.125rem] font-black', color)}>{value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── FILTROS ──────────────────────────────────────────── */}
       <div className="flex items-center gap-[0.375rem] mb-[1.5rem] flex-wrap">
         {([
-          { id: 'todas',    label: 'Todas' },
-          { id: 'hoje',     label: `Hoje${urgentesHoje > 0 ? ` (${urgentesHoje})` : ''}` },
-          { id: 'semana',   label: 'Esta semana' },
-          { id: 'criticas', label: 'Críticas' },
+          { id: 'todas',     label: 'Todas' },
+          { id: 'hoje',      label: `Hoje${urgentesHoje > 0 ? ` (${urgentesHoje})` : ''}` },
+          { id: 'semana',    label: 'Esta semana' },
+          { id: 'criticas',  label: `Críticas${criticas > 0 ? ` (${criticas})` : ''}` },
         ] as { id: Filtro; label: string }[]).map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setFiltro(id)}
-            className={`h-[1.875rem] px-[0.875rem] rounded-full text-[0.8125rem] font-medium transition-colors ${
+            className={cn(
+              'h-[1.875rem] px-[0.875rem] rounded-full text-[0.8125rem] font-medium transition-colors',
               filtro === id
-                ? 'bg-ads-500 text-white'
-                : 'bg-surface-card border border-surface-border text-ink-secondary hover:text-ink-primary'
-            }`}
+                ? 'bg-ads-500 text-white shadow-md shadow-ads-500/20'
+                : 'bg-surface-card border border-surface-border text-ink-secondary hover:text-ink-primary hover:border-surface-elevated',
+            )}
           >
             {label}
           </button>
         ))}
       </div>
 
+      {/* ── LISTA ──────────────────────────────────────────── */}
       {loading ? (
-        <div className="flex flex-col gap-[0.75rem]">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-[4rem] rounded-xl bg-surface-card border border-surface-border animate-pulse" />)}
+        <div className="flex flex-col gap-[0.625rem]">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-[4.25rem] rounded-xl skeleton-shimmer border border-surface-border" />
+          ))}
         </div>
       ) : filtradas.length === 0 ? (
         <div className="bg-surface-card border border-surface-border rounded-xl p-[4rem] text-center">
           <CheckSquare className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
           <p className="text-ink-primary font-semibold">Tudo em dia!</p>
-          <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Nenhuma tarefa pendente.</p>
+          <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Nenhuma tarefa pendente com esse filtro.</p>
         </div>
       ) : (
-        Object.entries(grupos).map(([grupo, items]) => {
-          if (items.length === 0) return null
-          return (
-            <div key={grupo} className="mb-[2rem]">
-              <div className="flex items-center gap-[0.5rem] mb-[0.75rem]">
-                <Clock className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
-                <h3 className="text-ink-secondary font-semibold text-[0.875rem] uppercase tracking-wide">{grupo}</h3>
-                <span className="text-[0.6875rem] text-ink-muted bg-surface-hover px-[0.375rem] py-[0.0625rem] rounded-full">{items.length}</span>
-              </div>
-              <div className="flex flex-col gap-[0.5rem]">
-                {items.map((t) => (
-                  <div
-                    key={t.id}
-                    className="bg-surface-card border border-surface-border rounded-xl px-[1rem] py-[0.875rem] flex items-center gap-[0.875rem] hover:border-ads-500/30 transition-colors group"
-                  >
-                    {/* Checkbox */}
-                    <button onClick={() => concluir(t)} className="shrink-0 text-ink-muted hover:text-status-green transition-colors">
-                      <Square className="w-[1.25rem] h-[1.25rem]" strokeWidth={1.5} />
-                    </button>
-
-                    {/* Conteúdo */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-[0.5rem] flex-wrap">
-                        <p
-                          className="text-ink-primary font-medium text-[0.9375rem] cursor-pointer hover:text-ads-500 transition-colors"
-                          onClick={() => { setTarefaEdit(t); setModalAberto(true) }}
-                        >
-                          {t.titulo}
-                        </p>
-                        <span className={`text-[0.6875rem] font-semibold px-[0.375rem] py-[0.0625rem] rounded-full ${PRIO_COR[t.prioridade]}`}>
-                          {PRIO_LABEL[t.prioridade]}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-[0.75rem] mt-[0.25rem] text-[0.75rem] text-ink-muted flex-wrap">
-                        {t.cliente_nome && (
-                          <span className="flex items-center gap-[0.25rem]">
-                            <User className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
-                            {t.cliente_nome}
-                          </span>
-                        )}
-                        {t.data_prazo && (
-                          <span className={`flex items-center gap-[0.25rem] ${t.data_prazo.slice(0, 10) < hojeSt() ? 'text-status-red font-semibold' : ''}`}>
-                            <Clock className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
-                            {new Date(t.data_prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        )}
-                        {t.descricao && <span className="truncate max-w-[20rem] text-ink-muted italic">{t.descricao}</span>}
-                      </div>
-                    </div>
-
-                    {/* Ações */}
-                    <div className="flex items-center gap-[0.375rem] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <div className="relative group/adiar">
-                        <button className="flex items-center gap-[0.25rem] h-[1.75rem] px-[0.5rem] rounded text-ink-muted hover:text-ink-secondary bg-surface-hover text-[0.75rem] transition-colors">
-                          Adiar <ChevronDown className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
-                        </button>
-                        <div className="absolute right-0 top-full mt-[0.25rem] bg-surface-card border border-surface-border rounded-lg shadow-lg z-10 min-w-[8rem] hidden group-hover/adiar:block">
-                          {[
-                            { label: '+1 hora',   delta: 1, unit: 'h' as const },
-                            { label: '+1 dia',    delta: 1, unit: 'd' as const },
-                            { label: '+1 semana', delta: 1, unit: 'w' as const },
-                          ].map(({ label, delta, unit }) => (
-                            <button
-                              key={label}
-                              onClick={() => adiar(t, delta, unit)}
-                              className="w-full text-left px-[0.75rem] py-[0.5rem] text-ink-secondary text-[0.8125rem] hover:bg-surface-hover transition-colors"
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <button onClick={() => deletar(t.id)} className="w-[1.75rem] h-[1.75rem] flex items-center justify-center rounded text-ink-muted hover:text-status-red bg-surface-hover transition-colors">
-                        <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
-                      </button>
-                    </div>
+        <div className="flex flex-col gap-[1.5rem]">
+          {Object.entries(grupos).map(([grupo, items]) => {
+            if (items.length === 0) return null
+            const gcfg = GRUPO_CONFIG[grupo]
+            const GrupoIcon = gcfg.icon
+            return (
+              <div key={grupo}>
+                {/* Cabeçalho do grupo */}
+                <div className="flex items-center gap-[0.5rem] mb-[0.625rem]">
+                  <div className={cn('w-[1.5rem] h-[1.5rem] rounded-[0.375rem] flex items-center justify-center', gcfg.glow)}>
+                    <GrupoIcon className={cn('w-[0.75rem] h-[0.75rem]', gcfg.color)} strokeWidth={2} />
                   </div>
-                ))}
+                  <h3 className={cn('font-semibold text-[0.875rem]', gcfg.color)}>{grupo}</h3>
+                  <span className="text-[0.6875rem] text-ink-muted bg-surface-hover border border-surface-border px-[0.375rem] py-[0.0625rem] rounded-full">
+                    {items.length}
+                  </span>
+                  <div className="flex-1 h-[1px] bg-surface-border" />
+                </div>
+
+                {/* Tarefas accordion */}
+                <div className="flex flex-col gap-[0.5rem]">
+                  {items.map((t) => (
+                    <TarefaAccordion
+                      key={t.id}
+                      t={t}
+                      expanded={expanded === t.id}
+                      onToggle={() => setExpanded(expanded === t.id ? null : t.id)}
+                      onConcluir={() => concluir(t)}
+                      onAdiar={(d, u) => adiar(t, d, u)}
+                      onDeletar={() => deletar(t.id)}
+                      onEditar={() => { setTarefaEdit(t); setModalAberto(true) }}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          )
-        })
+            )
+          })}
+        </div>
       )}
 
       {modalAberto && (

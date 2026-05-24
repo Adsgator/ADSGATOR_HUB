@@ -111,7 +111,7 @@ export default function ClienteDetalhe() {
 
   if (loading || !cliente) {
     return (
-      <MainLayout>
+      <MainLayout title="Cliente">
         <div className="flex items-center justify-center h-[20rem]">
           <div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" />
         </div>

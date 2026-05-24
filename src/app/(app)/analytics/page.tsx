@@ -247,19 +247,19 @@ export default function AnalyticsPage() {
       title="Analytics"
       subtitle={selData ? `Cliente: ${selData.cliente.nome}` : 'Selecione um cliente para ver detalhes'}
       actions={
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-[0.5rem]">
           {/* Seletor de período */}
           <div className="relative">
             <select
               value={periodo}
               onChange={(e) => setPeriodo(e.target.value as Periodo)}
-              className="appearance-none bg-surface-hover border border-surface-border rounded-md pl-3 pr-8 py-1.5 text-sm text-ink-secondary focus:outline-none focus:border-ads-500"
+              className="appearance-none bg-surface-hover border border-surface-border rounded-[0.375rem] pl-[0.75rem] pr-[2rem] h-[2rem] text-[0.8125rem] text-ink-secondary focus:outline-none focus:border-ads-500 transition-colors"
             >
               <option value="7d">Últimos 7 dias</option>
               <option value="30d">Últimos 30 dias</option>
               <option value="90d">Últimos 90 dias</option>
             </select>
-            <Calendar className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted pointer-events-none" strokeWidth={1.5} />
+            <Calendar className="absolute right-[0.5rem] top-1/2 -translate-y-1/2 w-[0.875rem] h-[0.875rem] text-ink-muted pointer-events-none" strokeWidth={1.5} />
           </div>
           <button
             onClick={() => { carregar(); carregarLive(); }}
@@ -267,7 +267,6 @@ export default function AnalyticsPage() {
             className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors disabled:opacity-50"
           >
             <RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />
-            Atualizar
           </button>
         </div>
       }
@@ -275,7 +274,7 @@ export default function AnalyticsPage() {
       {/* ══ SEÇÃO 1 — KPI RESUMO GERAL ════════════════════════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1rem] mb-[2rem]">
         {loading
-          ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[6rem] rounded-xl bg-surface-card border border-surface-border animate-pulse" />)
+          ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[6rem] rounded-xl skeleton-shimmer border border-surface-border" />)
           : [
               { label: 'Investimento Total', valor: fmt(totais.invest),   icon: DollarSign,       cor: 'text-status-blue'   },
               { label: 'Conversões',         valor: conv(totais.conversoes), icon: ArrowUpRight,  cor: 'text-ads-500',       sub: '* fracionadas' },
@@ -298,7 +297,7 @@ export default function AnalyticsPage() {
       <h2 className="text-ink-primary font-semibold text-[0.9375rem] mb-[0.875rem]">Por Cliente</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem] mb-[2rem]">
         {loading
-          ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-[9rem] rounded-xl bg-surface-card border border-surface-border animate-pulse" />)
+          ? Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-[9rem] rounded-xl skeleton-shimmer border border-surface-border" />)
           : dados.map(({ cliente: c, ultimo: u }) => {
               const cpa  = (u?.conversoes ?? 0) > 0 ? (u?.investimento ?? 0) / u!.conversoes! : null
               const ctr  = (u?.impressoes ?? 0) > 0 ? ((u?.cliques ?? 0) / u!.impressoes!) * 100 : null
@@ -386,8 +385,8 @@ export default function AnalyticsPage() {
 
           {/* Google Ads KPIs */}
           {liveData.googleAds.enabled && (
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-ink-muted mb-3">Google Ads</h3>
+            <div className="mb-[1rem]">
+              <h3 className="text-[0.875rem] font-medium text-ink-muted mb-[0.75rem]">Google Ads</h3>
               <AdsOverviewKpis
                 data={{
                   ...liveKpiData,
@@ -402,34 +401,34 @@ export default function AnalyticsPage() {
 
           {/* GA4 KPIs */}
           {liveData.ga4.enabled && liveData.ga4.dados && (
-            <div className="mb-4">
-              <h3 className="text-sm font-medium text-ink-muted mb-3">Google Analytics 4</h3>
+            <div className="mb-[1rem]">
+              <h3 className="text-[0.875rem] font-medium text-ink-muted mb-[0.75rem]">Google Analytics 4</h3>
               <GA4Panel data={liveData.ga4.dados} loading={loadingLive} />
             </div>
           )}
 
           {/* Grid de detalhes */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
             {/* Termos de Pesquisa */}
             {liveData.googleAds.enabled && liveData.googleAds.termosPesquisa.length > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-4">
-                <h4 className="text-sm font-medium text-ink-primary mb-3">Termos de Pesquisa</h4>
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Termos de Pesquisa</h4>
                 <SearchTermsTable data={liveData.googleAds.termosPesquisa} loading={loadingLive} maxRows={5} />
               </div>
             )}
 
             {/* Demografia */}
             {liveData.googleAds.enabled && liveData.googleAds.demografia.length > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-4">
-                <h4 className="text-sm font-medium text-ink-primary mb-3">Demografia</h4>
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Demografia</h4>
                 <DemographicsCard data={liveData.googleAds.demografia} loading={loadingLive} />
               </div>
             )}
 
             {/* Geografia */}
             {(liveData.googleAds.geografia.length > 0 || liveData.ga4.geografia.length > 0) && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-4">
-                <h4 className="text-sm font-medium text-ink-primary mb-3">Geografia</h4>
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Geografia</h4>
                 <GeographyBreakdown
                   data={liveData.ga4.enabled ? liveData.ga4.geografia : liveData.googleAds.geografia}
                   loading={loadingLive}
@@ -440,8 +439,8 @@ export default function AnalyticsPage() {
 
             {/* Dispositivos */}
             {(liveData.googleAds.device.length > 0 || liveData.ga4.device.length > 0) && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-4">
-                <h4 className="text-sm font-medium text-ink-primary mb-3">Dispositivos</h4>
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Dispositivos</h4>
                 <DeviceBreakdown
                   data={liveData.ga4.enabled ? liveData.ga4.device : liveData.googleAds.device}
                   loading={loadingLive}
@@ -451,8 +450,8 @@ export default function AnalyticsPage() {
 
             {/* Fontes de Tráfego */}
             {liveData.ga4.enabled && liveData.ga4.fontesTrafego.length > 0 && (
-              <div className="bg-surface-card border border-surface-border rounded-xl p-4 lg:col-span-2">
-                <h4 className="text-sm font-medium text-ink-primary mb-3">Fontes de Tráfego</h4>
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[1rem] lg:col-span-2">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Fontes de Tráfego</h4>
                 <TrafficSources data={liveData.ga4.fontesTrafego} loading={loadingLive} />
               </div>
             )}

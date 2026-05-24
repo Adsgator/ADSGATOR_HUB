@@ -40,25 +40,25 @@ export function OnboardChecklist({ clienteId, estagio }: OnboardChecklistProps) 
   const percentual = Math.round((concluidos / itens.length) * 100);
 
   return (
-    <div className="dark:bg-surface-card bg-white rounded-lg dark:border dark:border-surface-border border border-gray-100 p-[1.5rem]">
+    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem]">
       <div className="flex items-center justify-between mb-[1rem]">
-        <h3 className="dark:text-ink-primary text-gray-900 font-semibold text-base">
+        <h3 className="text-ink-primary font-semibold text-[0.9375rem]">
           Checklist de {etapa?.label}
         </h3>
         <div className="flex items-center gap-[0.5rem]">
           {salvando && (
-            <span className="text-2xs dark:text-ink-muted text-gray-400">Salvando…</span>
+            <span className="text-[0.6875rem] text-ink-muted">Salvando…</span>
           )}
-          <span className="text-xs dark:text-ink-secondary text-gray-600 font-medium">
+          <span className="text-[0.75rem] text-ink-secondary font-medium">
             {concluidos}/{itens.length}
           </span>
         </div>
       </div>
 
       {/* Barra de progresso */}
-      <div className="h-[0.25rem] dark:bg-surface-hover bg-gray-100 rounded-full mb-[1rem] overflow-hidden">
+      <div className="h-[0.25rem] bg-surface-hover rounded-full mb-[1rem] overflow-hidden">
         <div
-          className="h-full bg-brand rounded-full transition-all duration-300"
+          className="h-full bg-ads-500 rounded-full transition-all duration-700"
           style={{ width: `${percentual}%` }}
         />
       </div>
@@ -71,26 +71,12 @@ export function OnboardChecklist({ clienteId, estagio }: OnboardChecklistProps) 
             <button
               key={item.id}
               onClick={() => toggleItem(item.id)}
-              className={`
-                flex items-start gap-[0.75rem] p-[0.75rem] rounded text-left
-                transition-colors
-                ${feito
-                  ? 'dark:bg-brand/8 bg-green-50 dark:border dark:border-brand/20 border border-green-100'
-                  : 'dark:hover:bg-surface-hover hover:bg-gray-50 dark:border dark:border-surface-border border border-gray-50'
-                }
-              `}
+              className={`flex items-start gap-[0.75rem] p-[0.75rem] rounded-[0.375rem] text-left transition-colors border ${feito ? 'bg-ads-500/8 border-ads-500/20' : 'hover:bg-surface-hover border-surface-border'}`}
             >
-              <div className={`
-                shrink-0 w-[1.125rem] h-[1.125rem] rounded-[0.25rem] border flex items-center justify-center mt-[0.0625rem]
-                transition-all
-                ${feito
-                  ? 'bg-brand border-brand'
-                  : 'dark:border-surface-border border-gray-300 dark:bg-surface-hover bg-white'
-                }
-              `}>
+              <div className={`shrink-0 w-[1.125rem] h-[1.125rem] rounded-[0.25rem] border flex items-center justify-center mt-[0.0625rem] transition-all ${feito ? 'bg-ads-500 border-ads-500' : 'border-surface-border bg-surface-hover'}`}>
                 {feito && <Check className="w-[0.625rem] h-[0.625rem] text-white" strokeWidth={3} />}
               </div>
-              <span className={`text-sm leading-snug ${feito ? 'dark:text-ink-muted text-gray-400 line-through' : 'dark:text-ink-secondary text-gray-700'}`}>
+              <span className={`text-[0.875rem] leading-snug ${feito ? 'text-ink-muted line-through' : 'text-ink-secondary'}`}>
                 {item.texto}
               </span>
             </button>

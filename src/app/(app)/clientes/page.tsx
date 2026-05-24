@@ -198,7 +198,7 @@ export default function ClientesPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem]">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[10rem] rounded-xl bg-surface-card border border-surface-border animate-pulse" />
+            <div key={i} className="h-[10rem] rounded-xl skeleton-shimmer border border-surface-border" />
           ))}
         </div>
       ) : visiveis.length === 0 ? (

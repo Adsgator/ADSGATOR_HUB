@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { TrendingUp, BarChart3, Download, RefreshCw, Calendar, ArrowUpRight, Sparkles } from 'lucide-react';
+import { TrendingUp, BarChart3, Download, RefreshCw, Calendar, ArrowUpRight, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { supabase } from '@/lib/supabase';
 
@@ -106,7 +106,7 @@ export default function RelatoriosPage() {
 
   const kpis = selecionado ? [
     { label: 'Investimento',  valor: fmt(selecionado.investimento_ads ?? 0),             sub: 'Google Ads',     icon: TrendingUp,  cor: 'text-status-blue'   },
-    { label: 'Conversões',    valor: fmtConversoes(selecionado.conversoes ?? 0),           sub: 'Leads/vendas',   icon: ArrowUpRight, cor: 'text-brand'        },
+    { label: 'Conversões',    valor: fmtConversoes(selecionado.conversoes ?? 0),           sub: 'Leads/vendas',   icon: ArrowUpRight, cor: 'text-ads-500'      },
     { label: 'ROI',           valor: `${(selecionado.roi ?? 0).toFixed(2)}x`,             sub: 'Retorno',        icon: BarChart3,   cor: 'text-status-purple' },
     { label: 'Sessões (GA4)', valor: (selecionado.sessoes_ga4 ?? 0).toLocaleString(),     sub: 'Visitas ao site', icon: Calendar,   cor: 'text-status-orange' },
   ] : [];
@@ -269,7 +269,7 @@ export default function RelatoriosPage() {
                     <ul className="flex flex-col gap-[0.375rem]">
                       {selecionado.analise_ia.pontos_positivos.map((p, i) => (
                         <li key={i} className="flex items-start gap-[0.5rem]">
-                          <span className="text-status-green font-bold text-[0.75rem] mt-[0.125rem]">✓</span>
+                          <CheckCircle2 className="w-[0.875rem] h-[0.875rem] text-status-green shrink-0 mt-[0.125rem]" strokeWidth={2} />
                           <span className="text-ink-secondary text-[0.875rem]">{p}</span>
                         </li>
                       ))}
@@ -282,7 +282,7 @@ export default function RelatoriosPage() {
                     <ul className="flex flex-col gap-[0.375rem]">
                       {selecionado.analise_ia.pontos_atencao.map((p, i) => (
                         <li key={i} className="flex items-start gap-[0.5rem]">
-                          <span className="text-status-orange font-bold text-[0.75rem] mt-[0.125rem]">!</span>
+                          <AlertCircle className="w-[0.875rem] h-[0.875rem] text-status-orange shrink-0 mt-[0.125rem]" strokeWidth={2} />
                           <span className="text-ink-secondary text-[0.875rem]">{p}</span>
                         </li>
                       ))}

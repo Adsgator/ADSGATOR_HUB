@@ -29,10 +29,11 @@ const config: Config = {
         },
         // ─── SURFACE (CSS variables — dark/light aware) ───────────────
         surface: {
-          base:   'rgb(var(--surface-base) / <alpha-value>)',
-          card:   'rgb(var(--surface-card) / <alpha-value>)',
-          hover:  'rgb(var(--surface-hover) / <alpha-value>)',
-          border: 'rgb(var(--surface-border) / <alpha-value>)',
+          base:     'rgb(var(--surface-base) / <alpha-value>)',
+          card:     'rgb(var(--surface-card) / <alpha-value>)',
+          hover:    'rgb(var(--surface-hover) / <alpha-value>)',
+          elevated: 'rgb(var(--surface-elevated) / <alpha-value>)',
+          border:   'rgb(var(--surface-border) / <alpha-value>)',
           // legacy tokens (keep for existing pages)
           bg:     '#0c0c0d',
           input:  '#1e1e21',
@@ -54,11 +55,12 @@ const config: Config = {
         },
         // ─── STATUS ───────────────────────────────────────────────────
         status: {
-          green:  '#10B981',
-          orange: '#F59E0B',
-          red:    '#EF4444',
-          blue:   '#3B82F6',
+          green:  '#22c55e',
+          orange: '#f59e0b',
+          red:    '#ef4444',
+          blue:   '#3b82f6',
           purple: '#8b5cf6',
+          cyan:   '#06b6d4',
           yellow: '#eab308',
         },
       },
@@ -106,22 +108,47 @@ const config: Config = {
           from: { opacity: '0', transform: 'translateY(0.25rem)' },
           to:   { opacity: '1', transform: 'translateY(0)' },
         },
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(0.5rem)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-scale': {
+          from: { opacity: '0', transform: 'scale(0.97)' },
+          to:   { opacity: '1', transform: 'scale(1)' },
+        },
         'slide-in-left': {
           from: { opacity: '0', transform: 'translateX(-0.5rem)' },
+          to:   { opacity: '1', transform: 'translateX(0)' },
+        },
+        'slide-in-right': {
+          from: { opacity: '0', transform: 'translateX(0.5rem)' },
           to:   { opacity: '1', transform: 'translateX(0)' },
         },
         pulse: {
           '0%, 100%': { opacity: '1' },
           '50%':       { opacity: '0.4' },
         },
+        'accordion-down': {
+          from: { height: '0', opacity: '0' },
+          to:   { height: 'var(--radix-accordion-content-height)', opacity: '1' },
+        },
+        'accordion-up': {
+          from: { height: 'var(--radix-accordion-content-height)', opacity: '1' },
+          to:   { height: '0', opacity: '0' },
+        },
         fadeIn:      { from: { opacity: '0' }, to: { opacity: '1' } },
         slideUp:     { from: { opacity: '0', transform: 'translateY(0.5rem)' }, to: { opacity: '1', transform: 'translateY(0)' } },
         pulseSubtle: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.5' } },
       },
       animation: {
-        'fade-in':      'fade-in 0.2s ease-out',
-        'slide-in-left':'slide-in-left 0.2s ease-out',
-        'pulse-slow':   'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'fade-in':        'fade-in 0.25s cubic-bezier(0.4,0,0.2,1)',
+        'fade-up':        'fade-up 0.35s cubic-bezier(0.4,0,0.2,1)',
+        'fade-scale':     'fade-scale 0.25s cubic-bezier(0.4,0,0.2,1)',
+        'slide-in-left':  'slide-in-left 0.25s cubic-bezier(0.4,0,0.2,1)',
+        'slide-in-right': 'slide-in-right 0.25s cubic-bezier(0.4,0,0.2,1)',
+        'pulse-slow':     'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'accordion-down': 'accordion-down 0.25s cubic-bezier(0.4,0,0.2,1)',
+        'accordion-up':   'accordion-up 0.25s cubic-bezier(0.4,0,0.2,1)',
         // legacy
         'fade-in-legacy': 'fadeIn 0.2s ease-out',
         'slide-up':       'slideUp 0.25s ease-out',
