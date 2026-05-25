@@ -1,9 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Save, Calendar, Flag, User, Plus, CheckCircle, Circle, Trash2 } from 'lucide-react'
+import { X, Save, Calendar, Flag, User, Plus, CheckSquare, Square, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { Tarefa, TarefaPrioridade, ChecklistItem } from '@/lib/types'
+import type { Tarefa, TarefaPrioridade } from '@/lib/types'
+
+interface SubTask { id: string; texto: string; concluido: boolean }
 import { Button } from '@/components/ui/Button'
 
 interface Props {
@@ -28,7 +30,16 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
   const [prioridade,    setPrioridade]    = useState<TarefaPrioridade>(tarefa?.prioridade ?? 'normal')
   const [dataPrazo,     setDataPrazo]     = useState(tarefa?.data_prazo?.slice(0, 16) ?? '')
   const [responsavelId, setResponsavelId] = useState(tarefa?.responsavel_id ?? '')
-  const [subtasks,      setSubtasks]      = useState<ChecklistItem[]>(tarefa?.checklist ?? [])
+  const [subtasks,      setSubtasks]      = useState<SubTask[]>(
+    (tarefa?.checklist ?? []).map((s) => {
+      const raw = s as unknown as Record<string, unknown>
+      return {
+        id:        (raw['id']        as string  | undefined) ?? crypto.randomUUID(),
+        texto:     (raw['texto']     as string  | undefined) ?? (raw['item'] as string  | undefined) ?? '',
+        concluido: (raw['concluido'] as boolean | undefined) ?? (raw['done'] as boolean | undefined) ?? false,
+      }
+    })
+  )
   const [novaSubtask,   setNovaSubtask]   = useState('')
   const [clientes,      setClientes]      = useState<ClienteOpcao[]>([])
   const [membros,       setMembros]       = useState<{ id: string; nome: string }[]>([])
@@ -49,12 +60,12 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
   function adicionarSubtask() {
     const texto = novaSubtask.trim()
     if (!texto) return
-    setSubtasks((p) => [...p, { item: texto, done: false }])
+    setSubtasks((p) => [...p, { id: crypto.randomUUID(), texto, concluido: false }])
     setNovaSubtask('')
   }
 
   function toggleSubtask(i: number) {
-    setSubtasks((p) => p.map((s, idx) => idx === i ? { ...s, done: !s.done } : s))
+    setSubtasks((p) => p.map((s, idx) => idx === i ? { ...s, concluido: !s.concluido } : s))
   }
 
   function removerSubtask(i: number) {
@@ -88,7 +99,7 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
     onClose()
   }
 
-  const subtasksDone  = subtasks.filter((s) => s.done).length
+  const subtasksDone  = subtasks.filter((s) => s.concluido).length
   const subtasksTotal = subtasks.length
 
   return (
@@ -218,13 +229,13 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
                 {subtasks.map((s, i) => (
                   <li key={i} className="group flex items-center gap-[0.375rem] px-[0.5rem] py-[0.25rem] rounded-lg hover:bg-surface-hover transition-colors">
                     <button type="button" onClick={() => toggleSubtask(i)} className="shrink-0">
-                      {s.done
-                        ? <CheckCircle className="w-[0.875rem] h-[0.875rem] text-status-green" strokeWidth={2} />
-                        : <Circle      className="w-[0.875rem] h-[0.875rem] text-ink-muted"    strokeWidth={1.75} />
+                      {s.concluido
+                        ? <CheckSquare className="w-[0.875rem] h-[0.875rem] text-status-green" strokeWidth={2} />
+                        : <Square      className="w-[0.875rem] h-[0.875rem] text-ink-muted"    strokeWidth={1.75} />
                       }
                     </button>
-                    <span className={`flex-1 text-[0.8125rem] ${s.done ? 'line-through text-ink-muted' : 'text-ink-secondary'}`}>
-                      {s.item}
+                    <span className={`flex-1 text-[0.8125rem] ${s.concluido ? 'line-through text-ink-muted' : 'text-ink-secondary'}`}>
+                      {s.texto}
                     </span>
                     <button
                       type="button"
