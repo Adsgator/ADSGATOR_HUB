@@ -80,6 +80,8 @@ interface NovoLancForm {
   tipo:       'receita' | 'custo_fixo' | 'custo_variavel'
   data:       string
   status:     'confirmado' | 'pendente'
+  categoria:  string
+  cliente_id: string
 }
 
 export default function FinanceiroPage() {
@@ -95,8 +97,9 @@ export default function FinanceiroPage() {
   const [loading,      setLoading]      = useState(true)
   const [periodoSel,   setPeriodoSel]   = useState(hoje)
   const [modalLanc,    setModalLanc]    = useState(false)
+  const [clientesLista, setClientesLista] = useState<{ id: string; nome: string }[]>([])
   const [novoLanc,     setNovoLanc]     = useState<NovoLancForm>({
-    descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado',
+    descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado', categoria: '', cliente_id: '',
   })
   const [salvandoLanc, setSalvandoLanc] = useState(false)
   const [erroLanc,     setErroLanc]     = useState('')
@@ -114,13 +117,15 @@ export default function FinanceiroPage() {
       doze.setMonth(doze.getMonth() - 12)
       const dozeStr = doze.toISOString().split('T')[0]
 
-      const [{ data: lancs }, { data: todosL }, { data: atr }, { data: config }, { data: historico }] = await Promise.all([
+      const [{ data: lancs }, { data: todosL }, { data: atr }, { data: config }, { data: historico }, { data: clientesData }] = await Promise.all([
         supabase.from('financeiro_lancamentos').select('*').gte('data', mesInicioStr).order('data', { ascending: false }),
         supabase.from('financeiro_lancamentos').select('*').gte('data', dozeStr).order('data', { ascending: true }),
         supabase.from('clientes').select('*').gt('dias_atraso', 0).neq('status', 'cancelado'),
         supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,tipo_tributacao,imposto_percentual').eq('agencia_id', 'adsgator-main').single(),
         supabase.from('historico_acoes').select('tipo, created_at').in('tipo', ['cliente_criado', 'cancelado']).order('created_at', { ascending: true }),
+        supabase.from('clientes').select('id, nome').in('status', ['ativo', 'onboarding', 'setup_trafego']).order('nome'),
       ])
+      setClientesLista((clientesData ?? []) as { id: string; nome: string }[])
 
       const lista = (lancs ?? []) as FinanceiroLancamento[]
       const todos = (todosL ?? []) as FinanceiroLancamento[]
@@ -219,16 +224,18 @@ export default function FinanceiroPage() {
     }
     setSalvandoLanc(true); setErroLanc('')
     const { error } = await supabase.from('financeiro_lancamentos').insert({
-      descricao: novoLanc.descricao.trim(),
-      valor:     parseFloat(novoLanc.valor),
-      tipo:      novoLanc.tipo,
-      data:      novoLanc.data,
-      status:    novoLanc.status,
+      descricao:  novoLanc.descricao.trim(),
+      valor:      parseFloat(novoLanc.valor),
+      tipo:       novoLanc.tipo,
+      data:       novoLanc.data,
+      status:     novoLanc.status,
+      ...(novoLanc.categoria  && { categoria:  novoLanc.categoria }),
+      ...(novoLanc.cliente_id && { cliente_id: novoLanc.cliente_id }),
     })
     setSalvandoLanc(false)
     if (error) { setErroLanc(error.message); return }
     setModalLanc(false)
-    setNovoLanc({ descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado' })
+    setNovoLanc({ descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado', categoria: '', cliente_id: '' })
     carregar()
   }
 
@@ -238,11 +245,13 @@ export default function FinanceiroPage() {
     const { error } = await supabase
       .from('financeiro_lancamentos')
       .update({
-        descricao: editandoLanc.descricao,
-        valor:     editandoLanc.valor,
-        tipo:      editandoLanc.tipo,
-        data:      editandoLanc.data,
-        status:    editandoLanc.status,
+        descricao:  editandoLanc.descricao,
+        valor:      editandoLanc.valor,
+        tipo:       editandoLanc.tipo,
+        data:       editandoLanc.data,
+        status:     editandoLanc.status,
+        categoria:  (editandoLanc as unknown as Record<string, unknown>)['categoria'] as string | undefined ?? null,
+        cliente_id: (editandoLanc as unknown as Record<string, unknown>)['cliente_id'] as string | undefined ?? null,
       })
       .eq('id', editandoLanc.id)
     setSalvandoLanc(false)
@@ -787,6 +796,32 @@ export default function FinanceiroPage() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Categoria</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Tráfego, Ferramentas…"
+                    value={novoLanc.categoria}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, categoria: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Cliente (opcional)</label>
+                  <select
+                    value={novoLanc.cliente_id}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, cliente_id: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="">Nenhum</option>
+                    {clientesLista.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-[0.5rem] pt-[0.5rem]">
                 <Button variant="ghost" size="md" onClick={() => setModalLanc(false)}>
                   Cancelar
@@ -874,6 +909,31 @@ export default function FinanceiroPage() {
                     <option value="confirmado">Confirmado</option>
                     <option value="pendente">Pendente</option>
                     <option value="cancelado">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Categoria</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Tráfego, Ferramentas…"
+                    value={(editandoLanc as unknown as Record<string, unknown>)['categoria'] as string ?? ''}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, categoria: e.target.value } as FinanceiroLancamento : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Cliente (opcional)</label>
+                  <select
+                    value={(editandoLanc as unknown as Record<string, unknown>)['cliente_id'] as string ?? ''}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, cliente_id: e.target.value } as FinanceiroLancamento : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="">Nenhum</option>
+                    {clientesLista.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
                   </select>
                 </div>
               </div>
