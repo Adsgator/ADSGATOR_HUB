@@ -209,6 +209,7 @@ export interface Tarefa {
   data_prazo?:     string
   responsavel_id?: string
   checklist?:      ChecklistItem[]
+  posicao?:        number
   created_at:      string
   updated_at:      string
 }

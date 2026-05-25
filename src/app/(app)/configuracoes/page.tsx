@@ -3,14 +3,14 @@
 import React, { useEffect, useState } from 'react'
 import {
   Save, User, Bell, Plug, DollarSign,
-  Palette, Users, Check, History,
+  Palette, Users, Check, History, Download, Upload,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 
-type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'auditoria'
+type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'backup' | 'auditoria'
 
 const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'perfil',        label: 'Perfil',         icon: User       },
@@ -19,6 +19,7 @@ const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'financeiro',    label: 'Financeiro',      icon: DollarSign },
   { id: 'aparencia',     label: 'Aparência',       icon: Palette    },
   { id: 'equipe',        label: 'Equipe',          icon: Users      },
+  { id: 'backup',        label: 'Backup',          icon: Download   },
   { id: 'auditoria',     label: 'Auditoria',       icon: History    },
 ]
 
@@ -502,6 +503,101 @@ function AbaEquipe() {
   )
 }
 
+// ── ABA BACKUP ──────────────────────────────────────────────────────────────
+function AbaBackup() {
+  const [exportando, setExportando] = useState(false)
+  const [feedback, setFeedback] = useState('')
+
+  async function exportarDados() {
+    setExportando(true)
+    setFeedback('')
+    try {
+      const [clientes, tarefas, lancamentos] = await Promise.all([
+        supabase.from('clientes').select('*'),
+        supabase.from('tarefas').select('*'),
+        supabase.from('financeiro_lancamentos').select('*'),
+      ])
+
+      const backup = {
+        timestamp: new Date().toISOString(),
+        versao: '1.0',
+        dados: {
+          clientes: clientes.data ?? [],
+          tarefas: tarefas.data ?? [],
+          lancamentos: lancamentos.data ?? [],
+        },
+      }
+
+      const json = JSON.stringify(backup, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `backup-adsgator-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+
+      setFeedback('✓ Backup exportado com sucesso!')
+    } catch (err) {
+      setFeedback('✗ Erro ao exportar backup. Tente novamente.')
+    } finally {
+      setExportando(false)
+    }
+  }
+
+  return (
+    <div className="max-w-[32rem] flex flex-col gap-[2rem]">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
+        <div className="flex items-start justify-between mb-[1rem]">
+          <div>
+            <p className="text-ink-primary font-semibold text-[0.9375rem]">Exportar Dados</p>
+            <p className="text-ink-muted text-[0.75rem] mt-[0.25rem]">Baixe um arquivo JSON com todos os seus dados</p>
+          </div>
+          <Download className="w-[1.25rem] h-[1.25rem] text-ads-500 shrink-0" strokeWidth={1.75} />
+        </div>
+        <p className="text-ink-secondary text-[0.8125rem] leading-relaxed mb-[1rem]">
+          Inclui: clientes, tarefas, histórico financeiro e configurações. Use para backup pessoal ou migração.
+        </p>
+        <button
+          onClick={exportarDados}
+          disabled={exportando}
+          className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50"
+        >
+          {exportando ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+          {exportando ? 'Exportando…' : 'Exportar Dados'}
+        </button>
+        {feedback && <p className={`text-[0.8125rem] mt-[0.75rem] ${feedback.startsWith('✓') ? 'text-status-green' : 'text-status-red'}`}>{feedback}</p>}
+      </div>
+
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem] opacity-50">
+        <div className="flex items-start justify-between mb-[1rem]">
+          <div>
+            <p className="text-ink-primary font-semibold text-[0.9375rem]">Importar Dados</p>
+            <p className="text-ink-muted text-[0.75rem] mt-[0.25rem]">Restaurar de um arquivo JSON anterior</p>
+          </div>
+          <Upload className="w-[1.25rem] h-[1.25rem] text-ink-muted shrink-0" strokeWidth={1.75} />
+        </div>
+        <p className="text-ink-secondary text-[0.8125rem] leading-relaxed mb-[1rem]">
+          Funcionalidade disponível em breve. Use o painel Supabase para restaurar dados manualmente.
+        </p>
+        <button
+          disabled
+          className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-surface-elevated text-ink-muted text-[0.875rem] font-semibold transition-colors cursor-not-allowed"
+        >
+          <Upload className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+          Importar Dados (em breve)
+        </button>
+      </div>
+
+      <div className="bg-status-blue/10 border border-status-blue/20 rounded-lg p-[1rem]">
+        <p className="text-status-blue text-[0.8125rem] leading-relaxed">
+          <strong>Dica:</strong> Realize backups regularmente. Para restaurações em massa, acesse o painel Supabase Dashboard e use a seção de Backups & Recovery.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── PÁGINA PRINCIPAL ────────────────────────────────────────────────────────
 export default function ConfiguracoesPage() {
   const [aba, setAba] = useState<AbaId>('perfil')
@@ -513,6 +609,7 @@ export default function ConfiguracoesPage() {
     financeiro:   <AbaFinanceiro />,
     aparencia:    <AbaAparencia />,
     equipe:       <AbaEquipe />,
+    backup:       <AbaBackup />,
     auditoria:    <AuditLogViewer />,
   }
 

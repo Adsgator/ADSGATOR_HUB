@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   Plus, CheckSquare, Square, Clock, User,
   ChevronDown, Trash2, RefreshCw, AlarmClock,
@@ -292,6 +293,7 @@ export default function TarefasPage() {
       .select('*, clientes(nome)')
       .neq('status', 'feito')
       .order('data_prazo', { ascending: true, nullsFirst: false })
+      .order('posicao', { ascending: true })
 
     const lista = (data ?? []).map((t: Tarefa & { clientes?: { nome: string } }) => ({
       ...t,
@@ -350,6 +352,28 @@ export default function TarefasPage() {
   const energyManha  = Math.round(Math.min(100, (totalHoje / totalGeral) * 150))
   const energyTarde  = Math.round(Math.min(100, (totalSemana / totalGeral) * 110))
   const energyNoite  = Math.round(Math.min(100, (totalMais / totalGeral) * 100))
+
+  async function handleDragEnd(result: DropResult) {
+    const { source, destination } = result
+    if (!destination) return
+    if (source.index === destination.index) return
+
+    const lista = [...filtradas]
+    const [moved] = lista.splice(source.index, 1)
+    lista.splice(destination.index, 0, moved)
+
+    setTarefas(lista)
+
+    // Salvar novas posições no Supabase
+    const updates = lista.map((t, idx) => ({
+      id: t.id,
+      posicao: idx,
+    }))
+
+    for (const upd of updates) {
+      await supabase.from('tarefas').update({ posicao: upd.posicao }).eq('id', upd.id)
+    }
+  }
 
   return (
     <MainLayout
@@ -413,41 +437,71 @@ export default function TarefasPage() {
               <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Nenhuma tarefa pendente com esse filtro.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-[1.5rem]">
-              {Object.entries(grupos).map(([grupo, items]) => {
-                if (items.length === 0) return null
-                const gcfg = GRUPO_CONFIG[grupo]
-                const GrupoIcon = gcfg.icon
-                return (
-                  <div key={grupo}>
-                    <div className="flex items-center gap-[0.5rem] mb-[0.625rem]">
-                      <div className={cn('w-[1.5rem] h-[1.5rem] rounded-[0.375rem] flex items-center justify-center', gcfg.glow)}>
-                        <GrupoIcon className={cn('w-[0.75rem] h-[0.75rem]', gcfg.color)} strokeWidth={2} />
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className="flex flex-col gap-[1.5rem]">
+                {Object.entries(grupos).map(([grupo, items]) => {
+                  if (items.length === 0) return null
+                  const gcfg = GRUPO_CONFIG[grupo]
+                  const GrupoIcon = gcfg.icon
+                  return (
+                    <div key={grupo}>
+                      <div className="flex items-center gap-[0.5rem] mb-[0.625rem]">
+                        <div className={cn('w-[1.5rem] h-[1.5rem] rounded-[0.375rem] flex items-center justify-center', gcfg.glow)}>
+                          <GrupoIcon className={cn('w-[0.75rem] h-[0.75rem]', gcfg.color)} strokeWidth={2} />
+                        </div>
+                        <h3 className={cn('font-semibold text-[0.875rem]', gcfg.color)}>{grupo}</h3>
+                        <span className="text-[0.6875rem] text-ink-muted bg-surface-hover border border-surface-border px-[0.375rem] py-[0.0625rem] rounded-full">
+                          {items.length}
+                        </span>
+                        <div className="flex-1 h-[1px] bg-surface-border" />
                       </div>
-                      <h3 className={cn('font-semibold text-[0.875rem]', gcfg.color)}>{grupo}</h3>
-                      <span className="text-[0.6875rem] text-ink-muted bg-surface-hover border border-surface-border px-[0.375rem] py-[0.0625rem] rounded-full">
-                        {items.length}
-                      </span>
-                      <div className="flex-1 h-[1px] bg-surface-border" />
+                      <Droppable droppableId={grupo}>
+                        {(provided, snapshot) => (
+                          <div
+                            className="flex flex-col gap-[0.5rem]"
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            style={{
+                              backgroundColor: snapshot.isDraggingOver ? 'var(--surface-hover)' : 'transparent',
+                              borderRadius: '0.5rem',
+                              padding: snapshot.isDraggingOver ? '0.5rem' : '0',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {items.map((t, idx) => (
+                              <Draggable key={t.id} draggableId={t.id} index={idx}>
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    style={{
+                                      opacity: snapshot.isDragging ? 0.5 : 1,
+                                      ...provided.draggableProps.style,
+                                    }}
+                                  >
+                                    <TarefaAccordion
+                                      t={t}
+                                      expanded={expanded === t.id}
+                                      onToggle={() => setExpanded(expanded === t.id ? null : t.id)}
+                                      onConcluir={() => concluir(t)}
+                                      onAdiar={(d, u) => adiar(t, d, u)}
+                                      onDeletar={() => deletar(t.id)}
+                                      onEditar={() => { setTarefaEdit(t); setModalAberto(true) }}
+                                    />
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
                     </div>
-                    <div className="flex flex-col gap-[0.5rem]">
-                      {items.map((t) => (
-                        <TarefaAccordion
-                          key={t.id}
-                          t={t}
-                          expanded={expanded === t.id}
-                          onToggle={() => setExpanded(expanded === t.id ? null : t.id)}
-                          onConcluir={() => concluir(t)}
-                          onAdiar={(d, u) => adiar(t, d, u)}
-                          onDeletar={() => deletar(t.id)}
-                          onEditar={() => { setTarefaEdit(t); setModalAberto(true) }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            </DragDropContext>
           )}
         </div>
 
