@@ -32,18 +32,18 @@ export function InputPremium({
         )}
         <input
           className={`w-full px-[1rem] py-[0.75rem] ${icon ? 'pl-[2.75rem]' : ''}
-            rounded-lg bg-surface-card border border-surface-border text-ink-primary
+            rounded-lg bg-surface-card border border-surface-border/40 text-ink-primary
             placeholder:text-ink-muted text-[0.875rem]
             transition-all duration-150
-            focus:outline-none focus:border-ads-500/50 focus:ring-1 focus:ring-ads-500/20
+            focus:outline-none focus:border-ads-500/50 focus:ring-2 focus:ring-ads-500/20
             disabled:opacity-50 disabled:cursor-not-allowed
-            ${error ? 'border-red-500/50 focus:ring-red-500/20' : ''}
+            ${error ? 'border-status-red/50 focus:ring-status-red/20' : ''}
             ${className}`}
           {...props}
         />
       </div>
       {hint && <p className="text-[0.75rem] text-ink-muted">{hint}</p>}
-      {error && <p className="text-[0.75rem] text-red-400">{error}</p>}
+      {error && <p className="text-[0.75rem] text-status-red">{error}</p>}
     </div>
   )
 }

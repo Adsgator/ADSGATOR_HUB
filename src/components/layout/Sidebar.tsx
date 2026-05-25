@@ -80,7 +80,7 @@ export function Sidebar() {
         className={cn(
           'sidebar-shell group/sidebar absolute inset-y-0 left-0 z-40',
           'flex flex-col',
-          'bg-surface-card dark:border-r dark:border-surface-border',
+          'bg-surface-card border-r border-surface-border/15',
           'shadow-[1px_0_0_0_rgba(0,0,0,0.08)]',
           'w-[var(--sidebar-w)] hover:w-[var(--sidebar-expanded)]',
           'hover:shadow-xl dark:hover:shadow-2xl dark:hover:shadow-black/40',

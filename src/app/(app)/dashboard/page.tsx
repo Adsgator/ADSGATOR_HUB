@@ -25,6 +25,8 @@ import { WeatherClock }          from '@/components/dashboard/WeatherClock'
 import { DRESparkline }          from '@/components/dashboard/DRESparkline'
 import { AlertasCriticos }       from '@/components/dashboard/AlertasCriticos'
 import { GeminiChat }            from '@/components/dashboard/GeminiChat'
+import { ActivityFeed }          from '@/components/dashboard/ActivityFeed'
+import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
 import { supabase }              from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -68,6 +70,10 @@ const DEFAULT_LAYOUTS: Layouts = {
     // ROW 13-15: Alertas + Gemini
     { i: 'alertas-criticos',  x: 0,  y: 13, w: 6,  h: 4, minW: 4, minH: 2 },
     { i: 'gemini-chat',       x: 6,  y: 13, w: 6,  h: 4, minW: 4, minH: 2 },
+    // ROW 17-20: Clientes em Foco
+    { i: 'clientes-foco',     x: 0,  y: 17, w: 8,  h: 4, minW: 6, minH: 3 },
+    // ROW 17: Activity Feed
+    { i: 'activity-feed',     x: 8,  y: 17, w: 4,  h: 4, minW: 3, minH: 3 },
   ],
   lg: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 6 },
@@ -81,6 +87,8 @@ const DEFAULT_LAYOUTS: Layouts = {
     { i: 'kpi-saldo',         x: 8,  y: 10, w: 2,  h: 3 },
     { i: 'alertas-criticos',  x: 0,  y: 13, w: 5,  h: 4 },
     { i: 'gemini-chat',       x: 5,  y: 13, w: 5,  h: 4 },
+    { i: 'clientes-foco',     x: 0,  y: 17, w: 6,  h: 4 },
+    { i: 'activity-feed',     x: 6,  y: 17, w: 4,  h: 4 },
   ],
   md: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 5 },
@@ -94,6 +102,8 @@ const DEFAULT_LAYOUTS: Layouts = {
     { i: 'kpi-saldo',         x: 3,  y: 21, w: 3,  h: 3 },
     { i: 'alertas-criticos',  x: 0,  y: 24, w: 3,  h: 4 },
     { i: 'gemini-chat',       x: 3,  y: 24, w: 3,  h: 4 },
+    { i: 'clientes-foco',     x: 0,  y: 28, w: 6,  h: 4 },
+    { i: 'activity-feed',     x: 0,  y: 32, w: 6,  h: 4 },
   ],
   sm: [
     { i: 'dre-sparkline',     x: 0, y: 0,  w: 2, h: 5 },
@@ -107,12 +117,15 @@ const DEFAULT_LAYOUTS: Layouts = {
     { i: 'kpi-saldo',         x: 0, y: 32, w: 2, h: 3 },
     { i: 'alertas-criticos',  x: 0, y: 35, w: 2, h: 4 },
     { i: 'gemini-chat',       x: 0, y: 39, w: 2, h: 4 },
+    { i: 'clientes-foco',     x: 0, y: 43, w: 2, h: 4 },
+    { i: 'activity-feed',     x: 0, y: 47, w: 2, h: 4 },
   ],
 }
 
 export default function DashboardPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
   const [saldoGoogle, setSaldoGoogle] = useState<number | null>(null)
+  const [mostrarWizard, setMostrarWizard] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [layouts, setLayouts] = useState<Record<string, any[]>>(DEFAULT_LAYOUTS)
   const [containerWidth, setContainerWidth] = useState(1200)
@@ -130,11 +143,16 @@ export default function DashboardPage() {
     return () => ro.disconnect()
   }, [measureWidth])
 
-  // Carregar layout salvo
+  // Carregar layout salvo + verificar onboarding
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
       if (saved) setLayouts(JSON.parse(saved) as Layouts)
+    } catch {}
+    try {
+      if (!localStorage.getItem('adsgator_onboarding_done')) {
+        setMostrarWizard(true)
+      }
     } catch {}
   }, [])
 
@@ -183,6 +201,26 @@ export default function DashboardPage() {
     return acoes.sort((a, b) => ORDEM[a.urgencia] - ORDEM[b.urgencia]).slice(0, 5)
   }, [dados])
 
+  async function handleCriarTaskDeAcao(cliente: Cliente, descricao: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    const prazo = new Date()
+    prazo.setDate(prazo.getDate() + 1)
+    const { error } = await supabase.from('tarefas').insert({
+      titulo: `Ação: ${cliente.nome.split(' ')[0]}`,
+      descricao,
+      prioridade: 'alto',
+      status: 'pendente',
+      cliente_id: cliente.id,
+      data_prazo: prazo.toISOString(),
+      user_id: user?.id,
+    })
+    if (error) {
+      toast.error('Erro ao criar task.')
+    } else {
+      toast.success(`Task criada para ${cliente.nome.split(' ')[0]}!`)
+    }
+  }
+
   async function handleCongelar(clienteId: string) {
     await supabase.from('clientes').update({ status: 'congelado' }).eq('id', clienteId)
     recarregar()
@@ -212,6 +250,7 @@ export default function DashboardPage() {
   )
 
   return (
+    <>
     <MainLayout
       title="Dashboard"
       subtitle={`Semana de ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
@@ -324,7 +363,7 @@ export default function DashboardPage() {
             <BentoCard title="Ações do Dia" subtitle="Prioridades de hoje">
               {loading || acoesDoDia.length === 0
                 ? <div className="flex items-center justify-center h-full text-ink-muted text-[0.8125rem]">Nenhuma ação pendente</div>
-                : <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} />
+                : <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} onCriarTask={handleCriarTaskDeAcao} />
               }
             </BentoCard>
           </div>
@@ -416,9 +455,100 @@ export default function DashboardPage() {
               <GeminiChat />
             </BentoCard>
           </div>
+
+          {/* ── CLIENTES EM FOCO ─────────────────── */}
+          <div key="clientes-foco">
+            {(() => {
+              const emFoco = dados
+                .map(({ cliente }) => cliente)
+                .filter((c) => (c.dias_atraso ?? 0) > 0 || c.status === 'congelado')
+                .sort((a, b) => (b.dias_atraso ?? 0) - (a.dias_atraso ?? 0))
+                .slice(0, 5)
+              return (
+                <BentoCard
+                  title="Clientes em Foco"
+                  subtitle={emFoco.length > 0 ? `${emFoco.length} cliente${emFoco.length > 1 ? 's' : ''} precisam de atenção` : 'Tudo em dia'}
+                  actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
+                >
+                  {loading ? (
+                    <div className="flex gap-[0.75rem]">
+                      {Array.from({ length: 4 }).map((_, i) => <div key={i} className="flex-1 h-[5rem] rounded-xl skeleton-shimmer" />)}
+                    </div>
+                  ) : emFoco.length === 0 ? (
+                    <div className="flex items-center justify-center h-full gap-[0.5rem] text-status-green">
+                      <span className="text-[1.5rem]">✓</span>
+                      <p className="text-[0.875rem] font-medium">Nenhum cliente precisando de atenção</p>
+                    </div>
+                  ) : (
+                    <div className="flex gap-[0.75rem] overflow-x-auto pb-[0.25rem]">
+                      {emFoco.map((c) => {
+                        const iniciais = c.nome.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
+                        const isInadimplente = (c.dias_atraso ?? 0) > 0
+                        const urgencia = (c.dias_atraso ?? 0) >= 30 ? 'critica' : isInadimplente ? 'atencao' : 'congelado'
+                        const corBorda = urgencia === 'critica' ? 'border-status-red/40' : urgencia === 'atencao' ? 'border-status-orange/40' : 'border-status-blue/40'
+                        const corBg    = urgencia === 'critica' ? 'bg-status-red/5'   : urgencia === 'atencao' ? 'bg-status-orange/5'   : 'bg-status-blue/5'
+                        const corTag   = urgencia === 'critica' ? 'text-status-red bg-status-red/10' : urgencia === 'atencao' ? 'text-status-orange bg-status-orange/10' : 'text-status-blue bg-status-blue/10'
+                        return (
+                          <div key={c.id} className={`flex flex-col gap-[0.5rem] p-[0.75rem] rounded-xl border ${corBorda} ${corBg} min-w-[9rem] flex-shrink-0`}>
+                            <div className="flex items-center gap-[0.5rem]">
+                              <div className="w-[1.75rem] h-[1.75rem] rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
+                                <span className="text-ink-secondary text-[0.625rem] font-bold">{iniciais}</span>
+                              </div>
+                              <p className="text-ink-primary text-[0.8125rem] font-semibold leading-tight truncate">{c.nome}</p>
+                            </div>
+                            {c.nicho && (
+                              <span className="text-ink-muted text-[0.6875rem] truncate">{c.nicho}</span>
+                            )}
+                            <span className={`self-start text-[0.625rem] font-semibold px-[0.375rem] py-[0.125rem] rounded-full ${corTag}`}>
+                              {urgencia === 'critica' ? `${c.dias_atraso}d atraso` : urgencia === 'atencao' ? `${c.dias_atraso}d atraso` : 'Congelado'}
+                            </span>
+                            <div className="flex gap-[0.25rem] mt-auto">
+                              {c.whatsapp && (
+                                <a
+                                  href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`}
+                                  target="_blank" rel="noreferrer"
+                                  title="WhatsApp"
+                                  className="w-[1.5rem] h-[1.5rem] flex items-center justify-center rounded-md bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
+                                >
+                                  <MessageCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                                </a>
+                              )}
+                              <a
+                                href={`/clientes/${c.id}`}
+                                title="Ver cliente"
+                                className="w-[1.5rem] h-[1.5rem] flex items-center justify-center rounded-md bg-surface-hover text-ink-secondary hover:text-ink-primary transition-colors"
+                              >
+                                <ExternalLink className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                              </a>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </BentoCard>
+              )
+            })()}
+          </div>
+
+          {/* ── ACTIVITY FEED ───────────────────────── */}
+          <div key="activity-feed">
+            <BentoCard
+              title="Atividade Recente"
+              subtitle="Últimas 24h"
+              actions={<a href="/configuracoes" className="text-ads-500 text-[0.75rem] hover:underline">Ver auditoria</a>}
+            >
+              <ActivityFeed />
+            </BentoCard>
+          </div>
         </RGLResponsive>
         </div>
       </div>
     </MainLayout>
+
+    {mostrarWizard && (
+      <OnboardingWizard onConcluir={() => setMostrarWizard(false)} />
+    )}
+    </>
   )
 }

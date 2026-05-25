@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, MessageCircle, Send, Copy, CheckCheck } from 'lucide-react'
 import type { Cliente } from '@/lib/types'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   cliente: Cliente
@@ -89,9 +90,7 @@ export function WhatsAppTemplateModal({ cliente, onClose }: Props) {
               <p className="text-ink-muted text-[0.75rem]">{cliente.nome}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-[2rem] h-[2rem] flex items-center justify-center rounded hover:bg-surface-hover text-ink-muted transition-colors">
-            <X className="w-[1rem] h-[1rem]" strokeWidth={2} />
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose} icon={<X className="w-[1rem] h-[1rem]" strokeWidth={2} />} className="w-[2rem] px-0" />
         </div>
 
         <div className="p-[1.5rem] flex flex-col gap-[1.25rem]">
@@ -136,23 +135,28 @@ export function WhatsAppTemplateModal({ cliente, onClose }: Props) {
 
           {/* Ações */}
           <div className="flex gap-[0.75rem]">
-            <button
+            <Button
+              variant="secondary"
+              size="lg"
               onClick={copiarTexto}
-              className="flex items-center gap-[0.375rem] h-[2.5rem] px-[1rem] rounded-lg bg-surface-hover border border-surface-border text-ink-secondary text-[0.875rem] font-medium hover:text-ink-primary transition-colors"
-            >
-              {copiado
-                ? <><CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Copiado</>
-                : <><Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} /> Copiar</>
+              icon={copiado
+                ? <CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                : <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
               }
-            </button>
-            <button
+            >
+              {copiado ? 'Copiado' : 'Copiar'}
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
               onClick={enviarWhatsApp}
               disabled={!temNumero || !texto.trim()}
-              className="flex-1 flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded-lg bg-status-green text-white text-[0.875rem] font-semibold hover:opacity-90 transition-opacity disabled:opacity-40"
+              icon={<Send className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+              className="bg-status-green hover:bg-status-green/90"
             >
-              <Send className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
               Abrir no WhatsApp
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -332,7 +332,6 @@ supabase/functions/
 
 ## O que Está Pendente (Lacunas Reais)
 
-- [ ] **BUG:** `clientes/[id]/page.tsx` tem conteúdo de `clientes/novo/page.tsx` — página de detalhe do cliente não existe
 - [ ] `/api/ia/hashtags` — rota ausente (botão "Gerar Hashtags" em Marketing não funciona)
 - [ ] Analytics — integração real Google Ads + GA4 (UI pronta, falta configurar credenciais e data binding)
 - [ ] Notificações WhatsApp via Twilio (templates existem, envio real pendente)

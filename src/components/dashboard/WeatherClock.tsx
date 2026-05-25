@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Thermometer, CloudRain, Circle } from 'lucide-react'
+import { Thermometer, CloudRain } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 interface WeatherData {
   temp:    number | null
@@ -14,34 +15,102 @@ interface StatusAPI {
   status: 'ok' | 'warn' | 'error'
 }
 
-const API_STATUS: StatusAPI[] = [
-  { label: 'Supabase',   status: 'ok'   },
-  { label: 'Google Ads', status: 'ok'   },
-  { label: 'Asaas',      status: 'warn' },
-]
+// ── Relógio analógico SVG ────────────────────────────────────────────────────
+function AnalogClock({ date }: { date: Date }) {
+  const s = date.getSeconds()
+  const m = date.getMinutes() + s / 60
+  const h = (date.getHours() % 12) + m / 60
 
-const STATUS_COLOR = {
-  ok:    'text-status-green',
-  warn:  'text-status-orange',
-  error: 'text-status-red',
-} as const
+  const secDeg = s * 6
+  const minDeg = m * 6
+  const hrDeg  = h * 30
 
-export function WeatherClock() {
-  const [hora,    setHora]    = useState('')
-  const [data,    setData]    = useState('')
-  const [weather, setWeather] = useState<WeatherData>({ temp: null, chuva: null, chuva2h: null })
+  const cx = 50
+  const cy = 50
+  const r  = 46
 
-  useEffect(() => {
-    function tick() {
-      const now = new Date()
-      setHora(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
-      setData(now.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }))
+  // Marcadores de hora
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i * 30 - 90) * (Math.PI / 180)
+    const inner = i % 3 === 0 ? r - 10 : r - 7
+    return {
+      x1: cx + inner * Math.cos(angle),
+      y1: cy + inner * Math.sin(angle),
+      x2: cx + r * Math.cos(angle),
+      y2: cy + r * Math.sin(angle),
+      major: i % 3 === 0,
     }
-    tick()
-    const id = setInterval(tick, 30_000)
+  })
+
+  return (
+    <svg viewBox="0 0 100 100" className="w-[5rem] h-[5rem] shrink-0">
+      {/* Face */}
+      <circle cx={cx} cy={cy} r={r} className="fill-surface-elevated stroke-surface-border" strokeWidth="1" />
+
+      {/* Ticks */}
+      {ticks.map((t, i) => (
+        <line
+          key={i}
+          x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+          strokeWidth={t.major ? 2 : 1}
+          className={t.major ? 'stroke-ink-secondary' : 'stroke-ink-muted'}
+          strokeLinecap="round"
+        />
+      ))}
+
+      {/* Ponteiro hora */}
+      <line
+        x1={cx} y1={cy}
+        x2={cx + 24 * Math.cos((hrDeg - 90) * (Math.PI / 180))}
+        y2={cy + 24 * Math.sin((hrDeg - 90) * (Math.PI / 180))}
+        strokeWidth="3"
+        strokeLinecap="round"
+        className="stroke-ink-primary"
+      />
+
+      {/* Ponteiro minuto */}
+      <line
+        x1={cx} y1={cy}
+        x2={cx + 34 * Math.cos((minDeg - 90) * (Math.PI / 180))}
+        y2={cy + 34 * Math.sin((minDeg - 90) * (Math.PI / 180))}
+        strokeWidth="2"
+        strokeLinecap="round"
+        className="stroke-ink-primary"
+      />
+
+      {/* Ponteiro segundo */}
+      <line
+        x1={cx} y1={cy}
+        x2={cx + 38 * Math.cos((secDeg - 90) * (Math.PI / 180))}
+        y2={cy + 38 * Math.sin((secDeg - 90) * (Math.PI / 180))}
+        strokeWidth="1"
+        strokeLinecap="round"
+        className="stroke-ads-500"
+      />
+
+      {/* Centro */}
+      <circle cx={cx} cy={cy} r="3" className="fill-ads-500" />
+    </svg>
+  )
+}
+
+// ── Componente principal ─────────────────────────────────────────────────────
+export function WeatherClock() {
+  const [now,     setNow]     = useState(new Date())
+  const [weather, setWeather] = useState<WeatherData>({ temp: null, chuva: null, chuva2h: null })
+  const [apis,    setApis]    = useState<StatusAPI[]>([
+    { label: 'Supabase',   status: 'warn' },
+    { label: 'Google Ads', status: 'warn' },
+    { label: 'Asaas',      status: 'warn' },
+  ])
+
+  // Tick a cada segundo para o analógico
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1_000)
     return () => clearInterval(id)
   }, [])
 
+  // Clima
   useEffect(() => {
     fetch('/api/weather')
       .then((r) => r.json() as Promise<WeatherData>)
@@ -49,27 +118,88 @@ export function WeatherClock() {
       .catch(() => {})
   }, [])
 
+  // Status APIs dinâmico
+  useEffect(() => {
+    async function checkApis() {
+      const results: StatusAPI[] = []
+
+      // Supabase
+      try {
+        const t0 = Date.now()
+        const { error } = await supabase.from('clientes').select('id').limit(1)
+        const ms = Date.now() - t0
+        results.push({ label: 'Supabase', status: error ? 'error' : ms < 2000 ? 'ok' : 'warn' })
+      } catch {
+        results.push({ label: 'Supabase', status: 'error' })
+      }
+
+      // Google Ads — verifica se algum cliente tem integração ativa
+      try {
+        const { data } = await supabase
+          .from('clientes')
+          .select('id')
+          .eq('google_ads_enabled', true)
+          .limit(1)
+          .maybeSingle()
+        results.push({ label: 'Google Ads', status: data ? 'ok' : 'warn' })
+      } catch {
+        results.push({ label: 'Google Ads', status: 'warn' })
+      }
+
+      // Asaas — verifica se algum cliente tem asaas_id
+      try {
+        const { data } = await supabase
+          .from('clientes')
+          .select('id')
+          .not('asaas_id', 'is', null)
+          .limit(1)
+          .maybeSingle()
+        results.push({ label: 'Asaas', status: data ? 'ok' : 'warn' })
+      } catch {
+        results.push({ label: 'Asaas', status: 'warn' })
+      }
+
+      setApis(results)
+    }
+
+    checkApis()
+    const id = setInterval(checkApis, 60_000)
+    return () => clearInterval(id)
+  }, [])
+
+  const hora = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const data = now.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
+
+  const STATUS_COLOR = {
+    ok:    'fill-status-green text-status-green',
+    warn:  'fill-status-orange text-status-orange',
+    error: 'fill-status-red text-status-red',
+  } as const
+
   return (
     <div className="p-[1.25rem] flex flex-col gap-[0.75rem] h-full">
-      {/* Relógio */}
-      <div>
-        <p className="text-ink-primary text-[3.5rem] font-black tabular-nums leading-none tracking-tight">{hora}</p>
-        <p className="text-ink-secondary text-sm capitalize mt-[0.25rem]">{data}</p>
+      {/* Relógio — analógico + digital lado a lado */}
+      <div className="flex items-center gap-[1rem]">
+        <AnalogClock date={now} />
+        <div>
+          <p className="text-ink-primary text-[2rem] font-black tabular-nums leading-none tracking-tight">{hora}</p>
+          <p className="text-ink-secondary text-[0.8125rem] capitalize mt-[0.25rem]">{data}</p>
+        </div>
       </div>
 
       {/* Separador */}
-      <div className="h-px bg-surface-border my-[0.25rem]" />
+      <div className="h-px bg-surface-border/40 my-[0.125rem]" />
 
       {/* Clima */}
       {weather.temp !== null && (
-        <div className="flex items-center gap-[1rem]">
-          <div className="flex items-center gap-[0.5rem]">
-            <Thermometer className="w-5 h-5 text-status-orange" strokeWidth={1.75} />
-            <span className="text-ink-primary text-lg font-semibold">{weather.temp}°C</span>
+        <div className="flex items-center gap-[0.75rem]">
+          <div className="flex items-center gap-[0.375rem]">
+            <Thermometer className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.75} />
+            <span className="text-ink-primary text-[1rem] font-semibold">{weather.temp}°C</span>
           </div>
           {weather.chuva2h !== null && weather.chuva2h > 0 && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-status-blue/10 text-status-blue text-xs font-medium">
-              <CloudRain className="w-3 h-3 mr-1" strokeWidth={1.75} />
+            <span className="inline-flex items-center gap-[0.25rem] px-[0.5rem] py-[0.125rem] rounded-full bg-status-blue/10 text-status-blue text-[0.75rem] font-medium">
+              <CloudRain className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
               {weather.chuva2h}% chuva
             </span>
           )}
@@ -78,15 +208,14 @@ export function WeatherClock() {
 
       {/* Status das APIs */}
       <div>
-        <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold mb-[0.5rem]">Status APIs</p>
-        <div className="grid grid-cols-3 gap-2">
-          {API_STATUS.map(({ label, status }) => (
-            <div key={label} className="flex items-center gap-[0.375rem]" title={label}>
-              <Circle
-                className={`w-2 h-2 fill-current ${STATUS_COLOR[status]}`}
-                strokeWidth={0}
-              />
-              <span className="text-ink-secondary text-[0.6875rem] truncate">{label}</span>
+        <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold mb-[0.375rem]">Status APIs</p>
+        <div className="flex flex-col gap-[0.25rem]">
+          {apis.map(({ label, status }) => (
+            <div key={label} className="flex items-center gap-[0.375rem]">
+              <svg viewBox="0 0 8 8" className={`w-[0.5rem] h-[0.5rem] shrink-0 ${STATUS_COLOR[status]}`}>
+                <circle cx="4" cy="4" r="4" />
+              </svg>
+              <span className="text-ink-secondary text-[0.6875rem]">{label}</span>
             </div>
           ))}
         </div>

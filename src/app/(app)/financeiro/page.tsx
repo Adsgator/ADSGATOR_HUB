@@ -4,13 +4,15 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   TrendingUp, DollarSign, AlertCircle,
   MessageCircle, RefreshCw, Users, Download,
-  Target, Clock, Zap,
+  Target, Clock, Zap, Plus, X as XIcon,
+  Pencil, Copy, Trash2,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import type { FinanceiroLancamento, Cliente } from '@/lib/types'
 
@@ -71,7 +73,18 @@ function gerarCSV(lancamentos: FinanceiroLancamento[]): void {
   URL.revokeObjectURL(url)
 }
 
+// ── Modal de novo lançamento ─────────────────────────────────────────────────
+interface NovoLancForm {
+  descricao:  string
+  valor:      string
+  tipo:       'receita' | 'custo_fixo' | 'custo_variavel'
+  data:       string
+  status:     'confirmado' | 'pendente'
+}
+
 export default function FinanceiroPage() {
+  const hoje = new Date().toISOString().slice(0, 7)
+
   const [dre,          setDre]          = useState<DRE | null>(null)
   const [saude,        setSaude]        = useState<SaudeSaaS | null>(null)
   const [lancamentos,  setLancamentos]  = useState<FinanceiroLancamento[]>([])
@@ -80,12 +93,21 @@ export default function FinanceiroPage() {
   const [sparkData,    setSparkData]    = useState<SparkMes[]>([])
   const [projecao,     setProjecao]     = useState<ProjecaoMes[]>([])
   const [loading,      setLoading]      = useState(true)
+  const [periodoSel,   setPeriodoSel]   = useState(hoje)
+  const [modalLanc,    setModalLanc]    = useState(false)
+  const [novoLanc,     setNovoLanc]     = useState<NovoLancForm>({
+    descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado',
+  })
+  const [salvandoLanc, setSalvandoLanc] = useState(false)
+  const [erroLanc,     setErroLanc]     = useState('')
+  const [editandoLanc, setEditandoLanc] = useState<FinanceiroLancamento | null>(null)
+  const [deletandoId,  setDeletandoId]  = useState<string | null>(null)
 
   const carregar = useCallback(async () => {
     setLoading(true)
     try {
-      const mesInicio = new Date()
-      mesInicio.setDate(1)
+      const [ano, mes] = periodoSel.split('-')
+      const mesInicio  = new Date(Number(ano), Number(mes) - 1, 1)
       const mesInicioStr = mesInicio.toISOString().split('T')[0]
 
       const doze = new Date()
@@ -187,9 +209,65 @@ export default function FinanceiroPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [periodoSel])
 
   useEffect(() => { carregar() }, [carregar])
+
+  async function salvarLancamento() {
+    if (!novoLanc.descricao.trim() || !novoLanc.valor || !novoLanc.data) {
+      setErroLanc('Preencha descrição, valor e data.'); return
+    }
+    setSalvandoLanc(true); setErroLanc('')
+    const { error } = await supabase.from('financeiro_lancamentos').insert({
+      descricao: novoLanc.descricao.trim(),
+      valor:     parseFloat(novoLanc.valor),
+      tipo:      novoLanc.tipo,
+      data:      novoLanc.data,
+      status:    novoLanc.status,
+    })
+    setSalvandoLanc(false)
+    if (error) { setErroLanc(error.message); return }
+    setModalLanc(false)
+    setNovoLanc({ descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado' })
+    carregar()
+  }
+
+  async function salvarEdicao() {
+    if (!editandoLanc) return
+    setSalvandoLanc(true); setErroLanc('')
+    const { error } = await supabase
+      .from('financeiro_lancamentos')
+      .update({
+        descricao: editandoLanc.descricao,
+        valor:     editandoLanc.valor,
+        tipo:      editandoLanc.tipo,
+        data:      editandoLanc.data,
+        status:    editandoLanc.status,
+      })
+      .eq('id', editandoLanc.id)
+    setSalvandoLanc(false)
+    if (error) { setErroLanc(error.message); return }
+    setEditandoLanc(null)
+    carregar()
+  }
+
+  async function duplicarLancamento(l: FinanceiroLancamento) {
+    await supabase.from('financeiro_lancamentos').insert({
+      descricao: `${l.descricao} (cópia)`,
+      valor:     l.valor,
+      tipo:      l.tipo,
+      data:      new Date().toISOString().slice(0, 10),
+      status:    'pendente',
+    })
+    carregar()
+  }
+
+  async function deletarLancamento(id: string) {
+    setDeletandoId(id)
+    await supabase.from('financeiro_lancamentos').delete().eq('id', id)
+    setDeletandoId(null)
+    carregar()
+  }
 
   if (loading || !dre) {
     return (
@@ -214,18 +292,37 @@ export default function FinanceiroPage() {
       subtitle="Saúde financeira em tempo real"
       actions={
         <div className="flex items-center gap-[0.5rem]">
-          <button
+          <input
+            type="month"
+            value={periodoSel}
+            onChange={(e) => setPeriodoSel(e.target.value)}
+            className="h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+          />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setModalLanc(true)}
+            icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+          >
+            Lançamento
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => gerarCSV(todosLancs)}
             disabled={todosLancs.length === 0}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors disabled:opacity-40"
+            icon={<Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
           >
-            <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
             CSV
-          </button>
-          <button onClick={carregar} className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
-            <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={carregar}
+            icon={<RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
+          >
             Atualizar
-          </button>
+          </Button>
         </div>
       }
     >
@@ -408,29 +505,64 @@ export default function FinanceiroPage() {
           ))}
         </div>
 
-        {/* ── ÚCTIMOS LANÇAMENTOS ── */}
+        {/* ── LANÇAMENTOS DO MÊS ── */}
         <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1.25rem]">
-            Últimos lançamentos do mês
+            Lançamentos do mês ({lancamentos.length})
           </h3>
-          <div className="flex flex-col gap-[0.75rem]">
-            {lancamentos.slice(0, 6).map((l) => (
-              <div key={l.id} className="flex items-center justify-between">
-                <div>
-                  <p className="text-ink-secondary text-[0.875rem]">{l.descricao}</p>
-                  <p className="text-ink-muted text-[0.6875rem]">{new Date(l.data).toLocaleDateString('pt-BR')}</p>
+          {lancamentos.length === 0 ? (
+            <p className="text-ink-muted text-[0.875rem]">Nenhum lançamento este mês.</p>
+          ) : (
+            <div className="flex flex-col divide-y divide-surface-border">
+              {lancamentos.map((l) => (
+                <div key={l.id} className="flex items-center gap-[0.75rem] py-[0.625rem] group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-ink-secondary text-[0.875rem] truncate">{l.descricao}</p>
+                    <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">
+                      {new Date(l.data).toLocaleDateString('pt-BR')}
+                      {' · '}
+                      <span className="capitalize">{l.tipo.replace(/_/g, ' ')}</span>
+                      {l.status === 'pendente' && (
+                        <span className="ml-[0.375rem] text-status-orange font-medium">pendente</span>
+                      )}
+                    </p>
+                  </div>
+                  <p className={`text-[0.9375rem] font-semibold shrink-0 ${
+                    l.tipo === 'receita' ? 'text-status-green' : 'text-status-red'
+                  }`}>
+                    {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
+                  </p>
+                  {/* Ações — aparecem no hover */}
+                  <div className="flex items-center gap-[0.25rem] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <Button
+                      variant="ghost" size="sm" className="w-[2rem] px-0"
+                      title="Editar"
+                      onClick={() => { setEditandoLanc(l); setErroLanc('') }}
+                    >
+                      <Pencil className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm" className="w-[2rem] px-0"
+                      title="Duplicar"
+                      onClick={() => duplicarLancamento(l)}
+                    >
+                      <Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm" className="w-[2rem] px-0 text-status-red hover:text-status-red hover:bg-status-red/10"
+                      title="Deletar"
+                      loading={deletandoId === l.id}
+                      onClick={() => {
+                        if (confirm(`Deletar "${l.descricao}"?`)) deletarLancamento(l.id)
+                      }}
+                    >
+                      {deletandoId !== l.id && <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />}
+                    </Button>
+                  </div>
                 </div>
-                <p className={`text-[0.9375rem] font-semibold ${
-                  l.tipo === 'receita' ? 'text-status-green' : 'text-status-red'
-                }`}>
-                  {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
-                </p>
-              </div>
-            ))}
-            {lancamentos.length === 0 && (
-              <p className="text-ink-muted text-[0.875rem]">Nenhum lançamento este mês.</p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -562,6 +694,197 @@ export default function FinanceiroPage() {
         </div>
       )}
       </div>
+
+      {/* ══ MODAL NOVO LANÇAMENTO ══════════════════════════════════ */}
+      {modalLanc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-scale"
+          onClick={(e) => { if (e.target === e.currentTarget) setModalLanc(false) }}
+        >
+          <div className="bg-surface-card border border-surface-border/40 rounded-2xl w-full max-w-md mx-[1rem] card-shadow">
+            {/* Header */}
+            <div className="flex items-center justify-between px-[1.5rem] py-[1.25rem] border-b border-surface-border/20">
+              <div className="flex items-center gap-[0.625rem]">
+                <div className="w-[2rem] h-[2rem] rounded-lg bg-ads-500/10 flex items-center justify-center">
+                  <Plus className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+                </div>
+                <h2 className="text-[1rem] font-semibold text-ink-primary">Novo Lançamento</h2>
+              </div>
+              <Button variant="ghost" size="sm" className="w-[2rem] px-0" onClick={() => setModalLanc(false)}>
+                <XIcon className="w-[1rem] h-[1rem]" strokeWidth={1.75} />
+              </Button>
+            </div>
+
+            {/* Form */}
+            <form
+              className="p-[1.5rem] space-y-[1rem]"
+              onSubmit={(e) => { e.preventDefault(); salvarLancamento() }}
+            >
+              {erroLanc && (
+                <p className="text-[0.8125rem] text-status-red bg-status-red/10 px-[0.75rem] py-[0.5rem] rounded-lg">
+                  {erroLanc}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-[0.375rem]">
+                <label className="text-[0.75rem] text-ink-secondary font-medium">Descrição</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Mensalidade cliente XYZ"
+                  value={novoLanc.descricao}
+                  onChange={(e) => setNovoLanc((p) => ({ ...p, descricao: e.target.value }))}
+                  className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Valor (R$)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={novoLanc.valor}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, valor: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Data</label>
+                  <input
+                    type="date"
+                    value={novoLanc.data}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, data: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Tipo</label>
+                  <select
+                    value={novoLanc.tipo}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, tipo: e.target.value as NovoLancForm['tipo'] }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="receita">Receita</option>
+                    <option value="custo_fixo">Custo Fixo</option>
+                    <option value="custo_variavel">Custo Variável</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Status</label>
+                  <select
+                    value={novoLanc.status}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, status: e.target.value as NovoLancForm['status'] }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="confirmado">Confirmado</option>
+                    <option value="pendente">Pendente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-[0.5rem] pt-[0.5rem]">
+                <Button variant="ghost" size="md" onClick={() => setModalLanc(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" size="md" loading={salvandoLanc}>
+                  Salvar Lançamento
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL EDITAR LANÇAMENTO ══════════════════════════════════ */}
+      {editandoLanc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-scale"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditandoLanc(null) }}
+        >
+          <div className="bg-surface-card border border-surface-border/40 rounded-2xl w-full max-w-md mx-[1rem] card-shadow">
+            <div className="flex items-center justify-between px-[1.5rem] py-[1.25rem] border-b border-surface-border/20">
+              <div className="flex items-center gap-[0.625rem]">
+                <div className="w-[2rem] h-[2rem] rounded-lg bg-ads-500/10 flex items-center justify-center">
+                  <Pencil className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+                </div>
+                <h2 className="text-[1rem] font-semibold text-ink-primary">Editar Lançamento</h2>
+              </div>
+              <Button variant="ghost" size="sm" className="w-[2rem] px-0" onClick={() => setEditandoLanc(null)}>
+                <XIcon className="w-[1rem] h-[1rem]" strokeWidth={1.75} />
+              </Button>
+            </div>
+            <form className="p-[1.5rem] space-y-[1rem]" onSubmit={(e) => { e.preventDefault(); salvarEdicao() }}>
+              {erroLanc && (
+                <p className="text-[0.8125rem] text-status-red bg-status-red/10 px-[0.75rem] py-[0.5rem] rounded-lg">{erroLanc}</p>
+              )}
+              <div className="flex flex-col gap-[0.375rem]">
+                <label className="text-[0.75rem] text-ink-secondary font-medium">Descrição</label>
+                <input
+                  type="text"
+                  value={editandoLanc.descricao}
+                  onChange={(e) => setEditandoLanc((p) => p ? { ...p, descricao: e.target.value } : p)}
+                  className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Valor (R$)</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={editandoLanc.valor}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, valor: parseFloat(e.target.value) || 0 } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Data</label>
+                  <input
+                    type="date"
+                    value={editandoLanc.data.slice(0, 10)}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, data: e.target.value } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Tipo</label>
+                  <select
+                    value={editandoLanc.tipo}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, tipo: e.target.value as FinanceiroLancamento['tipo'] } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="receita">Receita</option>
+                    <option value="custo_fixo">Custo Fixo</option>
+                    <option value="custo_variavel">Custo Variável</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Status</label>
+                  <select
+                    value={editandoLanc.status ?? 'confirmado'}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, status: e.target.value as FinanceiroLancamento['status'] } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="confirmado">Confirmado</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="cancelado">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-[0.5rem] pt-[0.5rem]">
+                <Button variant="ghost" size="md" onClick={() => setEditandoLanc(null)}>Cancelar</Button>
+                <Button type="submit" variant="primary" size="md" loading={salvandoLanc}>Salvar</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </MainLayout>
   )
 }

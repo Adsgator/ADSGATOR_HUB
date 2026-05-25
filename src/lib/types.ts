@@ -19,8 +19,10 @@ export type AssinaturaStatus =
 // ─── CHECKLIST ────────────────────────────────────────────────────────────────
 
 export interface ChecklistItem {
-  item: string
-  done: boolean
+  item:           string
+  done:           boolean
+  nota?:          string
+  lembrete_data?: string  // ISO date string
 }
 
 // ─── CLIENTE ──────────────────────────────────────────────────────────────────

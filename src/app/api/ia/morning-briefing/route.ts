@@ -16,13 +16,56 @@ function criarVertexAI() {
   })
 }
 
-export async function GET() {
+type FiltroModo = 'completo' | 'urgencias' | 'resumido'
+
+function buildPrompt(
+  hoje: string,
+  clientes: { nome: string; status: string; dias_atraso?: number; mrr?: number; nicho?: string }[],
+  alertas: { tipo: string; mensagem: string }[],
+  filtro: FiltroModo,
+): string {
+  const mrrTotal     = clientes.reduce((s, c) => s + (c.mrr ?? 0), 0)
+  const inadimplentes = clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
+
+  const contexto = `Dados de hoje (${hoje}):
+- Clientes ativos: ${clientes.length}
+- MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}
+- Inadimplentes: ${inadimplentes.length} (${inadimplentes.map((c) => c.nome).join(', ') || 'nenhum'})
+- Alertas abertos: ${alertas.length}`
+
+  if (filtro === 'urgencias') {
+    return `Você é o assistente operacional da Adsgator. Gere um briefing APENAS sobre urgências (máx 4 linhas, sem markdown, sem listas).
+
+${contexto}
+
+Liste SOMENTE o que precisa de ação IMEDIATA hoje. Se não houver urgências críticas, diga brevemente que está tudo sob controle.`
+  }
+
+  if (filtro === 'resumido') {
+    return `Você é o assistente operacional da Adsgator. Gere um resumo em ATÉ 2 LINHAS, sem markdown.
+
+${contexto}
+
+Seja extremamente conciso: 1 linha com o status geral, 1 linha com a ação mais importante.`
+  }
+
+  // completo (padrão)
+  return `Você é o assistente operacional da Adsgator. Gere um briefing matinal CONCISO (máx 5 linhas, sem markdown, sem listas).
+
+${contexto}
+
+Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de ação prioritária.`
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const filtro = (searchParams.get('filtro') ?? 'completo') as FiltroModo
   const hoje = new Date().toISOString().slice(0, 10)
 
   const [{ data: clientes }, { data: alertas }] = await Promise.all([
     supabase
       .from('clientes')
-      .select('nome, status, dias_atraso, mrr')
+      .select('nome, status, dias_atraso, mrr, nicho')
       .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido']),
     supabase
       .from('alertas')
@@ -32,18 +75,12 @@ export async function GET() {
       .limit(5),
   ])
 
-  const mrrTotal = (clientes ?? []).reduce((s, c) => s + (c.mrr ?? 0), 0)
-  const inadimplentes = (clientes ?? []).filter((c) => (c.dias_atraso ?? 0) > 0)
+  const clientesTyped = (clientes ?? []) as { nome: string; status: string; dias_atraso?: number; mrr?: number; nicho?: string }[]
+  const alertasTyped  = (alertas ?? []) as { tipo: string; mensagem: string }[]
+  const mrrTotal      = clientesTyped.reduce((s, c) => s + (c.mrr ?? 0), 0)
+  const inadimplentes = clientesTyped.filter((c) => (c.dias_atraso ?? 0) > 0)
 
-  const prompt = `Você é o assistente operacional da Adsgator. Gere um briefing matinal CONCISO (máx 5 linhas, sem markdown, sem listas).
-
-Dados de hoje (${hoje}):
-- Clientes ativos: ${clientes?.length ?? 0}
-- MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}
-- Inadimplentes: ${inadimplentes.length} (${inadimplentes.map((c) => c.nome).join(', ') || 'nenhum'})
-- Alertas abertos: ${alertas?.length ?? 0}
-
-Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de ação prioritária.`
+  const prompt = buildPrompt(hoje, clientesTyped, alertasTyped, filtro)
 
   try {
     const vertex = criarVertexAI()
@@ -54,7 +91,7 @@ Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de açã
   } catch {
     const texto = inadimplentes.length > 0
       ? `${inadimplentes.length} cliente(s) inadimplente(s) requerem atenção hoje. MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}.`
-      : `Bom dia! ${clientes?.length ?? 0} clientes ativos. MRR: R$ ${mrrTotal.toLocaleString('pt-BR')}. Sem alertas críticos.`
+      : `Bom dia! ${clientesTyped.length} clientes ativos. MRR: R$ ${mrrTotal.toLocaleString('pt-BR')}. Sem alertas críticos.`
     return NextResponse.json({ texto, gerado_em: new Date().toISOString() })
   }
 }

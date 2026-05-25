@@ -9,6 +9,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { calcularHealthScore } from '@/lib/health-score'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -68,6 +69,7 @@ export function ClienteProgressCard({
   const mrr = cliente.mrr ?? 0
   const diasAtraso = cliente.dias_atraso ?? 0
   const ultimaInteracao = diasDesde(cliente.updated_at)
+  const health = calcularHealthScore(cliente, estagio)
 
   const handleWhatsApp = () => {
     if (!cliente.whatsapp) {
@@ -128,6 +130,18 @@ export function ClienteProgressCard({
             {diasAtraso}d atraso
           </span>
         )}
+        {/* Health Score badge */}
+        <span
+          title={`Health Score: ${health.score}/100`}
+          className={cn(
+            'inline-flex items-center gap-[0.25rem] px-2 py-0.5 rounded-full text-xs font-bold',
+            health.nivel === 'saudavel' ? 'bg-status-green/10' : health.nivel === 'atencao' ? 'bg-status-orange/10' : 'bg-status-red/10',
+            health.color,
+          )}
+        >
+          <span className={cn('w-1.5 h-1.5 rounded-full', health.dot)} />
+          {health.score}
+        </span>
       </div>
 
       {/* ── PRÓXIMA AÇÃO ──────────────────────────────────── */}

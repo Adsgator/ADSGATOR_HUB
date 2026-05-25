@@ -8,6 +8,7 @@ import {
   Sparkles, X, Save,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 
 type Rede   = 'instagram' | 'facebook'
@@ -119,9 +120,7 @@ function PostModal({
       <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border shrink-0">
           <p className="text-ink-primary font-semibold">{post?.id ? 'Editar Post' : 'Criar Post'}</p>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink-primary transition-colors">
-            <X className="w-[1rem] h-[1rem]" strokeWidth={2} />
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose} icon={<X className="w-[1rem] h-[1rem]" strokeWidth={2} />} className="w-[2rem] px-0" />
         </div>
 
         <div className="flex-1 overflow-y-auto p-[1.5rem] flex flex-col gap-[1rem]">
@@ -207,21 +206,17 @@ function PostModal({
         </div>
 
         <div className="flex gap-[0.5rem] px-[1.5rem] py-[1rem] border-t border-surface-border shrink-0">
-          <button onClick={() => salvar('rascunho')} disabled={salvando}
-            className="flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-lg border border-surface-border bg-surface-hover text-ink-secondary text-[0.8125rem] font-medium hover:text-ink-primary transition-colors disabled:opacity-50">
-            <Save className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />Rascunho
-          </button>
+          <Button variant="secondary" size="md" onClick={() => salvar('rascunho')} disabled={salvando} icon={<Save className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}>
+            Rascunho
+          </Button>
           {agendadoPara && (
-            <button onClick={() => salvar('agendado')} disabled={salvando}
-              className="flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-lg border border-ads-500 bg-ads-500/10 text-ads-500 text-[0.8125rem] font-semibold hover:bg-ads-500/20 transition-colors disabled:opacity-50">
-              <Clock className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />Agendar
-            </button>
+            <Button variant="subtle" size="md" onClick={() => salvar('agendado')} disabled={salvando} icon={<Clock className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}>
+              Agendar
+            </Button>
           )}
-          <button onClick={() => salvar('publicado')} disabled={salvando}
-            className="ml-auto flex items-center gap-[0.375rem] h-[2.25rem] px-[1rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.8125rem] font-semibold transition-colors disabled:opacity-50">
-            {salvando ? <div className="w-[0.75rem] h-[0.75rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Megaphone className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}
+          <Button variant="primary" size="md" onClick={() => salvar('publicado')} disabled={salvando} loading={salvando} icon={<Megaphone className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />} className="ml-auto">
             Publicar Agora
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -353,14 +348,10 @@ export default function MarketingPage() {
       subtitle="Calendário editorial e criação de posts"
       actions={
         <div className="flex items-center gap-[0.5rem]">
-          <button onClick={carregar} className="h-[2rem] w-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors">
-            <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-          </button>
-          <button onClick={abrirCriar}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-600 text-white text-[0.8125rem] font-semibold transition-colors">
-            <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+          <Button variant="secondary" size="sm" onClick={carregar} icon={<RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />} className="w-[2rem] px-0" />
+          <Button variant="primary" size="sm" onClick={abrirCriar} icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}>
             Criar Post
-          </button>
+          </Button>
         </div>
       }
     >

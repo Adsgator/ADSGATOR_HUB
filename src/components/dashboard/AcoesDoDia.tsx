@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   PauseCircle,
   BarChart3,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -60,12 +61,13 @@ const urgenciaConfig: Record<Urgencia, {
 }
 
 interface AcoesDoDiaProps {
-  items:       AcaoItem[]
-  onCongelar:  (id: string) => void
-  onFeito?:    (id: string) => void
+  items:         AcaoItem[]
+  onCongelar:    (id: string) => void
+  onFeito?:      (id: string) => void
+  onCriarTask?:  (cliente: Cliente, descricao: string) => void
 }
 
-export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
+export function AcoesDoDia({ items, onCongelar, onFeito, onCriarTask }: AcoesDoDiaProps) {
   // Ordenação conforme arquivo mestre
   const ordenado = [...items].sort((a, b) => {
     const peso: Record<Urgencia, number> = { critica: 3, atencao: 2, review: 1 }
@@ -106,6 +108,10 @@ export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
           const handleWhatsApp = () => {
             const texto = `Olá ${cliente.nome.split(' ')[0]}, tudo bem? Aqui é da Adsgator. `
             window.open(`https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(texto)}`, '_blank')
+          }
+
+          const handleCriarTask = () => {
+            onCriarTask?.(cliente, descricao)
           }
 
           const handleFeito = () => {
@@ -183,6 +189,14 @@ export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
               {/* ── AÇÕES SEMPRE VISÍVEIS ───────────────── */}
               <div className="shrink-0 flex items-center gap-2">
                 {getBotaoPrincipal()}
+
+                <button
+                  onClick={handleCriarTask}
+                  className="flex items-center justify-center w-8 h-8 rounded-md text-ink-muted hover:bg-surface-hover hover:text-ads-500 transition-colors"
+                  title="Criar task"
+                >
+                  <ClipboardList className="w-4 h-4" strokeWidth={2} />
+                </button>
 
                 <button
                   onClick={() => onCongelar(cliente.id)}

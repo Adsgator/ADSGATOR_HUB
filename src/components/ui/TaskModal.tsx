@@ -1,9 +1,10 @@
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Save, Calendar, Flag, User } from 'lucide-react'
+import { X, Save, Calendar, Flag, User, Plus, CheckCircle, Circle, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import type { Tarefa, TarefaPrioridade } from '@/lib/types'
+import type { Tarefa, TarefaPrioridade, ChecklistItem } from '@/lib/types'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   tarefa?:  Partial<Tarefa>
@@ -21,19 +22,44 @@ const PRIORIDADES: { value: TarefaPrioridade; label: string }[] = [
 ]
 
 export function TaskModal({ tarefa, onClose, onSaved }: Props) {
-  const [titulo,     setTitulo]     = useState(tarefa?.titulo    ?? '')
-  const [descricao,  setDescricao]  = useState(tarefa?.descricao ?? '')
-  const [clienteId,  setClienteId]  = useState(tarefa?.cliente_id ?? '')
-  const [prioridade, setPrioridade] = useState<TarefaPrioridade>(tarefa?.prioridade ?? 'normal')
-  const [dataPrazo,  setDataPrazo]  = useState(tarefa?.data_prazo?.slice(0, 16) ?? '')
-  const [clientes,   setClientes]   = useState<ClienteOpcao[]>([])
-  const [salvando,   setSalvando]   = useState(false)
-  const [erro,       setErro]       = useState('')
+  const [titulo,        setTitulo]        = useState(tarefa?.titulo    ?? '')
+  const [descricao,     setDescricao]     = useState(tarefa?.descricao ?? '')
+  const [clienteId,     setClienteId]     = useState(tarefa?.cliente_id ?? '')
+  const [prioridade,    setPrioridade]    = useState<TarefaPrioridade>(tarefa?.prioridade ?? 'normal')
+  const [dataPrazo,     setDataPrazo]     = useState(tarefa?.data_prazo?.slice(0, 16) ?? '')
+  const [responsavelId, setResponsavelId] = useState(tarefa?.responsavel_id ?? '')
+  const [subtasks,      setSubtasks]      = useState<ChecklistItem[]>(tarefa?.checklist ?? [])
+  const [novaSubtask,   setNovaSubtask]   = useState('')
+  const [clientes,      setClientes]      = useState<ClienteOpcao[]>([])
+  const [membros,       setMembros]       = useState<{ id: string; nome: string }[]>([])
+  const [salvando,      setSalvando]      = useState(false)
+  const [erro,          setErro]          = useState('')
 
   useEffect(() => {
     supabase.from('clientes').select('id, nome').in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido']).order('nome')
       .then(({ data }) => setClientes((data ?? []) as ClienteOpcao[]))
+
+    // Membros da equipe (tabela profiles ou auth.users via view)
+    supabase.from('profiles').select('id, nome').order('nome')
+      .then(({ data }) => {
+        if (data?.length) setMembros(data as { id: string; nome: string }[])
+      })
   }, [])
+
+  function adicionarSubtask() {
+    const texto = novaSubtask.trim()
+    if (!texto) return
+    setSubtasks((p) => [...p, { item: texto, done: false }])
+    setNovaSubtask('')
+  }
+
+  function toggleSubtask(i: number) {
+    setSubtasks((p) => p.map((s, idx) => idx === i ? { ...s, done: !s.done } : s))
+  }
+
+  function removerSubtask(i: number) {
+    setSubtasks((p) => p.filter((_, idx) => idx !== i))
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
@@ -43,12 +69,14 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
     const { data: { user } } = await supabase.auth.getUser()
     const payload = {
       titulo,
-      descricao:   descricao || null,
-      cliente_id:  clienteId  || null,
+      descricao:      descricao || null,
+      cliente_id:     clienteId  || null,
       prioridade,
-      data_prazo:  dataPrazo  || null,
-      user_id:     user?.id,
-      status:      tarefa?.status ?? 'pendente',
+      data_prazo:     dataPrazo  || null,
+      responsavel_id: responsavelId || null,
+      checklist:      subtasks.length > 0 ? subtasks : null,
+      user_id:        user?.id,
+      status:         tarefa?.status ?? 'pendente',
     }
 
     const { error } = tarefa?.id
@@ -60,21 +88,22 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
     onClose()
   }
 
+  const subtasksDone  = subtasks.filter((s) => s.done).length
+  const subtasksTotal = subtasks.length
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-[1rem]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[28rem]">
+      <div className="relative bg-surface-card border border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col animate-fade-scale">
         {/* Header */}
-        <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border">
+        <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border shrink-0">
           <p className="text-ink-primary font-semibold text-[0.9375rem]">
             {tarefa?.id ? 'Editar Tarefa' : 'Nova Tarefa'}
           </p>
-          <button onClick={onClose} className="w-[2rem] h-[2rem] flex items-center justify-center rounded hover:bg-surface-hover text-ink-muted transition-colors">
-            <X className="w-[1rem] h-[1rem]" strokeWidth={2} />
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose} icon={<X className="w-[1rem] h-[1rem]" strokeWidth={2} />} className="w-[2rem] px-0" />
         </div>
 
-        <form onSubmit={salvar} className="p-[1.5rem] flex flex-col gap-[1rem]">
+        <form onSubmit={salvar} className="p-[1.5rem] flex flex-col gap-[1rem] overflow-y-auto">
           {/* Título */}
           <div>
             <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">Título *</label>
@@ -90,7 +119,7 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
             <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">Detalhes</label>
             <textarea
               value={descricao} onChange={(e) => setDescricao(e.target.value)}
-              rows={3} placeholder="Contexto adicional…"
+              rows={2} placeholder="Contexto adicional…"
               className="w-full px-[0.75rem] py-[0.625rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] resize-none focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors"
             />
           </div>
@@ -124,27 +153,119 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          {/* Data prazo */}
+          <div className="grid grid-cols-2 gap-[0.75rem]">
+            {/* Data prazo */}
+            <div>
+              <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">
+                <Calendar className="inline w-[0.75rem] h-[0.75rem] mr-[0.25rem]" strokeWidth={1.75} />Prazo
+              </label>
+              <input
+                type="datetime-local" value={dataPrazo} onChange={(e) => setDataPrazo(e.target.value)}
+                className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors"
+              />
+            </div>
+
+            {/* Responsável */}
+            <div>
+              <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">
+                <User className="inline w-[0.75rem] h-[0.75rem] mr-[0.25rem]" strokeWidth={1.75} />Responsável
+              </label>
+              {membros.length > 0 ? (
+                <select
+                  value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}
+                  className="w-full h-[2.5rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30"
+                >
+                  <option value="">Sem responsável</option>
+                  {membros.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                </select>
+              ) : (
+                <input
+                  type="text" value={responsavelId}
+                  onChange={(e) => setResponsavelId(e.target.value)}
+                  placeholder="ID do usuário"
+                  className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 transition-colors"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Sub-tasks */}
           <div>
-            <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">
-              <Calendar className="inline w-[0.75rem] h-[0.75rem] mr-[0.25rem]" strokeWidth={1.75} />Data / Hora do prazo
-            </label>
-            <input
-              type="datetime-local" value={dataPrazo} onChange={(e) => setDataPrazo(e.target.value)}
-              className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors"
-            />
+            <div className="flex items-center justify-between mb-[0.5rem]">
+              <label className="text-ink-secondary text-[0.8125rem] font-medium">
+                Sub-tasks
+                {subtasksTotal > 0 && (
+                  <span className="ml-[0.375rem] text-ink-muted text-[0.75rem]">
+                    {subtasksDone}/{subtasksTotal}
+                  </span>
+                )}
+              </label>
+            </div>
+
+            {/* Barra de progresso */}
+            {subtasksTotal > 0 && (
+              <div className="h-[0.1875rem] bg-surface-hover rounded-full mb-[0.625rem] overflow-hidden">
+                <div
+                  className="h-full bg-ads-500 rounded-full transition-all duration-300"
+                  style={{ width: `${(subtasksDone / subtasksTotal) * 100}%` }}
+                />
+              </div>
+            )}
+
+            {/* Lista de sub-tasks */}
+            {subtasks.length > 0 && (
+              <ul className="space-y-[0.25rem] mb-[0.5rem]">
+                {subtasks.map((s, i) => (
+                  <li key={i} className="group flex items-center gap-[0.375rem] px-[0.5rem] py-[0.25rem] rounded-lg hover:bg-surface-hover transition-colors">
+                    <button type="button" onClick={() => toggleSubtask(i)} className="shrink-0">
+                      {s.done
+                        ? <CheckCircle className="w-[0.875rem] h-[0.875rem] text-status-green" strokeWidth={2} />
+                        : <Circle      className="w-[0.875rem] h-[0.875rem] text-ink-muted"    strokeWidth={1.75} />
+                      }
+                    </button>
+                    <span className={`flex-1 text-[0.8125rem] ${s.done ? 'line-through text-ink-muted' : 'text-ink-secondary'}`}>
+                      {s.item}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removerSubtask(i)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity w-[1.25rem] h-[1.25rem] rounded flex items-center justify-center hover:bg-status-red/10 text-ink-muted hover:text-status-red shrink-0"
+                    >
+                      <Trash2 className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Input nova sub-task */}
+            <div className="flex gap-[0.375rem]">
+              <input
+                type="text"
+                value={novaSubtask}
+                onChange={(e) => setNovaSubtask(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); adicionarSubtask() } }}
+                placeholder="Adicionar sub-task… (Enter para confirmar)"
+                className="flex-1 h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/60 text-ink-primary text-[0.8125rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={adicionarSubtask}
+                disabled={!novaSubtask.trim()}
+                className="w-[2rem] h-[2rem] rounded-lg bg-surface-elevated border border-surface-border/60 flex items-center justify-center hover:bg-surface-hover text-ink-muted hover:text-ink-primary transition-colors disabled:opacity-40"
+              >
+                <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+              </button>
+            </div>
           </div>
 
           {erro && <p className="text-[0.8125rem] text-status-red">{erro}</p>}
 
           <div className="flex gap-[0.75rem] pt-[0.25rem]">
-            <button type="button" onClick={onClose} className="flex-1 h-[2.5rem] rounded-lg border border-surface-border bg-surface-hover text-ink-secondary text-[0.875rem] font-medium hover:text-ink-primary transition-colors">
-              Cancelar
-            </button>
-            <button type="submit" disabled={salvando} className="flex-1 flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50">
-              {salvando ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+            <Button type="button" variant="secondary" size="lg" fullWidth onClick={onClose}>Cancelar</Button>
+            <Button type="submit" variant="primary" size="lg" fullWidth loading={salvando} icon={<Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}>
               Salvar
-            </button>
+            </Button>
           </div>
         </form>
       </div>

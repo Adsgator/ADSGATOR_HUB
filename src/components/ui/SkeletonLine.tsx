@@ -17,7 +17,7 @@ export function SkeletonLine({
         <div
           key={i}
           style={{ width, height }}
-          className="bg-surface-hover rounded animate-pulse"
+          className="rounded skeleton-shimmer"
         />
       ))}
     </div>

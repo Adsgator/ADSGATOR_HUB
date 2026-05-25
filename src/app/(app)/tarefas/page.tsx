@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { TaskModal }  from '@/components/ui/TaskModal'
+import { Button }     from '@/components/ui/Button'
 import { Tooltip }    from '@/components/ui/Tooltip'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { cn }         from '@/lib/utils'
@@ -84,8 +85,12 @@ function TarefaAccordion({
   onDeletar: () => void
   onEditar: () => void
 }) {
-  const prio    = PRIO_CONFIG[t.prioridade]
-  const atrasada = (t.data_prazo?.slice(0, 10) ?? '') < hojeSt() && t.status !== 'feito'
+  const prio         = PRIO_CONFIG[t.prioridade]
+  const atrasada     = (t.data_prazo?.slice(0, 10) ?? '') < hojeSt() && t.status !== 'feito'
+  const subtasks     = t.checklist ?? []
+  const subDone      = subtasks.filter((s) => s.done).length
+  const subTotal     = subtasks.length
+  const subPct       = subTotal > 0 ? (subDone / subTotal) * 100 : 0
 
   const ctxItems = [
     { label: 'Editar',    icon: <ChevronRight className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />, onClick: onEditar },
@@ -147,6 +152,17 @@ function TarefaAccordion({
                   {new Date(t.data_prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
+              {subTotal > 0 && (
+                <span className="flex items-center gap-[0.25rem]">
+                  <span className="text-ink-muted">{subDone}/{subTotal}</span>
+                  <span className="w-[2.5rem] h-[0.1875rem] rounded-full bg-surface-hover overflow-hidden">
+                    <span
+                      className={cn('block h-full rounded-full transition-all', subDone === subTotal ? 'bg-status-green' : 'bg-ads-500')}
+                      style={{ width: `${subPct}%` }}
+                    />
+                  </span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -167,6 +183,28 @@ function TarefaAccordion({
               </div>
             )}
 
+            {/* Sub-tasks */}
+            {subTotal > 0 && (
+              <div className="mt-[0.75rem]">
+                <p className="text-[0.625rem] text-ink-muted font-semibold uppercase tracking-wide mb-[0.375rem]">
+                  Sub-tasks — {subDone}/{subTotal}
+                </p>
+                <ul className="space-y-[0.125rem]">
+                  {subtasks.map((s, i) => (
+                    <li key={i} className="flex items-center gap-[0.375rem] px-[0.375rem] py-[0.25rem] rounded-lg hover:bg-surface-hover transition-colors">
+                      {s.done
+                        ? <CheckCheck className="w-[0.75rem] h-[0.75rem] text-status-green shrink-0" strokeWidth={2} />
+                        : <Square     className="w-[0.75rem] h-[0.75rem] text-ink-muted shrink-0"    strokeWidth={1.75} />
+                      }
+                      <span className={cn('text-[0.8125rem]', s.done ? 'line-through text-ink-muted' : 'text-ink-secondary')}>
+                        {s.item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Why it's here */}
             <div className="mt-[0.75rem] p-[0.75rem] rounded-[0.375rem] bg-surface-base border border-surface-border">
               <p className="text-[0.625rem] text-ink-muted font-semibold uppercase tracking-wide mb-[0.25rem]">Contexto</p>
@@ -181,21 +219,27 @@ function TarefaAccordion({
             {/* Ações */}
             <div className="flex items-center gap-[0.5rem] mt-[0.875rem]">
               <Tooltip content="Concluir" side="top">
-                <button
+                <Button
+                  variant="subtle"
+                  size="sm"
                   onClick={onConcluir}
-                  className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-status-green/10 text-status-green hover:bg-status-green/20 text-[0.8125rem] font-medium transition-colors"
+                  icon={<CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+                  className="text-status-green bg-status-green/10 hover:bg-status-green/20"
                 >
-                  <CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
                   Concluir
-                </button>
+                </Button>
               </Tooltip>
 
               <div className="relative group/adiar">
-                <button className="flex items-center gap-[0.25rem] h-[2rem] px-[0.625rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
-                  <AlarmClock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<AlarmClock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
+                  iconPosition="left"
+                >
                   Adiar
                   <ChevronDown className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
-                </button>
+                </Button>
                 <div className="absolute left-0 top-full mt-[0.25rem] bg-surface-elevated border border-surface-border rounded-[0.5rem] shadow-xl z-20 min-w-[8rem] hidden group-hover/adiar:block animate-fade-scale">
                   {[
                     { label: '+1 hora',   delta: 1, unit: 'h' as const },
@@ -216,12 +260,13 @@ function TarefaAccordion({
               <div className="flex-1" />
 
               <Tooltip content="Deletar" side="top">
-                <button
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={onDeletar}
-                  className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover text-ink-muted hover:text-status-red hover:bg-status-red/10 transition-colors"
-                >
-                  <Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-                </button>
+                  icon={<Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
+                  className="w-[2rem] px-0"
+                />
               </Tooltip>
             </div>
           </div>
@@ -313,20 +358,16 @@ export default function TarefasPage() {
       actions={
         <div className="flex items-center gap-[0.5rem]">
           <Tooltip content="Atualizar" side="bottom">
-            <button
-              onClick={carregar}
-              className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-muted hover:text-ink-primary transition-colors"
-            >
-              <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-            </button>
+            <Button variant="secondary" size="sm" onClick={carregar} icon={<RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />} className="w-[2rem] px-0" />
           </Tooltip>
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => { setTarefaEdit(undefined); setModalAberto(true) }}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-400 text-white text-[0.8125rem] font-semibold transition-colors shadow-lg shadow-ads-500/20"
+            icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
           >
-            <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
             Nova Tarefa
-          </button>
+          </Button>
         </div>
       }
     >

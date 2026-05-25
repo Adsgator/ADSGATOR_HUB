@@ -5,6 +5,7 @@ import {
   BarChart2, TrendingUp, ArrowUpRight, RefreshCw,
   MousePointerClick, DollarSign, AlertTriangle,
   Users, Globe, Zap, Calendar, ChevronDown,
+  Sparkles, X,
 } from 'lucide-react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -12,6 +13,7 @@ import {
   BarChart,
 } from 'recharts'
 import { MainLayout }  from '@/components/layout/MainLayout'
+import { Button }      from '@/components/ui/Button'
 import { supabase }    from '@/lib/supabase'
 import { toast } from 'sonner'
 import type { AnalyticsSnapshot, Cliente } from '@/lib/types'
@@ -142,6 +144,9 @@ export default function AnalyticsPage() {
   const [periodo, setPeriodo] = useState<Periodo>('30d')
   const [liveData, setLiveData] = useState<LiveAnalyticsData | null>(null)
   const [loadingLive, setLoadingLive] = useState(false)
+  const [iaRecs,        setIaRecs]        = useState<string>('')
+  const [loadingIaRecs, setLoadingIaRecs] = useState(false)
+  const [mostrarIaRecs, setMostrarIaRecs] = useState(false)
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -241,6 +246,34 @@ export default function AnalyticsPage() {
   const liveCtr = liveKpiData.impressoes > 0 ? (liveKpiData.cliques / liveKpiData.impressoes) * 100 : 0
   const liveCpa = liveKpiData.conversoes > 0 ? liveKpiData.custo_total / liveKpiData.conversoes : 0
 
+  async function gerarRecomendacoes() {
+    if (!selData) return
+    setLoadingIaRecs(true)
+    setMostrarIaRecs(true)
+    try {
+      const { investimento, conversoes, cpa, impressoes, cliques } = selData.ultimo ?? {}
+      const res = await fetch('/api/ia/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            id: 'rec',
+            role: 'user',
+            content: `Analise os dados de Google Ads para o cliente "${selData.cliente.nome}" (${selData.cliente.nicho}) e forneça 3 a 5 recomendações práticas:\n- Investimento: R$ ${investimento?.toFixed(0) ?? 0}\n- Conversões: ${conversoes ?? 0}\n- CPA: R$ ${cpa?.toFixed(0) ?? 0}\n- Impressões: ${impressoes ?? 0}\n- Cliques: ${cliques ?? 0}\n\nFoque em ações concretas para melhorar o CPA e o ROAS.`,
+            created_at: new Date().toISOString(),
+          }],
+          contexto_cliente_id: selData.cliente.id,
+        }),
+      })
+      const json = await res.json() as { content?: string }
+      setIaRecs(json.content ?? 'Sem recomendações geradas.')
+    } catch {
+      toast.error('Erro ao gerar recomendações.')
+    } finally {
+      setLoadingIaRecs(false)
+    }
+  }
+
   const periodoLabel: Record<Periodo, string> = {
     '7d': 'Últimos 7 dias',
     '30d': 'Últimos 30 dias',
@@ -269,13 +302,14 @@ export default function AnalyticsPage() {
               </button>
             ))}
           </div>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => { carregar(); carregarLive(); }}
             disabled={loading || loadingLive}
-            className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />
-          </button>
+            icon={<RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />}
+            className="w-[2rem] px-0"
+          />
         </div>
       }
     >
@@ -337,12 +371,24 @@ export default function AnalyticsPage() {
               </h2>
               <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">{periodoLabel[periodo]}</p>
             </div>
-            <a
-              href={`/clientes/${selData.cliente.id}`}
-              className="text-ads-500 text-[0.8125rem] hover:underline"
-            >
-              Ver cliente →
-            </a>
+            <div className="flex items-center gap-[0.75rem]">
+              <button
+                onClick={gerarRecomendacoes}
+                disabled={loadingIaRecs}
+                className="inline-flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-lg bg-ads-500/10 hover:bg-ads-500/20 text-ads-500 text-[0.75rem] font-medium transition-colors disabled:opacity-50"
+              >
+                {loadingIaRecs
+                  ? <><RefreshCw className="w-[0.75rem] h-[0.75rem] animate-spin" strokeWidth={2} />Gerando...</>
+                  : <><Sparkles className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />Recomendações IA</>
+                }
+              </button>
+              <a
+                href={`/clientes/${selData.cliente.id}`}
+                className="text-ads-500 text-[0.8125rem] hover:underline"
+              >
+                Ver cliente →
+              </a>
+            </div>
           </div>
 
           {chartData.length > 1 ? (
@@ -404,6 +450,37 @@ export default function AnalyticsPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* Recomendações IA */}
+          {mostrarIaRecs && (
+            <div className="mt-[1.5rem] border-t border-surface-border/30 pt-[1.25rem]">
+              <div className="flex items-center justify-between mb-[0.75rem]">
+                <div className="flex items-center gap-[0.375rem]">
+                  <Sparkles className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={2} />
+                  <p className="text-ink-primary text-[0.875rem] font-semibold">Recomendações da IA</p>
+                </div>
+                <button
+                  onClick={() => setMostrarIaRecs(false)}
+                  className="text-ink-muted hover:text-ink-primary transition-colors"
+                >
+                  <X className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                </button>
+              </div>
+              {loadingIaRecs ? (
+                <div className="space-y-[0.5rem]">
+                  {[85, 70, 60].map((w, i) => (
+                    <div key={i} className="h-[0.875rem] rounded skeleton-shimmer" style={{ width: `${w}%` }} />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-ads-500/5 border border-ads-500/15 rounded-xl p-[1rem]">
+                  {iaRecs.split('\n').filter(Boolean).map((linha, i) => (
+                    <p key={i} className="text-ink-secondary text-[0.8125rem] leading-relaxed">{linha}</p>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

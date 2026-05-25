@@ -77,7 +77,7 @@ export function StatusBar() {
   })
 
   return (
-    <footer className="col-span-3 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border flex items-center px-[1rem] gap-[0.75rem] text-[0.6875rem] select-none z-30">
+    <footer className="col-span-3 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border/20 flex items-center px-[1rem] gap-[0.75rem] text-[0.6875rem] select-none z-30">
       {/* ── ESQUERDA: Usuário ─────────────────────── */}
       <div className="flex items-center gap-[0.375rem] text-ink-secondary">
         <User className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />

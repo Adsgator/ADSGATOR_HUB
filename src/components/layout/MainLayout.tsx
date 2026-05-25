@@ -1,10 +1,12 @@
 'use client'
 
-import React from 'react'
-import { Sidebar }         from './Sidebar'
-import { TopBar }          from './TopBar'
-import { RightSidebar }    from './RightSidebar'
-import { StatusBar }       from './StatusBar'
+import React, { useEffect } from 'react'
+import { useRouter }        from 'next/navigation'
+import { Sidebar }              from './Sidebar'
+import { TopBar }               from './TopBar'
+import { RightSidebar }         from './RightSidebar'
+import { StatusBar }            from './StatusBar'
+import { FloatingChat }         from './FloatingChat'
 import { RightSidebarProvider } from '@/lib/store/right-sidebar-context'
 
 interface MainLayoutProps {
@@ -15,6 +17,53 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, title, subtitle, actions }: MainLayoutProps) {
+  const router = useRouter()
+
+  useEffect(() => {
+    let primeiraLetra: string | null = null
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName.toLowerCase()
+      if (['input', 'textarea', 'select'].includes(tag)) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      const k = e.key.toLowerCase()
+
+      if (primeiraLetra === null) {
+        if (k === 'g' || k === 'n') {
+          primeiraLetra = k
+          timer = setTimeout(() => { primeiraLetra = null }, 500)
+        }
+        return
+      }
+
+      if (timer) clearTimeout(timer)
+      const first = primeiraLetra
+      primeiraLetra = null
+
+      const ROTAS_G: Record<string, string> = {
+        d: '/dashboard',
+        c: '/clientes',
+        f: '/financeiro',
+        a: '/analytics',
+        t: '/tarefas',
+        m: '/marketing',
+        b: '/biblioteca',
+        s: '/configuracoes',
+      }
+
+      if (first === 'g' && ROTAS_G[k]) {
+        router.push(ROTAS_G[k])
+      } else if (first === 'n' && k === 'c') {
+        router.push('/clientes/novo')
+      }
+    }
+
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [router])
+
   return (
     <RightSidebarProvider>
       <div className="h-screen w-screen overflow-hidden bg-surface-base grid grid-rows-[var(--topbar-h)_1fr_var(--statusbar-h)] grid-cols-[var(--sidebar-w)_1fr_var(--right-sidebar-w)]">
@@ -39,6 +88,9 @@ export function MainLayout({ children, title, subtitle, actions }: MainLayoutPro
         {/* ── ROW 3: STATUS BAR (ocupa 3 colunas) ──── */}
         <StatusBar />
       </div>
+
+      {/* ── CHAT FLUTUANTE (todas as páginas) ────── */}
+      <FloatingChat />
     </RightSidebarProvider>
   )
 }

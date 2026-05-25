@@ -14,6 +14,7 @@ import {
   type PaletaCores,
 } from '@/lib/manifesto-generator';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Button } from '@/components/ui/Button';
 
 // ─── TIPOS ───────────────────────────────────────────────────────────────────
 
@@ -176,17 +177,18 @@ function TabBiblioteca() {
               <pre className="bg-surface-base text-[0.75rem] font-mono text-ink-secondary p-[1.25rem] overflow-x-auto max-h-[28rem]">
                 {comp.codigo_astro}
               </pre>
-              <button
+              <Button
                 onClick={copiarCodigo}
-                className={`absolute top-[0.75rem] right-[0.75rem] flex items-center gap-[0.375rem] text-xs font-semibold px-[0.625rem] h-[1.75rem] rounded transition-all
-                  ${copiado
-                    ? 'bg-ads-500/20 text-ads-500'
-                    : 'bg-surface-hover text-ink-secondary hover:text-ink-primary border border-surface-border'}`}
+                variant={copiado ? 'subtle' : 'secondary'}
+                size="sm"
+                icon={copiado
+                  ? <CheckCheck className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                  : <Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                }
+                className="absolute top-[0.75rem] right-[0.75rem]"
               >
-                {copiado
-                  ? <><CheckCheck className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Copiado!</>
-                  : <><Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Copiar</>}
-              </button>
+                {copiado ? 'Copiado!' : 'Copiar'}
+              </Button>
             </div>
           ) : (
             <div className="p-[1.25rem]">
@@ -339,17 +341,18 @@ function TabConstrutor() {
 
         {/* BOTÃO GERAR COPY IA */}
         {builder.nomeCliente && builder.nicho && (
-          <button
+          <Button
+            variant="ghost"
+            size="md"
+            fullWidth
             onClick={gerarCopyIA}
             disabled={gerandoCopy}
-            className="w-full flex items-center justify-center gap-[0.5rem] h-[2.25rem] rounded text-[0.875rem] font-medium bg-status-purple/15 text-status-purple hover:opacity-80 transition-opacity disabled:opacity-50 mb-[0.75rem]"
+            loading={gerandoCopy}
+            icon={<Sparkles className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />}
+            className="mb-[0.75rem] bg-status-purple/15 text-status-purple hover:bg-status-purple/20 hover:text-status-purple"
           >
-            {gerandoCopy
-              ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-current border-t-transparent rounded-full animate-spin" />
-              : <Sparkles className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
-            }
             {copyGerada ? 'Regenerar Copy com IA' : 'Gerar Copy com IA'}
-          </button>
+          </Button>
         )}
 
         {copyGerada && (
@@ -366,23 +369,20 @@ function TabConstrutor() {
           </p>
         )}
 
-        <button
+        <Button
+          variant={gerado ? 'subtle' : 'primary'}
+          size="lg"
+          fullWidth
           onClick={gerarManifesto}
           disabled={!valido || gerando}
-          className={`w-full flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded text-[0.875rem] font-semibold transition-all
-            ${valido
-              ? gerado
-                ? 'bg-ads-500/20 text-ads-500'
-                : 'bg-ads-500 text-white hover:opacity-90'
-              : 'bg-surface-hover text-ink-muted cursor-not-allowed'}`}
-        >
-          {gerando
-            ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
-            : gerado
-              ? <><CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Manifesto gerado!</>
-              : <><Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Gerar Manifesto .md</>
+          loading={gerando}
+          icon={gerado
+            ? <CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+            : <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
           }
-        </button>
+        >
+          {gerado ? 'Manifesto gerado!' : 'Gerar Manifesto .md'}
+        </Button>
       </div>
 
       {/* SELETOR DE COMPONENTES */}

@@ -6,6 +6,7 @@ import {
   Palette, Users, Check, History,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 
@@ -36,17 +37,15 @@ function FeedbackSalvo({ ok, erro }: { ok: boolean; erro: string }) {
 
 function BtnSalvar({ salvando }: { salvando: boolean }) {
   return (
-    <button
+    <Button
       type="submit"
-      disabled={salvando}
-      className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50"
+      variant="primary"
+      size="lg"
+      loading={salvando}
+      icon={<Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
     >
-      {salvando
-        ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
-        : <Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
-      }
       {salvando ? 'Salvando…' : 'Salvar'}
-    </button>
+    </Button>
   )
 }
 
@@ -226,16 +225,41 @@ function AbaIntegracoes() {
 }
 
 // ── ABA FINANCEIRO ──────────────────────────────────────────────────────────
+interface EtapaRegua {
+  dias:      number
+  ativo:     boolean
+  template:  string
+}
+
+const ETAPAS_PADRAO: EtapaRegua[] = [
+  { dias: 3,  ativo: true,  template: 'Olá {nome}, sua fatura está próxima do vencimento (D+3). Podemos resolver isso juntos?' },
+  { dias: 7,  ativo: true,  template: 'Oi {nome}, identificamos que sua mensalidade está em atraso há {dias} dias. Precisamos regularizar para manter suas campanhas ativas.' },
+  { dias: 15, ativo: true,  template: '{nome}, seus serviços estão em risco de suspensão por atraso de {dias} dias. Entre em contato imediatamente.' },
+  { dias: 30, ativo: false, template: '{nome}, em razão do atraso de {dias} dias, iniciamos processo de cancelamento conforme contrato.' },
+]
+
 function AbaFinanceiro() {
   const [config,   setConfig]   = useState<ConfigFinanceira>({ custos_fixos_mensais: 0, custos_variaveis_percentual: 0, margem_lucro_minima: 30, saldo_google_ads_limite_alerta: 50 })
   const [loading,  setLoading]  = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [salvo,    setSalvo]    = useState(false)
   const [erro,     setErro]     = useState('')
+  const [etapas,   setEtapas]   = useState<EtapaRegua[]>(ETAPAS_PADRAO)
+  const [salvandoRegua, setSalvandoRegua] = useState(false)
+  const [salvoRegua,    setSalvoRegua]    = useState(false)
 
   useEffect(() => {
-    supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta').eq('agencia_id', 'adsgator-main').single()
-      .then(({ data }) => { if (data) setConfig(data as ConfigFinanceira); setLoading(false) })
+    supabase.from('configuracoes_financeiras')
+      .select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta,regua_cobranca')
+      .eq('agencia_id', 'adsgator-main').single()
+      .then(({ data }) => {
+        if (data) {
+          const d = data as ConfigFinanceira & { regua_cobranca?: EtapaRegua[] }
+          setConfig({ custos_fixos_mensais: d.custos_fixos_mensais, custos_variaveis_percentual: d.custos_variaveis_percentual, margem_lucro_minima: d.margem_lucro_minima, saldo_google_ads_limite_alerta: d.saldo_google_ads_limite_alerta })
+          if (d.regua_cobranca?.length) setEtapas(d.regua_cobranca)
+        }
+        setLoading(false)
+      })
   }, [])
 
   async function salvar(e: React.FormEvent) {
@@ -245,6 +269,21 @@ function AbaFinanceiro() {
     if (error) setErro(error.message)
     else { setSalvo(true); setTimeout(() => setSalvo(false), 3000) }
     setSalvando(false)
+  }
+
+  async function salvarRegua(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvandoRegua(true)
+    await supabase.from('configuracoes_financeiras')
+      .update({ regua_cobranca: etapas } as Record<string, unknown>)
+      .eq('agencia_id', 'adsgator-main')
+    setSalvandoRegua(false)
+    setSalvoRegua(true)
+    setTimeout(() => setSalvoRegua(false), 3000)
+  }
+
+  function updateEtapa(i: number, field: keyof EtapaRegua, value: unknown) {
+    setEtapas((prev) => prev.map((e, idx) => idx === i ? { ...e, [field]: value } : e))
   }
 
   const campos = [
@@ -257,26 +296,89 @@ function AbaFinanceiro() {
   if (loading) return <div className="h-[12rem] flex items-center justify-center"><div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" /></div>
 
   return (
-    <form onSubmit={salvar} className="flex flex-col gap-[1.25rem] max-w-[28rem]">
-      {campos.map(({ key, label, prefix, suffix }) => (
-        <Campo key={key} label={label}>
-          <div className="relative">
-            {prefix && <span className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{prefix}</span>}
-            <input
-              type="number" step="0.01" min="0"
-              value={config[key]}
-              onChange={(e) => setConfig((p) => ({ ...p, [key]: parseFloat(e.target.value) || 0 }))}
-              className={`w-full h-[2.5rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors ${prefix ? 'pl-[2.5rem]' : 'pl-[0.75rem]'} ${suffix ? 'pr-[2rem]' : 'pr-[0.75rem]'}`}
-            />
-            {suffix && <span className="absolute right-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{suffix}</span>}
+    <div className="flex flex-col gap-[2rem]">
+      {/* ── Custos e alertas ── */}
+      <form onSubmit={salvar} className="flex flex-col gap-[1.25rem] max-w-[28rem]">
+        <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Custos e Alertas</h3>
+        {campos.map(({ key, label, prefix, suffix }) => (
+          <Campo key={key} label={label}>
+            <div className="relative">
+              {prefix && <span className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{prefix}</span>}
+              <input
+                type="number" step="0.01" min="0"
+                value={config[key]}
+                onChange={(e) => setConfig((p) => ({ ...p, [key]: parseFloat(e.target.value) || 0 }))}
+                className={`w-full h-[2.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors ${prefix ? 'pl-[2.5rem]' : 'pl-[0.75rem]'} ${suffix ? 'pr-[2rem]' : 'pr-[0.75rem]'}`}
+              />
+              {suffix && <span className="absolute right-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{suffix}</span>}
+            </div>
+          </Campo>
+        ))}
+        <div className="flex items-center gap-[1rem]">
+          <BtnSalvar salvando={salvando} />
+          <FeedbackSalvo ok={salvo} erro={erro} />
+        </div>
+      </form>
+
+      {/* ── Régua de cobrança ── */}
+      <form onSubmit={salvarRegua} className="flex flex-col gap-[1.25rem]">
+        <div className="border-t border-surface-border/30 pt-[1.5rem]">
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[0.25rem]">Régua de Cobrança</h3>
+          <p className="text-ink-muted text-[0.8125rem] mb-[1.25rem]">
+            Configure os triggers automáticos. Use <code className="bg-surface-hover px-1 rounded text-ads-500">{'{nome}'}</code> e <code className="bg-surface-hover px-1 rounded text-ads-500">{'{dias}'}</code> nos templates.
+          </p>
+
+          <div className="flex flex-col gap-[1rem]">
+            {etapas.map((etapa, i) => (
+              <div
+                key={i}
+                className={`rounded-xl border p-[1rem] flex flex-col gap-[0.75rem] transition-colors ${etapa.ativo ? 'border-ads-500/30 bg-ads-500/5' : 'border-surface-border/30 bg-surface-hover/50'}`}
+              >
+                <div className="flex items-center justify-between gap-[1rem]">
+                  <div className="flex items-center gap-[0.75rem]">
+                    <span className={`text-[0.75rem] font-bold px-[0.5rem] py-[0.125rem] rounded-full ${etapa.ativo ? 'bg-ads-500/15 text-ads-500' : 'bg-surface-hover text-ink-muted'}`}>
+                      D+{etapa.dias}
+                    </span>
+                    <div className="flex items-center gap-[0.375rem]">
+                      <label className="text-ink-secondary text-[0.8125rem]">Dias de atraso:</label>
+                      <input
+                        type="number" min="1" max="180"
+                        value={etapa.dias}
+                        onChange={(e) => updateEtapa(i, 'dias', parseInt(e.target.value) || 1)}
+                        className="w-[4rem] h-[2rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-1 focus:ring-ads-500/30 text-center"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Toggle ativo */}
+                  <button
+                    type="button"
+                    onClick={() => updateEtapa(i, 'ativo', !etapa.ativo)}
+                    className={`relative w-[2.5rem] h-[1.375rem] rounded-full transition-colors shrink-0 ${etapa.ativo ? 'bg-ads-500' : 'bg-surface-hover border border-surface-border'}`}
+                  >
+                    <span className={`absolute top-[0.1875rem] w-[1rem] h-[1rem] rounded-full bg-white transition-transform shadow-sm ${etapa.ativo ? 'translate-x-[1.3125rem]' : 'translate-x-[0.1875rem]'}`} />
+                  </button>
+                </div>
+
+                <textarea
+                  value={etapa.template}
+                  onChange={(e) => updateEtapa(i, 'template', e.target.value)}
+                  disabled={!etapa.ativo}
+                  rows={2}
+                  className="w-full px-[0.75rem] py-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] resize-none focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors disabled:opacity-40"
+                  placeholder="Template da mensagem…"
+                />
+              </div>
+            ))}
           </div>
-        </Campo>
-      ))}
-      <div className="flex items-center gap-[1rem]">
-        <BtnSalvar salvando={salvando} />
-        <FeedbackSalvo ok={salvo} erro={erro} />
-      </div>
-    </form>
+        </div>
+
+        <div className="flex items-center gap-[1rem]">
+          <BtnSalvar salvando={salvandoRegua} />
+          <FeedbackSalvo ok={salvoRegua} erro="" />
+        </div>
+      </form>
+    </div>
   )
 }
 
