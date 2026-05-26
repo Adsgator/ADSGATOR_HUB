@@ -13,12 +13,19 @@ export default function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setErro(''); setLoading(true);
+    setErro('');
+    setLoading(true);
     try {
-      await loginComEmail(email.trim(), senha);
-      router.push('/dashboard');
+      console.log('[Login] Starting login process...');
+      const result = await loginComEmail(email.trim(), senha);
+      console.log('[Login] Login successful:', result ? '✓' : '✗');
+
+      console.log('[Login] Redirecting to /dashboard...');
+      window.location.href = '/dashboard';
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Credenciais inválidas');
+      const errorMsg = err instanceof Error ? err.message : 'Credenciais inválidas';
+      console.error('[Login] Error:', errorMsg);
+      setErro(errorMsg);
     } finally {
       setLoading(false);
     }

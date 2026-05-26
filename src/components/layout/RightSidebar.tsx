@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, MessageCircle, HelpCircle, Sun, Moon } from 'lucide-react'
+import { Bell, MessageCircle, HelpCircle, Settings, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
 import { useRightSidebar } from '@/lib/store/right-sidebar-context'
 import { NotificationDrawer } from './NotificationDrawer'
@@ -70,11 +70,6 @@ export function RightSidebar() {
           active={activeDrawer === 'chat'}
           onClick={() => openDrawer('chat')}
         />
-        <SidebarIconButton
-          icon={HelpCircle}
-          label="Ajuda"
-          onClick={() => window.open('/ajuda', '_self')}
-        />
       </div>
 
       {/* ── ÍCONES CONTEXTUAIS (injetados por página) ── */}
@@ -96,6 +91,20 @@ export function RightSidebar() {
 
       {/* ── SPACER ───────────────────────────────────── */}
       <div className="flex-1" />
+
+      {/* ── CONFIGURAÇÕES & AJUDA (rodapé) ─────────────── */}
+      <div className="flex flex-col items-center gap-[0.25rem] mb-[0.5rem]">
+        <SidebarIconButton
+          icon={Settings}
+          label="Configurações"
+          onClick={() => window.open('/configuracoes', '_self')}
+        />
+        <SidebarIconButton
+          icon={HelpCircle}
+          label="Ajuda"
+          onClick={() => window.open('/ajuda', '_self')}
+        />
+      </div>
 
       {/* ── TEMA (rodapé) ────────────────────────────── */}
       <SidebarIconButton

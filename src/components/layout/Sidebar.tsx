@@ -10,8 +10,6 @@ import {
   DollarSign,
   FileText,
   Layers,
-  Settings,
-  HelpCircle,
   LogOut,
   CheckSquare,
   Megaphone,
@@ -21,26 +19,14 @@ import { logout } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
 const NAV_ITEMS = [
-  {
-    group: 'MENU',
-    items: [
-      { href: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
-      { href: '/clientes',     icon: Users,           label: 'Clientes'     },
-      { href: '/tarefas',      icon: CheckSquare,     label: 'Tarefas'      },
-      { href: '/marketing',    icon: Megaphone,       label: 'Marketing'    },
-      { href: '/analytics',    icon: BarChart2,       label: 'Analytics'    },
-      { href: '/financeiro',   icon: DollarSign,      label: 'Financeiro'   },
-      { href: '/relatorios',   icon: FileText,        label: 'Relatórios'   },
-      { href: '/biblioteca',   icon: Layers,          label: 'Biblioteca'   },
-    ],
-  },
-  {
-    group: 'GERAL',
-    items: [
-      { href: '/configuracoes', icon: Settings,   label: 'Configurações' },
-      { href: '/ajuda',         icon: HelpCircle, label: 'Ajuda'         },
-    ],
-  },
+  { href: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
+  { href: '/clientes',     icon: Users,           label: 'Clientes'     },
+  { href: '/tarefas',      icon: CheckSquare,     label: 'Tarefas'      },
+  { href: '/marketing',    icon: Megaphone,       label: 'Marketing'    },
+  { href: '/analytics',    icon: BarChart2,       label: 'Analytics'    },
+  { href: '/financeiro',   icon: DollarSign,      label: 'Financeiro'   },
+  { href: '/relatorios',   icon: FileText,        label: 'Relatórios'   },
+  { href: '/biblioteca',   icon: Layers,          label: 'Biblioteca'   },
 ]
 
 export function Sidebar() {
@@ -90,54 +76,47 @@ export function Sidebar() {
         )}
       >
         {/* ── NAVEGAÇÃO ───────────────────────────────── */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-[0.75rem] px-[0.5rem] space-y-[1.5rem]">
-          {NAV_ITEMS.map((group) => (
-            <div key={group.group}>
-              <p className="text-ink-muted text-[0.625rem] font-semibold uppercase tracking-[0.08em] px-[0.5rem] max-h-0 mb-0 opacity-0 group-hover/sidebar:max-h-[1.5rem] group-hover/sidebar:mb-[0.375rem] group-hover/sidebar:opacity-100 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out">
-                {group.group}
-              </p>
-              <ul className="space-y-[0.125rem]">
-                {group.items.map(({ href, icon: Icon, label }) => {
-                  const isActive = pathname === href || pathname.startsWith(href + '/')
-                  return (
-                    <li key={href}>
-                      <Link
-                        href={href}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-[0.75rem] px-[0.5rem]">
+          <ul className="space-y-[0.125rem]">
+            {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+              const isActive = pathname === href || pathname.startsWith(href + '/')
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={cn(
+                      'flex items-center gap-[0.625rem]',
+                      'h-[2.25rem] px-[0.625rem] rounded-[0.375rem]',
+                      'text-[0.875rem] font-medium',
+                      'transition-colors duration-200',
+                      isActive
+                        ? 'border-l-[3px] border-ads-500 bg-ads-500/10 text-ads-500 rounded-l-none'
+                        : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                    )}
+                  >
+                    <div className="relative shrink-0">
+                      <Icon
                         className={cn(
-                          'flex items-center gap-[0.625rem]',
-                          'h-[2.25rem] px-[0.625rem] rounded-[0.375rem]',
-                          'text-[0.875rem] font-medium',
-                          'transition-colors duration-200',
-                          isActive
-                            ? 'border-l-[3px] border-ads-500 bg-ads-500/10 text-ads-500 rounded-l-none'
-                            : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                          'w-[1.25rem] h-[1.25rem]',
+                          isActive ? 'text-ads-500' : 'text-ink-muted',
                         )}
-                      >
-                        <div className="relative shrink-0">
-                          <Icon
-                            className={cn(
-                              'w-[1.25rem] h-[1.25rem]',
-                              isActive ? 'text-ads-500' : 'text-ink-muted',
-                            )}
-                            strokeWidth={isActive ? 2.25 : 1.75}
-                            style={isActive ? { filter: 'drop-shadow(0 0 0.375rem rgba(255,177,0,0.4))' } : undefined}
-                          />
-                          {href === '/tarefas' && badgeCount > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-[0.875rem] h-[0.875rem] px-[0.125rem] rounded-full bg-status-red text-white text-[0.5rem] font-bold flex items-center justify-center">
-                              {badgeCount > 9 ? '9' : badgeCount}
-                            </span>
-                          )}
-                        </div>
-                        <span className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
-                          {label}
+                        strokeWidth={isActive ? 2.25 : 1.75}
+                        style={isActive ? { filter: 'drop-shadow(0 0 0.375rem rgba(255,177,0,0.4))' } : undefined}
+                      />
+                      {href === '/tarefas' && badgeCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[0.875rem] h-[0.875rem] px-[0.125rem] rounded-full bg-status-red text-white text-[0.5rem] font-bold flex items-center justify-center">
+                          {badgeCount > 9 ? '9' : badgeCount}
                         </span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ))}
+                      )}
+                    </div>
+                    <span className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
+                      {label}
+                    </span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
         </nav>
 
         {/* ── RODAPÉ — USUÁRIO ───────────────────────── */}
