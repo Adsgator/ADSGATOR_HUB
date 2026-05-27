@@ -303,3 +303,43 @@ export async function obterAlertasPendentes(clienteId?: string) {
   if (error) throw new Error(`Erro ao obter alertas: ${error.message}`);
   return data ?? [];
 }
+
+// ============================================================
+// DASHBOARD LAYOUTS
+// ============================================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Layouts = Record<string, any[]>
+
+export async function carregarDashboardLayout(userId: string): Promise<Layouts | null> {
+  const { data, error } = await supabase
+    .from('configuracoes_usuario')
+    .select('preferencias')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[Dashboard] Erro ao carregar layout: ${error.message}`);
+    return null;
+  }
+
+  return (data?.preferencias as any)?.dashboard_layouts ?? null;
+}
+
+export async function salvarDashboardLayout(userId: string, layouts: Layouts): Promise<void> {
+  const { data } = await supabase
+    .from('configuracoes_usuario')
+    .select('preferencias')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const prefAtual = (data?.preferencias as Record<string, unknown>) ?? {};
+  const { error } = await supabase
+    .from('configuracoes_usuario')
+    .upsert(
+      { user_id: userId, preferencias: { ...prefAtual, dashboard_layouts: layouts } },
+      { onConflict: 'user_id' }
+    );
+
+  if (error) throw new Error(`Erro ao salvar layout do dashboard: ${error.message}`);
+}

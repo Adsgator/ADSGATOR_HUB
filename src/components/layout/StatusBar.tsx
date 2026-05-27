@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { User, Users, DollarSign, AlertTriangle, Wifi, WifiOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { ApiStatusIndicator } from './ApiStatusIndicator'
 
 interface StatusMetrics {
   userName: string
@@ -77,17 +78,18 @@ export function StatusBar() {
   })
 
   return (
-    <footer className="col-span-3 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border/20 flex items-center px-[1rem] gap-[0.75rem] text-[0.6875rem] select-none z-30">
-      {/* ── ESQUERDA: Usuário ─────────────────────── */}
-      <div className="flex items-center gap-[0.375rem] text-ink-secondary">
-        <User className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
-        <span>{metrics.userName}</span>
+    <footer className="col-span-3 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border/20 flex items-center px-[1rem] gap-[1rem] text-[0.6875rem] select-none z-30">
+      {/* ── ESQUERDA: Status das APIs ─────────────── */}
+      <div className="flex items-center gap-[0.75rem]">
+        <span className="text-ink-muted font-medium uppercase tracking-wider">STATUS APIS</span>
+        <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+        <ApiStatusIndicator />
       </div>
 
-      <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+      <div className="flex-1" />
 
-      {/* ── CENTRO: Métricas ──────────────────────── */}
-      <div className="flex-1 flex items-center justify-center gap-[1.25rem]">
+      {/* ── CENTRO: Métricas ──────────────────────– */}
+      <div className="flex items-center justify-center gap-[1.25rem]">
         <div className="flex items-center gap-[0.375rem] text-ink-secondary">
           <DollarSign className="w-[0.75rem] h-[0.75rem] text-status-green" strokeWidth={1.75} />
           <span>MRR <strong className="text-ink-primary">{fmtMrr}</strong></span>
@@ -106,10 +108,17 @@ export function StatusBar() {
         )}
       </div>
 
-      <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+      <div className="flex-1" />
 
-      {/* ── DIREITA: Status + Versão ──────────────── */}
+      {/* ── DIREITA: Usuário + Status + Versão ──── */}
       <div className="flex items-center gap-[0.75rem]">
+        <div className="flex items-center gap-[0.375rem] text-ink-secondary">
+          <User className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+          <span>{metrics.userName}</span>
+        </div>
+
+        <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+
         <div className="flex items-center gap-[0.25rem]">
           {metrics.online ? (
             <Wifi className="w-[0.75rem] h-[0.75rem] text-status-green" strokeWidth={1.75} />

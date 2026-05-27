@@ -10,10 +10,12 @@ import {
   CreditCard,
   Download,
   RefreshCw,
-  RotateCcw,
   MessageCircle,
   ExternalLink,
   PauseCircle,
+  LayoutDashboard,
+  Check,
+  X,
 } from 'lucide-react'
 import { MainLayout }            from '@/components/layout/MainLayout'
 import { BentoCard }             from '@/components/dashboard/BentoCard'
@@ -28,7 +30,9 @@ import { GeminiChat }            from '@/components/dashboard/GeminiChat'
 import { ActivityFeed }          from '@/components/dashboard/ActivityFeed'
 import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
+import { useRightSidebar }       from '@/lib/store/right-sidebar-context'
 import { supabase }              from '@/lib/supabase'
+import { carregarDashboardLayout, salvarDashboardLayout, type Layouts as LayoutsType } from '@/lib/database'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -47,13 +51,98 @@ const STORAGE_KEY = 'adsgator-bento-layouts-v3'
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Layouts = Record<string, any[]>
+// Layouts type já importado de @/lib/database
+
+interface SizePreset {
+  id: 'compact' | 'normal' | 'large' | 'max'
+  sizes: Record<string, { w: number; h: number }>
+}
+
+const CARD_SIZE_PRESETS: Record<string, SizePreset[]> = {
+  'weather-clock': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 3 }, lg: { w: 2, h: 3 }, md: { w: 2, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 4 }, lg: { w: 2, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 5 }, lg: { w: 3, h: 5 }, md: { w: 4, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'kpi-ativos': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 4, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'kpi-mrr': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 4, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'kpi-retencao': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 2, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'kpi-saldo': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 2, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'morning-briefing': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 2 }, lg: { w: 3, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 5, h: 4 }, lg: { w: 5, h: 4 }, md: { w: 6, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 6, h: 5 }, lg: { w: 6, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 8, h: 6 }, lg: { w: 7, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'acoes-dia': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 5, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 4, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 7, h: 6 }, lg: { w: 6, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'dre-sparkline': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 3 }, lg: { w: 4, h: 3 }, md: { w: 4, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 7, h: 6 }, lg: { w: 6, h: 6 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 9, h: 7 }, lg: { w: 8, h: 7 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 8 }, lg: { w: 10, h: 8 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'alertas-criticos': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 2 }, lg: { w: 4, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 6, h: 4 }, lg: { w: 5, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 8, h: 5 }, lg: { w: 7, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 6 }, lg: { w: 10, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'gemini-chat': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 2 }, lg: { w: 4, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 6, h: 4 }, lg: { w: 5, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 8, h: 5 }, lg: { w: 7, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 6 }, lg: { w: 10, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'clientes-foco': [
+    { id: 'compact', sizes: { xl: { w: 5, h: 2 }, lg: { w: 4, h: 2 }, md: { w: 4, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 8, h: 4 }, lg: { w: 6, h: 4 }, md: { w: 6, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 10, h: 5 }, lg: { w: 8, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 6 }, lg: { w: 10, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'clientes-progresso': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 3 }, lg: { w: 4, h: 3 }, md: { w: 4, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 5, h: 6 }, lg: { w: 4, h: 6 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 7, h: 7 }, lg: { w: 6, h: 7 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 9, h: 8 }, lg: { w: 8, h: 8 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'activity-feed': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 2 }, lg: { w: 3, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 4 }, lg: { w: 4, h: 4 }, md: { w: 6, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 8, h: 6 }, lg: { w: 7, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+}
 
 const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 
-const DEFAULT_LAYOUTS: Layouts = {
+const DEFAULT_LAYOUTS: LayoutsType = {
   xl: [
     // ROW 0-5: Hero (DRE) + Lista (Clientes) — espelho da referência
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 7,  h: 6, minW: 4, minH: 4 },
@@ -124,10 +213,14 @@ const DEFAULT_LAYOUTS: Layouts = {
 
 export default function DashboardPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
+  const { setContextActions, clearContextActions } = useRightSidebar()
   const [saldoGoogle, setSaldoGoogle] = useState<number | null>(null)
   const [mostrarWizard, setMostrarWizard] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [layouts, setLayouts] = useState<Record<string, any[]>>(DEFAULT_LAYOUTS)
+  const [layouts, setLayouts] = useState<LayoutsType>(DEFAULT_LAYOUTS)
+  const [layoutSnapshot, setLayoutSnapshot] = useState<LayoutsType>(DEFAULT_LAYOUTS)
   const [containerWidth, setContainerWidth] = useState(1200)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -143,12 +236,42 @@ export default function DashboardPage() {
     return () => ro.disconnect()
   }, [measureWidth])
 
-  // Carregar layout salvo + verificar onboarding
+  // Carregar layout do Supabase (prioridade) ou localStorage + verificar onboarding
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) setLayouts(JSON.parse(saved) as Layouts)
-    } catch {}
+    (async () => {
+      const { data } = await supabase.auth.getUser()
+      const uid = data.user?.id ?? null
+      setUserId(uid)
+
+      if (uid) {
+        try {
+          const savedLayout = await carregarDashboardLayout(uid)
+          if (savedLayout) {
+            setLayouts(savedLayout)
+          } else {
+            // fallback localStorage
+            try {
+              const local = localStorage.getItem(STORAGE_KEY)
+              if (local) setLayouts(JSON.parse(local) as LayoutsType)
+            } catch {}
+          }
+        } catch (err) {
+          console.error('[Dashboard] Erro ao carregar layout:', err)
+          // fallback localStorage em caso de erro
+          try {
+            const local = localStorage.getItem(STORAGE_KEY)
+            if (local) setLayouts(JSON.parse(local) as LayoutsType)
+          } catch {}
+        }
+      } else {
+        // Sem login: carregar apenas localStorage
+        try {
+          const local = localStorage.getItem(STORAGE_KEY)
+          if (local) setLayouts(JSON.parse(local) as LayoutsType)
+        } catch {}
+      }
+    })()
+
     try {
       if (!localStorage.getItem('adsgator_onboarding_done')) {
         setMostrarWizard(true)
@@ -158,14 +281,74 @@ export default function DashboardPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleLayoutChange = (_: any[], allLayouts: Record<string, any[]>) => {
+    // Só atualiza estado — save acontece apenas ao confirmar edit mode
     setLayouts(allLayouts)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allLayouts)) } catch {}
   }
 
-  const handleReset = () => {
+  const handleConfirmEdit = async () => {
+    setEditMode(false)
+    if (userId) {
+      try {
+        await salvarDashboardLayout(userId, layouts)
+      } catch (err) {
+        console.error('[Dashboard] Erro ao salvar layout:', err)
+        toast.error('Erro ao salvar layout')
+        return
+      }
+    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts)) } catch {}
+    toast.success('Layout salvo')
+  }
+
+  const handleCancelEdit = () => {
+    setLayouts(layoutSnapshot)
+    setEditMode(false)
+  }
+
+  const enterEdit = () => {
+    setLayoutSnapshot(layouts)
+    setEditMode(true)
+  }
+
+  const handleReset = async () => {
     setLayouts(DEFAULT_LAYOUTS)
+    if (userId) {
+      try {
+        await salvarDashboardLayout(userId, DEFAULT_LAYOUTS)
+      } catch (err) {
+        console.error('[Dashboard] Erro ao resetar layout:', err)
+      }
+    }
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
     toast.success('Layout resetado')
+  }
+
+  const handleCardSizeChange = (cardId: string, preset: 'compact' | 'normal' | 'large' | 'max') => {
+    const presets = CARD_SIZE_PRESETS[cardId]
+    if (!presets) return
+
+    const selected = presets.find(p => p.id === preset)
+    if (!selected) return
+
+    setLayouts(prev => {
+      const updated = { ...prev }
+      Object.keys(BREAKPOINTS).forEach((bp) => {
+        const layout = updated[bp] || []
+        const idx = layout.findIndex((item: any) => item.i === cardId)
+        if (idx >= 0 && selected.sizes[bp]) {
+          const newSize = selected.sizes[bp]
+          layout[idx] = { ...layout[idx], w: newSize.w, h: newSize.h }
+        }
+      })
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
+      return updated
+    })
+    toast.success(`Card redimensionado para "${preset === 'compact' ? 'Compacto' : preset === 'normal' ? 'Normal' : preset === 'large' ? 'Grande' : 'Máximo'}"`)
+  }
+
+  // Cria uma função bound para cada cardId
+  const makeCardResizer = (cardId: string) => (preset: 'compact' | 'normal' | 'large' | 'max') => {
+    handleCardSizeChange(cardId, preset)
   }
 
   useEffect(() => {
@@ -178,6 +361,21 @@ export default function DashboardPage() {
         setSaldoGoogle(total)
       })
   }, [])
+
+  // Injetar controles de edit na RightSidebar
+  useEffect(() => {
+    if (editMode) {
+      setContextActions([
+        { id: 'confirm-edit', icon: Check, label: 'Confirmar layout', onClick: handleConfirmEdit },
+        { id: 'cancel-edit', icon: X, label: 'Cancelar edição', onClick: handleCancelEdit },
+      ])
+    } else {
+      setContextActions([
+        { id: 'edit-layout', icon: LayoutDashboard, label: 'Editar layout', onClick: enterEdit },
+      ])
+    }
+    return () => clearContextActions()
+  }, [editMode, layouts, userId])
 
   const progresso = dados.filter((d) =>
     d.cliente.status !== 'congelado' && d.cliente.status !== 'cancelado'
@@ -228,13 +426,6 @@ export default function DashboardPage() {
 
   const topBarActions = (
     <div className="flex items-center gap-[0.5rem]">
-      <button
-        onClick={handleReset}
-        title="Resetar layout"
-        className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors"
-      >
-        <RotateCcw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-      </button>
       <button
         onClick={recarregar}
         disabled={loading}
@@ -290,8 +481,9 @@ export default function DashboardPage() {
         {/* ════════════════════════════════════════════════════════════ */}
         {/* GRID CUSTOMIZÁVEL — (Rest da Dashboard anterior)            */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <div>
-          <p className="text-ink-muted text-xs font-medium uppercase tracking-wider mb-[1rem]">Mais widgets</p>
+        <div className={editMode ? 'ring-1 ring-ads-500/30 rounded-2xl p-[1rem]' : ''}>
+          {editMode && <p className="text-ads-500 text-xs font-semibold mb-[1rem] animate-pulse">Modo de edição ativado — arraste e redimensione os cards</p>}
+          {!editMode && <p className="text-ink-muted text-xs font-medium uppercase tracking-wider mb-[1rem]">Mais widgets</p>}
           <RGLResponsive
             className="layout"
             layouts={layouts}
@@ -304,12 +496,12 @@ export default function DashboardPage() {
             onLayoutChange={handleLayoutChange}
             width={containerWidth}
             useCSSTransforms
-            isResizable
-            isDraggable
+            isResizable={editMode}
+            isDraggable={editMode}
           >
           {/* ── KPIs ─────────────────────────────── */}
           <div key="kpi-ativos">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-ativos" onSizeChange={makeCardResizer('kpi-ativos')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Clientes Ativos" value={metricas.ativos} accentColor="amber" icon={<Users className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/clientes" />
@@ -318,7 +510,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-mrr">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-mrr" onSizeChange={makeCardResizer('kpi-mrr')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="MRR" value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} accentColor="green" icon={<DollarSign className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/financeiro" />
@@ -327,7 +519,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-retencao">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-retencao" onSizeChange={makeCardResizer('kpi-retencao')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Taxa de Retenção" value={`${metricas.taxaRetencao}%`} accentColor="red" icon={<Percent className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
@@ -336,7 +528,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-saldo">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-saldo" onSizeChange={makeCardResizer('kpi-saldo')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Saldo Google" value={saldoGoogle !== null ? `R$ ${saldoGoogle.toLocaleString('pt-BR')}` : '…'} delta={saldoGoogle !== null && saldoGoogle < 200 ? 'Baixo' : undefined} deltaDir={saldoGoogle !== null && saldoGoogle < 200 ? 'down' : undefined} accentColor="blue" alert={saldoGoogle !== null && saldoGoogle < 200} alertLabel="Envie #SALDOGOOGLE" icon={<CreditCard className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
@@ -346,21 +538,21 @@ export default function DashboardPage() {
 
           {/* ── MORNING BRIEFING ─────────────────── */}
           <div key="morning-briefing">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="morning-briefing" onSizeChange={makeCardResizer('morning-briefing')} noPadding>
               <MorningBriefing />
             </BentoCard>
           </div>
 
           {/* ── WEATHER CLOCK ────────────────────── */}
           <div key="weather-clock">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="weather-clock" onSizeChange={makeCardResizer('weather-clock')} noPadding>
               <WeatherClock />
             </BentoCard>
           </div>
 
           {/* ── AÇÕES DO DIA ─────────────────────── */}
           <div key="acoes-dia">
-            <BentoCard title="Ações do Dia" subtitle="Prioridades de hoje">
+            <BentoCard editMode={editMode} cardId="acoes-dia" onSizeChange={makeCardResizer('acoes-dia')} title="Ações do Dia" subtitle="Prioridades de hoje">
               {loading || acoesDoDia.length === 0
                 ? <div className="flex items-center justify-center h-full text-ink-muted text-[0.8125rem]">Nenhuma ação pendente</div>
                 : <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} onCriarTask={handleCriarTaskDeAcao} />
@@ -371,6 +563,9 @@ export default function DashboardPage() {
           {/* ── CLIENTES EM PROGRESSO ────────────── */}
           <div key="clientes-progresso">
             <BentoCard
+              editMode={editMode}
+              cardId="clientes-progresso"
+              onSizeChange={makeCardResizer('clientes-progresso')}
               title="Clientes em Progresso"
               subtitle={`${progresso.length} de ${metricas.total} clientes`}
               actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
@@ -437,21 +632,21 @@ export default function DashboardPage() {
 
           {/* ── DRE SPARKLINE ────────────────────── */}
           <div key="dre-sparkline">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="dre-sparkline" onSizeChange={makeCardResizer('dre-sparkline')} noPadding>
               <DRESparkline />
             </BentoCard>
           </div>
 
           {/* ── ALERTAS CRÍTICOS ─────────────────── */}
           <div key="alertas-criticos">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="alertas-criticos" onSizeChange={makeCardResizer('alertas-criticos')} noPadding>
               <AlertasCriticos />
             </BentoCard>
           </div>
 
           {/* ── GEMINI CHAT ──────────────────────── */}
           <div key="gemini-chat">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="gemini-chat" onSizeChange={makeCardResizer('gemini-chat')} noPadding>
               <GeminiChat />
             </BentoCard>
           </div>
@@ -466,6 +661,9 @@ export default function DashboardPage() {
                 .slice(0, 5)
               return (
                 <BentoCard
+                  editMode={editMode}
+                  cardId="clientes-foco"
+                  onSizeChange={makeCardResizer('clientes-foco')}
                   title="Clientes em Foco"
                   subtitle={emFoco.length > 0 ? `${emFoco.length} cliente${emFoco.length > 1 ? 's' : ''} precisam de atenção` : 'Tudo em dia'}
                   actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
@@ -534,6 +732,9 @@ export default function DashboardPage() {
           {/* ── ACTIVITY FEED ───────────────────────── */}
           <div key="activity-feed">
             <BentoCard
+              editMode={editMode}
+              cardId="activity-feed"
+              onSizeChange={makeCardResizer('activity-feed')}
               title="Atividade Recente"
               subtitle="Últimas 24h"
               actions={<a href="/configuracoes" className="text-ads-500 text-[0.75rem] hover:underline">Ver auditoria</a>}

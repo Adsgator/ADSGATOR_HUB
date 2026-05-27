@@ -5,14 +5,11 @@ import { Thermometer, CloudRain } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 interface WeatherData {
-  temp:    number | null
-  chuva:   number | null
-  chuva2h: number | null
-}
-
-interface StatusAPI {
-  label:  string
-  status: 'ok' | 'warn' | 'error'
+  temp:        number | null
+  chuva:       number | null
+  chuva2h:     number | null
+  descricao?:  string
+  condicao?:   string
 }
 
 // ── Relógio analógico SVG ────────────────────────────────────────────────────
@@ -98,11 +95,6 @@ function AnalogClock({ date }: { date: Date }) {
 export function WeatherClock() {
   const [now,     setNow]     = useState(new Date())
   const [weather, setWeather] = useState<WeatherData>({ temp: null, chuva: null, chuva2h: null })
-  const [apis,    setApis]    = useState<StatusAPI[]>([
-    { label: 'Supabase',   status: 'warn' },
-    { label: 'Google Ads', status: 'warn' },
-    { label: 'Asaas',      status: 'warn' },
-  ])
 
   // Tick a cada segundo para o analógico
   useEffect(() => {
@@ -118,63 +110,9 @@ export function WeatherClock() {
       .catch(() => {})
   }, [])
 
-  // Status APIs dinâmico
-  useEffect(() => {
-    async function checkApis() {
-      const results: StatusAPI[] = []
-
-      // Supabase
-      try {
-        const t0 = Date.now()
-        const { error } = await supabase.from('clientes').select('id').limit(1)
-        const ms = Date.now() - t0
-        results.push({ label: 'Supabase', status: error ? 'error' : ms < 2000 ? 'ok' : 'warn' })
-      } catch {
-        results.push({ label: 'Supabase', status: 'error' })
-      }
-
-      // Google Ads — verifica se algum cliente tem integração ativa
-      try {
-        const { data } = await supabase
-          .from('clientes')
-          .select('id')
-          .eq('google_ads_enabled', true)
-          .limit(1)
-          .maybeSingle()
-        results.push({ label: 'Google Ads', status: data ? 'ok' : 'warn' })
-      } catch {
-        results.push({ label: 'Google Ads', status: 'warn' })
-      }
-
-      // Asaas — verifica se algum cliente tem asaas_id
-      try {
-        const { data } = await supabase
-          .from('clientes')
-          .select('id')
-          .not('asaas_id', 'is', null)
-          .limit(1)
-          .maybeSingle()
-        results.push({ label: 'Asaas', status: data ? 'ok' : 'warn' })
-      } catch {
-        results.push({ label: 'Asaas', status: 'warn' })
-      }
-
-      setApis(results)
-    }
-
-    checkApis()
-    const id = setInterval(checkApis, 60_000)
-    return () => clearInterval(id)
-  }, [])
 
   const hora = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const data = now.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
-
-  const STATUS_COLOR = {
-    ok:    'fill-status-green text-status-green',
-    warn:  'fill-status-orange text-status-orange',
-    error: 'fill-status-red text-status-red',
-  } as const
 
   return (
     <div className="p-[1.25rem] flex flex-col gap-[0.75rem] h-full">
@@ -192,34 +130,24 @@ export function WeatherClock() {
 
       {/* Clima */}
       {weather.temp !== null && (
-        <div className="flex items-center gap-[0.75rem]">
-          <div className="flex items-center gap-[0.375rem]">
-            <Thermometer className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.75} />
-            <span className="text-ink-primary text-[1rem] font-semibold">{weather.temp}°C</span>
+        <div className="flex flex-col gap-[0.375rem]">
+          <div className="flex items-center gap-[0.5rem]">
+            <div className="flex items-center gap-[0.375rem]">
+              <Thermometer className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.75} />
+              <span className="text-ink-primary text-[1rem] font-semibold">{weather.temp}°C</span>
+            </div>
+            {weather.chuva2h !== null && weather.chuva2h > 0 && (
+              <span className="inline-flex items-center gap-[0.25rem] px-[0.5rem] py-[0.125rem] rounded-full bg-status-blue/10 text-status-blue text-[0.75rem] font-medium">
+                <CloudRain className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                {weather.chuva2h}% chuva
+              </span>
+            )}
           </div>
-          {weather.chuva2h !== null && weather.chuva2h > 0 && (
-            <span className="inline-flex items-center gap-[0.25rem] px-[0.5rem] py-[0.125rem] rounded-full bg-status-blue/10 text-status-blue text-[0.75rem] font-medium">
-              <CloudRain className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
-              {weather.chuva2h}% chuva
-            </span>
+          {weather.condicao && (
+            <p className="text-ink-secondary text-[0.75rem] capitalize">{weather.condicao}</p>
           )}
         </div>
       )}
-
-      {/* Status das APIs */}
-      <div>
-        <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold mb-[0.375rem]">Status APIs</p>
-        <div className="flex flex-col gap-[0.25rem]">
-          {apis.map(({ label, status }) => (
-            <div key={label} className="flex items-center gap-[0.375rem]">
-              <svg viewBox="0 0 8 8" className={`w-[0.5rem] h-[0.5rem] shrink-0 ${STATUS_COLOR[status]}`}>
-                <circle cx="4" cy="4" r="4" />
-              </svg>
-              <span className="text-ink-secondary text-[0.6875rem]">{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

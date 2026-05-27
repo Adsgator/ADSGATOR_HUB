@@ -1,6 +1,7 @@
 'use client'
 
-import { GripVertical } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { GripVertical, MoreVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface BentoCardProps {
@@ -10,9 +11,48 @@ interface BentoCardProps {
   children: React.ReactNode
   className?: string
   noPadding?: boolean
+  cardId?: string
+  onSizeChange?: (preset: 'compact' | 'normal' | 'large' | 'max') => void
+  editMode?: boolean
 }
 
-export function BentoCard({ title, subtitle, actions, children, className, noPadding }: BentoCardProps) {
+const SIZE_LABELS: Record<string, string> = {
+  compact: 'Compacto',
+  normal: 'Normal',
+  large: 'Grande',
+  max: 'Máximo',
+}
+
+function SizeMenu({ cardId, onSizeChange, onClose }: { cardId?: string; onSizeChange?: (preset: 'compact' | 'normal' | 'large' | 'max') => void; onClose: () => void }) {
+  if (!cardId || !onSizeChange) return null
+
+  return (
+    <div className="absolute top-[2rem] right-[0.5rem] z-20 bg-surface-card border border-surface-border rounded-lg shadow-lg overflow-hidden min-w-[120px]">
+      {(['compact', 'normal', 'large', 'max'] as const).map((preset) => (
+        <button
+          key={preset}
+          onClick={() => {
+            onSizeChange(preset)
+            onClose()
+          }}
+          className="w-full text-left px-[0.75rem] py-[0.5rem] text-[0.8125rem] hover:bg-surface-hover text-ink-secondary hover:text-ink-primary transition-colors border-b border-surface-border last:border-b-0"
+        >
+          {SIZE_LABELS[preset]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function BentoCard({ title, subtitle, actions, children, className, noPadding, cardId, onSizeChange, editMode }: BentoCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const handleSizeSelect = (preset: 'compact' | 'normal' | 'large' | 'max') => {
+    if (cardId && onSizeChange) {
+      onSizeChange(preset)
+    }
+  }
   return (
     <div
       className={cn(
@@ -20,16 +60,35 @@ export function BentoCard({ title, subtitle, actions, children, className, noPad
         'bg-surface-card rounded-2xl h-full flex flex-col dark:border dark:border-surface-border',
         'card-shadow card-interactive',
         'overflow-hidden',
+        editMode && 'ring-1 ring-ads-500/20',
         className,
       )}
     >
-      {/* Drag handle — visível no hover */}
-      <div
-        className="bento-drag-handle absolute top-[0.5rem] right-[0.5rem] opacity-0 group-hover:opacity-60 cursor-grab active:cursor-grabbing z-10 p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-opacity"
-        title="Arrastar"
-      >
-        <GripVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
+      {/* Menu de tamanhos */}
+      <div ref={menuRef} className="relative">
+        {menuOpen && editMode && <SizeMenu cardId={cardId} onSizeChange={handleSizeSelect} onClose={() => setMenuOpen(false)} />}
       </div>
+
+      {/* Drag handle + Size menu button — visível apenas em editMode */}
+      {editMode && (
+        <div className="absolute top-[0.5rem] right-[0.5rem] z-10 flex items-center gap-[0.25rem]">
+          {cardId && onSizeChange && (
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              title="Tamanho do card"
+              className="p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-colors"
+            >
+              <MoreVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
+            </button>
+          )}
+          <div
+            className="bento-drag-handle cursor-grab active:cursor-grabbing p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-colors"
+            title="Arrastar"
+          >
+            <GripVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       {(title || actions) && (
