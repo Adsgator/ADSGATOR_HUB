@@ -1,8 +1,8 @@
 # Project Snapshot
 
 **Projeto:** `src`  
-**Gerado em:** 2026-05-24 13:37:58  
-**Total de arquivos:** 93  
+**Gerado em:** 2026-05-27 01:04:56  
+**Total de arquivos:** 119  
 **Raiz:** `C:\PROJETOS\ADSGATOR\ADSGATOR_HUB\src`  
 
 ---
@@ -16,27 +16,28 @@ src/
 │   │   ├── 📁 ajuda/
 │   │   │   └── 📄 page.tsx (13.6KB)
 │   │   ├── 📁 analytics/
-│   │   │   └── 📄 page.tsx (28.0KB)
+│   │   │   └── 📄 page.tsx (31.8KB)
 │   │   ├── 📁 biblioteca/
-│   │   │   └── 📄 page.tsx (19.8KB)
+│   │   │   └── 📄 page.tsx (19.1KB)
 │   │   ├── 📁 clientes/
 │   │   │   ├── 📁 [id]/
-│   │   │   │   └── 📄 page.tsx (17.8KB)
+│   │   │   │   └── 📄 page.tsx (21.6KB)
 │   │   │   ├── 📁 novo/
-│   │   │   │   └── 📄 page.tsx
-│   │   │   └── 📄 page.tsx (15.2KB)
+│   │   │   │   └── 📄 page.tsx (12.8KB)
+│   │   │   └── 📄 page.tsx (26.1KB)
 │   │   ├── 📁 configuracoes/
-│   │   │   └── 📄 page.tsx (22.1KB)
+│   │   │   └── 📄 page.tsx (32.0KB)
 │   │   ├── 📁 dashboard/
-│   │   │   └── 📄 page.tsx (23.2KB)
+│   │   │   └── 📄 page.tsx (40.9KB)
 │   │   ├── 📁 financeiro/
-│   │   │   └── 📄 page.tsx (30.1KB)
+│   │   │   └── 📄 page.tsx (51.3KB)
 │   │   ├── 📁 marketing/
-│   │   │   └── 📄 page.tsx (21.7KB)
+│   │   │   └── 📄 page.tsx (20.8KB)
 │   │   ├── 📁 relatorios/
 │   │   │   └── 📄 page.tsx (16.3KB)
-│   │   └── 📁 tarefas/
-│   │       └── 📄 page.tsx (22.4KB)
+│   │   ├── 📁 tarefas/
+│   │   │   └── 📄 page.tsx (26.2KB)
+│   │   └── 📄 layout.tsx
 │   ├── 📁 api/
 │   │   ├── 📁 analytics/
 │   │   │   └── 📁 [clienteId]/
@@ -54,12 +55,26 @@ src/
 │   │   │       └── 📄 route.ts
 │   │   ├── 📁 search/
 │   │   │   └── 📄 route.ts
+│   │   ├── 📁 v1/
+│   │   │   ├── 📁 clientes/
+│   │   │   │   ├── 📁 [id]/
+│   │   │   │   │   └── 📄 route.ts
+│   │   │   │   └── 📄 route.ts
+│   │   │   ├── 📁 financeiro/
+│   │   │   │   └── 📄 route.ts
+│   │   │   ├── 📁 tarefas/
+│   │   │   │   ├── 📁 [id]/
+│   │   │   │   │   └── 📄 route.ts
+│   │   │   │   └── 📄 route.ts
+│   │   │   └── 📄 route.ts
 │   │   └── 📁 weather/
 │   │       └── 📄 route.ts
 │   ├── 📁 login/
 │   │   └── 📄 page.tsx
-│   ├── 📄 globals.css (11.8KB)
+│   ├── 📄 error.tsx
+│   ├── 📄 globals.css (13.4KB)
 │   ├── 📄 layout.tsx
+│   ├── 📄 not-found.tsx
 │   └── 📄 page.tsx
 ├── 📁 components/
 │   ├── 📁 analytics/
@@ -77,6 +92,7 @@ src/
 │   │   ├── 📄 ChecklistCard.tsx
 │   │   ├── 📄 ClienteCard.tsx
 │   │   ├── 📄 ClienteIntegracoes.tsx
+│   │   ├── 📄 ClienteMemoria.tsx
 │   │   ├── 📄 ClientePerformance.tsx
 │   │   ├── 📄 OnboardChecklist.tsx
 │   │   └── 📄 WhatsAppTemplateModal.tsx
@@ -84,6 +100,7 @@ src/
 │   │   └── 📄 AuditLogViewer.tsx (10.9KB)
 │   ├── 📁 dashboard/
 │   │   ├── 📄 AcoesDoDia.tsx
+│   │   ├── 📄 ActivityFeed.tsx
 │   │   ├── 📄 AlertaSaldoGoogle.tsx
 │   │   ├── 📄 AlertasCriticos.tsx
 │   │   ├── 📄 BentoCard.tsx
@@ -99,6 +116,9 @@ src/
 │   │   ├── 📄 TrendingOnMarket.tsx
 │   │   └── 📄 WeatherClock.tsx
 │   ├── 📁 layout/
+│   │   ├── 📄 ApiStatusIndicator.tsx
+│   │   ├── 📄 ChangelogDrawer.tsx
+│   │   ├── 📄 FloatingChat.tsx
 │   │   ├── 📄 MainLayout.tsx
 │   │   ├── 📄 NotificationBell.tsx
 │   │   ├── 📄 NotificationDrawer.tsx
@@ -108,19 +128,29 @@ src/
 │   │   └── 📄 TopBar.tsx
 │   └── 📁 ui/
 │       ├── 📄 Badge.tsx
+│       ├── 📄 Button.tsx
+│       ├── 📄 Card.tsx
 │       ├── 📄 ContextMenu.tsx
+│       ├── 📄 EmptyState.tsx
 │       ├── 📄 GlobalSearch.tsx (10.8KB)
 │       ├── 📄 HelpChatButton.tsx
+│       ├── 📄 InputPremium.tsx
+│       ├── 📄 KpiCardPremium.tsx
+│       ├── 📄 OnboardingWizard.tsx
+│       ├── 📄 SkeletonLine.tsx
 │       ├── 📄 StatusBadge.tsx
-│       ├── 📄 TaskModal.tsx
+│       ├── 📄 TaskModal.tsx (13.8KB)
 │       ├── 📄 ThemeToggle.tsx
 │       └── 📄 Tooltip.tsx
+├── 📁 data/
+│   └── 📄 changelog.ts
 ├── 📁 lib/
 │   ├── 📁 hooks/
 │   │   ├── 📄 useClientes.ts
 │   │   └── 📄 usePermissoes.ts
 │   ├── 📁 store/
 │   │   ├── 📄 right-sidebar-context.tsx
+│   │   ├── 📄 right-sidebar-store.ts
 │   │   └── 📄 useAppStore.ts
 │   ├── 📁 supabase/
 │   │   └── 📄 client.ts
@@ -128,25 +158,145 @@ src/
 │   ├── 📄 audit.ts
 │   ├── 📄 auth.ts
 │   ├── 📄 city-coords.ts
-│   ├── 📄 database.ts
+│   ├── 📄 database.ts (10.7KB)
 │   ├── 📄 financeiro.ts
 │   ├── 📄 fluxo-operacional.ts
 │   ├── 📄 google-ads.ts (16.0KB)
 │   ├── 📄 google-analytics.ts
+│   ├── 📄 health-score.ts
 │   ├── 📄 manifesto-generator.ts
 │   ├── 📄 rbac.ts
 │   ├── 📄 relatorio-generator.ts
+│   ├── 📄 supabase-client.ts
 │   ├── 📄 supabase.ts
 │   ├── 📄 types.ts
 │   ├── 📄 utils.ts
 │   └── 📄 vertex-ai.ts
-└── 📁 providers/
-    └── 📄 ThemeProvider.tsx
+├── 📁 providers/
+│   └── 📄 ThemeProvider.tsx
+└── 📄 middleware.ts
 ```
 
 ---
 
 ## 📄 Conteúdo dos Arquivos
+
+### `middleware.ts`
+
+```typescript
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse }        from 'next/server'
+import type { NextRequest }    from 'next/server'
+
+const PUBLIC_PATHS = ['/login', '/api/']
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+
+  // Deixa rotas públicas passarem sem verificação
+  if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.next()
+  }
+
+  const response = NextResponse.next()
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
+            response.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return response
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Aplica a todas as rotas exceto arquivos estáticos (_next, favicon, etc.)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
+```
+
+### `app\error.tsx`
+
+```tsx
+'use client'
+
+import { useEffect } from 'react'
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error:  Error & { digest?: string }
+  reset:  () => void
+}) {
+  useEffect(() => {
+    console.error('[Error boundary]', error)
+  }, [error])
+
+  return (
+    <div className="min-h-screen bg-surface-base flex items-center justify-center p-[2rem]">
+      <div className="text-center animate-fade-up max-w-[28rem]">
+        {/* Ícone */}
+        <div className="flex justify-center mb-[1.5rem]">
+          <div className="w-[5rem] h-[5rem] rounded-2xl bg-status-red/10 border border-status-red/20 flex items-center justify-center">
+            <span className="text-[2.5rem]">⚠️</span>
+          </div>
+        </div>
+
+        <h1 className="text-ink-primary text-[1.5rem] font-bold mb-[0.5rem]">Algo deu errado</h1>
+        <p className="text-ink-secondary text-[0.9375rem] mb-[0.75rem] leading-relaxed">
+          Ocorreu um erro inesperado. Tente novamente ou volte ao início.
+        </p>
+
+        {error.message && (
+          <p className="text-ink-muted text-[0.75rem] font-mono bg-surface-hover border border-surface-border/30 rounded-lg px-[0.75rem] py-[0.5rem] mb-[2rem] break-all">
+            {error.message}
+          </p>
+        )}
+
+        <div className="flex items-center justify-center gap-[0.75rem]">
+          <button
+            onClick={reset}
+            className="inline-flex items-center h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-medium transition-colors"
+          >
+            Tentar novamente
+          </button>
+          <a
+            href="/dashboard"
+            className="inline-flex items-center h-[2.5rem] px-[1.25rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary hover:text-ink-primary text-[0.875rem] font-medium transition-colors"
+          >
+            Voltar ao início
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
 
 ### `app\globals.css`
 
@@ -352,7 +502,7 @@ body {
 .dark .topbar-shell      { background: rgb(var(--surface-card)); border-color: rgb(var(--surface-border)); box-shadow: none; }
 .dark .rightsidebar-shell { background: rgb(var(--surface-card)); border-color: rgb(var(--surface-border)); }
 
-/* ─── CARD SHADOW — global (light has shadow, dark uses border) ─────────── */
+/* ─── CARD SHADOW — global (light: shadow, dark: sombra sutil + borda ghost) */
 .card-shadow {
   box-shadow: 0 1px 2px rgba(17,17,40,0.04), 0 4px 16px rgba(17,17,40,0.10);
   transition: box-shadow 200ms ease;
@@ -360,11 +510,16 @@ body {
 .card-shadow:hover {
   box-shadow: 0 4px 20px rgba(17,17,40,0.14), 0 2px 8px rgba(17,17,40,0.07);
 }
-.dark .card-shadow { box-shadow: none; }
+.dark .card-shadow {
+  /* Sombra sutil + "borda" de 1px via outline shadow — mais orgânico que border */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.04);
+}
 .card-interactive:hover {
   box-shadow: 0 8px 16px rgba(0,0,0,0.08);
 }
-.dark .card-interactive:hover { box-shadow: none; }
+.dark .card-interactive:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.06);
+}
 
 /* ─── PANEL SLIDE-IN — drawers laterais ────────────────────────────────── */
 @keyframes panel-slide-in {
@@ -421,6 +576,73 @@ body {
 .dark .leaflet-container { background: #0a0a0b !important; }
 @keyframes map-pulse { 0%,100% { opacity: 0.75; } 50% { opacity: 0.35; } }
 .map-pulse { animation: map-pulse 2s ease-in-out infinite; }
+
+/* ─── STATUS TOKENS ──────────────────────────────────────────────────────── */
+:root {
+  --status-success:  34 197 94;
+  --status-warning:  217 119 6;
+  --status-critical: 220 38 38;
+  --status-info:     59 130 246;
+}
+
+/* ─── TYPOGRAPHY HIERARCHY ──────────────────────────────────────────────── */
+.text-h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.text-h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.text-h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.text-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.text-body {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.text-caption {
+  font-size: 0.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgb(var(--ink-muted));
+}
+
+.text-metric {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.text-code {
+  font-family: var(--font-geist-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
 ```
 
 ### `app\layout.tsx`
@@ -458,6 +680,50 @@ export default function RootLayout({
 }
 ```
 
+### `app\not-found.tsx`
+
+```tsx
+import Link from 'next/link'
+
+export default function NotFound() {
+  return (
+    <div className="min-h-screen bg-surface-base flex items-center justify-center p-[2rem]">
+      <div className="text-center animate-fade-up max-w-[28rem]">
+        {/* Número 404 */}
+        <div className="relative mb-[2rem]">
+          <p className="text-[8rem] font-black text-surface-border leading-none select-none">404</p>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-[4rem] h-[4rem] rounded-2xl bg-ads-500/10 border border-ads-500/20 flex items-center justify-center glow-amber">
+              <span className="text-[2rem]">🔍</span>
+            </div>
+          </div>
+        </div>
+
+        <h1 className="text-ink-primary text-[1.5rem] font-bold mb-[0.5rem]">Página não encontrada</h1>
+        <p className="text-ink-secondary text-[0.9375rem] mb-[2rem] leading-relaxed">
+          A página que você está procurando não existe ou foi movida.
+        </p>
+
+        <div className="flex items-center justify-center gap-[0.75rem]">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-medium transition-colors"
+          >
+            Ir para o Dashboard
+          </Link>
+          <Link
+            href="/clientes"
+            className="inline-flex items-center h-[2.5rem] px-[1.25rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary hover:text-ink-primary text-[0.875rem] font-medium transition-colors"
+          >
+            Ver Clientes
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
 ### `app\page.tsx`
 
 ```tsx
@@ -465,6 +731,72 @@ import { redirect } from 'next/navigation';
 
 export default function Home() {
   redirect('/login');
+}
+```
+
+### `app\(app)\layout.tsx`
+
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { getSupabaseBrowserClient } from '@/lib/supabase-client'
+
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient()
+
+    // Checa sessão atual primeiro
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[AppLayout] Initial session:', session ? '✓' : '✗', session?.user?.email)
+      if (session) {
+        setIsAuthenticated(true)
+        setIsLoading(false)
+      } else {
+        console.log('[AppLayout] No session found, will redirect in 3s...')
+        setTimeout(() => {
+          router.push('/login')
+          setIsLoading(false)
+        }, 3000)
+      }
+    })
+
+    // Escuta mudanças de auth state (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AppLayout] Auth state changed:', event, session ? '✓' : '✗')
+      if (session) {
+        setIsAuthenticated(true)
+        setIsLoading(false)
+      } else if (event === 'SIGNED_OUT') {
+        setIsAuthenticated(false)
+        router.push('/login')
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-surface-base flex items-center justify-center">
+        <div className="flex flex-col items-center gap-[1rem]">
+          <div className="w-[2rem] h-[2rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-ink-secondary text-sm">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return isAuthenticated ? children : null
 }
 ```
 
@@ -723,6 +1055,7 @@ import {
   BarChart2, TrendingUp, ArrowUpRight, RefreshCw,
   MousePointerClick, DollarSign, AlertTriangle,
   Users, Globe, Zap, Calendar, ChevronDown,
+  Sparkles, X,
 } from 'lucide-react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -730,6 +1063,7 @@ import {
   BarChart,
 } from 'recharts'
 import { MainLayout }  from '@/components/layout/MainLayout'
+import { Button }      from '@/components/ui/Button'
 import { supabase }    from '@/lib/supabase'
 import { toast } from 'sonner'
 import type { AnalyticsSnapshot, Cliente } from '@/lib/types'
@@ -860,6 +1194,9 @@ export default function AnalyticsPage() {
   const [periodo, setPeriodo] = useState<Periodo>('30d')
   const [liveData, setLiveData] = useState<LiveAnalyticsData | null>(null)
   const [loadingLive, setLoadingLive] = useState(false)
+  const [iaRecs,        setIaRecs]        = useState<string>('')
+  const [loadingIaRecs, setLoadingIaRecs] = useState(false)
+  const [mostrarIaRecs, setMostrarIaRecs] = useState(false)
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -891,10 +1228,12 @@ export default function AnalyticsPage() {
     setLoadingLive(true)
     try {
       const res = await fetch(`/api/analytics/${clienteSel}/live?periodo=${periodo}`)
-      if (res.ok) {
-        const data = await res.json()
-        setLiveData(data)
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }))
+        throw new Error(errorData.error || `HTTP ${res.status}`)
       }
+      const data = await res.json()
+      setLiveData(data)
     } catch (error) {
       console.error('Erro ao carregar dados live:', error)
       toast.error('Erro ao carregar dados em tempo real')
@@ -904,8 +1243,10 @@ export default function AnalyticsPage() {
   }, [clienteSel, periodo])
 
   useEffect(() => {
-    carregarLive()
-  }, [carregarLive])
+    if (clienteSel) {
+      carregarLive()
+    }
+  }, [clienteSel, carregarLive])
 
   // Auto-refresh a cada 5 minutos
   useEffect(() => {
@@ -955,6 +1296,34 @@ export default function AnalyticsPage() {
   const liveCtr = liveKpiData.impressoes > 0 ? (liveKpiData.cliques / liveKpiData.impressoes) * 100 : 0
   const liveCpa = liveKpiData.conversoes > 0 ? liveKpiData.custo_total / liveKpiData.conversoes : 0
 
+  async function gerarRecomendacoes() {
+    if (!selData) return
+    setLoadingIaRecs(true)
+    setMostrarIaRecs(true)
+    try {
+      const { investimento, conversoes, cpa, impressoes, cliques } = selData.ultimo ?? {}
+      const res = await fetch('/api/ia/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            id: 'rec',
+            role: 'user',
+            content: `Analise os dados de Google Ads para o cliente "${selData.cliente.nome}" (${selData.cliente.nicho}) e forneça 3 a 5 recomendações práticas:\n- Investimento: R$ ${investimento?.toFixed(0) ?? 0}\n- Conversões: ${conversoes ?? 0}\n- CPA: R$ ${cpa?.toFixed(0) ?? 0}\n- Impressões: ${impressoes ?? 0}\n- Cliques: ${cliques ?? 0}\n\nFoque em ações concretas para melhorar o CPA e o ROAS.`,
+            created_at: new Date().toISOString(),
+          }],
+          contexto_cliente_id: selData.cliente.id,
+        }),
+      })
+      const json = await res.json() as { content?: string }
+      setIaRecs(json.content ?? 'Sem recomendações geradas.')
+    } catch {
+      toast.error('Erro ao gerar recomendações.')
+    } finally {
+      setLoadingIaRecs(false)
+    }
+  }
+
   const periodoLabel: Record<Periodo, string> = {
     '7d': 'Últimos 7 dias',
     '30d': 'Últimos 30 dias',
@@ -983,13 +1352,14 @@ export default function AnalyticsPage() {
               </button>
             ))}
           </div>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => { carregar(); carregarLive(); }}
             disabled={loading || loadingLive}
-            className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />
-          </button>
+            icon={<RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />}
+            className="w-[2rem] px-0"
+          />
         </div>
       }
     >
@@ -1051,12 +1421,24 @@ export default function AnalyticsPage() {
               </h2>
               <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">{periodoLabel[periodo]}</p>
             </div>
-            <a
-              href={`/clientes/${selData.cliente.id}`}
-              className="text-ads-500 text-[0.8125rem] hover:underline"
-            >
-              Ver cliente →
-            </a>
+            <div className="flex items-center gap-[0.75rem]">
+              <button
+                onClick={gerarRecomendacoes}
+                disabled={loadingIaRecs}
+                className="inline-flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-lg bg-ads-500/10 hover:bg-ads-500/20 text-ads-500 text-[0.75rem] font-medium transition-colors disabled:opacity-50"
+              >
+                {loadingIaRecs
+                  ? <><RefreshCw className="w-[0.75rem] h-[0.75rem] animate-spin" strokeWidth={2} />Gerando...</>
+                  : <><Sparkles className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />Recomendações IA</>
+                }
+              </button>
+              <a
+                href={`/clientes/${selData.cliente.id}`}
+                className="text-ads-500 text-[0.8125rem] hover:underline"
+              >
+                Ver cliente →
+              </a>
+            </div>
           </div>
 
           {chartData.length > 1 ? (
@@ -1118,6 +1500,37 @@ export default function AnalyticsPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+
+          {/* Recomendações IA */}
+          {mostrarIaRecs && (
+            <div className="mt-[1.5rem] border-t border-surface-border/30 pt-[1.25rem]">
+              <div className="flex items-center justify-between mb-[0.75rem]">
+                <div className="flex items-center gap-[0.375rem]">
+                  <Sparkles className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={2} />
+                  <p className="text-ink-primary text-[0.875rem] font-semibold">Recomendações da IA</p>
+                </div>
+                <button
+                  onClick={() => setMostrarIaRecs(false)}
+                  className="text-ink-muted hover:text-ink-primary transition-colors"
+                >
+                  <X className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                </button>
+              </div>
+              {loadingIaRecs ? (
+                <div className="space-y-[0.5rem]">
+                  {[85, 70, 60].map((w, i) => (
+                    <div key={i} className="h-[0.875rem] rounded skeleton-shimmer" style={{ width: `${w}%` }} />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-ads-500/5 border border-ads-500/15 rounded-xl p-[1rem]">
+                  {iaRecs.split('\n').filter(Boolean).map((linha, i) => (
+                    <p key={i} className="text-ink-secondary text-[0.8125rem] leading-relaxed">{linha}</p>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1324,6 +1737,7 @@ import {
   type PaletaCores,
 } from '@/lib/manifesto-generator';
 import { MainLayout } from '@/components/layout/MainLayout';
+import { Button } from '@/components/ui/Button';
 
 // ─── TIPOS ───────────────────────────────────────────────────────────────────
 
@@ -1486,17 +1900,18 @@ function TabBiblioteca() {
               <pre className="bg-surface-base text-[0.75rem] font-mono text-ink-secondary p-[1.25rem] overflow-x-auto max-h-[28rem]">
                 {comp.codigo_astro}
               </pre>
-              <button
+              <Button
                 onClick={copiarCodigo}
-                className={`absolute top-[0.75rem] right-[0.75rem] flex items-center gap-[0.375rem] text-xs font-semibold px-[0.625rem] h-[1.75rem] rounded transition-all
-                  ${copiado
-                    ? 'bg-ads-500/20 text-ads-500'
-                    : 'bg-surface-hover text-ink-secondary hover:text-ink-primary border border-surface-border'}`}
+                variant={copiado ? 'subtle' : 'secondary'}
+                size="sm"
+                icon={copiado
+                  ? <CheckCheck className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                  : <Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                }
+                className="absolute top-[0.75rem] right-[0.75rem]"
               >
-                {copiado
-                  ? <><CheckCheck className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Copiado!</>
-                  : <><Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Copiar</>}
-              </button>
+                {copiado ? 'Copiado!' : 'Copiar'}
+              </Button>
             </div>
           ) : (
             <div className="p-[1.25rem]">
@@ -1649,17 +2064,18 @@ function TabConstrutor() {
 
         {/* BOTÃO GERAR COPY IA */}
         {builder.nomeCliente && builder.nicho && (
-          <button
+          <Button
+            variant="ghost"
+            size="md"
+            fullWidth
             onClick={gerarCopyIA}
             disabled={gerandoCopy}
-            className="w-full flex items-center justify-center gap-[0.5rem] h-[2.25rem] rounded text-[0.875rem] font-medium bg-status-purple/15 text-status-purple hover:opacity-80 transition-opacity disabled:opacity-50 mb-[0.75rem]"
+            loading={gerandoCopy}
+            icon={<Sparkles className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />}
+            className="mb-[0.75rem] bg-status-purple/15 text-status-purple hover:bg-status-purple/20 hover:text-status-purple"
           >
-            {gerandoCopy
-              ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-current border-t-transparent rounded-full animate-spin" />
-              : <Sparkles className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
-            }
             {copyGerada ? 'Regenerar Copy com IA' : 'Gerar Copy com IA'}
-          </button>
+          </Button>
         )}
 
         {copyGerada && (
@@ -1676,23 +2092,20 @@ function TabConstrutor() {
           </p>
         )}
 
-        <button
+        <Button
+          variant={gerado ? 'subtle' : 'primary'}
+          size="lg"
+          fullWidth
           onClick={gerarManifesto}
           disabled={!valido || gerando}
-          className={`w-full flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded text-[0.875rem] font-semibold transition-all
-            ${valido
-              ? gerado
-                ? 'bg-ads-500/20 text-ads-500'
-                : 'bg-ads-500 text-white hover:opacity-90'
-              : 'bg-surface-hover text-ink-muted cursor-not-allowed'}`}
-        >
-          {gerando
-            ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
-            : gerado
-              ? <><CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Manifesto gerado!</>
-              : <><Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Gerar Manifesto .md</>
+          loading={gerando}
+          icon={gerado
+            ? <CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+            : <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
           }
-        </button>
+        >
+          {gerado ? 'Manifesto gerado!' : 'Gerar Manifesto .md'}
+        </Button>
       </div>
 
       {/* SELETOR DE COMPONENTES */}
@@ -1769,19 +2182,22 @@ function TabConstrutor() {
 ### `app\(app)\clientes\page.tsx`
 
 ```tsx
-﻿'use client'
+'use client'
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Plus, Search, Users, AlertTriangle, Snowflake,
-  LayoutGrid, List, MessageCircle,
+  LayoutGrid, List, MessageCircle, CheckSquare, Square,
+  Download, Tag, X as XIcon,
 } from 'lucide-react'
 import { MainLayout }                from '@/components/layout/MainLayout'
+import { Button }                    from '@/components/ui/Button'
 import { ClienteProgressCard }       from '@/components/dashboard/ClienteProgressCard'
 import { WhatsAppTemplateModal }     from '@/components/clientes/WhatsAppTemplateModal'
 import { useClientes }               from '@/lib/hooks/useClientes'
 import { supabase }                  from '@/lib/supabase'
+import { toast }                     from 'sonner'
 import type { Cliente }              from '@/lib/types'
 
 const STATUS_OPCOES = [
@@ -1795,6 +2211,8 @@ const STATUS_OPCOES = [
   { value: 'cancelado',        label: 'Cancelado'      },
   { value: 'inativo',          label: 'Inativo'        },
 ] as const
+
+type StatusValue = typeof STATUS_OPCOES[number]['value']
 
 const STATUS_LABEL: Record<string, string> = {
   recebido:         'Recebido',
@@ -1818,65 +2236,176 @@ const STATUS_COLOR: Record<string, string> = {
   inativo:          'bg-surface-hover text-ink-muted',
 }
 
+const STATUS_BATCH = STATUS_OPCOES.filter((s) => s.value !== '')
+
+function exportarCSV(clientes: Cliente[]) {
+  const header = ['Nome', 'E-mail', 'WhatsApp', 'Nicho', 'Status', 'MRR', 'Dias Atraso']
+  const rows = clientes.map((c) => [
+    `"${c.nome}"`,
+    c.email ?? '',
+    c.whatsapp ?? '',
+    c.nicho ?? '',
+    STATUS_LABEL[c.status] ?? c.status,
+    (c.mrr ?? 0).toFixed(2).replace('.', ','),
+    String(c.dias_atraso ?? 0),
+  ])
+  const csv  = [header, ...rows].map((r) => r.join(';')).join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href     = url
+  a.download = `clientes_${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function ClientesPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
   const [busca,        setBusca]        = useState('')
-  const [filtro,       setFiltro]       = useState('')
+  const [filtro,       setFiltro]       = useState<StatusValue>('')
+  const [filtroNicho,  setFiltroNicho]  = useState('')
+  const [filtroPag,    setFiltroPag]    = useState<'' | 'adimplente' | 'inadimplente'>('')
   const [modoLista,    setModoLista]    = useState(false)
   const [whatsappCliente, setWhatsappCliente] = useState<Cliente | null>(null)
+
+  // ── Batch select ──────────────────────────────────────────────────────────
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  const [batchStatus,  setBatchStatus]  = useState<StatusValue>('')
+  const [salvandoBatch, setSalvandoBatch] = useState(false)
 
   async function handleCongelar(id: string) {
     await supabase.from('clientes').update({ status: 'congelado' }).eq('id', id)
     recarregar()
   }
 
+  const nichos = useMemo(() => {
+    const set = new Set<string>()
+    dados.forEach(({ cliente: c }) => { if (c.nicho) set.add(c.nicho) })
+    return Array.from(set).sort()
+  }, [dados])
+
   const visiveis = useMemo(() =>
     dados.filter(({ cliente: c }) => {
       const matchStatus = filtro === '' || c.status === filtro
+      const matchNicho  = filtroNicho === '' || c.nicho === filtroNicho
+      const matchPag    = filtroPag === ''
+        ? true
+        : filtroPag === 'inadimplente'
+          ? (c.dias_atraso ?? 0) > 0
+          : (c.dias_atraso ?? 0) === 0
       const q = busca.toLowerCase()
       const matchBusca  = busca === '' ||
         c.nome.toLowerCase().includes(q) ||
         (c.email    ?? '').toLowerCase().includes(q) ||
         (c.whatsapp ?? '').includes(q) ||
         (c.nicho    ?? '').toLowerCase().includes(q)
-      return matchStatus && matchBusca
+      return matchStatus && matchNicho && matchPag && matchBusca
     }),
-    [dados, filtro, busca]
+    [dados, filtro, filtroNicho, filtroPag, busca]
   )
+
+  // ids visíveis para "selecionar todos"
+  const idsVisiveis = useMemo(() => visiveis.map(({ cliente: c }) => c.id), [visiveis])
+  const todosSelect = idsVisiveis.length > 0 && idsVisiveis.every((id) => selecionados.has(id))
+
+  function toggleSelect(id: string) {
+    setSelecionados((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleTodos() {
+    if (todosSelect) {
+      setSelecionados(new Set())
+    } else {
+      setSelecionados(new Set(idsVisiveis))
+    }
+  }
+
+  function limparSelecao() {
+    setSelecionados(new Set())
+    setBatchStatus('')
+  }
+
+  function handleExportarCSV() {
+    const clientesSel = dados
+      .filter(({ cliente: c }) => selecionados.has(c.id))
+      .map(({ cliente: c }) => c)
+    exportarCSV(clientesSel)
+    toast.success(`${clientesSel.length} clientes exportados`)
+  }
+
+  async function handleMudarStatusBatch() {
+    if (!batchStatus) { toast.error('Selecione um status'); return }
+    setSalvandoBatch(true)
+    const ids = Array.from(selecionados)
+    const { error } = await supabase
+      .from('clientes')
+      .update({ status: batchStatus })
+      .in('id', ids)
+    setSalvandoBatch(false)
+    if (error) { toast.error('Erro ao atualizar status'); return }
+    toast.success(`${ids.length} clientes atualizados para "${STATUS_LABEL[batchStatus]}"`)
+    limparSelecao()
+    recarregar()
+  }
+
+  // ── WhatsApp em lote — abre para o primeiro com whatsapp, em sequência ──
+  const [batchWaIndex, setBatchWaIndex] = useState<number | null>(null)
+  const clientesBatchWa = useMemo(() =>
+    dados.filter(({ cliente: c }) => selecionados.has(c.id) && c.whatsapp).map(({ cliente: c }) => c),
+    [dados, selecionados]
+  )
+
+  function handleWhatsAppBatch() {
+    if (clientesBatchWa.length === 0) { toast.info('Nenhum cliente selecionado tem WhatsApp'); return }
+    setBatchWaIndex(0)
+    setWhatsappCliente(clientesBatchWa[0])
+  }
+
+  function handleWaClose() {
+    setWhatsappCliente(null)
+    if (batchWaIndex !== null && batchWaIndex + 1 < clientesBatchWa.length) {
+      const next = batchWaIndex + 1
+      setBatchWaIndex(next)
+      setWhatsappCliente(clientesBatchWa[next])
+    } else {
+      setBatchWaIndex(null)
+      limparSelecao()
+    }
+  }
 
   return (
     <MainLayout
       title="Clientes"
       subtitle={loading ? '…' : `${metricas.total} clientes · ${metricas.ativos} ativos · ${metricas.inadimplentes} inadimplentes`}
       actions={
-        <Link
-          href="/clientes/novo"
-          className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-ads-500 text-white text-[0.8125rem] font-medium hover:bg-ads-600 transition-colors"
-        >
-          <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
-          <span>Novo Cliente</span>
+        <Link href="/clientes/novo">
+          <Button variant="primary" size="sm" icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}>
+            Novo Cliente
+          </Button>
         </Link>
       }
     >
       <div className="page-enter">
-      {/* ── MINI KPIs BENTO ────────────────────────────────────────── */}
+      {/* ── MINI KPIs ────────────────────────────────────────────────── */}
       {!loading && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-[0.75rem] mb-[1.5rem]">
-          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+          <div className="bg-surface-card rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Total</p>
             <p className="text-[1.5rem] font-bold text-ink-primary">{metricas.total}</p>
           </div>
-          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+          <div className="bg-surface-card rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Ativos</p>
             <p className="text-[1.5rem] font-bold text-status-green">{metricas.ativos}</p>
           </div>
-          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+          <div className="bg-surface-card rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">MRR</p>
-            <p className="text-[1.5rem] font-bold text-ads-500">
-              R$ {(metricas.mrr / 1000).toFixed(1)}k
-            </p>
+            <p className="text-[1.5rem] font-bold text-ads-500">R$ {(metricas.mrr / 1000).toFixed(1)}k</p>
           </div>
-          <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+          <div className="bg-surface-card rounded-2xl card-shadow p-[1rem]">
             <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">Inadimplentes</p>
             <p className="text-[1.5rem] font-bold text-status-orange">{metricas.inadimplentes}</p>
           </div>
@@ -1890,9 +2419,9 @@ export default function ClientesPage() {
           <p className="text-status-orange text-[0.875rem] font-medium">
             {metricas.inadimplentes} cliente{metricas.inadimplentes > 1 ? 's' : ''} com pagamento em atraso
           </p>
-          <button onClick={() => setFiltro('cancelado_debito')} className="ml-auto text-status-orange text-[0.75rem] underline">
+          <Button variant="ghost" size="sm" onClick={() => setFiltro('cancelado_debito')} className="ml-auto text-status-orange hover:text-status-orange">
             Filtrar
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1902,9 +2431,9 @@ export default function ClientesPage() {
           <p className="text-status-blue text-[0.875rem] font-medium">
             {metricas.retidos} cliente{metricas.retidos > 1 ? 's' : ''} congelado{metricas.retidos > 1 ? 's' : ''} aguardando retorno
           </p>
-          <button onClick={() => setFiltro('congelado')} className="ml-auto text-status-blue text-[0.75rem] underline">
+          <Button variant="ghost" size="sm" onClick={() => setFiltro('congelado')} className="ml-auto text-status-blue hover:text-status-blue">
             Filtrar
-          </button>
+          </Button>
         </div>
       )}
 
@@ -1919,11 +2448,11 @@ export default function ClientesPage() {
               placeholder="Buscar por nome, e-mail, nicho, WhatsApp…"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="w-full h-[2.25rem] pl-[2.25rem] pr-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-primary placeholder:text-ink-muted text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/40 transition-colors"
+              className="w-full h-[2.25rem] pl-[2.25rem] pr-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary placeholder:text-ink-muted text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
             />
           </div>
           {/* Toggle Grid/Lista */}
-          <div className="flex bg-surface-hover border border-surface-border rounded-[0.375rem] overflow-hidden">
+          <div className="flex bg-surface-hover border border-surface-border/40 rounded-lg overflow-hidden">
             <button
               onClick={() => setModoLista(false)}
               className={`w-[2.25rem] h-[2.25rem] flex items-center justify-center transition-colors ${!modoLista ? 'bg-surface-card text-ink-primary' : 'text-ink-muted hover:text-ink-secondary'}`}
@@ -1947,30 +2476,151 @@ export default function ClientesPage() {
             <button
               key={value}
               onClick={() => setFiltro(value)}
-              className={`h-[2rem] px-[0.625rem] rounded-[0.375rem] text-[0.8125rem] font-medium transition-colors ${
+              className={`h-[2rem] px-[0.625rem] rounded-lg text-[0.8125rem] font-medium transition-colors ${
                 filtro === value
                   ? 'bg-ads-500 text-white'
-                  : 'bg-surface-hover text-ink-secondary hover:text-ink-primary border border-surface-border'
+                  : 'bg-surface-hover text-ink-secondary hover:text-ink-primary border border-surface-border/40'
               }`}
             >
               {label}
             </button>
           ))}
         </div>
+
+        {/* Filtros avançados */}
+        <div className="flex gap-[0.5rem] flex-wrap items-center">
+          {nichos.length > 0 && (
+            <select
+              value={filtroNicho}
+              onChange={(e) => setFiltroNicho(e.target.value)}
+              className="h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+            >
+              <option value="">Todos os nichos</option>
+              {nichos.map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+          )}
+
+          <div className="flex bg-surface-hover border border-surface-border/40 rounded-lg overflow-hidden">
+            {(['', 'adimplente', 'inadimplente'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setFiltroPag(v)}
+                className={`h-[2rem] px-[0.625rem] text-[0.8125rem] font-medium transition-colors ${
+                  filtroPag === v
+                    ? v === 'inadimplente'
+                      ? 'bg-status-orange/20 text-status-orange'
+                      : 'bg-surface-card text-ink-primary'
+                    : 'text-ink-muted hover:text-ink-secondary'
+                }`}
+              >
+                {v === '' ? 'Todos' : v === 'adimplente' ? 'Adimplente' : 'Inadimplente'}
+              </button>
+            ))}
+          </div>
+
+          {(filtroNicho || filtroPag) && (
+            <button
+              onClick={() => { setFiltroNicho(''); setFiltroPag('') }}
+              className="h-[2rem] px-[0.625rem] rounded-lg text-[0.8125rem] text-ink-muted hover:text-ink-primary transition-colors"
+            >
+              Limpar
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── CONTAGEM ─────────────────────────────────────────────────── */}
+      {/* ── BARRA DE BATCH ACTIONS ──────────────────────────────────── */}
+      {selecionados.size > 0 && (
+        <div className="flex items-center gap-[0.75rem] flex-wrap bg-ads-500/10 border border-ads-500/30 rounded-xl px-[1rem] py-[0.75rem] mb-[1rem] animate-fade-up">
+          <span className="text-ads-500 text-[0.875rem] font-semibold shrink-0">
+            {selecionados.size} selecionado{selecionados.size > 1 ? 's' : ''}
+          </span>
+
+          <div className="flex items-center gap-[0.5rem] flex-wrap">
+            {/* Exportar CSV */}
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+              onClick={handleExportarCSV}
+            >
+              Exportar CSV
+            </Button>
+
+            {/* Mudar status em lote */}
+            <div className="flex items-center gap-[0.375rem]">
+              <select
+                value={batchStatus}
+                onChange={(e) => setBatchStatus(e.target.value as StatusValue)}
+                className="h-[2rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 transition-colors"
+              >
+                <option value="">Mudar status…</option>
+                {STATUS_BATCH.map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              {batchStatus && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Tag className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+                  loading={salvandoBatch}
+                  onClick={handleMudarStatusBatch}
+                >
+                  Aplicar
+                </Button>
+              )}
+            </div>
+
+            {/* WhatsApp em lote */}
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+              onClick={handleWhatsAppBatch}
+            >
+              WhatsApp
+            </Button>
+          </div>
+
+          <button
+            onClick={limparSelecao}
+            className="ml-auto text-ink-muted hover:text-ink-primary transition-colors"
+            title="Limpar seleção"
+          >
+            <XIcon className="w-[1rem] h-[1rem]" strokeWidth={2} />
+          </button>
+        </div>
+      )}
+
+      {/* ── CONTAGEM + SELECIONAR TODOS ─────────────────────────────── */}
       {!loading && (
-        <p className="text-ink-muted text-[0.8125rem] mb-[1rem]">
-          {visiveis.length} de {dados.length} clientes
-        </p>
+        <div className="flex items-center gap-[0.75rem] mb-[1rem]">
+          <p className="text-ink-muted text-[0.8125rem]">
+            {visiveis.length} de {dados.length} clientes
+          </p>
+          {visiveis.length > 0 && (
+            <button
+              onClick={toggleTodos}
+              className="flex items-center gap-[0.375rem] text-[0.8125rem] text-ink-muted hover:text-ink-primary transition-colors"
+            >
+              {todosSelect
+                ? <CheckSquare className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={2} />
+                : <Square className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+              }
+              {todosSelect ? 'Desselecionar todos' : 'Selecionar todos'}
+            </button>
+          )}
+        </div>
       )}
 
       {/* ── CONTEÚDO ─────────────────────────────────────────────────── */}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem]">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-[10rem] rounded-xl skeleton-shimmer dark:border dark:border-surface-border" />
+            <div key={i} className="h-[10rem] rounded-xl skeleton-shimmer" />
           ))}
         </div>
       ) : visiveis.length === 0 ? (
@@ -1987,20 +2637,43 @@ export default function ClientesPage() {
         </div>
       ) : modoLista ? (
         /* ── MODO LISTA (tabular) ── */
-        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
+        <div className="bg-surface-card rounded-2xl card-shadow overflow-hidden">
           <table className="w-full text-[0.875rem]">
             <thead>
-              <tr className="border-b border-surface-border">
+              <tr className="border-b border-surface-border/30">
+                <th className="px-[1rem] py-[0.75rem] w-[2.5rem]">
+                  <button onClick={toggleTodos} className="flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors">
+                    {todosSelect
+                      ? <CheckSquare className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={2} />
+                      : <Square className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                    }
+                  </button>
+                </th>
                 {['Cliente', 'Nicho', 'Status', 'MRR', 'Atraso', 'Ações'].map((h) => (
                   <th key={h} className="text-left text-ink-muted text-[0.75rem] font-semibold uppercase tracking-wide px-[1rem] py-[0.75rem]">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {visiveis.map(({ cliente: c, estagio }) => {
+              {visiveis.map(({ cliente: c }) => {
                 const temAlerta = (c.dias_atraso ?? 0) > 0
+                const sel = selecionados.has(c.id)
                 return (
-                  <tr key={c.id} className="border-b border-surface-border last:border-0 hover:bg-surface-hover transition-colors">
+                  <tr
+                    key={c.id}
+                    className={`border-b border-surface-border/30 last:border-0 hover:bg-surface-hover transition-colors ${sel ? 'bg-ads-500/5' : ''}`}
+                  >
+                    <td className="px-[1rem] py-[0.75rem]">
+                      <button
+                        onClick={() => toggleSelect(c.id)}
+                        className="flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+                      >
+                        {sel
+                          ? <CheckSquare className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={2} />
+                          : <Square className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                        }
+                      </button>
+                    </td>
                     <td className="px-[1rem] py-[0.75rem]">
                       <div className="flex items-center gap-[0.5rem]">
                         {temAlerta && <AlertTriangle className="w-[0.75rem] h-[0.75rem] text-status-orange shrink-0" strokeWidth={2} />}
@@ -2024,13 +2697,13 @@ export default function ClientesPage() {
                     </td>
                     <td className="px-[1rem] py-[0.75rem]">
                       <div className="flex items-center gap-[0.375rem]">
-                        <a href={`/clientes/${c.id}`} className="h-[1.75rem] px-[0.5rem] rounded bg-surface-hover text-ink-secondary text-[0.75rem] font-medium hover:text-ink-primary border border-surface-border transition-colors flex items-center">
+                        <a href={`/clientes/${c.id}`} className="h-[1.75rem] px-[0.5rem] rounded-lg bg-surface-hover text-ink-secondary text-[0.75rem] font-medium hover:text-ink-primary border border-surface-border/40 transition-colors flex items-center">
                           Ver
                         </a>
                         {c.whatsapp && (
                           <button
                             onClick={() => setWhatsappCliente(c)}
-                            className="w-[1.75rem] h-[1.75rem] flex items-center justify-center rounded bg-status-green/10 text-status-green hover:bg-status-green/20 transition-colors"
+                            className="w-[1.75rem] h-[1.75rem] flex items-center justify-center rounded-lg bg-status-green/10 text-status-green hover:bg-status-green/20 transition-colors"
                             title="WhatsApp"
                           >
                             <MessageCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
@@ -2048,12 +2721,29 @@ export default function ClientesPage() {
         /* ── MODO GRID ── */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem]">
           {visiveis.map(({ cliente, estagio }) => (
-            <ClienteProgressCard
-              key={cliente.id}
-              cliente={cliente}
-              estagio={estagio}
-              onCongelar={handleCongelar}
-            />
+            <div key={cliente.id} className="relative group">
+              {/* Checkbox sobre o card */}
+              <button
+                onClick={() => toggleSelect(cliente.id)}
+                className={`absolute top-[0.75rem] left-[0.75rem] z-10 flex items-center justify-center w-[1.5rem] h-[1.5rem] rounded transition-all ${
+                  selecionados.has(cliente.id)
+                    ? 'opacity-100'
+                    : 'opacity-0 group-hover:opacity-100'
+                }`}
+              >
+                {selecionados.has(cliente.id)
+                  ? <CheckSquare className="w-[1rem] h-[1rem] text-ads-500 drop-shadow" strokeWidth={2.5} />
+                  : <Square className="w-[1rem] h-[1rem] text-ink-muted bg-surface-card rounded" strokeWidth={2} />
+                }
+              </button>
+              <div className={selecionados.has(cliente.id) ? 'ring-2 ring-ads-500/40 rounded-2xl' : ''}>
+                <ClienteProgressCard
+                  cliente={cliente}
+                  estagio={estagio}
+                  onCongelar={handleCongelar}
+                />
+              </div>
+            </div>
           ))}
         </div>
       )}
@@ -2062,7 +2752,7 @@ export default function ClientesPage() {
       {whatsappCliente && (
         <WhatsAppTemplateModal
           cliente={whatsappCliente}
-          onClose={() => setWhatsappCliente(null)}
+          onClose={batchWaIndex !== null ? handleWaClose : () => setWhatsappCliente(null)}
         />
       )}
       </div>
@@ -2076,30 +2766,99 @@ export default function ClientesPage() {
 ```tsx
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, User, CheckSquare, BarChart3, History,
   Phone, Mail, Globe, Calendar, DollarSign, AlertCircle,
-  MessageCircle, Snowflake, Play,
+  MessageCircle, Snowflake, Play, Pencil, Check, X as XIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { Button } from '@/components/ui/Button'
 import { ChecklistCard } from '@/components/clientes/ChecklistCard'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
 import { AcessoRapido } from '@/components/clientes/AcessoRapido'
 import { WhatsAppTemplateModal } from '@/components/clientes/WhatsAppTemplateModal'
+import { ClienteMemoria }        from '@/components/clientes/ClienteMemoria'
 import {
   obterCliente,
   obterEstagioAtivo,
   obterHistoricoCliente,
   congelarCliente,
   descongelarCliente,
+  atualizarCliente,
 } from '@/lib/database'
 import type { Cliente, Estagio, HistoricoAcao } from '@/lib/types'
 import { toast } from 'sonner'
+
+// ── Componente de edição inline ───────────────────────────────────────────────
+function InlineEdit({
+  value,
+  onSave,
+  placeholder = '—',
+  type = 'text',
+}: {
+  value: string | null | undefined
+  onSave: (v: string) => Promise<void>
+  placeholder?: string
+  type?: 'text' | 'email' | 'url' | 'tel'
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft,   setDraft]   = useState(value ?? '')
+  const [saving,  setSaving]  = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function startEdit() {
+    setDraft(value ?? '')
+    setEditing(true)
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }
+
+  async function commit() {
+    if (draft === (value ?? '')) { setEditing(false); return }
+    setSaving(true)
+    try { await onSave(draft.trim()) }
+    finally { setSaving(false); setEditing(false) }
+  }
+
+  function cancel() { setEditing(false); setDraft(value ?? '') }
+
+  if (editing) {
+    return (
+      <span className="inline-flex items-center gap-[0.375rem]">
+        <input
+          ref={inputRef}
+          type={type}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') cancel() }}
+          disabled={saving}
+          className="h-[1.75rem] px-[0.5rem] rounded border border-ads-500/50 bg-surface-card text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 min-w-[10rem] transition-all"
+        />
+        <button onClick={commit} disabled={saving} title="Salvar" className="text-status-green hover:text-status-green/80 transition-colors">
+          <Check className="w-[0.875rem] h-[0.875rem]" strokeWidth={2.5} />
+        </button>
+        <button onClick={cancel} title="Cancelar" className="text-ink-muted hover:text-ink-secondary transition-colors">
+          <XIcon className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+        </button>
+      </span>
+    )
+  }
+
+  return (
+    <button
+      onClick={startEdit}
+      className="group inline-flex items-center gap-[0.375rem] text-inherit hover:text-ink-primary transition-colors"
+      title="Clique para editar"
+    >
+      <span>{value || <span className="text-ink-muted italic">{placeholder}</span>}</span>
+      <Pencil className="w-[0.75rem] h-[0.75rem] text-ink-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0" strokeWidth={1.75} />
+    </button>
+  )
+}
 
 type AbaId = 'visao_geral' | 'checklist' | 'campanhas' | 'historico'
 
@@ -2143,6 +2902,14 @@ export default function ClienteDetalhePage() {
   const [carregando, setCarregando] = useState(true)
   const [whatsappOpen, setWhatsappOpen] = useState(false)
   const [agindo, setAgindo] = useState(false)
+  const [filtroHistorico, setFiltroHistorico] = useState('')
+
+  async function salvarCampo(campo: keyof Cliente, valor: string) {
+    if (!cliente) return
+    await atualizarCliente(cliente.id, { [campo]: valor || null } as Partial<Cliente>)
+    setCliente((prev) => prev ? { ...prev, [campo]: valor || null } : prev)
+    toast.success('Campo atualizado')
+  }
 
   useEffect(() => {
     if (!id) return
@@ -2219,31 +2986,35 @@ export default function ClienteDetalhePage() {
 
   const actions = (
     <div className="flex items-center gap-[0.5rem]">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => setWhatsappOpen(true)}
-        className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-lg bg-status-green/10 hover:bg-status-green/20 text-status-green text-[0.8125rem] font-medium transition-colors"
+        icon={<MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+        className="text-status-green bg-status-green/10 hover:bg-status-green/20 hover:text-status-green"
       >
-        <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
         WhatsApp
-      </button>
+      </Button>
       {cliente.status === 'congelado' ? (
-        <button
+        <Button
+          variant="subtle"
+          size="sm"
           onClick={handleDescongelar}
           disabled={agindo}
-          className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-lg bg-ads-500/10 hover:bg-ads-500/20 text-ads-600 text-[0.8125rem] font-medium transition-colors disabled:opacity-50"
+          icon={<Play className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
         >
-          <Play className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
           Descongelar
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={handleCongelar}
           disabled={agindo || cliente.status === 'cancelado' || cliente.status === 'inativo'}
-          className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-lg bg-surface-hover hover:bg-surface-border text-ink-secondary text-[0.8125rem] font-medium transition-colors disabled:opacity-40"
+          icon={<Snowflake className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
         >
-          <Snowflake className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
           Congelar
-        </button>
+        </Button>
       )}
     </div>
   )
@@ -2253,13 +3024,15 @@ export default function ClienteDetalhePage() {
       <div className="page-enter">
 
         {/* Voltar */}
-        <button
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => router.push('/clientes')}
-          className="flex items-center gap-[0.375rem] text-ink-muted hover:text-ink-secondary text-[0.875rem] mb-[1.5rem] transition-colors"
+          icon={<ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />}
+          className="mb-[1.5rem]"
         >
-          <ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
           Clientes
-        </button>
+        </Button>
 
         {/* Cabeçalho do cliente */}
         <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] card-shadow mb-[1.5rem]">
@@ -2271,7 +3044,9 @@ export default function ClienteDetalhePage() {
                 </span>
               </div>
               <div>
-                <h2 className="text-ink-primary text-[1.125rem] font-semibold">{cliente.nome}</h2>
+                <h2 className="text-ink-primary text-[1.125rem] font-semibold">
+                  <InlineEdit value={cliente.nome} onSave={(v) => salvarCampo('nome', v)} placeholder="Nome do cliente" />
+                </h2>
                 <div className="flex items-center gap-[0.75rem] mt-[0.25rem] flex-wrap">
                   <span className={cn('px-[0.5rem] py-[0.125rem] rounded-full text-xs font-medium', STATUS_COLORS[cliente.status] ?? 'bg-ink-muted/10 text-ink-muted')}>
                     {STATUS_LABELS[cliente.status] ?? cliente.status}
@@ -2324,26 +3099,20 @@ export default function ClienteDetalhePage() {
             </div>
           </div>
 
-          {/* Contato */}
-          <div className="flex items-center gap-[1.25rem] mt-[1rem] flex-wrap">
-            {cliente.email && (
-              <a href={`mailto:${cliente.email}`} className="flex items-center gap-[0.375rem] text-ink-muted hover:text-ink-secondary text-[0.8125rem] transition-colors">
-                <Mail className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
-                {cliente.email}
-              </a>
-            )}
-            {cliente.whatsapp && (
-              <a href={`https://wa.me/55${cliente.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-[0.375rem] text-ink-muted hover:text-status-green text-[0.8125rem] transition-colors">
-                <Phone className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
-                {cliente.whatsapp}
-              </a>
-            )}
-            {cliente.dominio && (
-              <a href={`https://${cliente.dominio}`} target="_blank" rel="noreferrer" className="flex items-center gap-[0.375rem] text-ink-muted hover:text-status-blue text-[0.8125rem] transition-colors">
-                <Globe className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
-                {cliente.dominio}
-              </a>
-            )}
+          {/* Contato — campos editáveis inline */}
+          <div className="flex items-center gap-[1.25rem] mt-[1rem] flex-wrap text-[0.8125rem] text-ink-muted">
+            <span className="flex items-center gap-[0.375rem]">
+              <Mail className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={1.5} />
+              <InlineEdit value={cliente.email} type="email" onSave={(v) => salvarCampo('email', v)} placeholder="e-mail" />
+            </span>
+            <span className="flex items-center gap-[0.375rem]">
+              <Phone className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={1.5} />
+              <InlineEdit value={cliente.whatsapp} type="tel" onSave={(v) => salvarCampo('whatsapp', v)} placeholder="WhatsApp" />
+            </span>
+            <span className="flex items-center gap-[0.375rem]">
+              <Globe className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={1.5} />
+              <InlineEdit value={cliente.dominio} type="url" onSave={(v) => salvarCampo('dominio', v)} placeholder="domínio" />
+            </span>
           </div>
         </div>
 
@@ -2399,6 +3168,7 @@ export default function ClienteDetalhePage() {
                 looker_url:             cliente.looker_url,
                 website:                cliente.website,
               }} />
+              <ClienteMemoria clienteId={cliente.id} />
               {historico.length > 0 && (
                 <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
                   <h3 className="text-ink-primary text-[0.9375rem] font-semibold mb-[0.75rem]">Últimas ações</h3>
@@ -2446,38 +3216,58 @@ export default function ClienteDetalhePage() {
           />
         )}
 
-        {abaAtiva === 'historico' && (
-          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
-            <h3 className="text-ink-primary text-[0.9375rem] font-semibold mb-[1rem]">Histórico Completo</h3>
-            {historico.length === 0 ? (
-              <div className="text-center py-[2rem]">
-                <History className="w-[2rem] h-[2rem] text-ink-muted mx-auto mb-[0.75rem]" strokeWidth={1.5} />
-                <p className="text-ink-secondary text-[0.875rem]">Nenhuma ação registrada ainda.</p>
+        {abaAtiva === 'historico' && (() => {
+          const tiposUnicos = Array.from(new Set(historico.map((h) => h.tipo_acao))).sort()
+          const historicoFiltrado = filtroHistorico
+            ? historico.filter((h) => h.tipo_acao === filtroHistorico)
+            : historico
+          return (
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
+              <div className="flex items-center justify-between mb-[1rem] gap-[0.75rem] flex-wrap">
+                <h3 className="text-ink-primary text-[0.9375rem] font-semibold">Histórico Completo</h3>
+                {tiposUnicos.length > 0 && (
+                  <select
+                    value={filtroHistorico}
+                    onChange={(e) => setFiltroHistorico(e.target.value)}
+                    className="h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="">Todos os tipos</option>
+                    {tiposUnicos.map((t) => (
+                      <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-            ) : (
-              <div className="space-y-[0.875rem]">
-                {historico.map((h) => (
-                  <div key={h.id} className="flex items-start gap-[0.875rem] pb-[0.875rem] border-b border-surface-border last:border-0 last:pb-0">
-                    <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-ads-500/60 mt-[0.3rem] flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-ink-secondary text-[0.875rem]">{h.descricao}</p>
-                      <p className="text-ink-muted text-[0.75rem] mt-[0.25rem]">
-                        {new Date(h.data_acao).toLocaleDateString('pt-BR', {
-                          day: '2-digit', month: 'long', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit',
-                        })}
-                      </p>
+              {historicoFiltrado.length === 0 ? (
+                <div className="text-center py-[2rem]">
+                  <History className="w-[2rem] h-[2rem] text-ink-muted mx-auto mb-[0.75rem]" strokeWidth={1.5} />
+                  <p className="text-ink-secondary text-[0.875rem]">Nenhuma ação registrada ainda.</p>
+                </div>
+              ) : (
+                <div className="space-y-[0.875rem]">
+                  {historicoFiltrado.map((h) => (
+                    <div key={h.id} className="flex items-start gap-[0.875rem] pb-[0.875rem] border-b border-surface-border last:border-0 last:pb-0">
+                      <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-ads-500/60 mt-[0.3rem] flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-ink-secondary text-[0.875rem]">{h.descricao}</p>
+                        <p className="text-ink-muted text-[0.75rem] mt-[0.25rem]">
+                          {new Date(h.data_acao).toLocaleDateString('pt-BR', {
+                            day: '2-digit', month: 'long', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                      <span className="text-ink-muted text-[0.75rem] bg-surface-hover px-[0.5rem] py-[0.125rem] rounded-full flex-shrink-0">
+                        {h.tipo_acao.replace(/_/g, ' ')}
+                      </span>
                     </div>
-                    <span className="text-ink-muted text-[0.75rem] bg-surface-hover px-[0.5rem] py-[0.125rem] rounded-full flex-shrink-0">
-                      {h.tipo_acao.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <AuditTimeline clienteId={cliente.id} />
-          </div>
-        )}
+                  ))}
+                </div>
+              )}
+              <AuditTimeline clienteId={cliente.id} />
+            </div>
+          )
+        })()}
 
       </div>
 
@@ -2495,38 +3285,180 @@ export default function ClienteDetalhePage() {
 ### `app\(app)\clientes\novo\page.tsx`
 
 ```tsx
-﻿'use client';
+'use client'
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { criarCliente, criarAssinatura } from '@/lib/database';
-import { MainLayout } from '@/components/layout/MainLayout';
-import type { ClienteStatus } from '@/lib/types';
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ArrowLeft, MessageCircle, CheckSquare, ArrowRight, X } from 'lucide-react'
+import { criarCliente, criarAssinatura } from '@/lib/database'
+import { supabase } from '@/lib/supabase'
+import { MainLayout } from '@/components/layout/MainLayout'
+import { Button } from '@/components/ui/Button'
+import type { ClienteStatus, Cliente } from '@/lib/types'
+import { toast } from 'sonner'
 
 const NICHOS_SUGERIDOS = [
   'Psicologia', 'Odontologia', 'Estética', 'Advocacia', 'Medicina',
   'Fisioterapia', 'Nutrição', 'Academia', 'Imóveis', 'Adestramento',
   'Educação', 'Contabilidade', 'Engenharia', 'Outro',
-];
+]
 
+const MSG_BOASVINDAS = (nome: string) =>
+  `Olá ${nome.split(' ')[0]}! 👋 Bem-vindo(a) à Adsgator!\n\nEstamos muito felizes em ter você como cliente. Nos próximos dias entraremos em contato para iniciar o onboarding e configurar suas campanhas.\n\nQualquer dúvida, estou à disposição!`
+
+// ── Modal de onboarding pós-criação ─────────────────────────────────────────
+function OnboardingModal({ cliente, onClose, onConcluir }: {
+  cliente:    Cliente
+  onClose:    () => void
+  onConcluir: () => void
+}) {
+  const [criandoTask, setCriandoTask] = useState(false)
+  const [taskCriada,  setTaskCriada]  = useState(false)
+
+  function abrirWhatsApp() {
+    const num = cliente.whatsapp?.replace(/\D/g, '')
+    if (!num) { toast.error('WhatsApp não cadastrado.'); return }
+    const msg = encodeURIComponent(MSG_BOASVINDAS(cliente.nome))
+    window.open(`https://wa.me/55${num}?text=${msg}`, '_blank')
+  }
+
+  async function criarTaskOnboarding() {
+    setCriandoTask(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const prazo = new Date()
+    prazo.setDate(prazo.getDate() + 3)
+
+    const { error } = await supabase.from('tarefas').insert({
+      titulo:     `Onboarding — ${cliente.nome}`,
+      descricao:  'Iniciar processo de onboarding: coletar briefing, configurar Google Ads, agendar reunião de alinhamento.',
+      prioridade: 'alto',
+      status:     'pendente',
+      cliente_id: cliente.id,
+      data_prazo: prazo.toISOString(),
+      user_id:    user?.id,
+      checklist: [
+        { item: 'Enviar mensagem de boas-vindas',    done: false },
+        { item: 'Coletar briefing do cliente',       done: false },
+        { item: 'Agendar reunião de alinhamento',    done: false },
+        { item: 'Configurar Google Ads / GA4',       done: false },
+        { item: 'Criar primeiras campanhas',         done: false },
+      ],
+    })
+
+    if (error) {
+      toast.error('Erro ao criar task de onboarding.')
+    } else {
+      setTaskCriada(true)
+      toast.success('Task de onboarding criada com sub-tasks!')
+    }
+    setCriandoTask(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-[1rem]">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative bg-surface-card border border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[26rem] animate-fade-scale">
+        {/* Header */}
+        <div className="flex items-center justify-between px-[1.5rem] py-[1.125rem] border-b border-surface-border">
+          <div className="flex items-center gap-[0.5rem]">
+            <div className="w-[2rem] h-[2rem] rounded-full bg-status-green/10 flex items-center justify-center">
+              <span className="text-[1rem]">🎉</span>
+            </div>
+            <div>
+              <p className="text-ink-primary text-[0.9375rem] font-semibold leading-none">Cliente criado!</p>
+              <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">{cliente.nome}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+          >
+            <X className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Ações */}
+        <div className="p-[1.5rem] flex flex-col gap-[0.75rem]">
+          <p className="text-ink-secondary text-[0.8125rem] mb-[0.25rem]">
+            Próximos passos recomendados:
+          </p>
+
+          {/* WhatsApp */}
+          <button
+            onClick={abrirWhatsApp}
+            className="w-full flex items-center gap-[0.75rem] p-[0.875rem] rounded-xl bg-status-green/5 border border-status-green/20 hover:bg-status-green/10 transition-colors group text-left"
+          >
+            <div className="w-[2.25rem] h-[2.25rem] rounded-lg bg-status-green/15 flex items-center justify-center shrink-0">
+              <MessageCircle className="w-[1rem] h-[1rem] text-status-green" strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-ink-primary text-[0.875rem] font-medium">Enviar boas-vindas</p>
+              <p className="text-ink-muted text-[0.75rem]">Abrir WhatsApp com mensagem de boas-vindas</p>
+            </div>
+            <ArrowRight className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-status-green shrink-0 transition-colors" strokeWidth={1.75} />
+          </button>
+
+          {/* Task onboarding */}
+          <button
+            onClick={taskCriada ? undefined : criarTaskOnboarding}
+            disabled={criandoTask || taskCriada}
+            className={`w-full flex items-center gap-[0.75rem] p-[0.875rem] rounded-xl border transition-colors text-left ${
+              taskCriada
+                ? 'bg-ads-500/5 border-ads-500/20 opacity-70 cursor-default'
+                : 'bg-ads-500/5 border-ads-500/20 hover:bg-ads-500/10'
+            }`}
+          >
+            <div className="w-[2.25rem] h-[2.25rem] rounded-lg bg-ads-500/15 flex items-center justify-center shrink-0">
+              <CheckSquare className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-ink-primary text-[0.875rem] font-medium">
+                {taskCriada ? 'Task de onboarding criada ✓' : 'Criar task de onboarding'}
+              </p>
+              <p className="text-ink-muted text-[0.75rem]">5 sub-tasks • prazo em 3 dias • prioridade alta</p>
+            </div>
+            {!taskCriada && (
+              <ArrowRight className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-ads-500 shrink-0 transition-colors" strokeWidth={1.75} />
+            )}
+          </button>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-[1.5rem] pb-[1.25rem]">
+          <button
+            onClick={onClose}
+            className="text-ink-muted text-[0.8125rem] hover:text-ink-primary transition-colors"
+          >
+            Fazer depois
+          </button>
+          <Button variant="primary" size="md" onClick={onConcluir}>
+            Ir para o cliente
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Página principal ─────────────────────────────────────────────────────────
 export default function NovoClientePage() {
-  const router = useRouter();
+  const router = useRouter()
   const [form, setForm] = useState({
     nome: '', email: '', whatsapp: '',
     dominio: '', nicho: '', plano_nome: '', valor_mensal: '',
-  });
-  const [salvando, setSalvando] = useState(false);
-  const [erro,     setErro]     = useState('');
+  })
+  const [salvando,         setSalvando]         = useState(false)
+  const [erro,             setErro]             = useState('')
+  const [clienteCriado,    setClienteCriado]    = useState<Cliente | null>(null)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setErro('');
-    setSalvando(true);
+    e.preventDefault()
+    setErro('')
+    setSalvando(true)
     try {
       const novoCliente = await criarCliente({
         nome:                   form.nome.trim(),
@@ -2537,47 +3469,47 @@ export default function NovoClientePage() {
         status:                 'recebido' as ClienteStatus,
         google_ads_customer_id: undefined,
         ga4_property_id:        undefined,
-      });
+      })
 
       if (form.plano_nome && form.valor_mensal) {
         await criarAssinatura({
           cliente_id:   novoCliente.id,
           plano_nome:   form.plano_nome.trim(),
           valor_mensal: parseFloat(form.valor_mensal),
-        });
+        })
       }
 
-      router.push('/dashboard');
+      setClienteCriado(novoCliente)
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Erro ao criar cliente');
+      setErro(err instanceof Error ? err.message : 'Erro ao criar cliente')
     } finally {
-      setSalvando(false);
+      setSalvando(false)
     }
   }
 
-  const inputClass = 'w-full h-[2.5rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-primary placeholder:text-ink-muted text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors';
-
-  const labelClass = 'block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]';
+  const inputClass = 'w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary placeholder:text-ink-muted text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors'
+  const labelClass = 'block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]'
 
   return (
     <MainLayout title="Novo Cliente" subtitle="Preencha os dados básicos">
-      <button
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => router.back()}
-        className="flex items-center gap-[0.375rem] text-ink-muted hover:text-ink-secondary text-[0.875rem] mb-[1.5rem] transition-colors"
+        icon={<ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />}
+        className="mb-[1.5rem]"
       >
-        <ArrowLeft className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
         Voltar
-      </button>
+      </Button>
 
       <div className="max-w-[40rem]">
-
         {erro && (
-          <div className="mb-[1.5rem] bg-status-red/10 border border-status-red/20 rounded-[0.375rem] px-[1rem] py-[0.75rem]">
+          <div className="mb-[1.5rem] bg-status-red/10 border border-status-red/20 rounded-lg px-[1rem] py-[0.75rem]">
             <p className="text-[0.8125rem] text-status-red">{erro}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] flex flex-col gap-[1.25rem]">
+        <form onSubmit={handleSubmit} className="bg-surface-card border border-surface-border rounded-2xl card-shadow p-[1.5rem] flex flex-col gap-[1.25rem]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-[1.25rem]">
             <div>
               <label className={labelClass}>Nome completo *</label>
@@ -2624,20 +3556,22 @@ export default function NovoClientePage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={salvando}
-            className="flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-600 text-white font-semibold text-[0.875rem] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {salvando
-              ? <><div className="w-[1rem] h-[1rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> Criando…</>
-              : 'Criar Cliente'
-            }
-          </button>
+          <Button type="submit" variant="primary" size="lg" fullWidth loading={salvando}>
+            {salvando ? 'Criando…' : 'Criar Cliente'}
+          </Button>
         </form>
       </div>
+
+      {/* Modal de onboarding pós-criação */}
+      {clienteCriado && (
+        <OnboardingModal
+          cliente={clienteCriado}
+          onClose={() => router.push(`/clientes/${clienteCriado.id}`)}
+          onConcluir={() => router.push(`/clientes/${clienteCriado.id}`)}
+        />
+      )}
     </MainLayout>
-  );
+  )
 }
 ```
 
@@ -2649,13 +3583,14 @@ export default function NovoClientePage() {
 import React, { useEffect, useState } from 'react'
 import {
   Save, User, Bell, Plug, DollarSign,
-  Palette, Users, Check, History,
+  Palette, Users, Check, History, Download, Upload,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 
-type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'auditoria'
+type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'backup' | 'auditoria'
 
 const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'perfil',        label: 'Perfil',         icon: User       },
@@ -2664,6 +3599,7 @@ const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'financeiro',    label: 'Financeiro',      icon: DollarSign },
   { id: 'aparencia',     label: 'Aparência',       icon: Palette    },
   { id: 'equipe',        label: 'Equipe',          icon: Users      },
+  { id: 'backup',        label: 'Backup',          icon: Download   },
   { id: 'auditoria',     label: 'Auditoria',       icon: History    },
 ]
 
@@ -2682,17 +3618,15 @@ function FeedbackSalvo({ ok, erro }: { ok: boolean; erro: string }) {
 
 function BtnSalvar({ salvando }: { salvando: boolean }) {
   return (
-    <button
+    <Button
       type="submit"
-      disabled={salvando}
-      className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50"
+      variant="primary"
+      size="lg"
+      loading={salvando}
+      icon={<Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
     >
-      {salvando
-        ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
-        : <Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
-      }
       {salvando ? 'Salvando…' : 'Salvar'}
-    </button>
+    </Button>
   )
 }
 
@@ -2872,16 +3806,41 @@ function AbaIntegracoes() {
 }
 
 // ── ABA FINANCEIRO ──────────────────────────────────────────────────────────
+interface EtapaRegua {
+  dias:      number
+  ativo:     boolean
+  template:  string
+}
+
+const ETAPAS_PADRAO: EtapaRegua[] = [
+  { dias: 3,  ativo: true,  template: 'Olá {nome}, sua fatura está próxima do vencimento (D+3). Podemos resolver isso juntos?' },
+  { dias: 7,  ativo: true,  template: 'Oi {nome}, identificamos que sua mensalidade está em atraso há {dias} dias. Precisamos regularizar para manter suas campanhas ativas.' },
+  { dias: 15, ativo: true,  template: '{nome}, seus serviços estão em risco de suspensão por atraso de {dias} dias. Entre em contato imediatamente.' },
+  { dias: 30, ativo: false, template: '{nome}, em razão do atraso de {dias} dias, iniciamos processo de cancelamento conforme contrato.' },
+]
+
 function AbaFinanceiro() {
   const [config,   setConfig]   = useState<ConfigFinanceira>({ custos_fixos_mensais: 0, custos_variaveis_percentual: 0, margem_lucro_minima: 30, saldo_google_ads_limite_alerta: 50 })
   const [loading,  setLoading]  = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [salvo,    setSalvo]    = useState(false)
   const [erro,     setErro]     = useState('')
+  const [etapas,   setEtapas]   = useState<EtapaRegua[]>(ETAPAS_PADRAO)
+  const [salvandoRegua, setSalvandoRegua] = useState(false)
+  const [salvoRegua,    setSalvoRegua]    = useState(false)
 
   useEffect(() => {
-    supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta').eq('agencia_id', 'adsgator-main').single()
-      .then(({ data }) => { if (data) setConfig(data as ConfigFinanceira); setLoading(false) })
+    supabase.from('configuracoes_financeiras')
+      .select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta,regua_cobranca')
+      .eq('agencia_id', 'adsgator-main').single()
+      .then(({ data }) => {
+        if (data) {
+          const d = data as ConfigFinanceira & { regua_cobranca?: EtapaRegua[] }
+          setConfig({ custos_fixos_mensais: d.custos_fixos_mensais, custos_variaveis_percentual: d.custos_variaveis_percentual, margem_lucro_minima: d.margem_lucro_minima, saldo_google_ads_limite_alerta: d.saldo_google_ads_limite_alerta })
+          if (d.regua_cobranca?.length) setEtapas(d.regua_cobranca)
+        }
+        setLoading(false)
+      })
   }, [])
 
   async function salvar(e: React.FormEvent) {
@@ -2891,6 +3850,21 @@ function AbaFinanceiro() {
     if (error) setErro(error.message)
     else { setSalvo(true); setTimeout(() => setSalvo(false), 3000) }
     setSalvando(false)
+  }
+
+  async function salvarRegua(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvandoRegua(true)
+    await supabase.from('configuracoes_financeiras')
+      .update({ regua_cobranca: etapas } as Record<string, unknown>)
+      .eq('agencia_id', 'adsgator-main')
+    setSalvandoRegua(false)
+    setSalvoRegua(true)
+    setTimeout(() => setSalvoRegua(false), 3000)
+  }
+
+  function updateEtapa(i: number, field: keyof EtapaRegua, value: unknown) {
+    setEtapas((prev) => prev.map((e, idx) => idx === i ? { ...e, [field]: value } : e))
   }
 
   const campos = [
@@ -2903,26 +3877,89 @@ function AbaFinanceiro() {
   if (loading) return <div className="h-[12rem] flex items-center justify-center"><div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" /></div>
 
   return (
-    <form onSubmit={salvar} className="flex flex-col gap-[1.25rem] max-w-[28rem]">
-      {campos.map(({ key, label, prefix, suffix }) => (
-        <Campo key={key} label={label}>
-          <div className="relative">
-            {prefix && <span className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{prefix}</span>}
-            <input
-              type="number" step="0.01" min="0"
-              value={config[key]}
-              onChange={(e) => setConfig((p) => ({ ...p, [key]: parseFloat(e.target.value) || 0 }))}
-              className={`w-full h-[2.5rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors ${prefix ? 'pl-[2.5rem]' : 'pl-[0.75rem]'} ${suffix ? 'pr-[2rem]' : 'pr-[0.75rem]'}`}
-            />
-            {suffix && <span className="absolute right-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{suffix}</span>}
+    <div className="flex flex-col gap-[2rem]">
+      {/* ── Custos e alertas ── */}
+      <form onSubmit={salvar} className="flex flex-col gap-[1.25rem] max-w-[28rem]">
+        <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Custos e Alertas</h3>
+        {campos.map(({ key, label, prefix, suffix }) => (
+          <Campo key={key} label={label}>
+            <div className="relative">
+              {prefix && <span className="absolute left-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{prefix}</span>}
+              <input
+                type="number" step="0.01" min="0"
+                value={config[key]}
+                onChange={(e) => setConfig((p) => ({ ...p, [key]: parseFloat(e.target.value) || 0 }))}
+                className={`w-full h-[2.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors ${prefix ? 'pl-[2.5rem]' : 'pl-[0.75rem]'} ${suffix ? 'pr-[2rem]' : 'pr-[0.75rem]'}`}
+              />
+              {suffix && <span className="absolute right-[0.75rem] top-1/2 -translate-y-1/2 text-ink-muted text-[0.875rem]">{suffix}</span>}
+            </div>
+          </Campo>
+        ))}
+        <div className="flex items-center gap-[1rem]">
+          <BtnSalvar salvando={salvando} />
+          <FeedbackSalvo ok={salvo} erro={erro} />
+        </div>
+      </form>
+
+      {/* ── Régua de cobrança ── */}
+      <form onSubmit={salvarRegua} className="flex flex-col gap-[1.25rem]">
+        <div className="border-t border-surface-border/30 pt-[1.5rem]">
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[0.25rem]">Régua de Cobrança</h3>
+          <p className="text-ink-muted text-[0.8125rem] mb-[1.25rem]">
+            Configure os triggers automáticos. Use <code className="bg-surface-hover px-1 rounded text-ads-500">{'{nome}'}</code> e <code className="bg-surface-hover px-1 rounded text-ads-500">{'{dias}'}</code> nos templates.
+          </p>
+
+          <div className="flex flex-col gap-[1rem]">
+            {etapas.map((etapa, i) => (
+              <div
+                key={i}
+                className={`rounded-xl border p-[1rem] flex flex-col gap-[0.75rem] transition-colors ${etapa.ativo ? 'border-ads-500/30 bg-ads-500/5' : 'border-surface-border/30 bg-surface-hover/50'}`}
+              >
+                <div className="flex items-center justify-between gap-[1rem]">
+                  <div className="flex items-center gap-[0.75rem]">
+                    <span className={`text-[0.75rem] font-bold px-[0.5rem] py-[0.125rem] rounded-full ${etapa.ativo ? 'bg-ads-500/15 text-ads-500' : 'bg-surface-hover text-ink-muted'}`}>
+                      D+{etapa.dias}
+                    </span>
+                    <div className="flex items-center gap-[0.375rem]">
+                      <label className="text-ink-secondary text-[0.8125rem]">Dias de atraso:</label>
+                      <input
+                        type="number" min="1" max="180"
+                        value={etapa.dias}
+                        onChange={(e) => updateEtapa(i, 'dias', parseInt(e.target.value) || 1)}
+                        className="w-[4rem] h-[2rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-1 focus:ring-ads-500/30 text-center"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Toggle ativo */}
+                  <button
+                    type="button"
+                    onClick={() => updateEtapa(i, 'ativo', !etapa.ativo)}
+                    className={`relative w-[2.5rem] h-[1.375rem] rounded-full transition-colors shrink-0 ${etapa.ativo ? 'bg-ads-500' : 'bg-surface-hover border border-surface-border'}`}
+                  >
+                    <span className={`absolute top-[0.1875rem] w-[1rem] h-[1rem] rounded-full bg-white transition-transform shadow-sm ${etapa.ativo ? 'translate-x-[1.3125rem]' : 'translate-x-[0.1875rem]'}`} />
+                  </button>
+                </div>
+
+                <textarea
+                  value={etapa.template}
+                  onChange={(e) => updateEtapa(i, 'template', e.target.value)}
+                  disabled={!etapa.ativo}
+                  rows={2}
+                  className="w-full px-[0.75rem] py-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] resize-none focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors disabled:opacity-40"
+                  placeholder="Template da mensagem…"
+                />
+              </div>
+            ))}
           </div>
-        </Campo>
-      ))}
-      <div className="flex items-center gap-[1rem]">
-        <BtnSalvar salvando={salvando} />
-        <FeedbackSalvo ok={salvo} erro={erro} />
-      </div>
-    </form>
+        </div>
+
+        <div className="flex items-center gap-[1rem]">
+          <BtnSalvar salvando={salvandoRegua} />
+          <FeedbackSalvo ok={salvoRegua} erro="" />
+        </div>
+      </form>
+    </div>
   )
 }
 
@@ -3046,6 +4083,101 @@ function AbaEquipe() {
   )
 }
 
+// ── ABA BACKUP ──────────────────────────────────────────────────────────────
+function AbaBackup() {
+  const [exportando, setExportando] = useState(false)
+  const [feedback, setFeedback] = useState('')
+
+  async function exportarDados() {
+    setExportando(true)
+    setFeedback('')
+    try {
+      const [clientes, tarefas, lancamentos] = await Promise.all([
+        supabase.from('clientes').select('*'),
+        supabase.from('tarefas').select('*'),
+        supabase.from('financeiro_lancamentos').select('*'),
+      ])
+
+      const backup = {
+        timestamp: new Date().toISOString(),
+        versao: '1.0',
+        dados: {
+          clientes: clientes.data ?? [],
+          tarefas: tarefas.data ?? [],
+          lancamentos: lancamentos.data ?? [],
+        },
+      }
+
+      const json = JSON.stringify(backup, null, 2)
+      const blob = new Blob([json], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `backup-adsgator-${new Date().toISOString().slice(0, 10)}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+
+      setFeedback('✓ Backup exportado com sucesso!')
+    } catch (err) {
+      setFeedback('✗ Erro ao exportar backup. Tente novamente.')
+    } finally {
+      setExportando(false)
+    }
+  }
+
+  return (
+    <div className="max-w-[32rem] flex flex-col gap-[2rem]">
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
+        <div className="flex items-start justify-between mb-[1rem]">
+          <div>
+            <p className="text-ink-primary font-semibold text-[0.9375rem]">Exportar Dados</p>
+            <p className="text-ink-muted text-[0.75rem] mt-[0.25rem]">Baixe um arquivo JSON com todos os seus dados</p>
+          </div>
+          <Download className="w-[1.25rem] h-[1.25rem] text-ads-500 shrink-0" strokeWidth={1.75} />
+        </div>
+        <p className="text-ink-secondary text-[0.8125rem] leading-relaxed mb-[1rem]">
+          Inclui: clientes, tarefas, histórico financeiro e configurações. Use para backup pessoal ou migração.
+        </p>
+        <button
+          onClick={exportarDados}
+          disabled={exportando}
+          className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50"
+        >
+          {exportando ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+          {exportando ? 'Exportando…' : 'Exportar Dados'}
+        </button>
+        {feedback && <p className={`text-[0.8125rem] mt-[0.75rem] ${feedback.startsWith('✓') ? 'text-status-green' : 'text-status-red'}`}>{feedback}</p>}
+      </div>
+
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem] opacity-50">
+        <div className="flex items-start justify-between mb-[1rem]">
+          <div>
+            <p className="text-ink-primary font-semibold text-[0.9375rem]">Importar Dados</p>
+            <p className="text-ink-muted text-[0.75rem] mt-[0.25rem]">Restaurar de um arquivo JSON anterior</p>
+          </div>
+          <Upload className="w-[1.25rem] h-[1.25rem] text-ink-muted shrink-0" strokeWidth={1.75} />
+        </div>
+        <p className="text-ink-secondary text-[0.8125rem] leading-relaxed mb-[1rem]">
+          Funcionalidade disponível em breve. Use o painel Supabase para restaurar dados manualmente.
+        </p>
+        <button
+          disabled
+          className="flex items-center gap-[0.5rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-surface-elevated text-ink-muted text-[0.875rem] font-semibold transition-colors cursor-not-allowed"
+        >
+          <Upload className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+          Importar Dados (em breve)
+        </button>
+      </div>
+
+      <div className="bg-status-blue/10 border border-status-blue/20 rounded-lg p-[1rem]">
+        <p className="text-status-blue text-[0.8125rem] leading-relaxed">
+          <strong>Dica:</strong> Realize backups regularmente. Para restaurações em massa, acesse o painel Supabase Dashboard e use a seção de Backups & Recovery.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 // ── PÁGINA PRINCIPAL ────────────────────────────────────────────────────────
 export default function ConfiguracoesPage() {
   const [aba, setAba] = useState<AbaId>('perfil')
@@ -3057,6 +4189,7 @@ export default function ConfiguracoesPage() {
     financeiro:   <AbaFinanceiro />,
     aparencia:    <AbaAparencia />,
     equipe:       <AbaEquipe />,
+    backup:       <AbaBackup />,
     auditoria:    <AuditLogViewer />,
   }
 
@@ -3104,26 +4237,30 @@ import {
   CreditCard,
   Download,
   RefreshCw,
-  RotateCcw,
   MessageCircle,
   ExternalLink,
   PauseCircle,
+  LayoutDashboard,
+  Check,
+  X,
 } from 'lucide-react'
 import { MainLayout }            from '@/components/layout/MainLayout'
 import { BentoCard }             from '@/components/dashboard/BentoCard'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
 import { KpiCompactCard }        from '@/components/dashboard/KpiCompactCard'
-import { TrendingOnMarket }      from '@/components/dashboard/TrendingOnMarket'
-import { RecentTransactions }    from '@/components/dashboard/RecentTransactions'
-import { QuickExchange }         from '@/components/dashboard/QuickExchange'
 import { MorningBriefing }       from '@/components/dashboard/MorningBriefing'
 import { WeatherClock }          from '@/components/dashboard/WeatherClock'
 import { DRESparkline }          from '@/components/dashboard/DRESparkline'
 import { AlertasCriticos }       from '@/components/dashboard/AlertasCriticos'
 import { GeminiChat }            from '@/components/dashboard/GeminiChat'
+import { ActivityFeed }          from '@/components/dashboard/ActivityFeed'
+import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
+import { useRightSidebar }       from '@/lib/store/right-sidebar-context'
+import { useRightSidebarStore }  from '@/lib/store/right-sidebar-store'
 import { supabase }              from '@/lib/supabase'
+import { carregarDashboardLayout, salvarDashboardLayout, type Layouts as LayoutsType } from '@/lib/database'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -3142,13 +4279,98 @@ const STORAGE_KEY = 'adsgator-bento-layouts-v3'
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Layouts = Record<string, any[]>
+// Layouts type já importado de @/lib/database
+
+interface SizePreset {
+  id: 'compact' | 'normal' | 'large' | 'max'
+  sizes: Record<string, { w: number; h: number }>
+}
+
+const CARD_SIZE_PRESETS: Record<string, SizePreset[]> = {
+  'weather-clock': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 3 }, lg: { w: 2, h: 3 }, md: { w: 2, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 4 }, lg: { w: 2, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 5 }, lg: { w: 3, h: 5 }, md: { w: 4, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'kpi-ativos': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 4, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'kpi-mrr': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 4, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'kpi-retencao': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 2, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'kpi-saldo': [
+    { id: 'compact', sizes: { xl: { w: 2, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 3, h: 3 }, lg: { w: 2, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 2 } } },
+    { id: 'large', sizes: { xl: { w: 4, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 4, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+  ],
+  'morning-briefing': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 2 }, lg: { w: 3, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 5, h: 4 }, lg: { w: 5, h: 4 }, md: { w: 6, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 6, h: 5 }, lg: { w: 6, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 8, h: 6 }, lg: { w: 7, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'acoes-dia': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 2 }, lg: { w: 2, h: 2 }, md: { w: 2, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 5, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 4, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 7, h: 6 }, lg: { w: 6, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'dre-sparkline': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 3 }, lg: { w: 4, h: 3 }, md: { w: 4, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 7, h: 6 }, lg: { w: 6, h: 6 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 9, h: 7 }, lg: { w: 8, h: 7 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 8 }, lg: { w: 10, h: 8 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'alertas-criticos': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 2 }, lg: { w: 4, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 6, h: 4 }, lg: { w: 5, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 8, h: 5 }, lg: { w: 7, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 6 }, lg: { w: 10, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'gemini-chat': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 2 }, lg: { w: 4, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 6, h: 4 }, lg: { w: 5, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 8, h: 5 }, lg: { w: 7, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 6 }, lg: { w: 10, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'clientes-foco': [
+    { id: 'compact', sizes: { xl: { w: 5, h: 2 }, lg: { w: 4, h: 2 }, md: { w: 4, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 8, h: 4 }, lg: { w: 6, h: 4 }, md: { w: 6, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 10, h: 5 }, lg: { w: 8, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 6 }, lg: { w: 10, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+  'clientes-progresso': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 3 }, lg: { w: 4, h: 3 }, md: { w: 4, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 5, h: 6 }, lg: { w: 4, h: 6 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 7, h: 7 }, lg: { w: 6, h: 7 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 9, h: 8 }, lg: { w: 8, h: 8 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'activity-feed': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 2 }, lg: { w: 3, h: 2 }, md: { w: 3, h: 2 }, sm: { w: 2, h: 2 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 4 }, lg: { w: 4, h: 4 }, md: { w: 6, h: 4 }, sm: { w: 2, h: 3 } } },
+    { id: 'large', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'max', sizes: { xl: { w: 8, h: 6 }, lg: { w: 7, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+  ],
+}
 
 const fmt = (v: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 
-const DEFAULT_LAYOUTS: Layouts = {
+const DEFAULT_LAYOUTS: LayoutsType = {
   xl: [
     // ROW 0-5: Hero (DRE) + Lista (Clientes) — espelho da referência
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 7,  h: 6, minW: 4, minH: 4 },
@@ -3165,6 +4387,10 @@ const DEFAULT_LAYOUTS: Layouts = {
     // ROW 13-15: Alertas + Gemini
     { i: 'alertas-criticos',  x: 0,  y: 13, w: 6,  h: 4, minW: 4, minH: 2 },
     { i: 'gemini-chat',       x: 6,  y: 13, w: 6,  h: 4, minW: 4, minH: 2 },
+    // ROW 17-20: Clientes em Foco
+    { i: 'clientes-foco',     x: 0,  y: 17, w: 8,  h: 4, minW: 6, minH: 3 },
+    // ROW 17: Activity Feed
+    { i: 'activity-feed',     x: 8,  y: 17, w: 4,  h: 4, minW: 3, minH: 3 },
   ],
   lg: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 6 },
@@ -3178,6 +4404,8 @@ const DEFAULT_LAYOUTS: Layouts = {
     { i: 'kpi-saldo',         x: 8,  y: 10, w: 2,  h: 3 },
     { i: 'alertas-criticos',  x: 0,  y: 13, w: 5,  h: 4 },
     { i: 'gemini-chat',       x: 5,  y: 13, w: 5,  h: 4 },
+    { i: 'clientes-foco',     x: 0,  y: 17, w: 6,  h: 4 },
+    { i: 'activity-feed',     x: 6,  y: 17, w: 4,  h: 4 },
   ],
   md: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 5 },
@@ -3191,6 +4419,8 @@ const DEFAULT_LAYOUTS: Layouts = {
     { i: 'kpi-saldo',         x: 3,  y: 21, w: 3,  h: 3 },
     { i: 'alertas-criticos',  x: 0,  y: 24, w: 3,  h: 4 },
     { i: 'gemini-chat',       x: 3,  y: 24, w: 3,  h: 4 },
+    { i: 'clientes-foco',     x: 0,  y: 28, w: 6,  h: 4 },
+    { i: 'activity-feed',     x: 0,  y: 32, w: 6,  h: 4 },
   ],
   sm: [
     { i: 'dre-sparkline',     x: 0, y: 0,  w: 2, h: 5 },
@@ -3204,14 +4434,26 @@ const DEFAULT_LAYOUTS: Layouts = {
     { i: 'kpi-saldo',         x: 0, y: 32, w: 2, h: 3 },
     { i: 'alertas-criticos',  x: 0, y: 35, w: 2, h: 4 },
     { i: 'gemini-chat',       x: 0, y: 39, w: 2, h: 4 },
+    { i: 'clientes-foco',     x: 0, y: 43, w: 2, h: 4 },
+    { i: 'activity-feed',     x: 0, y: 47, w: 2, h: 4 },
   ],
 }
 
 export default function DashboardPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
+  const ctx = useRightSidebar()
+  const store = useRightSidebarStore()
+
+  // Usar o context se disponível, caso contrário usar o store
+  const setContextActions = ctx?.setContextActions || store.setContextActions
+  const clearContextActions = ctx?.clearContextActions || store.clearContextActions
   const [saldoGoogle, setSaldoGoogle] = useState<number | null>(null)
+  const [mostrarWizard, setMostrarWizard] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [layouts, setLayouts] = useState<Record<string, any[]>>(DEFAULT_LAYOUTS)
+  const [layouts, setLayouts] = useState<LayoutsType>(DEFAULT_LAYOUTS)
+  const [layoutSnapshot, setLayoutSnapshot] = useState<LayoutsType>(DEFAULT_LAYOUTS)
   const [containerWidth, setContainerWidth] = useState(1200)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -3227,24 +4469,119 @@ export default function DashboardPage() {
     return () => ro.disconnect()
   }, [measureWidth])
 
-  // Carregar layout salvo
+  // Carregar layout do Supabase (prioridade) ou localStorage + verificar onboarding
   useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser()
+      const uid = data.user?.id ?? null
+      setUserId(uid)
+
+      if (uid) {
+        try {
+          const savedLayout = await carregarDashboardLayout(uid)
+          if (savedLayout) {
+            setLayouts(savedLayout)
+          } else {
+            // fallback localStorage
+            try {
+              const local = localStorage.getItem(STORAGE_KEY)
+              if (local) setLayouts(JSON.parse(local) as LayoutsType)
+            } catch {}
+          }
+        } catch (err) {
+          console.error('[Dashboard] Erro ao carregar layout:', err)
+          // fallback localStorage em caso de erro
+          try {
+            const local = localStorage.getItem(STORAGE_KEY)
+            if (local) setLayouts(JSON.parse(local) as LayoutsType)
+          } catch {}
+        }
+      } else {
+        // Sem login: carregar apenas localStorage
+        try {
+          const local = localStorage.getItem(STORAGE_KEY)
+          if (local) setLayouts(JSON.parse(local) as LayoutsType)
+        } catch {}
+      }
+    })()
+
     try {
-      const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved) setLayouts(JSON.parse(saved) as Layouts)
+      if (!localStorage.getItem('adsgator_onboarding_done')) {
+        setMostrarWizard(true)
+      }
     } catch {}
   }, [])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleLayoutChange = (_: any[], allLayouts: Record<string, any[]>) => {
+    // Só atualiza estado — save acontece apenas ao confirmar edit mode
     setLayouts(allLayouts)
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(allLayouts)) } catch {}
   }
 
-  const handleReset = () => {
+  const handleConfirmEdit = useCallback(async () => {
+    setEditMode(false)
+    if (userId) {
+      try {
+        await salvarDashboardLayout(userId, layouts)
+      } catch (err) {
+        console.error('[Dashboard] Erro ao salvar layout:', err)
+        toast.error('Erro ao salvar layout')
+        return
+      }
+    }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts)) } catch {}
+    toast.success('Layout salvo')
+  }, [userId, layouts])
+
+  const handleCancelEdit = useCallback(() => {
+    setLayouts(layoutSnapshot)
+    setEditMode(false)
+  }, [layoutSnapshot])
+
+  const enterEdit = useCallback(() => {
+    setLayoutSnapshot(layouts)
+    setEditMode(true)
+  }, [layouts])
+
+  const handleReset = async () => {
     setLayouts(DEFAULT_LAYOUTS)
+    if (userId) {
+      try {
+        await salvarDashboardLayout(userId, DEFAULT_LAYOUTS)
+      } catch (err) {
+        console.error('[Dashboard] Erro ao resetar layout:', err)
+      }
+    }
     try { localStorage.removeItem(STORAGE_KEY) } catch {}
     toast.success('Layout resetado')
+  }
+
+  const handleCardSizeChange = (cardId: string, preset: 'compact' | 'normal' | 'large' | 'max') => {
+    const presets = CARD_SIZE_PRESETS[cardId]
+    if (!presets) return
+
+    const selected = presets.find(p => p.id === preset)
+    if (!selected) return
+
+    setLayouts(prev => {
+      const updated = { ...prev }
+      Object.keys(BREAKPOINTS).forEach((bp) => {
+        const layout = updated[bp] || []
+        const idx = layout.findIndex((item: any) => item.i === cardId)
+        if (idx >= 0 && selected.sizes[bp]) {
+          const newSize = selected.sizes[bp]
+          layout[idx] = { ...layout[idx], w: newSize.w, h: newSize.h }
+        }
+      })
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)) } catch {}
+      return updated
+    })
+    toast.success(`Card redimensionado para "${preset === 'compact' ? 'Compacto' : preset === 'normal' ? 'Normal' : preset === 'large' ? 'Grande' : 'Máximo'}"`)
+  }
+
+  // Cria uma função bound para cada cardId
+  const makeCardResizer = (cardId: string) => (preset: 'compact' | 'normal' | 'large' | 'max') => {
+    handleCardSizeChange(cardId, preset)
   }
 
   useEffect(() => {
@@ -3257,6 +4594,21 @@ export default function DashboardPage() {
         setSaldoGoogle(total)
       })
   }, [])
+
+  // Injetar controles de edit na RightSidebar
+  useEffect(() => {
+    if (editMode) {
+      setContextActions([
+        { id: 'confirm-edit', icon: Check, label: 'Confirmar layout', onClick: handleConfirmEdit },
+        { id: 'cancel-edit', icon: X, label: 'Cancelar edição', onClick: handleCancelEdit },
+      ])
+    } else {
+      setContextActions([
+        { id: 'edit-layout', icon: LayoutDashboard, label: 'Editar layout', onClick: enterEdit },
+      ])
+    }
+    return () => clearContextActions()
+  }, [editMode])
 
   const progresso = dados.filter((d) =>
     d.cliente.status !== 'congelado' && d.cliente.status !== 'cancelado'
@@ -3280,6 +4632,26 @@ export default function DashboardPage() {
     return acoes.sort((a, b) => ORDEM[a.urgencia] - ORDEM[b.urgencia]).slice(0, 5)
   }, [dados])
 
+  async function handleCriarTaskDeAcao(cliente: Cliente, descricao: string) {
+    const { data: { user } } = await supabase.auth.getUser()
+    const prazo = new Date()
+    prazo.setDate(prazo.getDate() + 1)
+    const { error } = await supabase.from('tarefas').insert({
+      titulo: `Ação: ${cliente.nome.split(' ')[0]}`,
+      descricao,
+      prioridade: 'alto',
+      status: 'pendente',
+      cliente_id: cliente.id,
+      data_prazo: prazo.toISOString(),
+      user_id: user?.id,
+    })
+    if (error) {
+      toast.error('Erro ao criar task.')
+    } else {
+      toast.success(`Task criada para ${cliente.nome.split(' ')[0]}!`)
+    }
+  }
+
   async function handleCongelar(clienteId: string) {
     await supabase.from('clientes').update({ status: 'congelado' }).eq('id', clienteId)
     recarregar()
@@ -3287,13 +4659,6 @@ export default function DashboardPage() {
 
   const topBarActions = (
     <div className="flex items-center gap-[0.5rem]">
-      <button
-        onClick={handleReset}
-        title="Resetar layout"
-        className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors"
-      >
-        <RotateCcw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-      </button>
       <button
         onClick={recarregar}
         disabled={loading}
@@ -3309,6 +4674,7 @@ export default function DashboardPage() {
   )
 
   return (
+    <>
     <MainLayout
       title="Dashboard"
       subtitle={`Semana de ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
@@ -3346,23 +4712,11 @@ export default function DashboardPage() {
         </div>
 
         {/* ════════════════════════════════════════════════════════════ */}
-        {/* SEÇÃO 1 — Trending + Quick Exchange (lado a lado)            */}
-        {/* ════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
-          <TrendingOnMarket />
-          <QuickExchange />
-        </div>
-
-        {/* ════════════════════════════════════════════════════════════ */}
-        {/* SEÇÃO 2 — Recent Transactions (full width)                   */}
-        {/* ════════════════════════════════════════════════════════════ */}
-        <RecentTransactions />
-
-        {/* ════════════════════════════════════════════════════════════ */}
         {/* GRID CUSTOMIZÁVEL — (Rest da Dashboard anterior)            */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <div>
-          <p className="text-ink-muted text-xs font-medium uppercase tracking-wider mb-[1rem]">Mais widgets</p>
+        <div className={editMode ? 'ring-1 ring-ads-500/30 rounded-2xl p-[1rem]' : ''}>
+          {editMode && <p className="text-ads-500 text-xs font-semibold mb-[1rem] animate-pulse">Modo de edição ativado — arraste e redimensione os cards</p>}
+          {!editMode && <p className="text-ink-muted text-xs font-medium uppercase tracking-wider mb-[1rem]">Mais widgets</p>}
           <RGLResponsive
             className="layout"
             layouts={layouts}
@@ -3375,12 +4729,12 @@ export default function DashboardPage() {
             onLayoutChange={handleLayoutChange}
             width={containerWidth}
             useCSSTransforms
-            isResizable
-            isDraggable
+            isResizable={editMode}
+            isDraggable={editMode}
           >
           {/* ── KPIs ─────────────────────────────── */}
           <div key="kpi-ativos">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-ativos" onSizeChange={makeCardResizer('kpi-ativos')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Clientes Ativos" value={metricas.ativos} accentColor="amber" icon={<Users className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/clientes" />
@@ -3389,7 +4743,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-mrr">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-mrr" onSizeChange={makeCardResizer('kpi-mrr')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="MRR" value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} accentColor="green" icon={<DollarSign className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/financeiro" />
@@ -3398,7 +4752,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-retencao">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-retencao" onSizeChange={makeCardResizer('kpi-retencao')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Taxa de Retenção" value={`${metricas.taxaRetencao}%`} accentColor="red" icon={<Percent className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
@@ -3407,7 +4761,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-saldo">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-saldo" onSizeChange={makeCardResizer('kpi-saldo')} noPadding>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Saldo Google" value={saldoGoogle !== null ? `R$ ${saldoGoogle.toLocaleString('pt-BR')}` : '…'} delta={saldoGoogle !== null && saldoGoogle < 200 ? 'Baixo' : undefined} deltaDir={saldoGoogle !== null && saldoGoogle < 200 ? 'down' : undefined} accentColor="blue" alert={saldoGoogle !== null && saldoGoogle < 200} alertLabel="Envie #SALDOGOOGLE" icon={<CreditCard className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
@@ -3417,24 +4771,24 @@ export default function DashboardPage() {
 
           {/* ── MORNING BRIEFING ─────────────────── */}
           <div key="morning-briefing">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="morning-briefing" onSizeChange={makeCardResizer('morning-briefing')} noPadding>
               <MorningBriefing />
             </BentoCard>
           </div>
 
           {/* ── WEATHER CLOCK ────────────────────── */}
           <div key="weather-clock">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="weather-clock" onSizeChange={makeCardResizer('weather-clock')} noPadding>
               <WeatherClock />
             </BentoCard>
           </div>
 
           {/* ── AÇÕES DO DIA ─────────────────────── */}
           <div key="acoes-dia">
-            <BentoCard title="Ações do Dia" subtitle="Prioridades de hoje">
+            <BentoCard editMode={editMode} cardId="acoes-dia" onSizeChange={makeCardResizer('acoes-dia')} title="Ações do Dia" subtitle="Prioridades de hoje">
               {loading || acoesDoDia.length === 0
                 ? <div className="flex items-center justify-center h-full text-ink-muted text-[0.8125rem]">Nenhuma ação pendente</div>
-                : <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} />
+                : <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} onCriarTask={handleCriarTaskDeAcao} />
               }
             </BentoCard>
           </div>
@@ -3442,6 +4796,9 @@ export default function DashboardPage() {
           {/* ── CLIENTES EM PROGRESSO ────────────── */}
           <div key="clientes-progresso">
             <BentoCard
+              editMode={editMode}
+              cardId="clientes-progresso"
+              onSizeChange={makeCardResizer('clientes-progresso')}
               title="Clientes em Progresso"
               subtitle={`${progresso.length} de ${metricas.total} clientes`}
               actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
@@ -3508,28 +4865,125 @@ export default function DashboardPage() {
 
           {/* ── DRE SPARKLINE ────────────────────── */}
           <div key="dre-sparkline">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="dre-sparkline" onSizeChange={makeCardResizer('dre-sparkline')} noPadding>
               <DRESparkline />
             </BentoCard>
           </div>
 
           {/* ── ALERTAS CRÍTICOS ─────────────────── */}
           <div key="alertas-criticos">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="alertas-criticos" onSizeChange={makeCardResizer('alertas-criticos')} noPadding>
               <AlertasCriticos />
             </BentoCard>
           </div>
 
           {/* ── GEMINI CHAT ──────────────────────── */}
           <div key="gemini-chat">
-            <BentoCard noPadding>
+            <BentoCard editMode={editMode} cardId="gemini-chat" onSizeChange={makeCardResizer('gemini-chat')} noPadding>
               <GeminiChat />
+            </BentoCard>
+          </div>
+
+          {/* ── CLIENTES EM FOCO ─────────────────── */}
+          <div key="clientes-foco">
+            {(() => {
+              const emFoco = dados
+                .map(({ cliente }) => cliente)
+                .filter((c) => (c.dias_atraso ?? 0) > 0 || c.status === 'congelado')
+                .sort((a, b) => (b.dias_atraso ?? 0) - (a.dias_atraso ?? 0))
+                .slice(0, 5)
+              return (
+                <BentoCard
+                  editMode={editMode}
+                  cardId="clientes-foco"
+                  onSizeChange={makeCardResizer('clientes-foco')}
+                  title="Clientes em Foco"
+                  subtitle={emFoco.length > 0 ? `${emFoco.length} cliente${emFoco.length > 1 ? 's' : ''} precisam de atenção` : 'Tudo em dia'}
+                  actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
+                >
+                  {loading ? (
+                    <div className="flex gap-[0.75rem]">
+                      {Array.from({ length: 4 }).map((_, i) => <div key={i} className="flex-1 h-[5rem] rounded-xl skeleton-shimmer" />)}
+                    </div>
+                  ) : emFoco.length === 0 ? (
+                    <div className="flex items-center justify-center h-full gap-[0.5rem] text-status-green">
+                      <span className="text-[1.5rem]">✓</span>
+                      <p className="text-[0.875rem] font-medium">Nenhum cliente precisando de atenção</p>
+                    </div>
+                  ) : (
+                    <div className="flex gap-[0.75rem] overflow-x-auto pb-[0.25rem]">
+                      {emFoco.map((c) => {
+                        const iniciais = c.nome.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
+                        const isInadimplente = (c.dias_atraso ?? 0) > 0
+                        const urgencia = (c.dias_atraso ?? 0) >= 30 ? 'critica' : isInadimplente ? 'atencao' : 'congelado'
+                        const corBorda = urgencia === 'critica' ? 'border-status-red/40' : urgencia === 'atencao' ? 'border-status-orange/40' : 'border-status-blue/40'
+                        const corBg    = urgencia === 'critica' ? 'bg-status-red/5'   : urgencia === 'atencao' ? 'bg-status-orange/5'   : 'bg-status-blue/5'
+                        const corTag   = urgencia === 'critica' ? 'text-status-red bg-status-red/10' : urgencia === 'atencao' ? 'text-status-orange bg-status-orange/10' : 'text-status-blue bg-status-blue/10'
+                        return (
+                          <div key={c.id} className={`flex flex-col gap-[0.5rem] p-[0.75rem] rounded-xl border ${corBorda} ${corBg} min-w-[9rem] flex-shrink-0`}>
+                            <div className="flex items-center gap-[0.5rem]">
+                              <div className="w-[1.75rem] h-[1.75rem] rounded-full bg-surface-elevated flex items-center justify-center shrink-0">
+                                <span className="text-ink-secondary text-[0.625rem] font-bold">{iniciais}</span>
+                              </div>
+                              <p className="text-ink-primary text-[0.8125rem] font-semibold leading-tight truncate">{c.nome}</p>
+                            </div>
+                            {c.nicho && (
+                              <span className="text-ink-muted text-[0.6875rem] truncate">{c.nicho}</span>
+                            )}
+                            <span className={`self-start text-[0.625rem] font-semibold px-[0.375rem] py-[0.125rem] rounded-full ${corTag}`}>
+                              {urgencia === 'critica' ? `${c.dias_atraso}d atraso` : urgencia === 'atencao' ? `${c.dias_atraso}d atraso` : 'Congelado'}
+                            </span>
+                            <div className="flex gap-[0.25rem] mt-auto">
+                              {c.whatsapp && (
+                                <a
+                                  href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`}
+                                  target="_blank" rel="noreferrer"
+                                  title="WhatsApp"
+                                  className="w-[1.5rem] h-[1.5rem] flex items-center justify-center rounded-md bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"
+                                >
+                                  <MessageCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                                </a>
+                              )}
+                              <a
+                                href={`/clientes/${c.id}`}
+                                title="Ver cliente"
+                                className="w-[1.5rem] h-[1.5rem] flex items-center justify-center rounded-md bg-surface-hover text-ink-secondary hover:text-ink-primary transition-colors"
+                              >
+                                <ExternalLink className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                              </a>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </BentoCard>
+              )
+            })()}
+          </div>
+
+          {/* ── ACTIVITY FEED ───────────────────────── */}
+          <div key="activity-feed">
+            <BentoCard
+              editMode={editMode}
+              cardId="activity-feed"
+              onSizeChange={makeCardResizer('activity-feed')}
+              title="Atividade Recente"
+              subtitle="Últimas 24h"
+              actions={<a href="/configuracoes" className="text-ads-500 text-[0.75rem] hover:underline">Ver auditoria</a>}
+            >
+              <ActivityFeed />
             </BentoCard>
           </div>
         </RGLResponsive>
         </div>
       </div>
     </MainLayout>
+
+    {mostrarWizard && (
+      <OnboardingWizard onConcluir={() => setMostrarWizard(false)} />
+    )}
+    </>
   )
 }
 ```
@@ -3543,13 +4997,15 @@ import { useEffect, useState, useCallback } from 'react'
 import {
   TrendingUp, DollarSign, AlertCircle,
   MessageCircle, RefreshCw, Users, Download,
-  Target, Clock, Zap,
+  Target, Clock, Zap, Plus, X as XIcon,
+  Pencil, Copy, Trash2,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import type { FinanceiroLancamento, Cliente } from '@/lib/types'
 
@@ -3610,7 +5066,20 @@ function gerarCSV(lancamentos: FinanceiroLancamento[]): void {
   URL.revokeObjectURL(url)
 }
 
+// ── Modal de novo lançamento ─────────────────────────────────────────────────
+interface NovoLancForm {
+  descricao:  string
+  valor:      string
+  tipo:       'receita' | 'custo_fixo' | 'custo_variavel'
+  data:       string
+  status:     'confirmado' | 'pendente'
+  categoria:  string
+  cliente_id: string
+}
+
 export default function FinanceiroPage() {
+  const hoje = new Date().toISOString().slice(0, 7)
+
   const [dre,          setDre]          = useState<DRE | null>(null)
   const [saude,        setSaude]        = useState<SaudeSaaS | null>(null)
   const [lancamentos,  setLancamentos]  = useState<FinanceiroLancamento[]>([])
@@ -3619,25 +5088,37 @@ export default function FinanceiroPage() {
   const [sparkData,    setSparkData]    = useState<SparkMes[]>([])
   const [projecao,     setProjecao]     = useState<ProjecaoMes[]>([])
   const [loading,      setLoading]      = useState(true)
+  const [periodoSel,   setPeriodoSel]   = useState(hoje)
+  const [modalLanc,    setModalLanc]    = useState(false)
+  const [clientesLista, setClientesLista] = useState<{ id: string; nome: string }[]>([])
+  const [novoLanc,     setNovoLanc]     = useState<NovoLancForm>({
+    descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado', categoria: '', cliente_id: '',
+  })
+  const [salvandoLanc, setSalvandoLanc] = useState(false)
+  const [erroLanc,     setErroLanc]     = useState('')
+  const [editandoLanc, setEditandoLanc] = useState<FinanceiroLancamento | null>(null)
+  const [deletandoId,  setDeletandoId]  = useState<string | null>(null)
 
   const carregar = useCallback(async () => {
     setLoading(true)
     try {
-      const mesInicio = new Date()
-      mesInicio.setDate(1)
+      const [ano, mes] = periodoSel.split('-')
+      const mesInicio  = new Date(Number(ano), Number(mes) - 1, 1)
       const mesInicioStr = mesInicio.toISOString().split('T')[0]
 
       const doze = new Date()
       doze.setMonth(doze.getMonth() - 12)
       const dozeStr = doze.toISOString().split('T')[0]
 
-      const [{ data: lancs }, { data: todosL }, { data: atr }, { data: config }, { data: historico }] = await Promise.all([
+      const [{ data: lancs }, { data: todosL }, { data: atr }, { data: config }, { data: historico }, { data: clientesData }] = await Promise.all([
         supabase.from('financeiro_lancamentos').select('*').gte('data', mesInicioStr).order('data', { ascending: false }),
         supabase.from('financeiro_lancamentos').select('*').gte('data', dozeStr).order('data', { ascending: true }),
         supabase.from('clientes').select('*').gt('dias_atraso', 0).neq('status', 'cancelado'),
         supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,tipo_tributacao,imposto_percentual').eq('agencia_id', 'adsgator-main').single(),
         supabase.from('historico_acoes').select('tipo, created_at').in('tipo', ['cliente_criado', 'cancelado']).order('created_at', { ascending: true }),
+        supabase.from('clientes').select('id, nome').in('status', ['ativo', 'onboarding', 'setup_trafego']).order('nome'),
       ])
+      setClientesLista((clientesData ?? []) as { id: string; nome: string }[])
 
       const lista = (lancs ?? []) as FinanceiroLancamento[]
       const todos = (todosL ?? []) as FinanceiroLancamento[]
@@ -3726,9 +5207,69 @@ export default function FinanceiroPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [periodoSel])
 
   useEffect(() => { carregar() }, [carregar])
+
+  async function salvarLancamento() {
+    if (!novoLanc.descricao.trim() || !novoLanc.valor || !novoLanc.data) {
+      setErroLanc('Preencha descrição, valor e data.'); return
+    }
+    setSalvandoLanc(true); setErroLanc('')
+    const { error } = await supabase.from('financeiro_lancamentos').insert({
+      descricao:  novoLanc.descricao.trim(),
+      valor:      parseFloat(novoLanc.valor),
+      tipo:       novoLanc.tipo,
+      data:       novoLanc.data,
+      status:     novoLanc.status,
+      ...(novoLanc.categoria  && { categoria:  novoLanc.categoria }),
+      ...(novoLanc.cliente_id && { cliente_id: novoLanc.cliente_id }),
+    })
+    setSalvandoLanc(false)
+    if (error) { setErroLanc(error.message); return }
+    setModalLanc(false)
+    setNovoLanc({ descricao: '', valor: '', tipo: 'receita', data: new Date().toISOString().slice(0, 10), status: 'confirmado', categoria: '', cliente_id: '' })
+    carregar()
+  }
+
+  async function salvarEdicao() {
+    if (!editandoLanc) return
+    setSalvandoLanc(true); setErroLanc('')
+    const { error } = await supabase
+      .from('financeiro_lancamentos')
+      .update({
+        descricao:  editandoLanc.descricao,
+        valor:      editandoLanc.valor,
+        tipo:       editandoLanc.tipo,
+        data:       editandoLanc.data,
+        status:     editandoLanc.status,
+        categoria:  (editandoLanc as unknown as Record<string, unknown>)['categoria'] as string | undefined ?? null,
+        cliente_id: (editandoLanc as unknown as Record<string, unknown>)['cliente_id'] as string | undefined ?? null,
+      })
+      .eq('id', editandoLanc.id)
+    setSalvandoLanc(false)
+    if (error) { setErroLanc(error.message); return }
+    setEditandoLanc(null)
+    carregar()
+  }
+
+  async function duplicarLancamento(l: FinanceiroLancamento) {
+    await supabase.from('financeiro_lancamentos').insert({
+      descricao: `${l.descricao} (cópia)`,
+      valor:     l.valor,
+      tipo:      l.tipo,
+      data:      new Date().toISOString().slice(0, 10),
+      status:    'pendente',
+    })
+    carregar()
+  }
+
+  async function deletarLancamento(id: string) {
+    setDeletandoId(id)
+    await supabase.from('financeiro_lancamentos').delete().eq('id', id)
+    setDeletandoId(null)
+    carregar()
+  }
 
   if (loading || !dre) {
     return (
@@ -3753,18 +5294,37 @@ export default function FinanceiroPage() {
       subtitle="Saúde financeira em tempo real"
       actions={
         <div className="flex items-center gap-[0.5rem]">
-          <button
+          <input
+            type="month"
+            value={periodoSel}
+            onChange={(e) => setPeriodoSel(e.target.value)}
+            className="h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+          />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setModalLanc(true)}
+            icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+          >
+            Lançamento
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => gerarCSV(todosLancs)}
             disabled={todosLancs.length === 0}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors disabled:opacity-40"
+            icon={<Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
           >
-            <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
             CSV
-          </button>
-          <button onClick={carregar} className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
-            <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={carregar}
+            icon={<RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
+          >
             Atualizar
-          </button>
+          </Button>
         </div>
       }
     >
@@ -3947,29 +5507,64 @@ export default function FinanceiroPage() {
           ))}
         </div>
 
-        {/* ── ÚCTIMOS LANÇAMENTOS ── */}
+        {/* ── LANÇAMENTOS DO MÊS ── */}
         <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
           <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1.25rem]">
-            Últimos lançamentos do mês
+            Lançamentos do mês ({lancamentos.length})
           </h3>
-          <div className="flex flex-col gap-[0.75rem]">
-            {lancamentos.slice(0, 6).map((l) => (
-              <div key={l.id} className="flex items-center justify-between">
-                <div>
-                  <p className="text-ink-secondary text-[0.875rem]">{l.descricao}</p>
-                  <p className="text-ink-muted text-[0.6875rem]">{new Date(l.data).toLocaleDateString('pt-BR')}</p>
+          {lancamentos.length === 0 ? (
+            <p className="text-ink-muted text-[0.875rem]">Nenhum lançamento este mês.</p>
+          ) : (
+            <div className="flex flex-col divide-y divide-surface-border">
+              {lancamentos.map((l) => (
+                <div key={l.id} className="flex items-center gap-[0.75rem] py-[0.625rem] group">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-ink-secondary text-[0.875rem] truncate">{l.descricao}</p>
+                    <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">
+                      {new Date(l.data).toLocaleDateString('pt-BR')}
+                      {' · '}
+                      <span className="capitalize">{l.tipo.replace(/_/g, ' ')}</span>
+                      {l.status === 'pendente' && (
+                        <span className="ml-[0.375rem] text-status-orange font-medium">pendente</span>
+                      )}
+                    </p>
+                  </div>
+                  <p className={`text-[0.9375rem] font-semibold shrink-0 ${
+                    l.tipo === 'receita' ? 'text-status-green' : 'text-status-red'
+                  }`}>
+                    {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
+                  </p>
+                  {/* Ações — aparecem no hover */}
+                  <div className="flex items-center gap-[0.25rem] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <Button
+                      variant="ghost" size="sm" className="w-[2rem] px-0"
+                      title="Editar"
+                      onClick={() => { setEditandoLanc(l); setErroLanc('') }}
+                    >
+                      <Pencil className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm" className="w-[2rem] px-0"
+                      title="Duplicar"
+                      onClick={() => duplicarLancamento(l)}
+                    >
+                      <Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                    </Button>
+                    <Button
+                      variant="ghost" size="sm" className="w-[2rem] px-0 text-status-red hover:text-status-red hover:bg-status-red/10"
+                      title="Deletar"
+                      loading={deletandoId === l.id}
+                      onClick={() => {
+                        if (confirm(`Deletar "${l.descricao}"?`)) deletarLancamento(l.id)
+                      }}
+                    >
+                      {deletandoId !== l.id && <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />}
+                    </Button>
+                  </div>
                 </div>
-                <p className={`text-[0.9375rem] font-semibold ${
-                  l.tipo === 'receita' ? 'text-status-green' : 'text-status-red'
-                }`}>
-                  {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
-                </p>
-              </div>
-            ))}
-            {lancamentos.length === 0 && (
-              <p className="text-ink-muted text-[0.875rem]">Nenhum lançamento este mês.</p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -4101,6 +5696,248 @@ export default function FinanceiroPage() {
         </div>
       )}
       </div>
+
+      {/* ══ MODAL NOVO LANÇAMENTO ══════════════════════════════════ */}
+      {modalLanc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-scale"
+          onClick={(e) => { if (e.target === e.currentTarget) setModalLanc(false) }}
+        >
+          <div className="bg-surface-card border border-surface-border/40 rounded-2xl w-full max-w-md mx-[1rem] card-shadow">
+            {/* Header */}
+            <div className="flex items-center justify-between px-[1.5rem] py-[1.25rem] border-b border-surface-border/20">
+              <div className="flex items-center gap-[0.625rem]">
+                <div className="w-[2rem] h-[2rem] rounded-lg bg-ads-500/10 flex items-center justify-center">
+                  <Plus className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+                </div>
+                <h2 className="text-[1rem] font-semibold text-ink-primary">Novo Lançamento</h2>
+              </div>
+              <Button variant="ghost" size="sm" className="w-[2rem] px-0" onClick={() => setModalLanc(false)}>
+                <XIcon className="w-[1rem] h-[1rem]" strokeWidth={1.75} />
+              </Button>
+            </div>
+
+            {/* Form */}
+            <form
+              className="p-[1.5rem] space-y-[1rem]"
+              onSubmit={(e) => { e.preventDefault(); salvarLancamento() }}
+            >
+              {erroLanc && (
+                <p className="text-[0.8125rem] text-status-red bg-status-red/10 px-[0.75rem] py-[0.5rem] rounded-lg">
+                  {erroLanc}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-[0.375rem]">
+                <label className="text-[0.75rem] text-ink-secondary font-medium">Descrição</label>
+                <input
+                  type="text"
+                  placeholder="Ex: Mensalidade cliente XYZ"
+                  value={novoLanc.descricao}
+                  onChange={(e) => setNovoLanc((p) => ({ ...p, descricao: e.target.value }))}
+                  className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Valor (R$)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={novoLanc.valor}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, valor: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Data</label>
+                  <input
+                    type="date"
+                    value={novoLanc.data}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, data: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Tipo</label>
+                  <select
+                    value={novoLanc.tipo}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, tipo: e.target.value as NovoLancForm['tipo'] }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="receita">Receita</option>
+                    <option value="custo_fixo">Custo Fixo</option>
+                    <option value="custo_variavel">Custo Variável</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Status</label>
+                  <select
+                    value={novoLanc.status}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, status: e.target.value as NovoLancForm['status'] }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="confirmado">Confirmado</option>
+                    <option value="pendente">Pendente</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Categoria</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Tráfego, Ferramentas…"
+                    value={novoLanc.categoria}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, categoria: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Cliente (opcional)</label>
+                  <select
+                    value={novoLanc.cliente_id}
+                    onChange={(e) => setNovoLanc((p) => ({ ...p, cliente_id: e.target.value }))}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="">Nenhum</option>
+                    {clientesLista.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-[0.5rem] pt-[0.5rem]">
+                <Button variant="ghost" size="md" onClick={() => setModalLanc(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" size="md" loading={salvandoLanc}>
+                  Salvar Lançamento
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ══ MODAL EDITAR LANÇAMENTO ══════════════════════════════════ */}
+      {editandoLanc && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-scale"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditandoLanc(null) }}
+        >
+          <div className="bg-surface-card border border-surface-border/40 rounded-2xl w-full max-w-md mx-[1rem] card-shadow">
+            <div className="flex items-center justify-between px-[1.5rem] py-[1.25rem] border-b border-surface-border/20">
+              <div className="flex items-center gap-[0.625rem]">
+                <div className="w-[2rem] h-[2rem] rounded-lg bg-ads-500/10 flex items-center justify-center">
+                  <Pencil className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+                </div>
+                <h2 className="text-[1rem] font-semibold text-ink-primary">Editar Lançamento</h2>
+              </div>
+              <Button variant="ghost" size="sm" className="w-[2rem] px-0" onClick={() => setEditandoLanc(null)}>
+                <XIcon className="w-[1rem] h-[1rem]" strokeWidth={1.75} />
+              </Button>
+            </div>
+            <form className="p-[1.5rem] space-y-[1rem]" onSubmit={(e) => { e.preventDefault(); salvarEdicao() }}>
+              {erroLanc && (
+                <p className="text-[0.8125rem] text-status-red bg-status-red/10 px-[0.75rem] py-[0.5rem] rounded-lg">{erroLanc}</p>
+              )}
+              <div className="flex flex-col gap-[0.375rem]">
+                <label className="text-[0.75rem] text-ink-secondary font-medium">Descrição</label>
+                <input
+                  type="text"
+                  value={editandoLanc.descricao}
+                  onChange={(e) => setEditandoLanc((p) => p ? { ...p, descricao: e.target.value } : p)}
+                  className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Valor (R$)</label>
+                  <input
+                    type="number" min="0" step="0.01"
+                    value={editandoLanc.valor}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, valor: parseFloat(e.target.value) || 0 } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Data</label>
+                  <input
+                    type="date"
+                    value={editandoLanc.data.slice(0, 10)}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, data: e.target.value } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Tipo</label>
+                  <select
+                    value={editandoLanc.tipo}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, tipo: e.target.value as FinanceiroLancamento['tipo'] } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="receita">Receita</option>
+                    <option value="custo_fixo">Custo Fixo</option>
+                    <option value="custo_variavel">Custo Variável</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Status</label>
+                  <select
+                    value={editandoLanc.status ?? 'confirmado'}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, status: e.target.value as FinanceiroLancamento['status'] } : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="confirmado">Confirmado</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="cancelado">Cancelado</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-[0.75rem]">
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Categoria</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Tráfego, Ferramentas…"
+                    value={(editandoLanc as unknown as Record<string, unknown>)['categoria'] as string ?? ''}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, categoria: e.target.value } as FinanceiroLancamento : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-[0.375rem]">
+                  <label className="text-[0.75rem] text-ink-secondary font-medium">Cliente (opcional)</label>
+                  <select
+                    value={(editandoLanc as unknown as Record<string, unknown>)['cliente_id'] as string ?? ''}
+                    onChange={(e) => setEditandoLanc((p) => p ? { ...p, cliente_id: e.target.value } as FinanceiroLancamento : p)}
+                    className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors"
+                  >
+                    <option value="">Nenhum</option>
+                    {clientesLista.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-[0.5rem] pt-[0.5rem]">
+                <Button variant="ghost" size="md" onClick={() => setEditandoLanc(null)}>Cancelar</Button>
+                <Button type="submit" variant="primary" size="md" loading={salvandoLanc}>Salvar</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </MainLayout>
   )
 }
@@ -4119,6 +5956,7 @@ import {
   Sparkles, X, Save,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 
 type Rede   = 'instagram' | 'facebook'
@@ -4230,9 +6068,7 @@ function PostModal({
       <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border shrink-0">
           <p className="text-ink-primary font-semibold">{post?.id ? 'Editar Post' : 'Criar Post'}</p>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink-primary transition-colors">
-            <X className="w-[1rem] h-[1rem]" strokeWidth={2} />
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose} icon={<X className="w-[1rem] h-[1rem]" strokeWidth={2} />} className="w-[2rem] px-0" />
         </div>
 
         <div className="flex-1 overflow-y-auto p-[1.5rem] flex flex-col gap-[1rem]">
@@ -4318,21 +6154,17 @@ function PostModal({
         </div>
 
         <div className="flex gap-[0.5rem] px-[1.5rem] py-[1rem] border-t border-surface-border shrink-0">
-          <button onClick={() => salvar('rascunho')} disabled={salvando}
-            className="flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-lg border border-surface-border bg-surface-hover text-ink-secondary text-[0.8125rem] font-medium hover:text-ink-primary transition-colors disabled:opacity-50">
-            <Save className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />Rascunho
-          </button>
+          <Button variant="secondary" size="md" onClick={() => salvar('rascunho')} disabled={salvando} icon={<Save className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}>
+            Rascunho
+          </Button>
           {agendadoPara && (
-            <button onClick={() => salvar('agendado')} disabled={salvando}
-              className="flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-lg border border-ads-500 bg-ads-500/10 text-ads-500 text-[0.8125rem] font-semibold hover:bg-ads-500/20 transition-colors disabled:opacity-50">
-              <Clock className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />Agendar
-            </button>
+            <Button variant="subtle" size="md" onClick={() => salvar('agendado')} disabled={salvando} icon={<Clock className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}>
+              Agendar
+            </Button>
           )}
-          <button onClick={() => salvar('publicado')} disabled={salvando}
-            className="ml-auto flex items-center gap-[0.375rem] h-[2.25rem] px-[1rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.8125rem] font-semibold transition-colors disabled:opacity-50">
-            {salvando ? <div className="w-[0.75rem] h-[0.75rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Megaphone className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />}
+          <Button variant="primary" size="md" onClick={() => salvar('publicado')} disabled={salvando} loading={salvando} icon={<Megaphone className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />} className="ml-auto">
             Publicar Agora
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -4464,14 +6296,10 @@ export default function MarketingPage() {
       subtitle="Calendário editorial e criação de posts"
       actions={
         <div className="flex items-center gap-[0.5rem]">
-          <button onClick={carregar} className="h-[2rem] w-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary transition-colors">
-            <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-          </button>
-          <button onClick={abrirCriar}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-600 text-white text-[0.8125rem] font-semibold transition-colors">
-            <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+          <Button variant="secondary" size="sm" onClick={carregar} icon={<RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />} className="w-[2rem] px-0" />
+          <Button variant="primary" size="sm" onClick={abrirCriar} icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}>
             Criar Post
-          </button>
+          </Button>
         </div>
       }
     >
@@ -4903,6 +6731,7 @@ export default function RelatoriosPage() {
 ﻿'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { DragDropContext, Droppable, Draggable, type DropResult } from '@hello-pangea/dnd'
 import {
   Plus, CheckSquare, Square, Clock, User,
   ChevronDown, Trash2, RefreshCw, AlarmClock,
@@ -4911,6 +6740,7 @@ import {
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { TaskModal }  from '@/components/ui/TaskModal'
+import { Button }     from '@/components/ui/Button'
 import { Tooltip }    from '@/components/ui/Tooltip'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { cn }         from '@/lib/utils'
@@ -4986,8 +6816,12 @@ function TarefaAccordion({
   onDeletar: () => void
   onEditar: () => void
 }) {
-  const prio    = PRIO_CONFIG[t.prioridade]
-  const atrasada = (t.data_prazo?.slice(0, 10) ?? '') < hojeSt() && t.status !== 'feito'
+  const prio         = PRIO_CONFIG[t.prioridade]
+  const atrasada     = (t.data_prazo?.slice(0, 10) ?? '') < hojeSt() && t.status !== 'feito'
+  const subtasks     = t.checklist ?? []
+  const subDone      = subtasks.filter((s) => s.done).length
+  const subTotal     = subtasks.length
+  const subPct       = subTotal > 0 ? (subDone / subTotal) * 100 : 0
 
   const ctxItems = [
     { label: 'Editar',    icon: <ChevronRight className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />, onClick: onEditar },
@@ -5049,6 +6883,17 @@ function TarefaAccordion({
                   {new Date(t.data_prazo).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </span>
               )}
+              {subTotal > 0 && (
+                <span className="flex items-center gap-[0.25rem]">
+                  <span className="text-ink-muted">{subDone}/{subTotal}</span>
+                  <span className="w-[2.5rem] h-[0.1875rem] rounded-full bg-surface-hover overflow-hidden">
+                    <span
+                      className={cn('block h-full rounded-full transition-all', subDone === subTotal ? 'bg-status-green' : 'bg-ads-500')}
+                      style={{ width: `${subPct}%` }}
+                    />
+                  </span>
+                </span>
+              )}
             </div>
           </div>
 
@@ -5069,6 +6914,28 @@ function TarefaAccordion({
               </div>
             )}
 
+            {/* Sub-tasks */}
+            {subTotal > 0 && (
+              <div className="mt-[0.75rem]">
+                <p className="text-[0.625rem] text-ink-muted font-semibold uppercase tracking-wide mb-[0.375rem]">
+                  Sub-tasks — {subDone}/{subTotal}
+                </p>
+                <ul className="space-y-[0.125rem]">
+                  {subtasks.map((s, i) => (
+                    <li key={i} className="flex items-center gap-[0.375rem] px-[0.375rem] py-[0.25rem] rounded-lg hover:bg-surface-hover transition-colors">
+                      {s.done
+                        ? <CheckCheck className="w-[0.75rem] h-[0.75rem] text-status-green shrink-0" strokeWidth={2} />
+                        : <Square     className="w-[0.75rem] h-[0.75rem] text-ink-muted shrink-0"    strokeWidth={1.75} />
+                      }
+                      <span className={cn('text-[0.8125rem]', s.done ? 'line-through text-ink-muted' : 'text-ink-secondary')}>
+                        {s.item}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* Why it's here */}
             <div className="mt-[0.75rem] p-[0.75rem] rounded-[0.375rem] bg-surface-base border border-surface-border">
               <p className="text-[0.625rem] text-ink-muted font-semibold uppercase tracking-wide mb-[0.25rem]">Contexto</p>
@@ -5083,21 +6950,27 @@ function TarefaAccordion({
             {/* Ações */}
             <div className="flex items-center gap-[0.5rem] mt-[0.875rem]">
               <Tooltip content="Concluir" side="top">
-                <button
+                <Button
+                  variant="subtle"
+                  size="sm"
                   onClick={onConcluir}
-                  className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-status-green/10 text-status-green hover:bg-status-green/20 text-[0.8125rem] font-medium transition-colors"
+                  icon={<CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+                  className="text-status-green bg-status-green/10 hover:bg-status-green/20"
                 >
-                  <CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
                   Concluir
-                </button>
+                </Button>
               </Tooltip>
 
               <div className="relative group/adiar">
-                <button className="flex items-center gap-[0.25rem] h-[2rem] px-[0.625rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary transition-colors">
-                  <AlarmClock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<AlarmClock className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
+                  iconPosition="left"
+                >
                   Adiar
                   <ChevronDown className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
-                </button>
+                </Button>
                 <div className="absolute left-0 top-full mt-[0.25rem] bg-surface-elevated border border-surface-border rounded-[0.5rem] shadow-xl z-20 min-w-[8rem] hidden group-hover/adiar:block animate-fade-scale">
                   {[
                     { label: '+1 hora',   delta: 1, unit: 'h' as const },
@@ -5118,12 +6991,13 @@ function TarefaAccordion({
               <div className="flex-1" />
 
               <Tooltip content="Deletar" side="top">
-                <button
+                <Button
+                  variant="danger"
+                  size="sm"
                   onClick={onDeletar}
-                  className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover text-ink-muted hover:text-status-red hover:bg-status-red/10 transition-colors"
-                >
-                  <Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-                </button>
+                  icon={<Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />}
+                  className="w-[2rem] px-0"
+                />
               </Tooltip>
             </div>
           </div>
@@ -5149,6 +7023,7 @@ export default function TarefasPage() {
       .select('*, clientes(nome)')
       .neq('status', 'feito')
       .order('data_prazo', { ascending: true, nullsFirst: false })
+      .order('posicao', { ascending: true })
 
     const lista = (data ?? []).map((t: Tarefa & { clientes?: { nome: string } }) => ({
       ...t,
@@ -5208,6 +7083,28 @@ export default function TarefasPage() {
   const energyTarde  = Math.round(Math.min(100, (totalSemana / totalGeral) * 110))
   const energyNoite  = Math.round(Math.min(100, (totalMais / totalGeral) * 100))
 
+  async function handleDragEnd(result: DropResult) {
+    const { source, destination } = result
+    if (!destination) return
+    if (source.index === destination.index) return
+
+    const lista = [...filtradas]
+    const [moved] = lista.splice(source.index, 1)
+    lista.splice(destination.index, 0, moved)
+
+    setTarefas(lista)
+
+    // Salvar novas posições no Supabase
+    const updates = lista.map((t, idx) => ({
+      id: t.id,
+      posicao: idx,
+    }))
+
+    for (const upd of updates) {
+      await supabase.from('tarefas').update({ posicao: upd.posicao }).eq('id', upd.id)
+    }
+  }
+
   return (
     <MainLayout
       title="Tarefas"
@@ -5215,20 +7112,16 @@ export default function TarefasPage() {
       actions={
         <div className="flex items-center gap-[0.5rem]">
           <Tooltip content="Atualizar" side="bottom">
-            <button
-              onClick={carregar}
-              className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-muted hover:text-ink-primary transition-colors"
-            >
-              <RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
-            </button>
+            <Button variant="secondary" size="sm" onClick={carregar} icon={<RefreshCw className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />} className="w-[2rem] px-0" />
           </Tooltip>
-          <button
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => { setTarefaEdit(undefined); setModalAberto(true) }}
-            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.875rem] rounded-[0.375rem] bg-ads-500 hover:bg-ads-400 text-white text-[0.8125rem] font-semibold transition-colors shadow-lg shadow-ads-500/20"
+            icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
           >
-            <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
             Nova Tarefa
-          </button>
+          </Button>
         </div>
       }
     >
@@ -5274,41 +7167,71 @@ export default function TarefasPage() {
               <p className="text-ink-muted text-[0.875rem] mt-[0.25rem]">Nenhuma tarefa pendente com esse filtro.</p>
             </div>
           ) : (
-            <div className="flex flex-col gap-[1.5rem]">
-              {Object.entries(grupos).map(([grupo, items]) => {
-                if (items.length === 0) return null
-                const gcfg = GRUPO_CONFIG[grupo]
-                const GrupoIcon = gcfg.icon
-                return (
-                  <div key={grupo}>
-                    <div className="flex items-center gap-[0.5rem] mb-[0.625rem]">
-                      <div className={cn('w-[1.5rem] h-[1.5rem] rounded-[0.375rem] flex items-center justify-center', gcfg.glow)}>
-                        <GrupoIcon className={cn('w-[0.75rem] h-[0.75rem]', gcfg.color)} strokeWidth={2} />
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <div className="flex flex-col gap-[1.5rem]">
+                {Object.entries(grupos).map(([grupo, items]) => {
+                  if (items.length === 0) return null
+                  const gcfg = GRUPO_CONFIG[grupo]
+                  const GrupoIcon = gcfg.icon
+                  return (
+                    <div key={grupo}>
+                      <div className="flex items-center gap-[0.5rem] mb-[0.625rem]">
+                        <div className={cn('w-[1.5rem] h-[1.5rem] rounded-[0.375rem] flex items-center justify-center', gcfg.glow)}>
+                          <GrupoIcon className={cn('w-[0.75rem] h-[0.75rem]', gcfg.color)} strokeWidth={2} />
+                        </div>
+                        <h3 className={cn('font-semibold text-[0.875rem]', gcfg.color)}>{grupo}</h3>
+                        <span className="text-[0.6875rem] text-ink-muted bg-surface-hover border border-surface-border px-[0.375rem] py-[0.0625rem] rounded-full">
+                          {items.length}
+                        </span>
+                        <div className="flex-1 h-[1px] bg-surface-border" />
                       </div>
-                      <h3 className={cn('font-semibold text-[0.875rem]', gcfg.color)}>{grupo}</h3>
-                      <span className="text-[0.6875rem] text-ink-muted bg-surface-hover border border-surface-border px-[0.375rem] py-[0.0625rem] rounded-full">
-                        {items.length}
-                      </span>
-                      <div className="flex-1 h-[1px] bg-surface-border" />
+                      <Droppable droppableId={grupo}>
+                        {(provided, snapshot) => (
+                          <div
+                            className="flex flex-col gap-[0.5rem]"
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            style={{
+                              backgroundColor: snapshot.isDraggingOver ? 'var(--surface-hover)' : 'transparent',
+                              borderRadius: '0.5rem',
+                              padding: snapshot.isDraggingOver ? '0.5rem' : '0',
+                              transition: 'all 0.2s',
+                            }}
+                          >
+                            {items.map((t, idx) => (
+                              <Draggable key={t.id} draggableId={t.id} index={idx}>
+                                {(provided, snapshot) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    style={{
+                                      opacity: snapshot.isDragging ? 0.5 : 1,
+                                      ...provided.draggableProps.style,
+                                    }}
+                                  >
+                                    <TarefaAccordion
+                                      t={t}
+                                      expanded={expanded === t.id}
+                                      onToggle={() => setExpanded(expanded === t.id ? null : t.id)}
+                                      onConcluir={() => concluir(t)}
+                                      onAdiar={(d, u) => adiar(t, d, u)}
+                                      onDeletar={() => deletar(t.id)}
+                                      onEditar={() => { setTarefaEdit(t); setModalAberto(true) }}
+                                    />
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
                     </div>
-                    <div className="flex flex-col gap-[0.5rem]">
-                      {items.map((t) => (
-                        <TarefaAccordion
-                          key={t.id}
-                          t={t}
-                          expanded={expanded === t.id}
-                          onToggle={() => setExpanded(expanded === t.id ? null : t.id)}
-                          onConcluir={() => concluir(t)}
-                          onAdiar={(d, u) => adiar(t, d, u)}
-                          onDeletar={() => deletar(t.id)}
-                          onEditar={() => { setTarefaEdit(t); setModalAberto(true) }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+                  )
+                })}
+              </div>
+            </DragDropContext>
           )}
         </div>
 
@@ -5653,9 +7576,37 @@ function criarVertexAI() {
   })
 }
 
+export interface ChatAction {
+  type:  'create_task' | 'create_notification'
+  data:  Record<string, unknown>
+}
+
+interface ChatResponse {
+  content: string
+  actions?: ChatAction[]
+}
+
+const SYSTEM_PROMPT_BASE = `Você é um assistente operacional da agência Adsgator, especializado em Google Ads e gestão de clientes. Responda de forma direta, prática e conversacional.
+
+Você pode executar ações quando o usuário pedir explicitamente. Quando for executar uma ação, responda em JSON puro (sem markdown):
+{
+  "content": "sua resposta ao usuário",
+  "actions": [
+    { "type": "create_task", "data": { "titulo": "...", "descricao": "...", "prioridade": "normal|alto|critico", "cliente_id": "..." } },
+    { "type": "create_notification", "data": { "titulo": "...", "mensagem": "..." } }
+  ]
+}
+
+Se NÃO há ação, responda normalmente em texto puro (não em JSON). Máx 4 parágrafos.
+
+Exemplos que requerem ação:
+- "crie uma task para ligar para o João" → create_task
+- "me lembre de verificar o CPA amanhã" → create_task
+- "adiciona uma notificação sobre saldo baixo" → create_notification`
+
 export async function POST(req: NextRequest) {
   const body = await req.json() as {
-    messages:          ChatMensagem[]
+    messages:             ChatMensagem[]
     contexto_cliente_id?: string
   }
 
@@ -5664,18 +7615,19 @@ export async function POST(req: NextRequest) {
   let contextoCliente = ''
   if (contexto_cliente_id) {
     const [{ data: cliente }, { data: memoria }] = await Promise.all([
-      supabase.from('clientes').select('nome, nicho, status, mrr, dias_atraso').eq('id', contexto_cliente_id).single(),
+      supabase.from('clientes').select('id, nome, nicho, status, mrr, dias_atraso').eq('id', contexto_cliente_id).single(),
       supabase.from('memoria_clientes').select('conteudo_md').eq('cliente_id', contexto_cliente_id).maybeSingle(),
     ])
     if (cliente) {
-      contextoCliente = `\nCliente em contexto: ${cliente.nome} (${cliente.nicho}), status: ${cliente.status}, MRR: R$ ${cliente.mrr ?? 0}`
+      const c = cliente as { id: string; nome: string; nicho?: string; status: string; mrr?: number; dias_atraso?: number }
+      contextoCliente = `\n\nCliente em contexto: ${c.nome} (${c.nicho ?? 'sem nicho'}), status: ${c.status}, MRR: R$ ${c.mrr ?? 0}. ID: ${c.id}`
       if (memoria?.conteudo_md) {
-        contextoCliente += `\nMemória: ${memoria.conteudo_md.slice(0, 500)}`
+        contextoCliente += `\nMemória: ${(memoria.conteudo_md as string).slice(0, 500)}`
       }
     }
   }
 
-  const systemPrompt = `Você é um assistente operacional da agência Adsgator, especializado em Google Ads e gestão de clientes. Responda de forma direta, prática e conversacional (não robótica). Máx 4 parágrafos.${contextoCliente}`
+  const systemPrompt = SYSTEM_PROMPT_BASE + contextoCliente
 
   const contents = [
     { role: 'user' as const, parts: [{ text: systemPrompt }] },
@@ -5691,11 +7643,20 @@ export async function POST(req: NextRequest) {
     const vertex = criarVertexAI()
     const model  = vertex.preview.getGenerativeModel({ model: MODELO_FLASH })
     const result = await model.generateContent({ contents })
-    const texto  = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? 'Desculpe, não consegui processar sua mensagem.'
-    return NextResponse.json({ content: texto })
+    const texto  = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+
+    // Tentar parsear como JSON (resposta com actions)
+    if (texto.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(texto) as ChatResponse
+        if (parsed.content) return NextResponse.json(parsed)
+      } catch { /* não era JSON válido — tratar como texto */ }
+    }
+
+    return NextResponse.json({ content: texto || 'Desculpe, não consegui processar sua mensagem.' } satisfies ChatResponse)
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Erro desconhecido'
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ content: msg } satisfies ChatResponse, { status: 500 })
   }
 }
 ```
@@ -5802,13 +7763,56 @@ function criarVertexAI() {
   })
 }
 
-export async function GET() {
+type FiltroModo = 'completo' | 'urgencias' | 'resumido'
+
+function buildPrompt(
+  hoje: string,
+  clientes: { nome: string; status: string; dias_atraso?: number; mrr?: number; nicho?: string }[],
+  alertas: { tipo: string; mensagem: string }[],
+  filtro: FiltroModo,
+): string {
+  const mrrTotal     = clientes.reduce((s, c) => s + (c.mrr ?? 0), 0)
+  const inadimplentes = clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
+
+  const contexto = `Dados de hoje (${hoje}):
+- Clientes ativos: ${clientes.length}
+- MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}
+- Inadimplentes: ${inadimplentes.length} (${inadimplentes.map((c) => c.nome).join(', ') || 'nenhum'})
+- Alertas abertos: ${alertas.length}`
+
+  if (filtro === 'urgencias') {
+    return `Você é o assistente operacional da Adsgator. Gere um briefing APENAS sobre urgências (máx 4 linhas, sem markdown, sem listas).
+
+${contexto}
+
+Liste SOMENTE o que precisa de ação IMEDIATA hoje. Se não houver urgências críticas, diga brevemente que está tudo sob controle.`
+  }
+
+  if (filtro === 'resumido') {
+    return `Você é o assistente operacional da Adsgator. Gere um resumo em ATÉ 2 LINHAS, sem markdown.
+
+${contexto}
+
+Seja extremamente conciso: 1 linha com o status geral, 1 linha com a ação mais importante.`
+  }
+
+  // completo (padrão)
+  return `Você é o assistente operacional da Adsgator. Gere um briefing matinal CONCISO (máx 5 linhas, sem markdown, sem listas).
+
+${contexto}
+
+Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de ação prioritária.`
+}
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url)
+  const filtro = (searchParams.get('filtro') ?? 'completo') as FiltroModo
   const hoje = new Date().toISOString().slice(0, 10)
 
   const [{ data: clientes }, { data: alertas }] = await Promise.all([
     supabase
       .from('clientes')
-      .select('nome, status, dias_atraso, mrr')
+      .select('nome, status, dias_atraso, mrr, nicho')
       .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido']),
     supabase
       .from('alertas')
@@ -5818,18 +7822,12 @@ export async function GET() {
       .limit(5),
   ])
 
-  const mrrTotal = (clientes ?? []).reduce((s, c) => s + (c.mrr ?? 0), 0)
-  const inadimplentes = (clientes ?? []).filter((c) => (c.dias_atraso ?? 0) > 0)
+  const clientesTyped = (clientes ?? []) as { nome: string; status: string; dias_atraso?: number; mrr?: number; nicho?: string }[]
+  const alertasTyped  = (alertas ?? []) as { tipo: string; mensagem: string }[]
+  const mrrTotal      = clientesTyped.reduce((s, c) => s + (c.mrr ?? 0), 0)
+  const inadimplentes = clientesTyped.filter((c) => (c.dias_atraso ?? 0) > 0)
 
-  const prompt = `Você é o assistente operacional da Adsgator. Gere um briefing matinal CONCISO (máx 5 linhas, sem markdown, sem listas).
-
-Dados de hoje (${hoje}):
-- Clientes ativos: ${clientes?.length ?? 0}
-- MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}
-- Inadimplentes: ${inadimplentes.length} (${inadimplentes.map((c) => c.nome).join(', ') || 'nenhum'})
-- Alertas abertos: ${alertas?.length ?? 0}
-
-Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de ação prioritária.`
+  const prompt = buildPrompt(hoje, clientesTyped, alertasTyped, filtro)
 
   try {
     const vertex = criarVertexAI()
@@ -5840,7 +7838,7 @@ Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de açã
   } catch {
     const texto = inadimplentes.length > 0
       ? `${inadimplentes.length} cliente(s) inadimplente(s) requerem atenção hoje. MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}.`
-      : `Bom dia! ${clientes?.length ?? 0} clientes ativos. MRR: R$ ${mrrTotal.toLocaleString('pt-BR')}. Sem alertas críticos.`
+      : `Bom dia! ${clientesTyped.length} clientes ativos. MRR: R$ ${mrrTotal.toLocaleString('pt-BR')}. Sem alertas críticos.`
     return NextResponse.json({ texto, gerado_em: new Date().toISOString() })
   }
 }
@@ -5879,6 +7877,612 @@ export async function GET(req: NextRequest) {
 }
 ```
 
+### `app\api\v1\route.ts`
+
+```typescript
+import { NextResponse } from 'next/server'
+
+/**
+ * GET /api/v1
+ * Documentação da API REST Adsgator v1
+ */
+export async function GET() {
+  return NextResponse.json({
+    version: '1.0.0',
+    status: 'operational',
+    documentation: {
+      baseUrl: '/api/v1',
+      authentication: 'Supabase JWT via Authorization header',
+      endpoints: {
+        clientes: {
+          list: {
+            method: 'GET',
+            path: '/clientes',
+            description: 'Lista todos os clientes',
+            query: {
+              status: 'string (opcional)',
+              nicho: 'string (opcional)',
+              limit: 'number (padrão: 50, máx: 100)',
+              offset: 'number (padrão: 0)',
+            },
+          },
+          create: {
+            method: 'POST',
+            path: '/clientes',
+            description: 'Criar novo cliente',
+            body: {
+              nome: 'string (obrigatório)',
+              email: 'string (obrigatório)',
+              whatsapp: 'string (opcional)',
+              nicho: 'string (opcional)',
+              status: 'string (opcional, padrão: recebido)',
+            },
+          },
+          get: {
+            method: 'GET',
+            path: '/clientes/[id]',
+            description: 'Obter cliente específico',
+          },
+          update: {
+            method: 'PATCH',
+            path: '/clientes/[id]',
+            description: 'Atualizar cliente',
+            body: 'objeto com campos a atualizar',
+          },
+          delete: {
+            method: 'DELETE',
+            path: '/clientes/[id]',
+            description: 'Deletar cliente',
+          },
+        },
+        tarefas: {
+          list: {
+            method: 'GET',
+            path: '/tarefas',
+            description: 'Lista todas as tarefas',
+            query: {
+              status: 'string (opcional)',
+              prioridade: 'string (opcional)',
+              cliente_id: 'string (opcional)',
+              limit: 'number (padrão: 50, máx: 100)',
+              offset: 'number (padrão: 0)',
+            },
+          },
+          create: {
+            method: 'POST',
+            path: '/tarefas',
+            description: 'Criar nova tarefa',
+            body: {
+              titulo: 'string (obrigatório)',
+              descricao: 'string (opcional)',
+              prioridade: 'string (opcional, padrão: normal)',
+              status: 'string (opcional, padrão: pendente)',
+              data_prazo: 'string (opcional, ISO 8601)',
+              cliente_id: 'string (opcional)',
+              responsavel_id: 'string (opcional)',
+            },
+          },
+          get: {
+            method: 'GET',
+            path: '/tarefas/[id]',
+            description: 'Obter tarefa específica',
+          },
+          update: {
+            method: 'PATCH',
+            path: '/tarefas/[id]',
+            description: 'Atualizar tarefa',
+            body: 'objeto com campos a atualizar',
+          },
+          delete: {
+            method: 'DELETE',
+            path: '/tarefas/[id]',
+            description: 'Deletar tarefa',
+          },
+        },
+        financeiro: {
+          list: {
+            method: 'GET',
+            path: '/financeiro',
+            description: 'Lista lançamentos financeiros',
+            query: {
+              tipo: 'string (receita|despesa, opcional)',
+              cliente_id: 'string (opcional)',
+              data_inicio: 'string (ISO 8601, opcional)',
+              data_fim: 'string (ISO 8601, opcional)',
+              limit: 'number (padrão: 50, máx: 100)',
+              offset: 'number (padrão: 0)',
+            },
+          },
+          create: {
+            method: 'POST',
+            path: '/financeiro',
+            description: 'Criar novo lançamento',
+            body: {
+              descricao: 'string (obrigatório)',
+              tipo: 'string (obrigatório: receita|despesa)',
+              valor: 'number (obrigatório)',
+              data: 'string (obrigatório, ISO 8601)',
+              cliente_id: 'string (opcional)',
+              categoria: 'string (opcional)',
+            },
+          },
+        },
+      },
+    },
+  })
+}
+```
+
+### `app\api\v1\clientes\route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/client'
+
+/**
+ * GET /api/v1/clientes
+ * Retorna lista de clientes do usuário autenticado
+ * Query params: status, nicho, limit, offset
+ */
+export async function GET(req: NextRequest) {
+  const supabase = createClient()
+
+  // Verificar autenticação
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // Parâmetros de query
+  const { searchParams } = new URL(req.url)
+  const status = searchParams.get('status')
+  const nicho = searchParams.get('nicho')
+  const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 100)
+  const offset = parseInt(searchParams.get('offset') ?? '0')
+
+  let query = supabase
+    .from('clientes')
+    .select('id,nome,email,whatsapp,nicho,status,mrr,dias_atraso,data_criacao', { count: 'exact' })
+    .eq('user_id', user.id)
+
+  if (status) query = query.eq('status', status)
+  if (nicho) query = query.eq('nicho', nicho)
+
+  const { data, error, count } = await query
+    .order('data_criacao', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    data,
+    pagination: {
+      offset,
+      limit,
+      total: count,
+    },
+  })
+}
+
+/**
+ * POST /api/v1/clientes
+ * Criar novo cliente
+ */
+export async function POST(req: NextRequest) {
+  const supabase = createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { nome, email, whatsapp, nicho, status } = body
+
+  if (!nome || !email) {
+    return NextResponse.json({ error: 'nome e email são obrigatórios' }, { status: 400 })
+  }
+
+  const { data, error } = await supabase
+    .from('clientes')
+    .insert({
+      user_id: user.id,
+      nome,
+      email: email.toLowerCase(),
+      whatsapp: whatsapp?.replace(/\D/g, ''),
+      nicho,
+      status: status ?? 'recebido',
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json(data, { status: 201 })
+}
+```
+
+### `app\api\v1\clientes\[id]\route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/client'
+
+/**
+ * GET /api/v1/clientes/[id]
+ * Retorna cliente específico
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await params
+  const { data, error } = await supabase
+    .from('clientes')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: 'Cliente não encontrado' }, { status: 404 })
+  }
+
+  return NextResponse.json(data)
+}
+
+/**
+ * PATCH /api/v1/clientes/[id]
+ * Atualizar cliente
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { id } = await params
+  const { data, error } = await supabase
+    .from('clientes')
+    .update(body)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json(data)
+}
+
+/**
+ * DELETE /api/v1/clientes/[id]
+ * Deletar cliente
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await params
+  const { error } = await supabase
+    .from('clientes')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json({ success: true })
+}
+```
+
+### `app\api\v1\financeiro\route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/client'
+
+/**
+ * GET /api/v1/financeiro
+ * Retorna lançamentos financeiros do usuário
+ * Query params: tipo, cliente_id, data_inicio, data_fim, limit, offset
+ */
+export async function GET(req: NextRequest) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const tipo = searchParams.get('tipo') // receita, despesa
+  const cliente_id = searchParams.get('cliente_id')
+  const data_inicio = searchParams.get('data_inicio')
+  const data_fim = searchParams.get('data_fim')
+  const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 100)
+  const offset = parseInt(searchParams.get('offset') ?? '0')
+
+  let query = supabase
+    .from('financeiro_lancamentos')
+    .select('id,descricao,tipo,valor,data,cliente_id,categoria,created_at', { count: 'exact' })
+    .eq('user_id', user.id)
+
+  if (tipo) query = query.eq('tipo', tipo)
+  if (cliente_id) query = query.eq('cliente_id', cliente_id)
+  if (data_inicio) query = query.gte('data', data_inicio)
+  if (data_fim) query = query.lte('data', data_fim)
+
+  const { data, error, count } = await query
+    .order('data', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    data,
+    pagination: {
+      offset,
+      limit,
+      total: count,
+    },
+  })
+}
+
+/**
+ * POST /api/v1/financeiro
+ * Criar novo lançamento
+ */
+export async function POST(req: NextRequest) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { descricao, tipo, valor, data, cliente_id, categoria } = body
+
+  if (!descricao || !tipo || !valor || !data) {
+    return NextResponse.json({ error: 'descricao, tipo, valor e data são obrigatórios' }, { status: 400 })
+  }
+
+  const { data: result, error } = await supabase
+    .from('financeiro_lancamentos')
+    .insert({
+      user_id: user.id,
+      descricao,
+      tipo,
+      valor: parseFloat(valor),
+      data,
+      cliente_id,
+      categoria,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json(result, { status: 201 })
+}
+```
+
+### `app\api\v1\tarefas\route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/client'
+
+/**
+ * GET /api/v1/tarefas
+ * Retorna lista de tarefas do usuário
+ * Query params: status, prioridade, cliente_id, limit, offset
+ */
+export async function GET(req: NextRequest) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = new URL(req.url)
+  const status = searchParams.get('status')
+  const prioridade = searchParams.get('prioridade')
+  const cliente_id = searchParams.get('cliente_id')
+  const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 100)
+  const offset = parseInt(searchParams.get('offset') ?? '0')
+
+  let query = supabase
+    .from('tarefas')
+    .select('id,titulo,descricao,status,prioridade,data_prazo,cliente_id,responsavel_id,created_at', { count: 'exact' })
+    .eq('user_id', user.id)
+
+  if (status) query = query.eq('status', status)
+  if (prioridade) query = query.eq('prioridade', prioridade)
+  if (cliente_id) query = query.eq('cliente_id', cliente_id)
+
+  const { data, error, count } = await query
+    .order('data_prazo', { ascending: true, nullsFirst: false })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    data,
+    pagination: {
+      offset,
+      limit,
+      total: count,
+    },
+  })
+}
+
+/**
+ * POST /api/v1/tarefas
+ * Criar nova tarefa
+ */
+export async function POST(req: NextRequest) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { titulo, descricao, prioridade = 'normal', status = 'pendente', data_prazo, cliente_id, responsavel_id } = body
+
+  if (!titulo) {
+    return NextResponse.json({ error: 'titulo é obrigatório' }, { status: 400 })
+  }
+
+  const { data, error } = await supabase
+    .from('tarefas')
+    .insert({
+      user_id: user.id,
+      titulo,
+      descricao,
+      prioridade,
+      status,
+      data_prazo,
+      cliente_id,
+      responsavel_id,
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json(data, { status: 201 })
+}
+```
+
+### `app\api\v1\tarefas\[id]\route.ts`
+
+```typescript
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/client'
+
+/**
+ * GET /api/v1/tarefas/[id]
+ * Retorna tarefa específica
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await params
+  const { data, error } = await supabase
+    .from('tarefas')
+    .select('*')
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: 'Tarefa não encontrada' }, { status: 404 })
+  }
+
+  return NextResponse.json(data)
+}
+
+/**
+ * PATCH /api/v1/tarefas/[id]
+ * Atualizar tarefa
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { id } = await params
+  const { data, error } = await supabase
+    .from('tarefas')
+    .update(body)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single()
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json(data)
+}
+
+/**
+ * DELETE /api/v1/tarefas/[id]
+ * Deletar tarefa
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { id } = await params
+  const { error } = await supabase
+    .from('tarefas')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  return NextResponse.json({ success: true })
+}
+```
+
 ### `app\api\weather\route.ts`
 
 ```typescript
@@ -5893,14 +8497,14 @@ export async function GET(req: Request) {
     const url =
       `https://api.open-meteo.com/v1/forecast` +
       `?latitude=${lat}&longitude=${lon}` +
-      `&current=temperature_2m,precipitation_probability` +
+      `&current=temperature_2m,precipitation_probability,weather_code` +
       `&hourly=precipitation_probability` +
       `&timezone=America%2FSao_Paulo` +
       `&forecast_days=1`
 
     const res  = await fetch(url, { next: { revalidate: 1800 } })
     const json = await res.json() as {
-      current: { temperature_2m: number; precipitation_probability: number }
+      current: { temperature_2m: number; precipitation_probability: number; weather_code: number }
       hourly:  { precipitation_probability: number[] }
     }
 
@@ -5908,13 +8512,30 @@ export async function GET(req: Request) {
       (json.hourly.precipitation_probability.slice(0, 2).reduce((a, b) => a + b, 0)) / 2
     )
 
+    // WMO Weather codes
+    const getWeatherDescription = (code: number): string => {
+      if (code === 0) return 'Céu claro'
+      if (code === 1 || code === 2) return 'Parcialmente nublado'
+      if (code === 3) return 'Nublado'
+      if (code === 45 || code === 48) return 'Neblina'
+      if (code === 51 || code === 53 || code === 55) return 'Garoa'
+      if (code === 61 || code === 63 || code === 65) return 'Chuva'
+      if (code === 71 || code === 73 || code === 75) return 'Neve'
+      if (code === 77) return 'Neve em grãos'
+      if (code === 80 || code === 81 || code === 82) return 'Chuva forte'
+      if (code === 85 || code === 86) return 'Neve forte'
+      if (code === 95 || code === 96 || code === 99) return 'Tempestade'
+      return 'Sem dados'
+    }
+
     return NextResponse.json({
-      temp:   Math.round(json.current.temperature_2m),
-      chuva:  json.current.precipitation_probability,
+      temp:      Math.round(json.current.temperature_2m),
+      chuva:     json.current.precipitation_probability,
       chuva2h,
+      condicao:  getWeatherDescription(json.current.weather_code),
     })
   } catch {
-    return NextResponse.json({ temp: null, chuva: null, chuva2h: null }, { status: 200 })
+    return NextResponse.json({ temp: null, chuva: null, chuva2h: null, condicao: undefined }, { status: 200 })
   }
 }
 ```
@@ -5937,12 +8558,19 @@ export default function LoginPage() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    setErro(''); setLoading(true);
+    setErro('');
+    setLoading(true);
     try {
-      await loginComEmail(email.trim(), senha);
-      router.push('/dashboard');
+      console.log('[Login] Starting login process...');
+      const result = await loginComEmail(email.trim(), senha);
+      console.log('[Login] Login successful:', result ? '✓' : '✗');
+
+      console.log('[Login] Redirecting to /dashboard...');
+      window.location.href = '/dashboard';
     } catch (err) {
-      setErro(err instanceof Error ? err.message : 'Credenciais inválidas');
+      const errorMsg = err instanceof Error ? err.message : 'Credenciais inválidas';
+      console.error('[Login] Error:', errorMsg);
+      setErro(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -6953,59 +9581,187 @@ export function AcessoRapido({ links }: AcessoRapidoProps) {
 ### `components\clientes\AuditTimeline.tsx`
 
 ```tsx
-﻿'use client'
+'use client'
 
-import { useEffect, useState } from 'react'
-import { Clock } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  Clock, DollarSign, UserPlus, CheckSquare, AlertTriangle,
+  Snowflake, Play, MessageCircle, Settings, Filter,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { cn } from '@/lib/utils'
 
 interface AuditLog {
-  id:         string
-  acao:       string
-  descricao?: string
-  created_at: string
+  id:          string
+  acao:        string
+  descricao?:  string
+  created_at:  string
+}
+
+const TIPO_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+  pagamento:      { icon: DollarSign,     color: 'text-status-green  bg-status-green/15',  label: 'Pagamento'    },
+  cliente_criado: { icon: UserPlus,       color: 'text-status-blue   bg-status-blue/15',   label: 'Criação'      },
+  task:           { icon: CheckSquare,    color: 'text-ads-500        bg-ads-500/15',       label: 'Tarefa'       },
+  alerta:         { icon: AlertTriangle,  color: 'text-status-orange  bg-status-orange/15', label: 'Alerta'       },
+  congelado:      { icon: Snowflake,      color: 'text-status-blue   bg-status-blue/15',   label: 'Congelado'    },
+  ativado:        { icon: Play,           color: 'text-status-green  bg-status-green/15',  label: 'Ativado'      },
+  mensagem:       { icon: MessageCircle,  color: 'text-status-purple bg-status-purple/15', label: 'Mensagem'     },
+  config:         { icon: Settings,       color: 'text-ink-muted     bg-surface-elevated', label: 'Configuração' },
+}
+
+const TIPOS_FILTRO = [
+  { value: '',           label: 'Todos' },
+  { value: 'pagamento',  label: 'Pagamentos' },
+  { value: 'task',       label: 'Tarefas' },
+  { value: 'alerta',     label: 'Alertas' },
+  { value: 'mensagem',   label: 'Mensagens' },
+]
+
+function getTipoConfig(acao: string) {
+  const key = Object.keys(TIPO_CONFIG).find((k) => acao.toLowerCase().includes(k))
+  return TIPO_CONFIG[key ?? ''] ?? { icon: Clock, color: 'text-ink-muted bg-surface-elevated', label: 'Evento' }
+}
+
+function tempoRelativo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const min  = Math.floor(diff / 60000)
+  if (min < 1)  return 'agora'
+  if (min < 60) return `há ${min}min`
+  const h = Math.floor(min / 60)
+  if (h < 24)   return `há ${h}h`
+  const d = Math.floor(h / 24)
+  if (d === 1)  return 'ontem'
+  if (d < 30)   return `há ${d} dias`
+  return new Date(dateStr).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
 }
 
 export function AuditTimeline({ clienteId }: { clienteId: string }) {
   const supabase = createClient()
-  const [logs, setLogs] = useState<AuditLog[]>([])
+  const [logs,         setLogs]        = useState<AuditLog[]>([])
+  const [loading,      setLoading]     = useState(true)
+  const [filtroTipo,   setFiltroTipo]  = useState('')
+  const [mostrarFiltro, setMostrarFiltro] = useState(false)
 
   useEffect(() => {
+    setLoading(true)
     supabase
-      .from('audit_logs')
+      .from('historico_acoes')
       .select('id, acao, descricao, created_at')
-      .eq('registro_id', clienteId)
+      .eq('cliente_id', clienteId)
       .order('created_at', { ascending: false })
-      .limit(10)
-      .then(({ data }) => setLogs(data ?? []))
+      .limit(30)
+      .then(({ data }) => {
+        setLogs(data ?? [])
+        setLoading(false)
+      })
   }, [clienteId])
 
-  if (logs.length === 0) return null
+  const filtrados = useMemo(() =>
+    filtroTipo
+      ? logs.filter((l) => l.acao.toLowerCase().includes(filtroTipo))
+      : logs,
+    [logs, filtroTipo]
+  )
+
+  if (!loading && logs.length === 0) return null
 
   return (
-    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
-      <div className="flex items-center gap-[0.5rem] mb-[1rem]">
-        <Clock className="w-[1rem] h-[1rem] text-ink-muted" strokeWidth={1.75} />
-        <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Histórico</h3>
+    <div className="bg-surface-card border border-surface-border rounded-2xl card-shadow p-[1.25rem]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-[1rem]">
+        <div className="flex items-center gap-[0.5rem]">
+          <Clock className="w-[1rem] h-[1rem] text-ink-muted" strokeWidth={1.75} />
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Histórico</h3>
+          {logs.length > 0 && (
+            <span className="text-[0.6875rem] font-medium px-[0.375rem] py-[0.0625rem] rounded-full bg-surface-elevated text-ink-muted">
+              {filtrados.length}
+            </span>
+          )}
+        </div>
+        {logs.length > 0 && (
+          <button
+            onClick={() => setMostrarFiltro(!mostrarFiltro)}
+            className={cn(
+              'w-[1.75rem] h-[1.75rem] rounded-lg flex items-center justify-center transition-colors',
+              mostrarFiltro || filtroTipo
+                ? 'bg-ads-500/15 text-ads-500'
+                : 'text-ink-muted hover:text-ink-primary hover:bg-surface-hover'
+            )}
+            title="Filtrar"
+          >
+            <Filter className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+          </button>
+        )}
       </div>
-      <div className="relative">
-        <div className="absolute left-[0.4375rem] top-0 bottom-0 w-px bg-surface-border" />
-        <ul className="space-y-[1rem]">
-          {logs.map((log) => (
-            <li key={log.id} className="flex gap-[1rem] pl-[1.25rem] relative">
-              <div className="absolute left-0 top-[0.1875rem] w-[0.875rem] h-[0.875rem] rounded-full bg-surface-card border-2 border-surface-border" />
-              <div>
-                <p className="text-ink-secondary text-[0.875rem]">
-                  {log.descricao ?? log.acao}
-                </p>
-                <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">
-                  {new Date(log.created_at).toLocaleString('pt-BR')}
-                </p>
-              </div>
-            </li>
+
+      {/* Filtros */}
+      {mostrarFiltro && (
+        <div className="flex gap-[0.375rem] flex-wrap mb-[1rem]">
+          {TIPOS_FILTRO.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setFiltroTipo(value)}
+              className={cn(
+                'h-[1.75rem] px-[0.5rem] rounded-lg text-[0.75rem] font-medium transition-colors',
+                filtroTipo === value
+                  ? 'bg-ads-500 text-white'
+                  : 'bg-surface-hover text-ink-secondary hover:text-ink-primary border border-surface-border/40'
+              )}
+            >
+              {label}
+            </button>
           ))}
-        </ul>
-      </div>
+        </div>
+      )}
+
+      {/* Loading */}
+      {loading ? (
+        <div className="space-y-[0.875rem]">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex gap-[0.75rem] items-start">
+              <div className="w-[1.75rem] h-[1.75rem] rounded-full skeleton-shimmer shrink-0" />
+              <div className="flex-1 space-y-[0.25rem]">
+                <div className="h-[0.875rem] rounded skeleton-shimmer w-3/4" />
+                <div className="h-[0.75rem] rounded skeleton-shimmer w-1/3" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtrados.length === 0 ? (
+        <p className="text-ink-muted text-[0.875rem] text-center py-[1.5rem]">
+          Nenhum evento encontrado.
+        </p>
+      ) : (
+        <div className="relative">
+          <div className="absolute left-[0.875rem] top-0 bottom-0 w-px bg-surface-border" />
+          <ul className="space-y-[0.875rem]">
+            {filtrados.map((log) => {
+              const cfg  = getTipoConfig(log.acao)
+              const Icon = cfg.icon
+              return (
+                <li key={log.id} className="flex gap-[0.875rem] items-start pl-[1.75rem] relative">
+                  <div className={cn(
+                    'absolute left-0 top-[0.125rem] w-[1.75rem] h-[1.75rem] rounded-full flex items-center justify-center shrink-0',
+                    cfg.color
+                  )}>
+                    <Icon className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-ink-secondary text-[0.875rem] leading-snug">
+                      {log.descricao ?? log.acao}
+                    </p>
+                    <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">
+                      {tempoRelativo(log.created_at)}
+                      <span className="mx-[0.25rem]">·</span>
+                      {new Date(log.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
@@ -7014,10 +9770,10 @@ export function AuditTimeline({ clienteId }: { clienteId: string }) {
 ### `components\clientes\ChecklistCard.tsx`
 
 ```tsx
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
-import { CheckCircle, Circle } from 'lucide-react'
+import { CheckCircle, Circle, MessageSquare, Bell, X, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { ChecklistItem } from '@/lib/types'
 
@@ -7027,27 +9783,81 @@ interface ChecklistCardProps {
   items:     ChecklistItem[]
 }
 
+interface ItemEditState {
+  nota:          string
+  lembrete_data: string
+}
+
 export function ChecklistCard({ clienteId: _clienteId, estagioId, items: itemsInicial }: ChecklistCardProps) {
   const supabase = createClient()
-  const [items, setItems] = useState(itemsInicial)
+  const [items,        setItems]        = useState(itemsInicial)
+  const [editando,     setEditando]     = useState<number | null>(null)
+  const [editState,    setEditState]    = useState<ItemEditState>({ nota: '', lembrete_data: '' })
+  const [salvando,     setSalvando]     = useState(false)
 
-  async function toggleItem(index: number) {
-    const novosItems = items.map((it, i) =>
-      i === index ? { ...it, done: !it.done } : it
-    )
+  async function persistir(novosItems: ChecklistItem[]) {
     setItems(novosItems)
-    await supabase
-      .from('estagios')
-      .update({ checklist: novosItems })
-      .eq('id', estagioId)
+    await supabase.from('estagios').update({ checklist: novosItems }).eq('id', estagioId)
   }
 
-  const total    = items.length
-  const feitos   = items.filter((i) => i.done).length
+  async function toggleItem(index: number) {
+    const novos = items.map((it, i) => i === index ? { ...it, done: !it.done } : it)
+    await persistir(novos)
+  }
+
+  function abrirEdicao(index: number) {
+    const it = items[index]
+    setEditState({ nota: it.nota ?? '', lembrete_data: it.lembrete_data ?? '' })
+    setEditando(index)
+  }
+
+  function fecharEdicao() {
+    setEditando(null)
+    setEditState({ nota: '', lembrete_data: '' })
+  }
+
+  async function salvarEdicao(index: number) {
+    setSalvando(true)
+
+    const novos = items.map((it, i) =>
+      i === index
+        ? {
+            ...it,
+            nota:          editState.nota.trim() || undefined,
+            lembrete_data: editState.lembrete_data || undefined,
+          }
+        : it
+    )
+
+    // Se há lembrete, cria notificação no Supabase
+    if (editState.lembrete_data) {
+      const item = items[index]
+      await supabase.from('notificacoes').insert({
+        titulo:   `Lembrete: ${item.item}`,
+        mensagem: editState.nota.trim() || `Checklist — ${item.item}`,
+        tipo:     'info',
+        lida:     false,
+      })
+    }
+
+    await persistir(novos)
+    setSalvando(false)
+    fecharEdicao()
+  }
+
+  async function limparNota(index: number) {
+    const novos = items.map((it, i) =>
+      i === index ? { ...it, nota: undefined, lembrete_data: undefined } : it
+    )
+    await persistir(novos)
+  }
+
+  const total     = items.length
+  const feitos    = items.filter((i) => i.done).length
   const progresso = total > 0 ? (feitos / total) * 100 : 0
 
   return (
-    <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.25rem]">
+    <div className="bg-surface-card border border-surface-border rounded-2xl card-shadow p-[1.25rem]">
       <div className="flex items-center justify-between mb-[0.75rem]">
         <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Checklist</h3>
         <span className="text-ink-muted text-[0.8125rem]">{feitos}/{total}</span>
@@ -7060,22 +9870,113 @@ export function ChecklistCard({ clienteId: _clienteId, estagioId, items: itemsIn
         />
       </div>
 
-      <ul className="space-y-[0.5rem]">
+      <ul className="space-y-[0.25rem]">
         {items.map((item, i) => (
-          <li key={i}>
-            <button
-              onClick={() => toggleItem(i)}
-              className="flex items-start gap-[0.625rem] w-full text-left hover:opacity-80 transition-opacity"
-            >
-              {item.done ? (
-                <CheckCircle className="w-[1rem] h-[1rem] text-status-green shrink-0 mt-[0.125rem]" strokeWidth={2} />
-              ) : (
-                <Circle className="w-[1rem] h-[1rem] text-ink-muted shrink-0 mt-[0.125rem]" strokeWidth={1.75} />
-              )}
-              <span className={`text-[0.875rem] ${item.done ? 'text-ink-muted line-through' : 'text-ink-secondary'}`}>
+          <li key={i} className="group rounded-lg">
+            <div className="flex items-start gap-[0.5rem] px-[0.375rem] py-[0.375rem] rounded-lg hover:bg-surface-hover transition-colors">
+              {/* Toggle done */}
+              <button
+                onClick={() => toggleItem(i)}
+                className="shrink-0 mt-[0.0625rem] transition-opacity hover:opacity-70"
+              >
+                {item.done ? (
+                  <CheckCircle className="w-[1rem] h-[1rem] text-status-green" strokeWidth={2} />
+                ) : (
+                  <Circle className="w-[1rem] h-[1rem] text-ink-muted" strokeWidth={1.75} />
+                )}
+              </button>
+
+              {/* Label */}
+              <span className={`flex-1 text-[0.875rem] leading-snug ${item.done ? 'text-ink-muted line-through' : 'text-ink-secondary'}`}>
                 {item.item}
+
+                {/* Badges inline */}
+                <span className="inline-flex items-center gap-[0.25rem] ml-[0.375rem]">
+                  {item.nota && (
+                    <span className="inline-flex items-center gap-[0.125rem] px-[0.3125rem] py-[0.0625rem] rounded-full bg-surface-elevated border border-surface-border/60 text-ink-muted text-[0.625rem]">
+                      <MessageSquare className="w-[0.5rem] h-[0.5rem]" strokeWidth={2} />
+                      nota
+                    </span>
+                  )}
+                  {item.lembrete_data && (
+                    <span className="inline-flex items-center gap-[0.125rem] px-[0.3125rem] py-[0.0625rem] rounded-full bg-ads-500/10 text-ads-500 text-[0.625rem]">
+                      <Bell className="w-[0.5rem] h-[0.5rem]" strokeWidth={2} />
+                      {new Date(item.lembrete_data).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                    </span>
+                  )}
+                </span>
               </span>
-            </button>
+
+              {/* Ação — abre painel inline */}
+              <button
+                onClick={() => editando === i ? fecharEdicao() : abrirEdicao(i)}
+                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity w-[1.5rem] h-[1.5rem] rounded-lg flex items-center justify-center hover:bg-surface-elevated text-ink-muted hover:text-ink-secondary"
+                title="Adicionar nota / lembrete"
+              >
+                <MessageSquare className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+              </button>
+
+              {/* Limpar nota */}
+              {(item.nota || item.lembrete_data) && editando !== i && (
+                <button
+                  onClick={() => limparNota(i)}
+                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity w-[1.5rem] h-[1.5rem] rounded-lg flex items-center justify-center hover:bg-status-red/10 text-ink-muted hover:text-status-red"
+                  title="Remover nota e lembrete"
+                >
+                  <X className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                </button>
+              )}
+            </div>
+
+            {/* Painel inline de edição */}
+            {editando === i && (
+              <div className="mx-[0.375rem] mb-[0.25rem] p-[0.75rem] rounded-lg bg-surface-elevated border border-surface-border/60 animate-fade-up">
+                <div className="flex flex-col gap-[0.5rem]">
+                  <div>
+                    <label className="block text-ink-muted text-[0.6875rem] font-medium mb-[0.25rem] uppercase tracking-wide">Nota</label>
+                    <textarea
+                      value={editState.nota}
+                      onChange={(e) => setEditState((s) => ({ ...s, nota: e.target.value }))}
+                      placeholder="Adicione uma observação sobre este item…"
+                      rows={2}
+                      className="w-full px-[0.625rem] py-[0.375rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 resize-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-ink-muted text-[0.6875rem] font-medium mb-[0.25rem] uppercase tracking-wide">Lembrete</label>
+                    <input
+                      type="date"
+                      value={editState.lembrete_data}
+                      onChange={(e) => setEditState((s) => ({ ...s, lembrete_data: e.target.value }))}
+                      className="h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 transition-colors"
+                    />
+                  </div>
+                  <div className="flex items-center justify-end gap-[0.375rem]">
+                    <button
+                      onClick={fecharEdicao}
+                      className="h-[1.75rem] px-[0.625rem] rounded-lg text-[0.75rem] text-ink-muted hover:text-ink-primary hover:bg-surface-hover transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => salvarEdicao(i)}
+                      disabled={salvando}
+                      className="inline-flex items-center gap-[0.25rem] h-[1.75rem] px-[0.625rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.75rem] font-medium transition-colors disabled:opacity-50"
+                    >
+                      <Check className="w-[0.75rem] h-[0.75rem]" strokeWidth={2.5} />
+                      {salvando ? 'Salvando…' : 'Salvar'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Nota existente (quando não está editando) */}
+            {item.nota && editando !== i && (
+              <p className="mx-[0.375rem] mb-[0.25rem] px-[0.75rem] py-[0.375rem] rounded-lg bg-surface-elevated border border-surface-border/40 text-ink-muted text-[0.75rem] leading-relaxed italic">
+                {item.nota}
+              </p>
+            )}
           </li>
         ))}
       </ul>
@@ -7574,6 +10475,166 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
 }
 ```
 
+### `components\clientes\ClienteMemoria.tsx`
+
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import { Brain, Save, RefreshCw, Sparkles } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+
+interface Props {
+  clienteId: string
+}
+
+export function ClienteMemoria({ clienteId }: Props) {
+  const supabase    = createClient()
+  const [conteudo,  setConteudo]  = useState('')
+  const [original,  setOriginal]  = useState('')
+  const [salvando,  setSalvando]  = useState(false)
+  const [gerando,   setGerando]   = useState(false)
+  const [carregando, setCarregando] = useState(true)
+  const [memoriaId, setMemoriaId] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function carregar() {
+      setCarregando(true)
+      const { data } = await supabase
+        .from('memoria_clientes')
+        .select('id, conteudo_md')
+        .eq('cliente_id', clienteId)
+        .maybeSingle()
+
+      if (data) {
+        setMemoriaId(data.id as string)
+        const texto = (data.conteudo_md as string) ?? ''
+        setConteudo(texto)
+        setOriginal(texto)
+      }
+      setCarregando(false)
+    }
+    carregar()
+  }, [clienteId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const modificado = conteudo !== original
+
+  async function salvar() {
+    setSalvando(true)
+    const payload = { cliente_id: clienteId, conteudo_md: conteudo, atualizado_em: new Date().toISOString() }
+
+    const { error } = memoriaId
+      ? await supabase.from('memoria_clientes').update(payload).eq('id', memoriaId)
+      : await supabase.from('memoria_clientes').insert(payload).select('id').single()
+        .then(({ data, error: e }) => {
+          if (data) setMemoriaId((data as { id: string }).id)
+          return { error: e }
+        })
+
+    if (error) {
+      toast.error('Erro ao salvar memória.')
+    } else {
+      setOriginal(conteudo)
+      toast.success('Memória salva!')
+    }
+    setSalvando(false)
+  }
+
+  async function gerarComIA() {
+    setGerando(true)
+    try {
+      // Busca dados do cliente para contexto
+      const { data: cliente } = await supabase
+        .from('clientes')
+        .select('nome, nicho, status, mrr, dias_atraso, website')
+        .eq('id', clienteId)
+        .single()
+
+      const res = await fetch('/api/ia/chat', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [{
+            id:         'gen',
+            role:       'user',
+            content:    `Gere um arquivo de memória .md para o cliente ${(cliente as { nome?: string })?.nome ?? ''} (nicho: ${(cliente as { nicho?: string })?.nicho ?? 'desconhecido'}). Inclua seções: ## Perfil, ## Histórico de campanhas, ## Pontos de atenção, ## Próximos passos. Use dados reais se disponíveis, caso contrário deixe espaço para preenchimento.`,
+            created_at: new Date().toISOString(),
+          }],
+          contexto_cliente_id: clienteId,
+        }),
+      })
+      const json = await res.json() as { content?: string }
+      if (json.content) {
+        setConteudo(json.content)
+        toast.success('Memória gerada pela IA! Revise e salve.')
+      }
+    } catch {
+      toast.error('Erro ao gerar memória com IA.')
+    } finally {
+      setGerando(false)
+    }
+  }
+
+  return (
+    <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
+      <div className="flex items-center justify-between mb-[0.875rem]">
+        <div className="flex items-center gap-[0.5rem]">
+          <div className="w-[1.75rem] h-[1.75rem] rounded-lg bg-ads-500/10 flex items-center justify-center">
+            <Brain className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
+          </div>
+          <div>
+            <p className="text-ink-primary text-[0.875rem] font-semibold leading-none">Memória do Cliente</p>
+            <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">Contexto para análises de IA</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-[0.375rem]">
+          <button
+            onClick={gerarComIA}
+            disabled={gerando || carregando}
+            className="inline-flex items-center gap-[0.25rem] h-[1.75rem] px-[0.625rem] rounded-lg bg-ads-500/10 hover:bg-ads-500/20 text-ads-500 text-[0.75rem] font-medium transition-colors disabled:opacity-50"
+          >
+            {gerando
+              ? <RefreshCw className="w-[0.6875rem] h-[0.6875rem] animate-spin" strokeWidth={2} />
+              : <Sparkles  className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2} />
+            }
+            {gerando ? 'Gerando…' : 'Gerar com IA'}
+          </button>
+          {modificado && (
+            <button
+              onClick={salvar}
+              disabled={salvando}
+              className="inline-flex items-center gap-[0.25rem] h-[1.75rem] px-[0.625rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.75rem] font-medium transition-colors disabled:opacity-50"
+            >
+              <Save className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2} />
+              {salvando ? 'Salvando…' : 'Salvar'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {carregando ? (
+        <div className="h-[10rem] rounded-lg bg-surface-hover skeleton-shimmer" />
+      ) : (
+        <textarea
+          value={conteudo}
+          onChange={(e) => setConteudo(e.target.value)}
+          placeholder={`# Memória — Nome do Cliente\n\n## Perfil\n...\n\n## Histórico de campanhas\n...\n\n## Pontos de atenção\n...\n\n## Próximos passos\n...`}
+          rows={14}
+          className="w-full px-[0.75rem] py-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 transition-colors placeholder:text-ink-muted"
+        />
+      )}
+
+      {modificado && !salvando && (
+        <p className="text-ink-muted text-[0.6875rem] mt-[0.375rem]">
+          Alterações não salvas — clique em Salvar para persistir.
+        </p>
+      )}
+    </div>
+  )
+}
+```
+
 ### `components\clientes\ClientePerformance.tsx`
 
 ```tsx
@@ -7884,6 +10945,7 @@ export function OnboardChecklist({ clienteId, estagio }: OnboardChecklistProps) 
 import { useState } from 'react'
 import { X, MessageCircle, Send, Copy, CheckCheck } from 'lucide-react'
 import type { Cliente } from '@/lib/types'
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   cliente: Cliente
@@ -7970,9 +11032,7 @@ export function WhatsAppTemplateModal({ cliente, onClose }: Props) {
               <p className="text-ink-muted text-[0.75rem]">{cliente.nome}</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-[2rem] h-[2rem] flex items-center justify-center rounded hover:bg-surface-hover text-ink-muted transition-colors">
-            <X className="w-[1rem] h-[1rem]" strokeWidth={2} />
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose} icon={<X className="w-[1rem] h-[1rem]" strokeWidth={2} />} className="w-[2rem] px-0" />
         </div>
 
         <div className="p-[1.5rem] flex flex-col gap-[1.25rem]">
@@ -8017,23 +11077,28 @@ export function WhatsAppTemplateModal({ cliente, onClose }: Props) {
 
           {/* Ações */}
           <div className="flex gap-[0.75rem]">
-            <button
+            <Button
+              variant="secondary"
+              size="lg"
               onClick={copiarTexto}
-              className="flex items-center gap-[0.375rem] h-[2.5rem] px-[1rem] rounded-lg bg-surface-hover border border-surface-border text-ink-secondary text-[0.875rem] font-medium hover:text-ink-primary transition-colors"
-            >
-              {copiado
-                ? <><CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Copiado</>
-                : <><Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} /> Copiar</>
+              icon={copiado
+                ? <CheckCheck className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                : <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
               }
-            </button>
-            <button
+            >
+              {copiado ? 'Copiado' : 'Copiar'}
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
               onClick={enviarWhatsApp}
               disabled={!temNumero || !texto.trim()}
-              className="flex-1 flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded-lg bg-status-green text-white text-[0.875rem] font-semibold hover:opacity-90 transition-opacity disabled:opacity-40"
+              icon={<Send className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+              className="bg-status-green hover:bg-status-green/90"
             >
-              <Send className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
               Abrir no WhatsApp
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -8328,9 +11393,11 @@ import {
   CheckCircle2,
   PauseCircle,
   BarChart3,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { Cliente, Estagio } from '@/lib/types'
 
 type Urgencia = 'critica' | 'atencao' | 'review'
@@ -8379,19 +11446,30 @@ const urgenciaConfig: Record<Urgencia, {
 }
 
 interface AcoesDoDiaProps {
-  items:       AcaoItem[]
-  onCongelar:  (id: string) => void
-  onFeito?:    (id: string) => void
+  items:         AcaoItem[]
+  onCongelar:    (id: string) => void
+  onFeito?:      (id: string) => void
+  onCriarTask?:  (cliente: Cliente, descricao: string) => void
 }
 
-export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
-  if (items.length === 0) return null
-
+export function AcoesDoDia({ items, onCongelar, onFeito, onCriarTask }: AcoesDoDiaProps) {
   // Ordenação conforme arquivo mestre
   const ordenado = [...items].sort((a, b) => {
     const peso: Record<Urgencia, number> = { critica: 3, atencao: 2, review: 1 }
     return peso[b.urgencia] - peso[a.urgencia]
   })
+
+  if (ordenado.length === 0) {
+    return (
+      <section className="mb-[2rem]">
+        <EmptyState
+          icon={<CheckCircle2 className="w-[1.5rem] h-[1.5rem] text-status-green" strokeWidth={1.5} />}
+          title="Sem ações pendentes"
+          description="Todos os clientes estão em dia. Boa semana!"
+        />
+      </section>
+    )
+  }
 
   return (
     <section className="mb-[2rem]">
@@ -8415,6 +11493,10 @@ export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
           const handleWhatsApp = () => {
             const texto = `Olá ${cliente.nome.split(' ')[0]}, tudo bem? Aqui é da Adsgator. `
             window.open(`https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(texto)}`, '_blank')
+          }
+
+          const handleCriarTask = () => {
+            onCriarTask?.(cliente, descricao)
           }
 
           const handleFeito = () => {
@@ -8494,6 +11576,14 @@ export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
                 {getBotaoPrincipal()}
 
                 <button
+                  onClick={handleCriarTask}
+                  className="flex items-center justify-center w-8 h-8 rounded-md text-ink-muted hover:bg-surface-hover hover:text-ads-500 transition-colors"
+                  title="Criar task"
+                >
+                  <ClipboardList className="w-4 h-4" strokeWidth={2} />
+                </button>
+
+                <button
                   onClick={() => onCongelar(cliente.id)}
                   className="flex items-center justify-center w-8 h-8 rounded-md text-ink-muted hover:bg-surface-hover hover:text-status-orange transition-colors"
                   title="Congelar cliente"
@@ -8514,6 +11604,122 @@ export function AcoesDoDia({ items, onCongelar, onFeito }: AcoesDoDiaProps) {
         })}
       </div>
     </section>
+  )
+}
+```
+
+### `components\dashboard\ActivityFeed.tsx`
+
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import {
+  DollarSign, UserPlus, CheckSquare, AlertTriangle,
+  TrendingDown, Activity,
+} from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
+
+interface FeedItem {
+  id:          string
+  tipo:        string
+  descricao:   string
+  created_at:  string
+}
+
+const TIPO_CONFIG: Record<string, {
+  icon:  typeof Activity
+  color: string
+  bg:    string
+}> = {
+  pagamento_recebido: { icon: DollarSign,   color: 'text-status-green',  bg: 'bg-status-green/10'  },
+  cliente_criado:     { icon: UserPlus,     color: 'text-status-blue',   bg: 'bg-status-blue/10'   },
+  task_concluida:     { icon: CheckSquare,  color: 'text-ads-500',       bg: 'bg-ads-500/10'       },
+  alerta:             { icon: AlertTriangle,color: 'text-status-orange', bg: 'bg-status-orange/10' },
+  cancelado:          { icon: TrendingDown, color: 'text-status-red',    bg: 'bg-status-red/10'    },
+}
+
+function tempoRelativo(data: string): string {
+  const diff = Math.floor((Date.now() - new Date(data).getTime()) / 1000)
+  if (diff < 60)   return 'agora'
+  if (diff < 3600) return `há ${Math.floor(diff / 60)}min`
+  if (diff < 86400) return `há ${Math.floor(diff / 3600)}h`
+  return `ontem`
+}
+
+export function ActivityFeed() {
+  const [items,    setItems]    = useState<FeedItem[]>([])
+  const [loading,  setLoading]  = useState(true)
+
+  useEffect(() => {
+    async function carregar() {
+      setLoading(true)
+      const h24 = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+
+      const { data } = await supabase
+        .from('historico_acoes')
+        .select('id, tipo_acao, descricao, created_at')
+        .gte('created_at', h24)
+        .order('created_at', { ascending: false })
+        .limit(8)
+
+      const typed = (data ?? []) as { id: string; tipo_acao: string; descricao: string; created_at: string }[]
+      setItems(typed.map((r) => ({
+        id:         r.id,
+        tipo:       r.tipo_acao,
+        descricao:  r.descricao,
+        created_at: r.created_at,
+      })))
+      setLoading(false)
+    }
+
+    carregar()
+
+    // Atualiza a cada 2 minutos
+    const id = setInterval(carregar, 2 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-[0.5rem] p-[0.25rem]">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-[2.5rem] rounded-lg skeleton-shimmer" />
+        ))}
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="flex items-center justify-center gap-[0.5rem] h-full text-ink-muted py-[2rem]">
+        <Activity className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+        <p className="text-[0.8125rem]">Nenhuma atividade nas últimas 24h</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-[0.25rem] overflow-y-auto">
+      {items.map((item) => {
+        const cfg = TIPO_CONFIG[item.tipo] ?? { icon: Activity, color: 'text-ink-muted', bg: 'bg-surface-hover' }
+        const Icon = cfg.icon
+        return (
+          <div key={item.id} className="flex items-start gap-[0.625rem] px-[0.25rem] py-[0.375rem] rounded-lg hover:bg-surface-hover/50 transition-colors group">
+            <div className={cn('w-[1.5rem] h-[1.5rem] rounded-md flex items-center justify-center shrink-0 mt-[0.0625rem]', cfg.bg)}>
+              <Icon className={cn('w-[0.75rem] h-[0.75rem]', cfg.color)} strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-ink-secondary text-[0.8125rem] leading-snug line-clamp-2">{item.descricao}</p>
+            </div>
+            <span className="text-ink-muted text-[0.625rem] shrink-0 mt-[0.125rem] opacity-60 group-hover:opacity-100 transition-opacity">
+              {tempoRelativo(item.created_at)}
+            </span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
 ```
@@ -8763,26 +11969,30 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { AlertTriangle, Clock, CreditCard, Zap, MessageCircle, ExternalLink, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, Clock, CreditCard, Zap, MessageCircle, ExternalLink, CheckCircle2, ClipboardList } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { TaskModal } from '@/components/ui/TaskModal'
 import { toast } from 'sonner'
 
 interface AlertaItem {
-  id:       string
-  tipo:     'inadimplente' | 'saldo' | 'alerta'
-  label:    string
-  detalhe:  string
-  href?:    string
-  urgente:  boolean
+  id:          string
+  tipo:        'inadimplente' | 'saldo' | 'alerta'
+  label:       string
+  detalhe:     string
+  href?:       string
+  urgente:     boolean
+  whatsapp?:   string
+  alertaDbId?: string   // id real na tabela alertas (para resolver)
 }
 
 export function AlertasCriticos() {
-  const [alertas, setAlertas] = useState<AlertaItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [alertas,    setAlertas]    = useState<AlertaItem[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [taskAlerta, setTaskAlerta] = useState<{ titulo: string; descricao: string; clienteId?: string } | null>(null)
 
   const carregar = useCallback(async () => {
     const [{ data: clientes }, { data: alertasDb }, { data: config }] = await Promise.all([
-      supabase.from('clientes').select('id, nome, dias_atraso, saldo_google').in('status', ['ativo', 'onboarding', 'setup_trafego']),
+      supabase.from('clientes').select('id, nome, dias_atraso, saldo_google, whatsapp').in('status', ['ativo', 'onboarding', 'setup_trafego']),
       supabase.from('alertas').select('id, tipo, mensagem, cliente_id').eq('resolvido', false).order('created_at', { ascending: false }).limit(5),
       supabase.from('configuracoes_financeiras').select('saldo_google_ads_limite_alerta').eq('agencia_id', 'adsgator-main').single(),
     ])
@@ -8790,11 +12000,11 @@ export function AlertasCriticos() {
     const limite = (config as { saldo_google_ads_limite_alerta?: number } | null)?.saldo_google_ads_limite_alerta ?? 50
     const itens: AlertaItem[] = []
 
-    for (const c of (clientes ?? []) as { id: string; nome: string; dias_atraso?: number; saldo_google?: number }[]) {
+    for (const c of (clientes ?? []) as { id: string; nome: string; dias_atraso?: number; saldo_google?: number; whatsapp?: string }[]) {
       if ((c.dias_atraso ?? 0) >= 15) {
-        itens.push({ id: `ina-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — quebra de contrato`, href: `/clientes/${c.id}`, urgente: true })
+        itens.push({ id: `ina-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — quebra de contrato`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
       } else if ((c.dias_atraso ?? 0) >= 7) {
-        itens.push({ id: `ina7-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — suspensão iminente`, href: `/clientes/${c.id}`, urgente: true })
+        itens.push({ id: `ina7-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — suspensão iminente`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
       }
       if ((c.saldo_google ?? Infinity) < limite) {
         itens.push({ id: `saldo-${c.id}`, tipo: 'saldo', label: c.nome, detalhe: `Saldo Google Ads: R$ ${(c.saldo_google ?? 0).toLocaleString('pt-BR')}`, href: `/clientes/${c.id}`, urgente: false })
@@ -8802,7 +12012,7 @@ export function AlertasCriticos() {
     }
 
     for (const a of (alertasDb ?? []) as { id: string; tipo: string; mensagem: string; cliente_id?: string }[]) {
-      itens.push({ id: `alerta-${a.id}`, tipo: 'alerta', label: a.tipo, detalhe: a.mensagem, href: a.cliente_id ? `/clientes/${a.cliente_id}` : undefined, urgente: false })
+      itens.push({ id: `alerta-${a.id}`, tipo: 'alerta', label: a.tipo, detalhe: a.mensagem, href: a.cliente_id ? `/clientes/${a.cliente_id}` : undefined, urgente: false, alertaDbId: a.id })
     }
 
     setAlertas(itens.slice(0, 5))
@@ -8819,96 +12029,143 @@ export function AlertasCriticos() {
   }, [carregar])
 
   const ICONE = {
-    inadimplente: <Clock         className="w-4 h-4 shrink-0" strokeWidth={2} />,
-    saldo:        <CreditCard    className="w-4 h-4 shrink-0" strokeWidth={2} />,
-    alerta:       <Zap           className="w-4 h-4 shrink-0" strokeWidth={2} />,
+    inadimplente: <Clock      className="w-[1rem] h-[1rem] shrink-0" strokeWidth={2} />,
+    saldo:        <CreditCard className="w-[1rem] h-[1rem] shrink-0" strokeWidth={2} />,
+    alerta:       <Zap        className="w-[1rem] h-[1rem] shrink-0" strokeWidth={2} />,
   }
 
   const COR_BORDA = {
-    urgente:  'border-l-status-red',
-    alto:     'border-l-ads-500',
-    normal:   'border-l-status-orange',
+    urgente: 'border-l-status-red',
+    alto:    'border-l-ads-500',
+    normal:  'border-l-status-orange',
   }
 
-  const handleCobrar = (nome: string) => {
-    toast.success(`Abrindo WhatsApp para cobrar ${nome.split(' ')[0]}...`)
+  async function handleResolver(alerta: AlertaItem) {
+    // Para alertas com ID real na tabela alertas, marcar como resolvido
+    if (alerta.alertaDbId) {
+      const { error } = await supabase
+        .from('alertas')
+        .update({ resolvido: true })
+        .eq('id', alerta.alertaDbId)
+      if (error) { toast.error('Erro ao resolver alerta'); return }
+    }
+    // Remove da lista local imediatamente
+    setAlertas((prev) => prev.filter((a) => a.id !== alerta.id))
+    toast.success('Alerta resolvido!')
   }
 
-  const handleResolver = (id: string) => {
-    toast.success('Alerta marcado como resolvido')
+  function handleWhatsApp(alerta: AlertaItem) {
+    const numero = alerta.whatsapp?.replace(/\D/g, '')
+    if (!numero) { toast.info('WhatsApp não cadastrado para este cliente'); return }
+    const msg = encodeURIComponent(`Olá ${alerta.label.split(' ')[0]}, tudo bem? Passando para falar sobre a sua mensalidade em atraso. Podemos conversar?`)
+    window.open(`https://wa.me/55${numero}?text=${msg}`, '_blank')
+  }
+
+  function handleCriarTask(alerta: AlertaItem) {
+    const clienteId = alerta.href?.split('/clientes/')?.[1]
+    setTaskAlerta({
+      titulo:    `${alerta.tipo === 'inadimplente' ? 'Cobrar' : 'Verificar'}: ${alerta.label}`,
+      descricao: alerta.detalhe,
+      clienteId,
+    })
   }
 
   return (
-    <div className="p-[1.25rem] h-full flex flex-col">
-      <div className="flex items-center gap-[0.5rem] mb-[1rem]">
-        <AlertTriangle className="w-4 h-4 text-status-red" strokeWidth={2} />
-        <p className="text-ink-primary font-bold text-base">Alertas Críticos</p>
-        {alertas.length > 0 && (
-          <span className="ml-auto text-xs font-bold bg-status-red text-white px-2 py-0.5 rounded-full">
-            {alertas.length}
-          </span>
+    <>
+      <div className="p-[1.25rem] h-full flex flex-col">
+        <div className="flex items-center gap-[0.5rem] mb-[1rem]">
+          <AlertTriangle className="w-[1rem] h-[1rem] text-status-red" strokeWidth={2} />
+          <p className="text-ink-primary font-bold text-base">Alertas Críticos</p>
+          {alertas.length > 0 && (
+            <span className="ml-auto text-xs font-bold bg-status-red text-white px-2 py-0.5 rounded-full">
+              {alertas.length}
+            </span>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="space-y-[0.625rem]">
+            {[1, 2, 3].map((i) => <div key={i} className="h-14 rounded-lg bg-surface-hover skeleton-shimmer" />)}
+          </div>
+        ) : alertas.length === 0 ? (
+          <p className="text-ink-muted text-sm italic text-center py-[1rem]">Sem alertas no momento ✓</p>
+        ) : (
+          <ul className="flex flex-col gap-[0.5rem]">
+            {alertas.map((a) => {
+              const bordaCor = a.urgente ? COR_BORDA.urgente : a.tipo === 'saldo' ? COR_BORDA.alto : COR_BORDA.normal
+              const iconeCor = a.urgente ? 'text-status-red' : a.tipo === 'saldo' ? 'text-ads-500' : 'text-status-orange'
+
+              return (
+                <li
+                  key={a.id}
+                  className={`flex items-center gap-[0.75rem] p-[0.75rem] rounded-lg bg-surface-hover border-l-4 ${bordaCor}`}
+                >
+                  <span className={`${iconeCor} ${a.urgente ? 'animate-pulse' : ''}`}>{ICONE[a.tipo]}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold leading-tight truncate text-ink-primary">{a.label}</p>
+                    <p className="text-xs text-ink-secondary leading-snug">{a.detalhe}</p>
+                  </div>
+
+                  {/* Botões de ação */}
+                  <div className="flex items-center gap-[0.25rem] shrink-0">
+                    {(a.tipo === 'inadimplente' || a.whatsapp) && (
+                      <button
+                        onClick={() => handleWhatsApp(a)}
+                        className="flex items-center gap-[0.25rem] px-[0.5rem] py-[0.25rem] rounded-md bg-[#25D366]/10 text-[#25D366] text-xs font-medium hover:bg-[#25D366]/20 transition-colors"
+                        title="Enviar WhatsApp"
+                      >
+                        <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                        <span className="hidden xl:inline">Cobrar</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => handleCriarTask(a)}
+                      className="flex items-center justify-center w-[1.75rem] h-[1.75rem] rounded-md text-ink-muted hover:bg-surface-elevated hover:text-ink-primary transition-colors"
+                      title="Criar task"
+                    >
+                      <ClipboardList className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                    </button>
+
+                    {a.href && (
+                      <a
+                        href={a.href}
+                        className="flex items-center justify-center w-[1.75rem] h-[1.75rem] rounded-md text-ink-muted hover:bg-surface-elevated hover:text-ink-primary transition-colors"
+                        title="Ver cliente"
+                      >
+                        <ExternalLink className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                      </a>
+                    )}
+
+                    <button
+                      onClick={() => handleResolver(a)}
+                      className="flex items-center justify-center w-[1.75rem] h-[1.75rem] rounded-md text-ink-muted hover:bg-surface-elevated hover:text-status-green transition-colors"
+                      title="Marcar como resolvido"
+                    >
+                      <CheckCircle2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
         )}
       </div>
 
-      {loading ? (
-        <div className="space-y-[0.625rem]">
-          {[1, 2, 3].map((i) => <div key={i} className="h-14 rounded bg-surface-hover animate-pulse" />)}
-        </div>
-      ) : alertas.length === 0 ? (
-        <p className="text-ink-muted text-sm italic text-center py-[1rem]">Sem alertas no momento ✓</p>
-      ) : (
-        <ul className="flex flex-col gap-[0.5rem]">
-          {alertas.map((a) => {
-            const bordaCor = a.urgente ? COR_BORDA.urgente : a.tipo === 'saldo' ? COR_BORDA.alto : COR_BORDA.normal
-            const iconeCor = a.urgente ? 'text-status-red' : a.tipo === 'saldo' ? 'text-ads-500' : 'text-status-orange'
-
-            return (
-              <li
-                key={a.id}
-                className={`flex items-center gap-3 p-3 rounded-lg bg-surface-hover border-l-4 ${bordaCor}`}
-              >
-                <span className={iconeCor}>{ICONE[a.tipo]}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold leading-tight truncate text-ink-primary">{a.label}</p>
-                  <p className="text-xs text-ink-secondary leading-snug">{a.detalhe}</p>
-                </div>
-
-                {/* Botões de ação direta — 1 clique */}
-                <div className="flex items-center gap-1 shrink-0">
-                  {a.tipo === 'inadimplente' && (
-                    <button
-                      onClick={() => handleCobrar(a.label)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#25D366]/10 text-[#25D366] text-xs font-medium hover:bg-[#25D366]/20 transition-colors"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" strokeWidth={2} />
-                      Cobrar
-                    </button>
-                  )}
-
-                  {a.href && (
-                    <a
-                      href={a.href}
-                      className="flex items-center justify-center w-7 h-7 rounded-md text-ink-muted hover:bg-surface-border hover:text-ink-primary transition-colors"
-                      title="Ver cliente"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
-                    </a>
-                  )}
-
-                  <button
-                    onClick={() => handleResolver(a.id)}
-                    className="flex items-center justify-center w-7 h-7 rounded-md text-ink-muted hover:bg-surface-border hover:text-status-green transition-colors"
-                    title="Resolver"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />
-                  </button>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
+      {/* TaskModal pré-preenchido */}
+      {taskAlerta && (
+        <TaskModal
+          tarefa={{
+            titulo:     taskAlerta.titulo,
+            descricao:  taskAlerta.descricao,
+            prioridade: 'alto',
+            cliente_id: taskAlerta.clienteId,
+          }}
+          onClose={() => setTaskAlerta(null)}
+          onSaved={() => { setTaskAlerta(null); toast.success('Task criada!') }}
+        />
       )}
-    </div>
+    </>
   )
 }
 ```
@@ -8918,7 +12175,8 @@ export function AlertasCriticos() {
 ```tsx
 'use client'
 
-import { GripVertical } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { GripVertical, MoreVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface BentoCardProps {
@@ -8928,9 +12186,48 @@ interface BentoCardProps {
   children: React.ReactNode
   className?: string
   noPadding?: boolean
+  cardId?: string
+  onSizeChange?: (preset: 'compact' | 'normal' | 'large' | 'max') => void
+  editMode?: boolean
 }
 
-export function BentoCard({ title, subtitle, actions, children, className, noPadding }: BentoCardProps) {
+const SIZE_LABELS: Record<string, string> = {
+  compact: 'Compacto',
+  normal: 'Normal',
+  large: 'Grande',
+  max: 'Máximo',
+}
+
+function SizeMenu({ cardId, onSizeChange, onClose }: { cardId?: string; onSizeChange?: (preset: 'compact' | 'normal' | 'large' | 'max') => void; onClose: () => void }) {
+  if (!cardId || !onSizeChange) return null
+
+  return (
+    <div className="absolute top-[2rem] right-[0.5rem] z-20 bg-surface-card border border-surface-border rounded-lg shadow-lg overflow-hidden min-w-[120px]">
+      {(['compact', 'normal', 'large', 'max'] as const).map((preset) => (
+        <button
+          key={preset}
+          onClick={() => {
+            onSizeChange(preset)
+            onClose()
+          }}
+          className="w-full text-left px-[0.75rem] py-[0.5rem] text-[0.8125rem] hover:bg-surface-hover text-ink-secondary hover:text-ink-primary transition-colors border-b border-surface-border last:border-b-0"
+        >
+          {SIZE_LABELS[preset]}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+export function BentoCard({ title, subtitle, actions, children, className, noPadding, cardId, onSizeChange, editMode }: BentoCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const handleSizeSelect = (preset: 'compact' | 'normal' | 'large' | 'max') => {
+    if (cardId && onSizeChange) {
+      onSizeChange(preset)
+    }
+  }
   return (
     <div
       className={cn(
@@ -8938,16 +12235,35 @@ export function BentoCard({ title, subtitle, actions, children, className, noPad
         'bg-surface-card rounded-2xl h-full flex flex-col dark:border dark:border-surface-border',
         'card-shadow card-interactive',
         'overflow-hidden',
+        editMode && 'ring-1 ring-ads-500/20',
         className,
       )}
     >
-      {/* Drag handle — visível no hover */}
-      <div
-        className="bento-drag-handle absolute top-[0.5rem] right-[0.5rem] opacity-0 group-hover:opacity-60 cursor-grab active:cursor-grabbing z-10 p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-opacity"
-        title="Arrastar"
-      >
-        <GripVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
+      {/* Menu de tamanhos */}
+      <div ref={menuRef} className="relative">
+        {menuOpen && editMode && <SizeMenu cardId={cardId} onSizeChange={handleSizeSelect} onClose={() => setMenuOpen(false)} />}
       </div>
+
+      {/* Drag handle + Size menu button — visível apenas em editMode */}
+      {editMode && (
+        <div className="absolute top-[0.5rem] right-[0.5rem] z-10 flex items-center gap-[0.25rem]">
+          {cardId && onSizeChange && (
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              title="Tamanho do card"
+              className="p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-colors"
+            >
+              <MoreVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
+            </button>
+          )}
+          <div
+            className="bento-drag-handle cursor-grab active:cursor-grabbing p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-colors"
+            title="Arrastar"
+          >
+            <GripVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       {(title || actions) && (
@@ -8985,6 +12301,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { calcularHealthScore } from '@/lib/health-score'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -9044,6 +12361,7 @@ export function ClienteProgressCard({
   const mrr = cliente.mrr ?? 0
   const diasAtraso = cliente.dias_atraso ?? 0
   const ultimaInteracao = diasDesde(cliente.updated_at)
+  const health = calcularHealthScore(cliente, estagio)
 
   const handleWhatsApp = () => {
     if (!cliente.whatsapp) {
@@ -9104,6 +12422,18 @@ export function ClienteProgressCard({
             {diasAtraso}d atraso
           </span>
         )}
+        {/* Health Score badge */}
+        <span
+          title={`Health Score: ${health.score}/100`}
+          className={cn(
+            'inline-flex items-center gap-[0.25rem] px-2 py-0.5 rounded-full text-xs font-bold',
+            health.nivel === 'saudavel' ? 'bg-status-green/10' : health.nivel === 'atencao' ? 'bg-status-orange/10' : 'bg-status-red/10',
+            health.color,
+          )}
+        >
+          <span className={cn('w-1.5 h-1.5 rounded-full', health.dot)} />
+          {health.score}
+        </span>
       </div>
 
       {/* ── PRÓXIMA AÇÃO ──────────────────────────────────── */}
@@ -9333,9 +12663,12 @@ export function DRESparkline() {
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Send, Bot, User, ChevronDown, ChevronUp } from 'lucide-react'
+import { Send, Bot, User, ChevronDown, ChevronUp, CheckSquare, Bell } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { ChatMensagem } from '@/lib/types'
+import type { ChatAction } from '@/app/api/ia/chat/route'
+import { Button } from '@/components/ui/Button'
+import { toast } from 'sonner'
 
 interface ClienteOpcao {
   id:   string
@@ -9346,9 +12679,34 @@ function gerarId() {
   return Math.random().toString(36).slice(2, 10)
 }
 
+// Ícone da ação executada inline na mensagem
+function ActionTag({ action }: { action: ChatAction }) {
+  if (action.type === 'create_task') {
+    return (
+      <span className="inline-flex items-center gap-[0.25rem] px-[0.375rem] py-[0.125rem] rounded-full bg-ads-500/10 text-ads-500 text-[0.6875rem] font-medium">
+        <CheckSquare className="w-[0.625rem] h-[0.625rem]" strokeWidth={2.5} />
+        Task criada
+      </span>
+    )
+  }
+  if (action.type === 'create_notification') {
+    return (
+      <span className="inline-flex items-center gap-[0.25rem] px-[0.375rem] py-[0.125rem] rounded-full bg-status-blue/10 text-status-blue text-[0.6875rem] font-medium">
+        <Bell className="w-[0.625rem] h-[0.625rem]" strokeWidth={2.5} />
+        Notificação criada
+      </span>
+    )
+  }
+  return null
+}
+
+interface MensagemComAcoes extends ChatMensagem {
+  actions?: ChatAction[]
+}
+
 export function GeminiChat() {
   const [aberto,         setAberto]         = useState(false)
-  const [mensagens,      setMensagens]      = useState<ChatMensagem[]>([])
+  const [mensagens,      setMensagens]      = useState<MensagemComAcoes[]>([])
   const [input,          setInput]          = useState('')
   const [enviando,       setEnviando]       = useState(false)
   const [clientes,       setClientes]       = useState<ClienteOpcao[]>([])
@@ -9364,11 +12722,34 @@ export function GeminiChat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensagens])
 
+  async function executarAcoes(actions: ChatAction[]) {
+    for (const action of actions) {
+      if (action.type === 'create_task') {
+        const d = action.data as { titulo?: string; descricao?: string; prioridade?: string; cliente_id?: string }
+        await supabase.from('tarefas').insert({
+          titulo:     d.titulo     ?? 'Task criada pelo assistente',
+          descricao:  d.descricao  ?? '',
+          prioridade: d.prioridade ?? 'normal',
+          status:     'pendente',
+          cliente_id: d.cliente_id || (clienteSel || undefined),
+        })
+      } else if (action.type === 'create_notification') {
+        const d = action.data as { titulo?: string; mensagem?: string }
+        await supabase.from('notificacoes').insert({
+          titulo:   d.titulo   ?? 'Lembrete do assistente',
+          mensagem: d.mensagem ?? '',
+          tipo:     'info',
+          lida:     false,
+        })
+      }
+    }
+  }
+
   async function enviar() {
     const texto = input.trim()
     if (!texto || enviando) return
 
-    const novaMensagem: ChatMensagem = {
+    const novaMensagem: MensagemComAcoes = {
       id: gerarId(), role: 'user', content: texto, created_at: new Date().toISOString(),
     }
     setMensagens((prev) => [...prev, novaMensagem])
@@ -9380,14 +12761,29 @@ export function GeminiChat() {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          messages:              [...mensagens, novaMensagem],
-          contexto_cliente_id:   clienteSel || undefined,
+          messages:            [...mensagens, novaMensagem],
+          contexto_cliente_id: clienteSel || undefined,
         }),
       })
-      const json = await res.json() as { content?: string; error?: string }
+      const json = await res.json() as { content?: string; actions?: ChatAction[]; error?: string }
+
+      if (json.actions?.length) {
+        await executarAcoes(json.actions)
+        json.actions.forEach((a) => {
+          if (a.type === 'create_task')         toast.success('Task criada pelo assistente!')
+          if (a.type === 'create_notification') toast.success('Notificação criada!')
+        })
+      }
+
       setMensagens((prev) => [
         ...prev,
-        { id: gerarId(), role: 'assistant', content: json.content ?? json.error ?? 'Erro ao responder.', created_at: new Date().toISOString() },
+        {
+          id: gerarId(),
+          role: 'assistant',
+          content: json.content ?? json.error ?? 'Erro ao responder.',
+          created_at: new Date().toISOString(),
+          actions: json.actions,
+        },
       ])
     } catch {
       setMensagens((prev) => [
@@ -9424,11 +12820,11 @@ export function GeminiChat() {
       {aberto && (
         <>
           {/* Seletor de contexto */}
-          <div className="px-[1.25rem] pb-[0.75rem] border-b border-surface-border">
+          <div className="px-[1.25rem] pb-[0.75rem] border-b border-surface-border/30">
             <select
               value={clienteSel}
               onChange={(e) => setClienteSel(e.target.value)}
-              className="w-full h-[2rem] px-[0.625rem] rounded bg-surface-hover border border-surface-border text-ink-secondary text-[0.75rem] focus:outline-none focus:ring-1 focus:ring-ads-500/40"
+              className="w-full h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.75rem] focus:outline-none focus:ring-1 focus:ring-ads-500/30"
             >
               <option value="">Sem contexto de cliente</option>
               {clientes.map((c) => (
@@ -9441,7 +12837,8 @@ export function GeminiChat() {
           <div className="flex flex-col gap-[0.625rem] p-[1rem] max-h-[18rem] overflow-y-auto">
             {mensagens.length === 0 && (
               <p className="text-ink-muted text-[0.8125rem] italic text-center py-[1.5rem]">
-                Pergunte sobre clientes, campanhas ou operação.
+                Pergunte sobre clientes, campanhas ou operação.<br />
+                <span className="text-[0.75rem]">Posso criar tasks e notificações para você.</span>
               </p>
             )}
             {mensagens.map((m) => (
@@ -9458,6 +12855,11 @@ export function GeminiChat() {
                     : 'bg-surface-hover text-ink-secondary'
                 }`}>
                   {m.content}
+                  {m.actions && m.actions.length > 0 && (
+                    <div className="flex flex-wrap gap-[0.25rem] mt-[0.375rem]">
+                      {m.actions.map((a, i) => <ActionTag key={i} action={a} />)}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -9485,17 +12887,18 @@ export function GeminiChat() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && enviar()}
-              placeholder="Digite sua pergunta…"
+              placeholder="Pergunte ou peça para criar task…"
               disabled={enviando}
-              className="flex-1 h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors disabled:opacity-50"
+              className="flex-1 h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors disabled:opacity-50"
             />
-            <button
+            <Button
+              variant="primary"
+              size="md"
               onClick={enviar}
               disabled={!input.trim() || enviando}
-              className="w-[2.25rem] h-[2.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white flex items-center justify-center transition-colors disabled:opacity-40"
-            >
-              <Send className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
-            </button>
+              icon={<Send className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+              className="w-[2.25rem] px-0"
+            />
           </div>
         </>
       )}
@@ -9513,6 +12916,7 @@ import Link from 'next/link'
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area } from 'recharts'
 import { cn } from '@/lib/utils'
+import { SkeletonLine } from '@/components/ui/SkeletonLine'
 
 type AccentColor = 'green' | 'amber' | 'red' | 'blue' | 'purple' | 'cyan'
 
@@ -9529,6 +12933,7 @@ interface KpiCardProps {
   icon?:       React.ReactNode
   href?:       string
   description?: string
+  loading?:    boolean
 }
 
 const ACCENT: Record<AccentColor, { hex: string; glow: string; icon: string; border: string }> = {
@@ -9556,6 +12961,7 @@ export function KpiCard({
   icon,
   href,
   description,
+  loading = false,
 }: KpiCardProps) {
   const chartData = sparkData?.map((v, i) => ({ i, v })) ?? []
   const acc = ACCENT[accentColor]
@@ -9569,6 +12975,18 @@ export function KpiCard({
     'p-[1.25rem]',
     alert ? 'dark:border dark:border-status-red/40 dark:hover:border-status-red/60' : 'dark:border dark:border-surface-border',
   )
+
+  if (loading) {
+    return (
+      <div className={cn(cardBase, 'min-h-[12rem]')}>
+        <div className="space-y-[0.75rem]">
+          <SkeletonLine width="50%" height="0.75rem" />
+          <SkeletonLine width="70%" height="2.5rem" />
+          <SkeletonLine width="60%" height="0.75rem" />
+        </div>
+      </div>
+    )
+  }
 
   const content = (
     <>
@@ -9668,6 +13086,7 @@ export function KpiCard({
 ```tsx
 'use client'
 
+import Link from 'next/link'
 import { TrendingUp, TrendingDown, LucideIcon } from 'lucide-react'
 
 interface KpiCompactCardProps {
@@ -9681,13 +13100,13 @@ interface KpiCompactCardProps {
   compact?: boolean
 }
 
-const ACCENT_MAP: Record<string, { bg: string; text: string; border: string }> = {
-  amber:  { bg: '#FFC857',  text: 'text-[#FFB100]', border: 'border-[#FFB100]/30' },
-  green:  { bg: '#10B981',  text: 'text-status-green', border: 'border-status-green/30' },
-  blue:   { bg: '#3B82F6',  text: 'text-status-blue', border: 'border-status-blue/30' },
-  red:    { bg: '#EF4444',  text: 'text-status-red', border: 'border-status-red/30' },
-  purple: { bg: '#8B5CF6',  text: 'text-status-purple', border: 'border-status-purple/30' },
-  cyan:   { bg: '#06B6D4',  text: 'text-status-cyan', border: 'border-status-cyan/30' },
+const ACCENT_MAP: Record<string, { bg: string; text: string; border: string; pillBg: string }> = {
+  amber:  { bg: '#FFC857',  text: 'text-[#FFB100]', border: 'border-[#FFB100]/30', pillBg: 'bg-[#FFB100]/10' },
+  green:  { bg: '#10B981',  text: 'text-status-green', border: 'border-status-green/30', pillBg: 'bg-status-green/10' },
+  blue:   { bg: '#3B82F6',  text: 'text-status-blue', border: 'border-status-blue/30', pillBg: 'bg-status-blue/10' },
+  red:    { bg: '#EF4444',  text: 'text-status-red', border: 'border-status-red/30', pillBg: 'bg-status-red/10' },
+  purple: { bg: '#8B5CF6',  text: 'text-status-purple', border: 'border-status-purple/30', pillBg: 'bg-status-purple/10' },
+  cyan:   { bg: '#06B6D4',  text: 'text-status-cyan', border: 'border-status-cyan/30', pillBg: 'bg-status-cyan/10' },
 }
 
 export function KpiCompactCard({
@@ -9703,21 +13122,17 @@ export function KpiCompactCard({
   const accent = ACCENT_MAP[accentColor] || ACCENT_MAP.amber
   const isLink = !!href
 
-  const Wrapper = isLink ? 'a' : 'div'
+  const classNameValue = `bg-surface-card border rounded-xl overflow-hidden transition-all ${
+    isLink ? 'cursor-pointer hover:border-surface-border hover:shadow-lg' : ''
+  } ${accent.border} border`
 
-  return (
-    <Wrapper
-      href={href}
-      className={`bg-surface-card border rounded-xl overflow-hidden transition-all ${
-        isLink ? 'cursor-pointer hover:border-surface-border hover:shadow-lg' : ''
-      } ${accent.border} border`}
-    >
-      <div className={`p-[1rem] ${compact ? '' : 'min-h-[8rem]'} flex flex-col justify-between`}>
+  const content = (
+    <div className={`p-[1rem] ${compact ? '' : 'min-h-[8rem]'} flex flex-col justify-between`}>
         {/* Header com label e delta */}
         <div className="flex items-start justify-between mb-[0.5rem]">
           <p className="text-ink-muted text-xs font-medium uppercase tracking-wider">{label}</p>
           {delta && (
-            <div className={`flex items-center gap-[0.25rem] px-[0.5rem] py-[0.25rem] rounded-full ${accent.text.replace('text-', 'bg-').replace('text-', 'bg-')}/10`}>
+            <div className={`flex items-center gap-[0.25rem] px-[0.5rem] py-[0.25rem] rounded-full ${accent.pillBg}`}>
               {deltaDir === 'up' ? (
                 <TrendingUp className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
               ) : (
@@ -9743,7 +13158,20 @@ export function KpiCompactCard({
           )}
         </div>
       </div>
-    </Wrapper>
+  )
+
+  if (isLink) {
+    return (
+      <Link href={href} className={classNameValue}>
+        {content}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={classNameValue}>
+      {content}
+    </div>
   )
 }
 ```
@@ -9751,11 +13179,21 @@ export function KpiCompactCard({
 ### `components\dashboard\MorningBriefing.tsx`
 
 ```tsx
-﻿'use client'
+'use client'
 
 import { useEffect, useState, useCallback } from 'react'
 import { RefreshCw, Sparkles, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { SkeletonLine } from '@/components/ui/SkeletonLine'
+import { Button } from '@/components/ui/Button'
+
+type FiltroModo = 'completo' | 'urgencias' | 'resumido'
+
+const FILTROS: { value: FiltroModo; label: string }[] = [
+  { value: 'completo',  label: 'Completo'        },
+  { value: 'urgencias', label: 'Só urgências'    },
+  { value: 'resumido',  label: 'Resumido'         },
+]
 
 interface BriefingData {
   texto:      string
@@ -9772,66 +13210,87 @@ function cacheValido(item: { gerado_em: string } | null): boolean {
 }
 
 export function MorningBriefing() {
-  const [briefing,  setBriefing]  = useState<BriefingData | null>(null)
-  const [loading,   setLoading]   = useState(false)
+  const [briefing,    setBriefing]    = useState<BriefingData | null>(null)
+  const [loading,     setLoading]     = useState(false)
   const [modalAberto, setModalAberto] = useState(false)
+  const [filtro,      setFiltro]      = useState<FiltroModo>('completo')
 
-  const carregar = useCallback(async (forcar = false) => {
+  const carregar = useCallback(async (forcar = false, modo?: FiltroModo) => {
+    const modoAtual = modo ?? filtro
+    const cacheKey  = `${CACHE_KEY}_${modoAtual}`
     if (!forcar) {
       try {
-        const cached = JSON.parse(localStorage.getItem(CACHE_KEY) ?? 'null') as BriefingData | null
+        const cached = JSON.parse(localStorage.getItem(cacheKey) ?? 'null') as BriefingData | null
         if (cacheValido(cached)) { setBriefing(cached); return }
       } catch { /* localStorage indisponível */ }
     }
     setLoading(true)
     try {
-      const res  = await fetch('/api/ia/morning-briefing')
+      const res  = await fetch(`/api/ia/morning-briefing?filtro=${modoAtual}`)
       const data = await res.json() as BriefingData
       setBriefing(data)
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)) } catch { }
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)) } catch { }
       toast.success('Briefing atualizado!')
     } catch {
       toast.error('Erro ao atualizar briefing')
+    } finally {
+      setLoading(false)
     }
-    finally { setLoading(false) }
-  }, [])
+  }, [filtro])
 
   useEffect(() => { carregar() }, [carregar])
 
-  const linhas = briefing?.texto.split('\n').filter(Boolean) ?? []
+  function handleFiltroChange(novo: FiltroModo) {
+    setFiltro(novo)
+    setBriefing(null)
+    carregar(false, novo)
+  }
+
+  const linhas  = briefing?.texto.split('\n').filter(Boolean) ?? []
   const preview = linhas.slice(0, MAX_LINHAS_PREVIEW)
   const temMais = linhas.length > MAX_LINHAS_PREVIEW
 
-  const formatarHora = (data: string) => {
-    return new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-  }
+  const formatarHora = (data: string) =>
+    new Date(data).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
   return (
     <>
       <div className="border-l-4 border-l-ads-500 p-[1.25rem] flex flex-col gap-[0.75rem] h-full">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-[0.5rem]">
+        <div className="flex items-center justify-between gap-[0.5rem]">
+          <div className="flex items-center gap-[0.5rem] shrink-0">
             <Sparkles className="w-5 h-5 text-ads-500" strokeWidth={2} />
             <p className="text-ink-primary text-lg font-bold">Morning Briefing</p>
           </div>
-          <button
-            onClick={() => carregar(true)}
-            disabled={loading}
-            className="flex items-center gap-[0.375rem] px-[0.625rem] py-[0.375rem] rounded-md hover:bg-surface-hover text-ink-muted hover:text-ink-primary transition-colors disabled:opacity-40 text-sm"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} strokeWidth={1.75} />
-            <span className="hidden sm:inline">Atualizar briefing</span>
-          </button>
+
+          <div className="flex items-center gap-[0.5rem]">
+            {/* Seletor de modo */}
+            <select
+              value={filtro}
+              onChange={(e) => handleFiltroChange(e.target.value as FiltroModo)}
+              disabled={loading}
+              className="h-[2rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.75rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 focus:border-ads-500/50 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {FILTROS.map((f) => (
+                <option key={f.value} value={f.value}>{f.label}</option>
+              ))}
+            </select>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => carregar(true)}
+              disabled={loading}
+              icon={<RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading ? 'animate-spin' : ''}`} strokeWidth={1.75} />}
+            >
+              <span className="hidden sm:inline">Atualizar</span>
+            </Button>
+          </div>
         </div>
 
         {/* Conteúdo */}
         {loading ? (
-          <div className="space-y-[0.5rem]">
-            {[100, 90, 80, 70, 60].map((w, i) => (
-              <div key={i} className={`h-[1rem] rounded bg-surface-hover animate-pulse`} style={{ width: `${w}%` }} />
-            ))}
-          </div>
+          <SkeletonLine width="85%" height="1rem" count={5} gap="0.5rem" />
         ) : briefing ? (
           <div>
             <div className="space-y-[0.5rem]">
@@ -9840,12 +13299,14 @@ export function MorningBriefing() {
               ))}
             </div>
             {temMais && (
-              <button
+              <Button
+                variant="subtle"
+                size="sm"
                 onClick={() => setModalAberto(true)}
-                className="mt-[0.75rem] flex items-center gap-[0.25rem] text-ads-500 text-sm font-medium hover:opacity-80 transition-opacity"
+                className="mt-[0.75rem]"
               >
                 Ver mais
-              </button>
+              </Button>
             )}
             {briefing.gerado_em && (
               <div className="mt-[0.75rem]">
@@ -9863,11 +13324,11 @@ export function MorningBriefing() {
       {/* Modal para texto completo */}
       {modalAberto && briefing && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in-0 duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-scale"
           onClick={() => setModalAberto(false)}
         >
           <div
-            className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-200"
+            className="bg-surface-card rounded-2xl card-shadow p-[1.5rem] max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-[1rem]">
@@ -9875,12 +13336,13 @@ export function MorningBriefing() {
                 <Sparkles className="w-5 h-5 text-ads-500" strokeWidth={2} />
                 <p className="text-ink-primary text-lg font-bold">Morning Briefing</p>
               </div>
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setModalAberto(false)}
-                className="p-1 rounded hover:bg-surface-hover text-ink-muted hover:text-ink-primary transition-colors"
-              >
-                <X className="w-5 h-5" strokeWidth={1.75} />
-              </button>
+                icon={<X className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
+                className="w-[2rem] px-0"
+              />
             </div>
             <div className="space-y-[0.5rem]">
               {linhas.map((linha, i) => (
@@ -10272,47 +13734,108 @@ export function TrendingOnMarket() {
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Thermometer, CloudRain, Circle } from 'lucide-react'
+import { Thermometer, CloudRain } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 interface WeatherData {
-  temp:    number | null
-  chuva:   number | null
-  chuva2h: number | null
+  temp:        number | null
+  chuva:       number | null
+  chuva2h:     number | null
+  descricao?:  string
+  condicao?:   string
 }
 
-interface StatusAPI {
-  label:  string
-  status: 'ok' | 'warn' | 'error'
+// ── Relógio analógico SVG ────────────────────────────────────────────────────
+function AnalogClock({ date }: { date: Date }) {
+  const s = date.getSeconds()
+  const m = date.getMinutes() + s / 60
+  const h = (date.getHours() % 12) + m / 60
+
+  const secDeg = s * 6
+  const minDeg = m * 6
+  const hrDeg  = h * 30
+
+  const cx = 50
+  const cy = 50
+  const r  = 46
+
+  // Marcadores de hora
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i * 30 - 90) * (Math.PI / 180)
+    const inner = i % 3 === 0 ? r - 10 : r - 7
+    return {
+      x1: cx + inner * Math.cos(angle),
+      y1: cy + inner * Math.sin(angle),
+      x2: cx + r * Math.cos(angle),
+      y2: cy + r * Math.sin(angle),
+      major: i % 3 === 0,
+    }
+  })
+
+  return (
+    <svg viewBox="0 0 100 100" className="w-[5rem] h-[5rem] shrink-0">
+      {/* Face */}
+      <circle cx={cx} cy={cy} r={r} className="fill-surface-elevated stroke-surface-border" strokeWidth="1" />
+
+      {/* Ticks */}
+      {ticks.map((t, i) => (
+        <line
+          key={i}
+          x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+          strokeWidth={t.major ? 2 : 1}
+          className={t.major ? 'stroke-ink-secondary' : 'stroke-ink-muted'}
+          strokeLinecap="round"
+        />
+      ))}
+
+      {/* Ponteiro hora */}
+      <line
+        x1={cx} y1={cy}
+        x2={cx + 24 * Math.cos((hrDeg - 90) * (Math.PI / 180))}
+        y2={cy + 24 * Math.sin((hrDeg - 90) * (Math.PI / 180))}
+        strokeWidth="3"
+        strokeLinecap="round"
+        className="stroke-ink-primary"
+      />
+
+      {/* Ponteiro minuto */}
+      <line
+        x1={cx} y1={cy}
+        x2={cx + 34 * Math.cos((minDeg - 90) * (Math.PI / 180))}
+        y2={cy + 34 * Math.sin((minDeg - 90) * (Math.PI / 180))}
+        strokeWidth="2"
+        strokeLinecap="round"
+        className="stroke-ink-primary"
+      />
+
+      {/* Ponteiro segundo */}
+      <line
+        x1={cx} y1={cy}
+        x2={cx + 38 * Math.cos((secDeg - 90) * (Math.PI / 180))}
+        y2={cy + 38 * Math.sin((secDeg - 90) * (Math.PI / 180))}
+        strokeWidth="1"
+        strokeLinecap="round"
+        className="stroke-ads-500"
+      />
+
+      {/* Centro */}
+      <circle cx={cx} cy={cy} r="3" className="fill-ads-500" />
+    </svg>
+  )
 }
 
-const API_STATUS: StatusAPI[] = [
-  { label: 'Supabase',   status: 'ok'   },
-  { label: 'Google Ads', status: 'ok'   },
-  { label: 'Asaas',      status: 'warn' },
-]
-
-const STATUS_COLOR = {
-  ok:    'text-status-green',
-  warn:  'text-status-orange',
-  error: 'text-status-red',
-} as const
-
+// ── Componente principal ─────────────────────────────────────────────────────
 export function WeatherClock() {
-  const [hora,    setHora]    = useState('')
-  const [data,    setData]    = useState('')
+  const [now,     setNow]     = useState(new Date())
   const [weather, setWeather] = useState<WeatherData>({ temp: null, chuva: null, chuva2h: null })
 
+  // Tick a cada segundo para o analógico
   useEffect(() => {
-    function tick() {
-      const now = new Date()
-      setHora(now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
-      setData(now.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' }))
-    }
-    tick()
-    const id = setInterval(tick, 30_000)
+    const id = setInterval(() => setNow(new Date()), 1_000)
     return () => clearInterval(id)
   }, [])
 
+  // Clima
   useEffect(() => {
     fetch('/api/weather')
       .then((r) => r.json() as Promise<WeatherData>)
@@ -10320,49 +13843,541 @@ export function WeatherClock() {
       .catch(() => {})
   }, [])
 
+
+  const hora = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const data = now.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
+
   return (
     <div className="p-[1.25rem] flex flex-col gap-[0.75rem] h-full">
-      {/* Relógio */}
-      <div>
-        <p className="text-ink-primary text-[3.5rem] font-black tabular-nums leading-none tracking-tight">{hora}</p>
-        <p className="text-ink-secondary text-sm capitalize mt-[0.25rem]">{data}</p>
+      {/* Relógio — analógico + digital lado a lado */}
+      <div className="flex items-center gap-[1rem]">
+        <AnalogClock date={now} />
+        <div>
+          <p className="text-ink-primary text-[2rem] font-black tabular-nums leading-none tracking-tight">{hora}</p>
+          <p className="text-ink-secondary text-[0.8125rem] capitalize mt-[0.25rem]">{data}</p>
+        </div>
       </div>
 
       {/* Separador */}
-      <div className="h-px bg-surface-border my-[0.25rem]" />
+      <div className="h-px bg-surface-border/40 my-[0.125rem]" />
 
       {/* Clima */}
       {weather.temp !== null && (
-        <div className="flex items-center gap-[1rem]">
+        <div className="flex flex-col gap-[0.375rem]">
           <div className="flex items-center gap-[0.5rem]">
-            <Thermometer className="w-5 h-5 text-status-orange" strokeWidth={1.75} />
-            <span className="text-ink-primary text-lg font-semibold">{weather.temp}°C</span>
+            <div className="flex items-center gap-[0.375rem]">
+              <Thermometer className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.75} />
+              <span className="text-ink-primary text-[1rem] font-semibold">{weather.temp}°C</span>
+            </div>
+            {weather.chuva2h !== null && weather.chuva2h > 0 && (
+              <span className="inline-flex items-center gap-[0.25rem] px-[0.5rem] py-[0.125rem] rounded-full bg-status-blue/10 text-status-blue text-[0.75rem] font-medium">
+                <CloudRain className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                {weather.chuva2h}% chuva
+              </span>
+            )}
           </div>
-          {weather.chuva2h !== null && weather.chuva2h > 0 && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-status-blue/10 text-status-blue text-xs font-medium">
-              <CloudRain className="w-3 h-3 mr-1" strokeWidth={1.75} />
-              {weather.chuva2h}% chuva
-            </span>
+          {weather.condicao && (
+            <p className="text-ink-secondary text-[0.75rem] capitalize">{weather.condicao}</p>
           )}
         </div>
       )}
+    </div>
+  )
+}
+```
 
-      {/* Status das APIs */}
-      <div>
-        <p className="text-ink-muted text-[0.625rem] uppercase tracking-wide font-semibold mb-[0.5rem]">Status APIs</p>
-        <div className="grid grid-cols-3 gap-2">
-          {API_STATUS.map(({ label, status }) => (
-            <div key={label} className="flex items-center gap-[0.375rem]" title={label}>
-              <Circle
-                className={`w-2 h-2 fill-current ${STATUS_COLOR[status]}`}
-                strokeWidth={0}
-              />
-              <span className="text-ink-secondary text-[0.6875rem] truncate">{label}</span>
-            </div>
-          ))}
-        </div>
+### `components\layout\ApiStatusIndicator.tsx`
+
+```tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+
+interface ApiStatus {
+  supabase: 'ok' | 'error'
+  googleAds: 'ok' | 'configured' | 'not_configured'
+  asaas: 'ok' | 'configured' | 'not_configured'
+}
+
+export function ApiStatusIndicator() {
+  const [status, setStatus] = useState<ApiStatus>({
+    supabase: 'ok',
+    googleAds: 'not_configured',
+    asaas: 'not_configured',
+  })
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      try {
+        // Verificar Supabase (ping simples)
+        let supabaseStatus: 'ok' | 'error' = 'ok'
+        try {
+          await supabase.auth.getUser()
+        } catch {
+          supabaseStatus = 'error'
+        }
+
+        // Verificar Google Ads (check se existe pelo menos um cliente com integração habilitada)
+        let googleAdsStatus: 'ok' | 'configured' | 'not_configured' = 'not_configured'
+        try {
+          const { error: googleError, count } = await supabase
+            .from('clientes')
+            .select('id', { count: 'exact', head: true })
+            .eq('google_ads_enabled', true)
+          if (!googleError && count !== null && count > 0) {
+            googleAdsStatus = 'configured'
+          }
+        } catch {
+          googleAdsStatus = 'not_configured'
+        }
+
+        // Verificar Asaas (check se existe integração configurada)
+        let asaasStatus: 'ok' | 'configured' | 'not_configured' = 'not_configured'
+        try {
+          const { error: asaasError, count } = await supabase
+            .from('clientes')
+            .select('id', { count: 'exact', head: true })
+            .not('asaas_id', 'is', null)
+          if (!asaasError && count !== null && count > 0) {
+            asaasStatus = 'configured'
+          }
+        } catch {
+          asaasStatus = 'not_configured'
+        }
+
+        setStatus({
+          supabase: supabaseStatus,
+          googleAds: googleAdsStatus,
+          asaas: asaasStatus,
+        })
+      } catch {
+        setStatus({
+          supabase: 'error',
+          googleAds: 'not_configured',
+          asaas: 'not_configured',
+        })
+      }
+    }
+
+    checkStatus()
+    const interval = setInterval(checkStatus, 30000) // Check a cada 30s
+    return () => clearInterval(interval)
+  }, [])
+
+  const getColor = (apiStatus: string) => {
+    if (apiStatus === 'ok') return 'bg-status-green'
+    if (apiStatus === 'configured') return 'bg-status-green'
+    if (apiStatus === 'error') return 'bg-status-red'
+    return 'bg-status-orange' // not_configured
+  }
+
+  const getTitle = (api: string, apiStatus: string) => {
+    if (apiStatus === 'ok') return `${api}: Online`
+    if (apiStatus === 'configured') return `${api}: Configurado`
+    if (apiStatus === 'error') return `${api}: Erro`
+    return `${api}: Não configurado`
+  }
+
+  return (
+    <div className="flex items-center gap-[0.75rem]">
+      {/* Supabase */}
+      <div className="flex items-center gap-[0.25rem]" title={getTitle('Supabase', status.supabase)}>
+        <div className={`w-[0.375rem] h-[0.375rem] rounded-full ${getColor(status.supabase)}`} />
+        <span className="text-[0.6875rem] text-ink-muted">Supabase</span>
+      </div>
+
+      {/* Google Ads */}
+      <div className="flex items-center gap-[0.25rem]" title={getTitle('Google Ads', status.googleAds)}>
+        <div className={`w-[0.375rem] h-[0.375rem] rounded-full ${getColor(status.googleAds)}`} />
+        <span className="text-[0.6875rem] text-ink-muted">Google Ads</span>
+      </div>
+
+      {/* Asaas */}
+      <div className="flex items-center gap-[0.25rem]" title={getTitle('Asaas', status.asaas)}>
+        <div className={`w-[0.375rem] h-[0.375rem] rounded-full ${getColor(status.asaas)}`} />
+        <span className="text-[0.6875rem] text-ink-muted">Asaas</span>
       </div>
     </div>
+  )
+}
+```
+
+### `components\layout\ChangelogDrawer.tsx`
+
+```tsx
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { X, Sparkles, ChevronDown } from 'lucide-react'
+import { CHANGELOG, VERSAO_ATUAL } from '@/data/changelog'
+import { cn } from '@/lib/utils'
+
+const STORAGE_KEY = 'adsgator_changelog_visto'
+
+function getVersaoVista(): string | null {
+  if (typeof window === 'undefined') return VERSAO_ATUAL
+  try { return localStorage.getItem(STORAGE_KEY) } catch { return null }
+}
+
+function marcarVisto() {
+  try { localStorage.setItem(STORAGE_KEY, VERSAO_ATUAL) } catch {}
+}
+
+export function useChangelogBadge(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== VERSAO_ATUAL
+  } catch {
+    return false
+  }
+}
+
+export function ChangelogButton() {
+  const ref                   = useRef<HTMLDivElement>(null)
+  const [aberto, setAberto]   = useState(false)
+  const [temNovo, setTemNovo] = useState(false)
+  const [expandido, setExpandido] = useState<string | null>(CHANGELOG[0].versao)
+
+  useEffect(() => {
+    setTemNovo(getVersaoVista() !== VERSAO_ATUAL)
+  }, [])
+
+  useEffect(() => {
+    if (!aberto) return
+    marcarVisto()
+    setTemNovo(false)
+
+    function onClickFora(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAberto(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setAberto(false)
+    }
+    document.addEventListener('mousedown', onClickFora)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClickFora)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [aberto])
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setAberto(!aberto)}
+        className="relative flex items-center gap-[0.375rem] h-[2rem] px-[0.625rem] rounded-[0.375rem] text-ink-secondary hover:bg-surface-hover hover:text-ink-primary transition-colors text-[0.75rem] font-medium"
+        aria-label="O que há de novo"
+      >
+        <Sparkles className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+        <span className="hidden sm:inline">Novidades</span>
+        {temNovo && (
+          <span className="absolute top-[0.1875rem] right-[0.1875rem] w-[0.4375rem] h-[0.4375rem] rounded-full bg-ads-500" />
+        )}
+      </button>
+
+      {aberto && (
+        <div className="absolute right-0 top-[2.5rem] w-[22rem] bg-surface-card border border-surface-border rounded-2xl card-shadow shadow-2xl shadow-black/40 z-50 animate-fade-in overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-[1.125rem] py-[0.875rem] border-b border-surface-border">
+            <div className="flex items-center gap-[0.5rem]">
+              <Sparkles className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
+              <p className="text-ink-primary font-semibold text-[0.875rem]">O que há de novo</p>
+              <span className="text-[0.625rem] font-bold px-[0.375rem] py-[0.0625rem] rounded-full bg-ads-500/15 text-ads-500 border border-ads-500/20">
+                v{VERSAO_ATUAL}
+              </span>
+            </div>
+            <button
+              onClick={() => setAberto(false)}
+              className="w-[1.5rem] h-[1.5rem] rounded-md flex items-center justify-center text-ink-muted hover:text-ink-primary hover:bg-surface-hover transition-colors"
+            >
+              <X className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+            </button>
+          </div>
+
+          {/* Lista de versões */}
+          <div className="max-h-[28rem] overflow-y-auto">
+            {CHANGELOG.map((entry, idx) => {
+              const isAberto  = expandido === entry.versao
+              const isLatest  = idx === 0
+              const dataFmt   = new Date(entry.data + 'T12:00:00').toLocaleDateString('pt-BR', {
+                day: '2-digit', month: 'long', year: 'numeric',
+              })
+
+              return (
+                <div key={entry.versao} className={cn('border-b border-surface-border/50 last:border-0', isLatest && 'bg-ads-500/5')}>
+                  <button
+                    onClick={() => setExpandido(isAberto ? null : entry.versao)}
+                    className="w-full flex items-center justify-between px-[1.125rem] py-[0.75rem] hover:bg-surface-hover transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-[0.5rem]">
+                      <span className={cn(
+                        'text-[0.75rem] font-bold px-[0.375rem] py-[0.125rem] rounded-md',
+                        isLatest
+                          ? 'bg-ads-500 text-white'
+                          : 'bg-surface-elevated text-ink-secondary border border-surface-border',
+                      )}>
+                        v{entry.versao}
+                      </span>
+                      <span className="text-ink-muted text-[0.75rem]">{dataFmt}</span>
+                      {isLatest && (
+                        <span className="text-[0.5625rem] font-semibold px-[0.25rem] py-[0.0625rem] rounded-full bg-status-green/15 text-status-green border border-status-green/20">
+                          ATUAL
+                        </span>
+                      )}
+                    </div>
+                    <ChevronDown
+                      className={cn('w-[0.875rem] h-[0.875rem] text-ink-muted transition-transform', isAberto && 'rotate-180')}
+                      strokeWidth={2}
+                    />
+                  </button>
+
+                  {isAberto && (
+                    <ul className="px-[1.125rem] pb-[0.875rem] flex flex-col gap-[0.375rem]">
+                      {entry.novidades.map((item, i) => (
+                        <li key={i} className="flex items-start gap-[0.5rem]">
+                          <span className="w-[0.3125rem] h-[0.3125rem] rounded-full bg-ads-500 shrink-0 mt-[0.4375rem]" />
+                          <span className="text-ink-secondary text-[0.8125rem] leading-snug">{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+### `components\layout\FloatingChat.tsx`
+
+```tsx
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { Bot, Send, User, X, Minus } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import type { ChatMensagem } from '@/lib/types'
+import type { ChatAction } from '@/app/api/ia/chat/route'
+import { toast } from 'sonner'
+
+function gerarId() {
+  return Math.random().toString(36).slice(2, 10)
+}
+
+interface MensagemComAcoes extends ChatMensagem {
+  actions?: ChatAction[]
+}
+
+export function FloatingChat() {
+  const [aberto,    setAberto]    = useState(false)
+  const [minimized, setMinimized] = useState(false)
+  const [mensagens, setMensagens] = useState<MensagemComAcoes[]>([])
+  const [input,     setInput]     = useState('')
+  const [enviando,  setEnviando]  = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [mensagens])
+
+  async function executarAcoes(actions: ChatAction[]) {
+    for (const action of actions) {
+      if (action.type === 'create_task') {
+        const d = action.data as { titulo?: string; descricao?: string; prioridade?: string; cliente_id?: string }
+        await supabase.from('tarefas').insert({
+          titulo:     d.titulo     ?? 'Task criada pelo assistente',
+          descricao:  d.descricao  ?? '',
+          prioridade: d.prioridade ?? 'normal',
+          status:     'pendente',
+          cliente_id: d.cliente_id || undefined,
+        })
+      } else if (action.type === 'create_notification') {
+        const d = action.data as { titulo?: string; mensagem?: string }
+        await supabase.from('notificacoes').insert({
+          titulo:   d.titulo   ?? 'Lembrete do assistente',
+          mensagem: d.mensagem ?? '',
+          tipo:     'info',
+          lida:     false,
+        })
+      }
+    }
+  }
+
+  async function enviar() {
+    const texto = input.trim()
+    if (!texto || enviando) return
+
+    const nova: MensagemComAcoes = {
+      id: gerarId(), role: 'user', content: texto, created_at: new Date().toISOString(),
+    }
+    setMensagens((p) => [...p, nova])
+    setInput('')
+    setEnviando(true)
+    if (minimized) setMinimized(false)
+
+    try {
+      const res  = await fetch('/api/ia/chat', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ messages: [...mensagens, nova] }),
+      })
+      const json = await res.json() as { content?: string; actions?: ChatAction[]; error?: string }
+
+      if (json.actions?.length) {
+        await executarAcoes(json.actions)
+        json.actions.forEach((a) => {
+          if (a.type === 'create_task')         toast.success('Task criada!')
+          if (a.type === 'create_notification') toast.success('Notificação criada!')
+        })
+      }
+
+      setMensagens((p) => [
+        ...p,
+        {
+          id: gerarId(), role: 'assistant',
+          content: json.content ?? json.error ?? 'Erro ao responder.',
+          created_at: new Date().toISOString(),
+          actions: json.actions,
+        },
+      ])
+    } catch {
+      setMensagens((p) => [
+        ...p,
+        { id: gerarId(), role: 'assistant', content: 'Sem conexão com o assistente.', created_at: new Date().toISOString() },
+      ])
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <>
+      {/* Botão flutuante */}
+      {!aberto && (
+        <button
+          onClick={() => setAberto(true)}
+          className="fixed bottom-[3rem] right-[3.5rem] z-40 w-[3rem] h-[3rem] rounded-full bg-ads-500 hover:bg-ads-600 shadow-lg flex items-center justify-center transition-colors group"
+          title="Assistente Adsgator"
+        >
+          <Bot className="w-[1.25rem] h-[1.25rem] text-white" strokeWidth={1.75} />
+          {mensagens.length > 0 && (
+            <span className="absolute -top-[0.25rem] -right-[0.25rem] w-[1rem] h-[1rem] rounded-full bg-status-red text-white text-[0.5625rem] font-bold flex items-center justify-center">
+              {mensagens.filter(m => m.role === 'assistant').length}
+            </span>
+          )}
+        </button>
+      )}
+
+      {/* Janela do chat */}
+      {aberto && (
+        <div className="fixed bottom-[3rem] right-[3.5rem] z-40 w-[22rem] rounded-2xl bg-surface-card border border-surface-border shadow-2xl flex flex-col overflow-hidden animate-fade-scale">
+          {/* Header */}
+          <div className="flex items-center justify-between px-[1rem] py-[0.75rem] border-b border-surface-border/50 bg-surface-elevated">
+            <div className="flex items-center gap-[0.5rem]">
+              <div className="w-[1.75rem] h-[1.75rem] rounded-lg bg-ads-500/15 flex items-center justify-center">
+                <Bot className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
+              </div>
+              <div>
+                <p className="text-ink-primary text-[0.8125rem] font-semibold leading-none">Assistente</p>
+                <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">Adsgator IA</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-[0.25rem]">
+              <button
+                onClick={() => setMinimized((v) => !v)}
+                className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+              >
+                <Minus className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+              </button>
+              <button
+                onClick={() => { setAberto(false); setMinimized(false) }}
+                className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+              >
+                <X className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+              </button>
+            </div>
+          </div>
+
+          {/* Corpo — colapsa ao minimizar */}
+          {!minimized && (
+            <>
+              {/* Histórico */}
+              <div className="flex flex-col gap-[0.5rem] p-[0.875rem] h-[16rem] overflow-y-auto">
+                {mensagens.length === 0 && (
+                  <div className="flex flex-col items-center justify-center h-full text-center gap-[0.5rem]">
+                    <div className="w-[2.5rem] h-[2.5rem] rounded-xl bg-ads-500/10 flex items-center justify-center">
+                      <Bot className="w-[1.25rem] h-[1.25rem] text-ads-500" strokeWidth={1.75} />
+                    </div>
+                    <p className="text-ink-muted text-[0.75rem] leading-relaxed">
+                      Pergunte sobre clientes, campanhas<br />ou peça para criar tasks.
+                    </p>
+                  </div>
+                )}
+
+                {mensagens.map((m) => (
+                  <div key={m.id} className={`flex gap-[0.375rem] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                    <div className={`w-[1.375rem] h-[1.375rem] rounded-full flex items-center justify-center shrink-0 ${m.role === 'user' ? 'bg-ads-500/20' : 'bg-surface-hover'}`}>
+                      {m.role === 'user'
+                        ? <User className="w-[0.625rem] h-[0.625rem] text-ads-500" strokeWidth={2} />
+                        : <Bot  className="w-[0.625rem] h-[0.625rem] text-ink-muted" strokeWidth={1.75} />
+                      }
+                    </div>
+                    <div className={`rounded-xl px-[0.625rem] py-[0.4375rem] max-w-[82%] text-[0.75rem] leading-relaxed ${
+                      m.role === 'user'
+                        ? 'bg-ads-500/15 text-ink-primary'
+                        : 'bg-surface-hover text-ink-secondary'
+                    }`}>
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+
+                {enviando && (
+                  <div className="flex gap-[0.375rem]">
+                    <div className="w-[1.375rem] h-[1.375rem] rounded-full bg-surface-hover flex items-center justify-center shrink-0">
+                      <Bot className="w-[0.625rem] h-[0.625rem] text-ink-muted" strokeWidth={1.75} />
+                    </div>
+                    <div className="bg-surface-hover rounded-xl px-[0.625rem] py-[0.5rem]">
+                      <div className="flex gap-[0.25rem] items-center h-[0.875rem]">
+                        {[0, 120, 240].map((d) => (
+                          <div key={d} className="w-[0.3125rem] h-[0.3125rem] rounded-full bg-ink-muted animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={bottomRef} />
+              </div>
+
+              {/* Input */}
+              <div className="flex gap-[0.375rem] px-[0.875rem] pb-[0.875rem]">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && enviar()}
+                  placeholder="Pergunte ou peça uma ação…"
+                  disabled={enviando}
+                  className="flex-1 h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 transition-colors disabled:opacity-50"
+                />
+                <button
+                  onClick={enviar}
+                  disabled={!input.trim() || enviando}
+                  className="w-[2rem] h-[2rem] rounded-lg bg-ads-500 hover:bg-ads-600 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                >
+                  <Send className="w-[0.75rem] h-[0.75rem] text-white" strokeWidth={2} />
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </>
   )
 }
 ```
@@ -10372,11 +14387,13 @@ export function WeatherClock() {
 ```tsx
 'use client'
 
-import React from 'react'
-import { Sidebar }         from './Sidebar'
-import { TopBar }          from './TopBar'
-import { RightSidebar }    from './RightSidebar'
-import { StatusBar }       from './StatusBar'
+import React, { useEffect } from 'react'
+import { useRouter }        from 'next/navigation'
+import { Sidebar }              from './Sidebar'
+import { TopBar }               from './TopBar'
+import { RightSidebar }         from './RightSidebar'
+import { StatusBar }            from './StatusBar'
+import { FloatingChat }         from './FloatingChat'
 import { RightSidebarProvider } from '@/lib/store/right-sidebar-context'
 
 interface MainLayoutProps {
@@ -10387,6 +14404,53 @@ interface MainLayoutProps {
 }
 
 export function MainLayout({ children, title, subtitle, actions }: MainLayoutProps) {
+  const router = useRouter()
+
+  useEffect(() => {
+    let primeiraLetra: string | null = null
+    let timer: ReturnType<typeof setTimeout> | null = null
+
+    function onKey(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName.toLowerCase()
+      if (['input', 'textarea', 'select'].includes(tag)) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      const k = e.key.toLowerCase()
+
+      if (primeiraLetra === null) {
+        if (k === 'g' || k === 'n') {
+          primeiraLetra = k
+          timer = setTimeout(() => { primeiraLetra = null }, 500)
+        }
+        return
+      }
+
+      if (timer) clearTimeout(timer)
+      const first = primeiraLetra
+      primeiraLetra = null
+
+      const ROTAS_G: Record<string, string> = {
+        d: '/dashboard',
+        c: '/clientes',
+        f: '/financeiro',
+        a: '/analytics',
+        t: '/tarefas',
+        m: '/marketing',
+        b: '/biblioteca',
+        s: '/configuracoes',
+      }
+
+      if (first === 'g' && ROTAS_G[k]) {
+        router.push(ROTAS_G[k])
+      } else if (first === 'n' && k === 'c') {
+        router.push('/clientes/novo')
+      }
+    }
+
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [router])
+
   return (
     <RightSidebarProvider>
       <div className="h-screen w-screen overflow-hidden bg-surface-base grid grid-rows-[var(--topbar-h)_1fr_var(--statusbar-h)] grid-cols-[var(--sidebar-w)_1fr_var(--right-sidebar-w)]">
@@ -10411,6 +14475,9 @@ export function MainLayout({ children, title, subtitle, actions }: MainLayoutPro
         {/* ── ROW 3: STATUS BAR (ocupa 3 colunas) ──── */}
         <StatusBar />
       </div>
+
+      {/* ── CHAT FLUTUANTE (todas as páginas) ────── */}
+      <FloatingChat />
     </RightSidebarProvider>
   )
 }
@@ -10572,7 +14639,7 @@ export function NotificationBell() {
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, MessageCircle, CheckCircle, AlertTriangle } from 'lucide-react'
+import { X, MessageCircle, CheckCircle, Bell, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
@@ -10583,27 +14650,46 @@ interface ClienteAlerta {
   whatsapp: string | null
 }
 
+interface Notificacao {
+  id: string
+  titulo: string
+  mensagem: string
+  tipo: string
+  lida: boolean
+  created_at: string
+  link?: string
+}
+
 interface NotificationDrawerProps {
   open: boolean
   onClose: () => void
 }
 
 export function NotificationDrawer({ open, onClose }: NotificationDrawerProps) {
-  const [clientes, setClientes] = useState<ClienteAlerta[]>([])
-  const [loading, setLoading] = useState(true)
+  const [clientes,      setClientes]      = useState<ClienteAlerta[]>([])
+  const [notificacoes,  setNotificacoes]  = useState<Notificacao[]>([])
+  const [loading,       setLoading]       = useState(true)
+  const [aba,           setAba]           = useState<'alertas' | 'notificacoes'>('alertas')
 
   useEffect(() => {
     if (!open) return
     setLoading(true)
-    supabase
-      .from('clientes')
-      .select('id, nome, dias_atraso, whatsapp')
-      .gt('dias_atraso', 0)
-      .order('dias_atraso', { ascending: false })
-      .then(({ data }) => {
-        setClientes((data ?? []) as ClienteAlerta[])
-        setLoading(false)
-      })
+    Promise.all([
+      supabase
+        .from('clientes')
+        .select('id, nome, dias_atraso, whatsapp')
+        .gt('dias_atraso', 0)
+        .order('dias_atraso', { ascending: false }),
+      supabase
+        .from('notificacoes')
+        .select('id, titulo, mensagem, tipo, lida, created_at, link')
+        .order('created_at', { ascending: false })
+        .limit(20),
+    ]).then(([{ data: cl }, { data: nt }]) => {
+      setClientes((cl ?? []) as ClienteAlerta[])
+      setNotificacoes((nt ?? []) as Notificacao[])
+      setLoading(false)
+    })
   }, [open])
 
   useEffect(() => {
@@ -10636,68 +14722,134 @@ export function NotificationDrawer({ open, onClose }: NotificationDrawerProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-[1.25rem] py-[1rem] border-b border-surface-border shrink-0">
-          <div className="flex items-center gap-[0.5rem]">
-            <AlertTriangle className="w-[1rem] h-[1rem] text-status-red" strokeWidth={2} />
-            <h2 className="text-ink-primary font-semibold text-[0.9375rem]">Alertas</h2>
-            {clientes.length > 0 && (
-              <span className="min-w-[1.25rem] h-[1.25rem] px-[0.25rem] rounded-full bg-status-red text-white text-[0.6875rem] font-bold flex items-center justify-center">
-                {clientes.length}
-              </span>
-            )}
-          </div>
+          <h2 className="text-ink-primary font-semibold text-[0.9375rem]">Notificações</h2>
           <button
             onClick={onClose}
-            className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] text-ink-muted hover:text-ink-primary hover:bg-surface-hover transition-colors"
+            className="w-[2rem] h-[2rem] flex items-center justify-center rounded-lg text-ink-muted hover:text-ink-primary hover:bg-surface-hover transition-colors"
           >
             <X className="w-[1rem] h-[1rem]" strokeWidth={1.75} />
           </button>
+        </div>
+
+        {/* Abas */}
+        <div className="flex border-b border-surface-border shrink-0">
+          {([
+            { id: 'alertas',       label: 'Alertas',       count: clientes.length,     cor: 'text-status-red'   },
+            { id: 'notificacoes',  label: 'Notificações',  count: notificacoes.filter((n) => !n.lida).length, cor: 'text-ads-500' },
+          ] as const).map((a) => (
+            <button
+              key={a.id}
+              onClick={() => setAba(a.id)}
+              className={cn(
+                'flex-1 flex items-center justify-center gap-[0.375rem] h-[2.25rem] text-[0.8125rem] font-medium transition-colors border-b-2',
+                aba === a.id
+                  ? 'text-ink-primary border-ads-500'
+                  : 'text-ink-muted border-transparent hover:text-ink-secondary',
+              )}
+            >
+              {a.label}
+              {a.count > 0 && (
+                <span className={cn('text-[0.625rem] font-bold px-[0.375rem] rounded-full bg-surface-hover', a.cor)}>
+                  {a.count}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Conteúdo */}
         <div className="flex-1 overflow-y-auto p-[0.75rem] space-y-[0.375rem]">
           {loading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-[4rem] rounded-[0.5rem] skeleton-shimmer" />
+              <div key={i} className="h-[4rem] rounded-lg skeleton-shimmer" />
             ))
-          ) : clientes.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-[4rem] text-ink-muted gap-[0.75rem]">
-              <CheckCircle className="w-[2.5rem] h-[2.5rem] text-status-green" strokeWidth={1.5} />
-              <p className="text-[0.875rem] font-medium text-ink-secondary">Sem alertas no momento</p>
-              <p className="text-[0.75rem] text-center">Todos os clientes estão em dia</p>
-            </div>
-          ) : (
-            clientes.map((c) => {
-              const urgencia = c.dias_atraso >= 15 ? 'critica' : c.dias_atraso >= 7 ? 'atencao' : 'leve'
-              const corBadge =
-                urgencia === 'critica' ? 'bg-status-red/10 text-status-red border-status-red/20' :
-                urgencia === 'atencao' ? 'bg-status-orange/10 text-status-orange border-status-orange/20' :
-                'bg-status-green/10 text-status-green border-status-green/20'
-
-              return (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between p-[0.75rem] rounded-[0.5rem] bg-surface-hover border border-surface-border/50 hover:border-surface-border transition-colors"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-ink-primary text-[0.8125rem] font-medium truncate">{c.nome}</p>
-                    <span className={cn('inline-flex items-center gap-[0.25rem] text-[0.6875rem] font-medium px-[0.375rem] py-[0.125rem] rounded-full border mt-[0.25rem]', corBadge)}>
-                      D+{c.dias_atraso}
-                    </span>
+          ) : aba === 'alertas' ? (
+            clientes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-[4rem] gap-[0.75rem]">
+                <CheckCircle className="w-[2.5rem] h-[2.5rem] text-status-green" strokeWidth={1.5} />
+                <p className="text-[0.875rem] font-medium text-ink-secondary">Sem alertas no momento</p>
+                <p className="text-ink-muted text-[0.75rem] text-center">Todos os clientes estão em dia</p>
+              </div>
+            ) : (
+              clientes.map((c) => {
+                const urgencia = c.dias_atraso >= 15 ? 'critica' : c.dias_atraso >= 7 ? 'atencao' : 'leve'
+                const corBadge =
+                  urgencia === 'critica' ? 'bg-status-red/10 text-status-red border-status-red/20' :
+                  urgencia === 'atencao' ? 'bg-status-orange/10 text-status-orange border-status-orange/20' :
+                  'bg-status-green/10 text-status-green border-status-green/20'
+                return (
+                  <div key={c.id} className="p-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40">
+                    <div className="flex items-start justify-between gap-[0.5rem] mb-[0.5rem]">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-ink-primary text-[0.8125rem] font-semibold truncate">{c.nome}</p>
+                        <p className="text-ink-secondary text-[0.75rem] mt-[0.125rem]">
+                          {c.dias_atraso} dias em atraso
+                          {c.dias_atraso >= 15 ? ' — quebra de contrato iminente' : c.dias_atraso >= 7 ? ' — suspensão iminente' : ''}
+                        </p>
+                      </div>
+                      <span className={cn('text-[0.625rem] font-semibold px-[0.375rem] py-[0.125rem] rounded-full border shrink-0', corBadge)}>
+                        D+{c.dias_atraso}
+                      </span>
+                    </div>
+                    <div className="flex gap-[0.375rem]">
+                      {c.whatsapp && (
+                        <a
+                          href={`https://wa.me/${c.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${c.nome.split(' ')[0]}! Passando para verificar sobre o pagamento em atraso (${c.dias_atraso} dias).`)}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-[0.25rem] h-[1.75rem] rounded-lg bg-[#25D366]/10 text-[#25D366] text-[0.75rem] font-medium hover:bg-[#25D366]/20 transition-colors"
+                        >
+                          <MessageCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                          Cobrar
+                        </a>
+                      )}
+                      <a
+                        href={`/clientes/${c.id}`}
+                        className="flex-1 flex items-center justify-center gap-[0.25rem] h-[1.75rem] rounded-lg bg-surface-elevated text-ink-secondary text-[0.75rem] font-medium hover:text-ink-primary transition-colors"
+                      >
+                        <ExternalLink className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                        Ver cliente
+                      </a>
+                    </div>
                   </div>
-                  {c.whatsapp && (
-                    <a
-                      href={`https://wa.me/${c.whatsapp}?text=${encodeURIComponent(`Olá ${c.nome.split(' ')[0]}! Passando para verificar sobre o pagamento em atraso (${c.dias_atraso} dias).`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-[0.5rem] w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-status-green/10 text-status-green hover:bg-status-green/20 transition-colors shrink-0"
-                      title="Enviar WhatsApp"
-                    >
-                      <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                )
+              })
+            )
+          ) : (
+            notificacoes.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-[4rem] gap-[0.75rem]">
+                <Bell className="w-[2.5rem] h-[2.5rem] text-ink-muted" strokeWidth={1.5} />
+                <p className="text-[0.875rem] font-medium text-ink-secondary">Sem notificações</p>
+              </div>
+            ) : (
+              notificacoes.map((n) => (
+                <div
+                  key={n.id}
+                  className={cn(
+                    'p-[0.75rem] rounded-lg border transition-colors',
+                    n.lida
+                      ? 'bg-surface-hover border-surface-border/30 opacity-60'
+                      : 'bg-surface-card border-surface-border/60',
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-[0.5rem]">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-ink-primary text-[0.8125rem] font-medium leading-snug">{n.titulo}</p>
+                      <p className="text-ink-secondary text-[0.75rem] mt-[0.25rem] leading-snug">{n.mensagem}</p>
+                    </div>
+                    {!n.lida && <span className="w-[0.5rem] h-[0.5rem] rounded-full bg-ads-500 shrink-0 mt-[0.25rem]" />}
+                  </div>
+                  {n.link && (
+                    <a href={n.link} className="mt-[0.5rem] flex items-center gap-[0.25rem] text-ads-500 text-[0.75rem] hover:underline">
+                      <ExternalLink className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
+                      Ver detalhes
                     </a>
                   )}
+                  <p className="text-ink-muted text-[0.625rem] mt-[0.375rem]">
+                    {new Date(n.created_at).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
-              )
-            })
+              ))
+            )
           )}
         </div>
 
@@ -10722,9 +14874,10 @@ export function NotificationDrawer({ open, onClose }: NotificationDrawerProps) {
 'use client'
 
 import { useState } from 'react'
-import { Bell, MessageCircle, HelpCircle, Sun, Moon } from 'lucide-react'
+import { Bell, MessageCircle, HelpCircle, Settings, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
 import { useRightSidebar } from '@/lib/store/right-sidebar-context'
+import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
 import { NotificationDrawer } from './NotificationDrawer'
 import { cn } from '@/lib/utils'
 
@@ -10761,8 +14914,12 @@ function SidebarIconButton({ icon: Icon, label, active, badge, onClick }: Sideba
 
 export function RightSidebar() {
   const { theme, setTheme } = useTheme()
-  const { contextActions, activeDrawer, openDrawer } = useRightSidebar()
+  const ctx = useRightSidebar()
+  const { contextActions } = useRightSidebarStore()
   const [notifOpen, setNotifOpen] = useState(false)
+
+  const activeDrawer = ctx?.activeDrawer ?? null
+  const openDrawer = ctx?.openDrawer ?? (() => {})
 
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
   const ThemeIcon = theme === 'dark' ? Sun : Moon
@@ -10791,11 +14948,6 @@ export function RightSidebar() {
           active={activeDrawer === 'chat'}
           onClick={() => openDrawer('chat')}
         />
-        <SidebarIconButton
-          icon={HelpCircle}
-          label="Ajuda"
-          onClick={() => window.open('/ajuda', '_self')}
-        />
       </div>
 
       {/* ── ÍCONES CONTEXTUAIS (injetados por página) ── */}
@@ -10817,6 +14969,20 @@ export function RightSidebar() {
 
       {/* ── SPACER ───────────────────────────────────── */}
       <div className="flex-1" />
+
+      {/* ── CONFIGURAÇÕES & AJUDA (rodapé) ─────────────── */}
+      <div className="flex flex-col items-center gap-[0.25rem] mb-[0.5rem]">
+        <SidebarIconButton
+          icon={Settings}
+          label="Configurações"
+          onClick={() => window.open('/configuracoes', '_self')}
+        />
+        <SidebarIconButton
+          icon={HelpCircle}
+          label="Ajuda"
+          onClick={() => window.open('/ajuda', '_self')}
+        />
+      </div>
 
       {/* ── TEMA (rodapé) ────────────────────────────── */}
       <SidebarIconButton
@@ -10846,8 +15012,6 @@ import {
   DollarSign,
   FileText,
   Layers,
-  Settings,
-  HelpCircle,
   LogOut,
   CheckSquare,
   Megaphone,
@@ -10857,26 +15021,14 @@ import { logout } from '@/lib/auth'
 import { supabase } from '@/lib/supabase'
 
 const NAV_ITEMS = [
-  {
-    group: 'MENU',
-    items: [
-      { href: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
-      { href: '/clientes',     icon: Users,           label: 'Clientes'     },
-      { href: '/tarefas',      icon: CheckSquare,     label: 'Tarefas'      },
-      { href: '/marketing',    icon: Megaphone,       label: 'Marketing'    },
-      { href: '/analytics',    icon: BarChart2,       label: 'Analytics'    },
-      { href: '/financeiro',   icon: DollarSign,      label: 'Financeiro'   },
-      { href: '/relatorios',   icon: FileText,        label: 'Relatórios'   },
-      { href: '/biblioteca',   icon: Layers,          label: 'Biblioteca'   },
-    ],
-  },
-  {
-    group: 'GERAL',
-    items: [
-      { href: '/configuracoes', icon: Settings,   label: 'Configurações' },
-      { href: '/ajuda',         icon: HelpCircle, label: 'Ajuda'         },
-    ],
-  },
+  { href: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard'    },
+  { href: '/clientes',     icon: Users,           label: 'Clientes'     },
+  { href: '/tarefas',      icon: CheckSquare,     label: 'Tarefas'      },
+  { href: '/marketing',    icon: Megaphone,       label: 'Marketing'    },
+  { href: '/analytics',    icon: BarChart2,       label: 'Analytics'    },
+  { href: '/financeiro',   icon: DollarSign,      label: 'Financeiro'   },
+  { href: '/relatorios',   icon: FileText,        label: 'Relatórios'   },
+  { href: '/biblioteca',   icon: Layers,          label: 'Biblioteca'   },
 ]
 
 export function Sidebar() {
@@ -10916,7 +15068,7 @@ export function Sidebar() {
         className={cn(
           'sidebar-shell group/sidebar absolute inset-y-0 left-0 z-40',
           'flex flex-col',
-          'bg-surface-card dark:border-r dark:border-surface-border',
+          'bg-surface-card border-r border-surface-border/15',
           'shadow-[1px_0_0_0_rgba(0,0,0,0.08)]',
           'w-[var(--sidebar-w)] hover:w-[var(--sidebar-expanded)]',
           'hover:shadow-xl dark:hover:shadow-2xl dark:hover:shadow-black/40',
@@ -10926,54 +15078,47 @@ export function Sidebar() {
         )}
       >
         {/* ── NAVEGAÇÃO ───────────────────────────────── */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-[0.75rem] px-[0.5rem] space-y-[1.5rem]">
-          {NAV_ITEMS.map((group) => (
-            <div key={group.group}>
-              <p className="text-ink-muted text-[0.625rem] font-semibold uppercase tracking-[0.08em] px-[0.5rem] max-h-0 mb-0 opacity-0 group-hover/sidebar:max-h-[1.5rem] group-hover/sidebar:mb-[0.375rem] group-hover/sidebar:opacity-100 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out">
-                {group.group}
-              </p>
-              <ul className="space-y-[0.125rem]">
-                {group.items.map(({ href, icon: Icon, label }) => {
-                  const isActive = pathname === href || pathname.startsWith(href + '/')
-                  return (
-                    <li key={href}>
-                      <Link
-                        href={href}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-[0.75rem] px-[0.5rem]">
+          <ul className="space-y-[0.125rem]">
+            {NAV_ITEMS.map(({ href, icon: Icon, label }) => {
+              const isActive = pathname === href || pathname.startsWith(href + '/')
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={cn(
+                      'flex items-center gap-[0.625rem]',
+                      'h-[2.25rem] px-[0.625rem] rounded-[0.375rem]',
+                      'text-[0.875rem] font-medium',
+                      'transition-colors duration-200',
+                      isActive
+                        ? 'border-l-[3px] border-ads-500 bg-ads-500/10 text-ads-500 rounded-l-none'
+                        : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                    )}
+                  >
+                    <div className="relative shrink-0">
+                      <Icon
                         className={cn(
-                          'flex items-center gap-[0.625rem]',
-                          'h-[2.25rem] px-[0.625rem] rounded-[0.375rem]',
-                          'text-[0.875rem] font-medium',
-                          'transition-colors duration-200',
-                          isActive
-                            ? 'border-l-[3px] border-ads-500 bg-ads-500/10 text-ads-500 rounded-l-none'
-                            : 'text-ink-secondary hover:bg-surface-hover hover:text-ink-primary',
+                          'w-[1.25rem] h-[1.25rem]',
+                          isActive ? 'text-ads-500' : 'text-ink-muted',
                         )}
-                      >
-                        <div className="relative shrink-0">
-                          <Icon
-                            className={cn(
-                              'w-[1.25rem] h-[1.25rem]',
-                              isActive ? 'text-ads-500' : 'text-ink-muted',
-                            )}
-                            strokeWidth={isActive ? 2.25 : 1.75}
-                            style={isActive ? { filter: 'drop-shadow(0 0 0.375rem rgba(255,177,0,0.4))' } : undefined}
-                          />
-                          {href === '/tarefas' && badgeCount > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-[0.875rem] h-[0.875rem] px-[0.125rem] rounded-full bg-status-red text-white text-[0.5rem] font-bold flex items-center justify-center">
-                              {badgeCount > 9 ? '9' : badgeCount}
-                            </span>
-                          )}
-                        </div>
-                        <span className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
-                          {label}
+                        strokeWidth={isActive ? 2.25 : 1.75}
+                        style={isActive ? { filter: 'drop-shadow(0 0 0.375rem rgba(255,177,0,0.4))' } : undefined}
+                      />
+                      {href === '/tarefas' && badgeCount > 0 && (
+                        <span className="absolute -top-1 -right-1 min-w-[0.875rem] h-[0.875rem] px-[0.125rem] rounded-full bg-status-red text-white text-[0.5rem] font-bold flex items-center justify-center">
+                          {badgeCount > 9 ? '9' : badgeCount}
                         </span>
-                      </Link>
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          ))}
+                      )}
+                    </div>
+                    <span className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto whitespace-nowrap overflow-hidden transition-all duration-200">
+                      {label}
+                    </span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
         </nav>
 
         {/* ── RODAPÉ — USUÁRIO ───────────────────────── */}
@@ -11012,6 +15157,7 @@ export function Sidebar() {
 import { useEffect, useState } from 'react'
 import { User, Users, DollarSign, AlertTriangle, Wifi, WifiOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { ApiStatusIndicator } from './ApiStatusIndicator'
 
 interface StatusMetrics {
   userName: string
@@ -11086,17 +15232,18 @@ export function StatusBar() {
   })
 
   return (
-    <footer className="col-span-3 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border flex items-center px-[1rem] gap-[0.75rem] text-[0.6875rem] select-none z-30">
-      {/* ── ESQUERDA: Usuário ─────────────────────── */}
-      <div className="flex items-center gap-[0.375rem] text-ink-secondary">
-        <User className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
-        <span>{metrics.userName}</span>
+    <footer className="col-span-3 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border/20 flex items-center px-[1rem] gap-[1rem] text-[0.6875rem] select-none z-30">
+      {/* ── ESQUERDA: Status das APIs ─────────────── */}
+      <div className="flex items-center gap-[0.75rem]">
+        <span className="text-ink-muted font-medium uppercase tracking-wider">STATUS APIS</span>
+        <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+        <ApiStatusIndicator />
       </div>
 
-      <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+      <div className="flex-1" />
 
-      {/* ── CENTRO: Métricas ──────────────────────── */}
-      <div className="flex-1 flex items-center justify-center gap-[1.25rem]">
+      {/* ── CENTRO: Métricas ──────────────────────– */}
+      <div className="flex items-center justify-center gap-[1.25rem]">
         <div className="flex items-center gap-[0.375rem] text-ink-secondary">
           <DollarSign className="w-[0.75rem] h-[0.75rem] text-status-green" strokeWidth={1.75} />
           <span>MRR <strong className="text-ink-primary">{fmtMrr}</strong></span>
@@ -11115,10 +15262,17 @@ export function StatusBar() {
         )}
       </div>
 
-      <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+      <div className="flex-1" />
 
-      {/* ── DIREITA: Status + Versão ──────────────── */}
+      {/* ── DIREITA: Usuário + Status + Versão ──── */}
       <div className="flex items-center gap-[0.75rem]">
+        <div className="flex items-center gap-[0.375rem] text-ink-secondary">
+          <User className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+          <span>{metrics.userName}</span>
+        </div>
+
+        <div className="w-[1px] h-[0.75rem] bg-surface-border" />
+
         <div className="flex items-center gap-[0.25rem]">
           {metrics.online ? (
             <Wifi className="w-[0.75rem] h-[0.75rem] text-status-green" strokeWidth={1.75} />
@@ -11145,6 +15299,7 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Search, AlertCircle, Sun, Cloud, Moon } from 'lucide-react'
 import { GlobalSearch }     from '@/components/ui/GlobalSearch'
+import { ChangelogButton }  from '@/components/layout/ChangelogDrawer'
 import { useTheme } from '@/providers/ThemeProvider'
 import { supabase } from '@/lib/supabase'
 
@@ -11215,7 +15370,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
 
   return (
     <>
-      <header className="topbar-shell h-[var(--topbar-h)] dark:border-b dark:border-surface-border bg-surface-card z-50 flex items-center px-[1.25rem] gap-[1rem]">
+      <header className="topbar-shell h-[var(--topbar-h)] border-b border-surface-border/20 bg-surface-card z-50 flex items-center px-[1.25rem] gap-[1rem]">
         {/* ── LOGO ─────────────────────────────────── */}
         <Image
           src={isDark ? '/logo/logo-dark.svg' : '/logo/logo-light.svg'}
@@ -11252,6 +15407,9 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
 
         {/* ── AÇÕES CUSTOMIZADAS ─────────────────────── */}
         {actions && <div className="flex items-center gap-[0.5rem] shrink-0">{actions}</div>}
+
+        {/* ── CHANGELOG ─────────────────────────────── */}
+        <ChangelogButton />
 
         {/* ── SEARCH ────────────────────────────────── */}
         <button
@@ -11303,6 +15461,143 @@ export function Badge({ children, variant = 'default', size = 'md' }: BadgeProps
       {children}
     </span>
   );
+}
+```
+
+### `components\ui\Button.tsx`
+
+```tsx
+import React from 'react'
+import { Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle'
+  size?: 'sm' | 'md' | 'lg'
+  icon?: React.ReactNode
+  iconPosition?: 'left' | 'right'
+  loading?: boolean
+  fullWidth?: boolean
+}
+
+const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
+  primary:   'bg-ads-500 hover:bg-ads-600 text-white font-medium',
+  secondary: 'bg-surface-hover border border-surface-border/40 text-ink-secondary hover:text-ink-primary hover:bg-surface-elevated',
+  ghost:     'bg-transparent hover:bg-surface-hover text-ink-secondary hover:text-ink-primary',
+  danger:    'bg-status-red/10 text-status-red hover:bg-status-red/15 border border-status-red/20',
+  subtle:    'bg-ads-500/10 text-ads-500 hover:bg-ads-500/15',
+}
+
+const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
+  sm: 'h-[2rem] px-[0.75rem] text-[0.75rem] rounded-lg gap-[0.375rem]',
+  md: 'h-[2.25rem] px-[1rem] text-[0.8125rem] rounded-lg gap-[0.375rem]',
+  lg: 'h-[2.5rem] px-[1.25rem] text-[0.875rem] rounded-lg gap-[0.5rem]',
+}
+
+export function Button({
+  variant = 'secondary',
+  size = 'md',
+  icon,
+  iconPosition = 'left',
+  loading = false,
+  fullWidth = false,
+  disabled,
+  children,
+  className,
+  type = 'button',
+  ...props
+}: ButtonProps) {
+  const isDisabled = disabled || loading
+
+  return (
+    <button
+      type={type}
+      disabled={isDisabled}
+      className={cn(
+        'inline-flex items-center justify-center shrink-0',
+        'transition-colors duration-150',
+        'focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50',
+        variantClasses[variant],
+        sizeClasses[size],
+        fullWidth && 'w-full',
+        isDisabled && 'opacity-50 cursor-not-allowed pointer-events-none',
+        className,
+      )}
+      {...props}
+    >
+      {loading && <Loader2 className="w-[0.875rem] h-[0.875rem] animate-spin shrink-0" />}
+      {!loading && icon && iconPosition === 'left' && <span className="shrink-0">{icon}</span>}
+      {children}
+      {!loading && icon && iconPosition === 'right' && <span className="shrink-0">{icon}</span>}
+    </button>
+  )
+}
+```
+
+### `components\ui\Card.tsx`
+
+```tsx
+import React from 'react'
+
+type CardVariant = 'default' | 'interactive' | 'highlight' | 'minimal'
+type CardSize = 'sm' | 'md' | 'lg'
+
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: CardVariant
+  size?: CardSize
+  hover?: boolean
+  loading?: boolean
+}
+
+export function Card({
+  variant = 'default',
+  size = 'md',
+  hover = false,
+  loading = false,
+  children,
+  className = '',
+  ...props
+}: CardProps) {
+  // Padding por tamanho
+  const padding = {
+    sm: 'p-[1rem]',
+    md: 'p-[1.5rem]',
+    lg: 'p-[2rem]',
+  }[size]
+
+  // Base comum
+  const base = `${padding} rounded-xl transition-all duration-150 border`
+
+  // Variações
+  const variants = {
+    default: `${base} bg-surface-card border-surface-border ${
+      hover ? 'hover:border-surface-border/50 hover:shadow-sm' : ''
+    }`,
+    interactive: `${base} bg-surface-card border-surface-border cursor-pointer
+      hover:border-ads-500/30 hover:shadow-[0_0_0_1px_rgba(255,165,0,0.1)]`,
+    highlight: `${base} bg-surface-card border-ads-500/40
+      ring-1 ring-ads-500/10 shadow-[0_0_16px_rgba(255,165,0,0.06)]`,
+    minimal: `${base} bg-transparent border-surface-border/40
+      hover:border-surface-border hover:bg-surface-hover`,
+  }
+
+  if (loading) {
+    return (
+      <div className={variants[variant]}>
+        <div className="space-y-[0.75rem]">
+          <div className="h-[1rem] w-[60%] bg-surface-hover rounded animate-pulse" />
+          <div className="h-[1rem] w-[80%] bg-surface-hover rounded animate-pulse" />
+          <div className="h-[1rem] w-[40%] bg-surface-hover rounded animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`${variants[variant]} ${className}`} {...props}>
+      {children}
+    </div>
+  )
 }
 ```
 
@@ -11408,6 +15703,45 @@ export function ContextMenu({ items, children }: ContextMenuProps) {
         </div>
       )}
     </>
+  )
+}
+```
+
+### `components\ui\EmptyState.tsx`
+
+```tsx
+import React from 'react'
+
+interface EmptyStateProps {
+  icon: React.ReactNode
+  title: string
+  description: string
+  action?: { label: string; onClick: () => void }
+}
+
+export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
+  return (
+    <div className="flex flex-col items-center justify-center py-[3rem] px-[2rem] text-center animate-fade-up">
+      {/* Ícone em background sutil */}
+      <div className="w-[3rem] h-[3rem] rounded-[0.75rem] bg-surface-hover flex items-center justify-center mb-[1rem]">
+        {icon}
+      </div>
+
+      {/* Texto */}
+      <h3 className="text-[0.9375rem] font-medium text-ink-primary mb-[0.375rem]">{title}</h3>
+      <p className="text-[0.8125rem] text-ink-muted max-w-[24rem] mb-[1.5rem]">{description}</p>
+
+      {/* CTA opcional */}
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="px-[1rem] py-[0.5rem] rounded-lg bg-ads-500/10 text-ads-500
+            text-[0.8125rem] font-medium hover:bg-ads-500/15 transition-colors duration-150"
+        >
+          {action.label}
+        </button>
+      )}
+    </div>
   )
 }
 ```
@@ -11783,6 +16117,344 @@ export function HelpChatButton() {
 }
 ```
 
+### `components\ui\InputPremium.tsx`
+
+```tsx
+'use client'
+
+import React from 'react'
+
+interface InputPremiumProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string
+  hint?: string
+  icon?: React.ReactNode
+  error?: string
+}
+
+export function InputPremium({
+  label,
+  hint,
+  icon,
+  error,
+  className = '',
+  ...props
+}: InputPremiumProps) {
+  return (
+    <div className="space-y-[0.375rem]">
+      {label && (
+        <label className="block text-[0.875rem] font-medium text-ink-primary">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        {icon && (
+          <div className="absolute left-[1rem] top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none">
+            {icon}
+          </div>
+        )}
+        <input
+          className={`w-full px-[1rem] py-[0.75rem] ${icon ? 'pl-[2.75rem]' : ''}
+            rounded-lg bg-surface-card border border-surface-border/40 text-ink-primary
+            placeholder:text-ink-muted text-[0.875rem]
+            transition-all duration-150
+            focus:outline-none focus:border-ads-500/50 focus:ring-2 focus:ring-ads-500/20
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${error ? 'border-status-red/50 focus:ring-status-red/20' : ''}
+            ${className}`}
+          {...props}
+        />
+      </div>
+      {hint && <p className="text-[0.75rem] text-ink-muted">{hint}</p>}
+      {error && <p className="text-[0.75rem] text-status-red">{error}</p>}
+    </div>
+  )
+}
+```
+
+### `components\ui\KpiCardPremium.tsx`
+
+```tsx
+import React from 'react'
+import { ArrowUp, ArrowDown, Minus } from 'lucide-react'
+import { Card } from '@/components/ui/Card'
+
+interface KpiCardPremiumProps {
+  label: string
+  value: number | string
+  format?: 'currency' | 'percentage' | 'number' | 'custom'
+  change?: number // -5, +12, etc
+  metric?: string // 'vs mês anterior', 'vs meta'
+  icon?: React.ReactNode
+  trend?: 'up' | 'down' | 'flat'
+  loading?: boolean
+}
+
+export function KpiCardPremium({
+  label,
+  value,
+  format = 'currency',
+  change,
+  metric,
+  icon,
+  trend,
+  loading,
+}: KpiCardPremiumProps) {
+  const formatValue = (v: number | string) => {
+    if (typeof v === 'string') return v
+    if (format === 'currency') return `R$ ${v.toLocaleString('pt-BR')}`
+    if (format === 'percentage') return `${v.toFixed(1)}%`
+    return v.toLocaleString('pt-BR')
+  }
+
+  const getTrendColor = () => {
+    if (!change) return 'text-ink-muted'
+    if (change > 0) return 'text-emerald-400'
+    if (change < 0) return 'text-red-400'
+    return 'text-ink-muted'
+  }
+
+  const getTrendIcon = () => {
+    if (trend === 'up') return <ArrowUp className="w-[1rem] h-[1rem]" strokeWidth={2} />
+    if (trend === 'down') return <ArrowDown className="w-[1rem] h-[1rem]" strokeWidth={2} />
+    return <Minus className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+  }
+
+  return (
+    <Card variant="default" size="md" loading={loading}>
+      {/* Header com label + icon */}
+      <div className="flex items-center justify-between mb-[1rem]">
+        <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-ink-muted">
+          {label}
+        </span>
+        {icon && <div className="text-ads-500">{icon}</div>}
+      </div>
+
+      {/* Valor grande */}
+      <div className="mb-[1rem]">
+        <div className="text-[2rem] font-bold text-ink-primary tabular-nums tracking-tight">
+          {formatValue(value)}
+        </div>
+      </div>
+
+      {/* Métrica + trend */}
+      {(change !== undefined || metric) && (
+        <div className="flex items-center gap-[0.5rem]">
+          {change !== undefined && (
+            <div className={`flex items-center gap-[0.25rem] ${getTrendColor()}`}>
+              {getTrendIcon()}
+              <span className="text-[0.75rem] font-medium">
+                {Math.abs(change) > 0 ? `${change > 0 ? '+' : ''}${change}%` : 'Sem alteração'}
+              </span>
+            </div>
+          )}
+          {metric && <span className="text-[0.75rem] text-ink-muted">{metric}</span>}
+        </div>
+      )}
+    </Card>
+  )
+}
+```
+
+### `components\ui\OnboardingWizard.tsx`
+
+```tsx
+'use client'
+
+import { useState } from 'react'
+import { ChevronRight, X, CheckCircle2, User, Link2, DollarSign, UserPlus } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+
+const STORAGE_KEY = 'adsgator_onboarding_done'
+
+const PASSOS = [
+  {
+    id:       'perfil',
+    icone:    User,
+    titulo:   'Bem-vindo ao Adsgator Hub!',
+    desc:     'Vamos configurar sua conta em 4 passos rápidos.',
+    cor:      'text-ads-500',
+    corBg:    'bg-ads-500/10',
+  },
+  {
+    id:       'integracoes',
+    icone:    Link2,
+    titulo:   'Configure as integrações',
+    desc:     'Conecte o Google Ads, GA4 e Asaas para ter dados em tempo real.',
+    cor:      'text-status-blue',
+    corBg:    'bg-status-blue/10',
+  },
+  {
+    id:       'financeiro',
+    icone:    DollarSign,
+    titulo:   'Defina seus custos',
+    desc:     'Informe seus custos fixos para calcular o DRE e a margem de lucro.',
+    cor:      'text-status-green',
+    corBg:    'bg-status-green/10',
+  },
+  {
+    id:       'cliente',
+    icone:    UserPlus,
+    titulo:   'Adicione seu primeiro cliente',
+    desc:     'Cadastre um cliente para começar a acompanhar suas campanhas.',
+    cor:      'text-status-purple',
+    corBg:    'bg-status-purple/10',
+  },
+]
+
+export function OnboardingWizard({ onConcluir }: { onConcluir: () => void }) {
+  const [passo, setPasso] = useState(0)
+
+  function concluir() {
+    try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
+    onConcluir()
+  }
+
+  function pular() {
+    try { localStorage.setItem(STORAGE_KEY, '1') } catch {}
+    onConcluir()
+  }
+
+  async function avancar() {
+    if (passo === PASSOS.length - 1) {
+      concluir()
+      return
+    }
+    setPasso((p) => p + 1)
+  }
+
+  function getCta() {
+    const { id } = PASSOS[passo]
+    if (id === 'integracoes') return { label: 'Ir para Integrações →', href: '/configuracoes?tab=integracoes' }
+    if (id === 'financeiro')  return { label: 'Configurar Custos →',  href: '/configuracoes?tab=financeiro'  }
+    if (id === 'cliente')     return { label: 'Cadastrar Cliente →',  href: '/clientes/novo'                 }
+    return null
+  }
+
+  const passoAtual = PASSOS[passo]
+  const Icon       = passoAtual.icone
+  const cta        = getCta()
+  const progresso  = ((passo + 1) / PASSOS.length) * 100
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-[1rem]">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative bg-surface-card border border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[28rem] animate-fade-scale">
+        {/* Header */}
+        <div className="flex items-center justify-between px-[1.5rem] py-[1.125rem] border-b border-surface-border/30">
+          <div className="flex items-center gap-[0.375rem]">
+            {PASSOS.map((_, i) => (
+              <div
+                key={i}
+                className={`h-[0.25rem] rounded-full transition-all duration-300 ${
+                  i <= passo ? 'bg-ads-500' : 'bg-surface-hover'
+                } ${i === passo ? 'w-[2rem]' : 'w-[0.75rem]'}`}
+              />
+            ))}
+          </div>
+          <button
+            onClick={pular}
+            className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+          >
+            <X className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-[1.5rem] flex flex-col items-center text-center gap-[1rem]">
+          <div className={`w-[3.5rem] h-[3.5rem] rounded-2xl ${passoAtual.corBg} flex items-center justify-center`}>
+            <Icon className={`w-[1.5rem] h-[1.5rem] ${passoAtual.cor}`} strokeWidth={1.75} />
+          </div>
+          <div>
+            <h2 className="text-ink-primary text-[1.0625rem] font-bold mb-[0.375rem]">{passoAtual.titulo}</h2>
+            <p className="text-ink-secondary text-[0.875rem] leading-relaxed">{passoAtual.desc}</p>
+          </div>
+
+          {/* Checklist de features do passo */}
+          {passo === 0 && (
+            <div className="w-full bg-surface-hover rounded-xl p-[1rem] text-left flex flex-col gap-[0.5rem]">
+              {['Dashboard com IA', 'Gestão de clientes', 'Financeiro automático', 'Analytics em tempo real'].map((item) => (
+                <div key={item} className="flex items-center gap-[0.5rem]">
+                  <CheckCircle2 className="w-[0.875rem] h-[0.875rem] text-status-green shrink-0" strokeWidth={2} />
+                  <span className="text-ink-secondary text-[0.8125rem]">{item}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-[0.75rem] px-[1.5rem] pb-[1.25rem]">
+          {passo > 0 && (
+            <button
+              onClick={() => setPasso((p) => p - 1)}
+              className="h-[2.5rem] px-[1rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary hover:text-ink-primary text-[0.875rem] font-medium transition-colors"
+            >
+              Voltar
+            </button>
+          )}
+          {cta ? (
+            <a
+              href={cta.href}
+              onClick={concluir}
+              className="flex-1 inline-flex items-center justify-center h-[2.5rem] px-[1.25rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary hover:text-ink-primary text-[0.875rem] font-medium transition-colors"
+            >
+              {cta.label}
+            </a>
+          ) : null}
+          <button
+            onClick={avancar}
+            className="flex-1 inline-flex items-center justify-center gap-[0.375rem] h-[2.5rem] px-[1.25rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-medium transition-colors"
+          >
+            {passo === PASSOS.length - 1 ? 'Começar a usar' : 'Próximo'}
+            {passo < PASSOS.length - 1 && <ChevronRight className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export function useOnboardingPendente(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return !localStorage.getItem(STORAGE_KEY)
+  } catch {
+    return false
+  }
+}
+```
+
+### `components\ui\SkeletonLine.tsx`
+
+```tsx
+interface SkeletonLineProps {
+  width?: string
+  height?: string
+  count?: number
+  gap?: string
+}
+
+export function SkeletonLine({
+  width = '100%',
+  height = '1rem',
+  count = 1,
+  gap = '0.5rem',
+}: SkeletonLineProps) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div
+          key={i}
+          style={{ width, height }}
+          className="rounded skeleton-shimmer"
+        />
+      ))}
+    </div>
+  )
+}
+```
+
 ### `components\ui\StatusBadge.tsx`
 
 ```tsx
@@ -11844,12 +16516,15 @@ export function StatusBadge({ status, label, dot = false, size = 'sm', variant =
 ### `components\ui\TaskModal.tsx`
 
 ```tsx
-﻿'use client'
+'use client'
 
 import { useEffect, useState } from 'react'
-import { X, Save, Calendar, Flag, User } from 'lucide-react'
+import { X, Save, Calendar, Flag, User, Plus, CheckSquare, Square, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { Tarefa, TarefaPrioridade } from '@/lib/types'
+
+interface SubTask { id: string; texto: string; concluido: boolean }
+import { Button } from '@/components/ui/Button'
 
 interface Props {
   tarefa?:  Partial<Tarefa>
@@ -11867,19 +16542,53 @@ const PRIORIDADES: { value: TarefaPrioridade; label: string }[] = [
 ]
 
 export function TaskModal({ tarefa, onClose, onSaved }: Props) {
-  const [titulo,     setTitulo]     = useState(tarefa?.titulo    ?? '')
-  const [descricao,  setDescricao]  = useState(tarefa?.descricao ?? '')
-  const [clienteId,  setClienteId]  = useState(tarefa?.cliente_id ?? '')
-  const [prioridade, setPrioridade] = useState<TarefaPrioridade>(tarefa?.prioridade ?? 'normal')
-  const [dataPrazo,  setDataPrazo]  = useState(tarefa?.data_prazo?.slice(0, 16) ?? '')
-  const [clientes,   setClientes]   = useState<ClienteOpcao[]>([])
-  const [salvando,   setSalvando]   = useState(false)
-  const [erro,       setErro]       = useState('')
+  const [titulo,        setTitulo]        = useState(tarefa?.titulo    ?? '')
+  const [descricao,     setDescricao]     = useState(tarefa?.descricao ?? '')
+  const [clienteId,     setClienteId]     = useState(tarefa?.cliente_id ?? '')
+  const [prioridade,    setPrioridade]    = useState<TarefaPrioridade>(tarefa?.prioridade ?? 'normal')
+  const [dataPrazo,     setDataPrazo]     = useState(tarefa?.data_prazo?.slice(0, 16) ?? '')
+  const [responsavelId, setResponsavelId] = useState(tarefa?.responsavel_id ?? '')
+  const [subtasks,      setSubtasks]      = useState<SubTask[]>(
+    (tarefa?.checklist ?? []).map((s) => {
+      const raw = s as unknown as Record<string, unknown>
+      return {
+        id:        (raw['id']        as string  | undefined) ?? crypto.randomUUID(),
+        texto:     (raw['texto']     as string  | undefined) ?? (raw['item'] as string  | undefined) ?? '',
+        concluido: (raw['concluido'] as boolean | undefined) ?? (raw['done'] as boolean | undefined) ?? false,
+      }
+    })
+  )
+  const [novaSubtask,   setNovaSubtask]   = useState('')
+  const [clientes,      setClientes]      = useState<ClienteOpcao[]>([])
+  const [membros,       setMembros]       = useState<{ id: string; nome: string }[]>([])
+  const [salvando,      setSalvando]      = useState(false)
+  const [erro,          setErro]          = useState('')
 
   useEffect(() => {
     supabase.from('clientes').select('id, nome').in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido']).order('nome')
       .then(({ data }) => setClientes((data ?? []) as ClienteOpcao[]))
+
+    // Membros da equipe (tabela profiles ou auth.users via view)
+    supabase.from('profiles').select('id, nome').order('nome')
+      .then(({ data }) => {
+        if (data?.length) setMembros(data as { id: string; nome: string }[])
+      })
   }, [])
+
+  function adicionarSubtask() {
+    const texto = novaSubtask.trim()
+    if (!texto) return
+    setSubtasks((p) => [...p, { id: crypto.randomUUID(), texto, concluido: false }])
+    setNovaSubtask('')
+  }
+
+  function toggleSubtask(i: number) {
+    setSubtasks((p) => p.map((s, idx) => idx === i ? { ...s, concluido: !s.concluido } : s))
+  }
+
+  function removerSubtask(i: number) {
+    setSubtasks((p) => p.filter((_, idx) => idx !== i))
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
@@ -11889,12 +16598,14 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
     const { data: { user } } = await supabase.auth.getUser()
     const payload = {
       titulo,
-      descricao:   descricao || null,
-      cliente_id:  clienteId  || null,
+      descricao:      descricao || null,
+      cliente_id:     clienteId  || null,
       prioridade,
-      data_prazo:  dataPrazo  || null,
-      user_id:     user?.id,
-      status:      tarefa?.status ?? 'pendente',
+      data_prazo:     dataPrazo  || null,
+      responsavel_id: responsavelId || null,
+      checklist:      subtasks.length > 0 ? subtasks : null,
+      user_id:        user?.id,
+      status:         tarefa?.status ?? 'pendente',
     }
 
     const { error } = tarefa?.id
@@ -11906,21 +16617,22 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
     onClose()
   }
 
+  const subtasksDone  = subtasks.filter((s) => s.concluido).length
+  const subtasksTotal = subtasks.length
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-[1rem]">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[28rem]">
+      <div className="relative bg-surface-card border border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col animate-fade-scale">
         {/* Header */}
-        <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border">
+        <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border shrink-0">
           <p className="text-ink-primary font-semibold text-[0.9375rem]">
             {tarefa?.id ? 'Editar Tarefa' : 'Nova Tarefa'}
           </p>
-          <button onClick={onClose} className="w-[2rem] h-[2rem] flex items-center justify-center rounded hover:bg-surface-hover text-ink-muted transition-colors">
-            <X className="w-[1rem] h-[1rem]" strokeWidth={2} />
-          </button>
+          <Button variant="ghost" size="sm" onClick={onClose} icon={<X className="w-[1rem] h-[1rem]" strokeWidth={2} />} className="w-[2rem] px-0" />
         </div>
 
-        <form onSubmit={salvar} className="p-[1.5rem] flex flex-col gap-[1rem]">
+        <form onSubmit={salvar} className="p-[1.5rem] flex flex-col gap-[1rem] overflow-y-auto">
           {/* Título */}
           <div>
             <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">Título *</label>
@@ -11936,7 +16648,7 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
             <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">Detalhes</label>
             <textarea
               value={descricao} onChange={(e) => setDescricao(e.target.value)}
-              rows={3} placeholder="Contexto adicional…"
+              rows={2} placeholder="Contexto adicional…"
               className="w-full px-[0.75rem] py-[0.625rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] resize-none focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors"
             />
           </div>
@@ -11970,27 +16682,119 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
             </div>
           </div>
 
-          {/* Data prazo */}
+          <div className="grid grid-cols-2 gap-[0.75rem]">
+            {/* Data prazo */}
+            <div>
+              <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">
+                <Calendar className="inline w-[0.75rem] h-[0.75rem] mr-[0.25rem]" strokeWidth={1.75} />Prazo
+              </label>
+              <input
+                type="datetime-local" value={dataPrazo} onChange={(e) => setDataPrazo(e.target.value)}
+                className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors"
+              />
+            </div>
+
+            {/* Responsável */}
+            <div>
+              <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">
+                <User className="inline w-[0.75rem] h-[0.75rem] mr-[0.25rem]" strokeWidth={1.75} />Responsável
+              </label>
+              {membros.length > 0 ? (
+                <select
+                  value={responsavelId} onChange={(e) => setResponsavelId(e.target.value)}
+                  className="w-full h-[2.5rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30"
+                >
+                  <option value="">Sem responsável</option>
+                  {membros.map((m) => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                </select>
+              ) : (
+                <input
+                  type="text" value={responsavelId}
+                  onChange={(e) => setResponsavelId(e.target.value)}
+                  placeholder="ID do usuário"
+                  className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 transition-colors"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Sub-tasks */}
           <div>
-            <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">
-              <Calendar className="inline w-[0.75rem] h-[0.75rem] mr-[0.25rem]" strokeWidth={1.75} />Data / Hora do prazo
-            </label>
-            <input
-              type="datetime-local" value={dataPrazo} onChange={(e) => setDataPrazo(e.target.value)}
-              className="w-full h-[2.5rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500 transition-colors"
-            />
+            <div className="flex items-center justify-between mb-[0.5rem]">
+              <label className="text-ink-secondary text-[0.8125rem] font-medium">
+                Sub-tasks
+                {subtasksTotal > 0 && (
+                  <span className="ml-[0.375rem] text-ink-muted text-[0.75rem]">
+                    {subtasksDone}/{subtasksTotal}
+                  </span>
+                )}
+              </label>
+            </div>
+
+            {/* Barra de progresso */}
+            {subtasksTotal > 0 && (
+              <div className="h-[0.1875rem] bg-surface-hover rounded-full mb-[0.625rem] overflow-hidden">
+                <div
+                  className="h-full bg-ads-500 rounded-full transition-all duration-300"
+                  style={{ width: `${(subtasksDone / subtasksTotal) * 100}%` }}
+                />
+              </div>
+            )}
+
+            {/* Lista de sub-tasks */}
+            {subtasks.length > 0 && (
+              <ul className="space-y-[0.25rem] mb-[0.5rem]">
+                {subtasks.map((s, i) => (
+                  <li key={i} className="group flex items-center gap-[0.375rem] px-[0.5rem] py-[0.25rem] rounded-lg hover:bg-surface-hover transition-colors">
+                    <button type="button" onClick={() => toggleSubtask(i)} className="shrink-0">
+                      {s.concluido
+                        ? <CheckSquare className="w-[0.875rem] h-[0.875rem] text-status-green" strokeWidth={2} />
+                        : <Square      className="w-[0.875rem] h-[0.875rem] text-ink-muted"    strokeWidth={1.75} />
+                      }
+                    </button>
+                    <span className={`flex-1 text-[0.8125rem] ${s.concluido ? 'line-through text-ink-muted' : 'text-ink-secondary'}`}>
+                      {s.texto}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removerSubtask(i)}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity w-[1.25rem] h-[1.25rem] rounded flex items-center justify-center hover:bg-status-red/10 text-ink-muted hover:text-status-red shrink-0"
+                    >
+                      <Trash2 className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {/* Input nova sub-task */}
+            <div className="flex gap-[0.375rem]">
+              <input
+                type="text"
+                value={novaSubtask}
+                onChange={(e) => setNovaSubtask(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); adicionarSubtask() } }}
+                placeholder="Adicionar sub-task… (Enter para confirmar)"
+                className="flex-1 h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/60 text-ink-primary text-[0.8125rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={adicionarSubtask}
+                disabled={!novaSubtask.trim()}
+                className="w-[2rem] h-[2rem] rounded-lg bg-surface-elevated border border-surface-border/60 flex items-center justify-center hover:bg-surface-hover text-ink-muted hover:text-ink-primary transition-colors disabled:opacity-40"
+              >
+                <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+              </button>
+            </div>
           </div>
 
           {erro && <p className="text-[0.8125rem] text-status-red">{erro}</p>}
 
           <div className="flex gap-[0.75rem] pt-[0.25rem]">
-            <button type="button" onClick={onClose} className="flex-1 h-[2.5rem] rounded-lg border border-surface-border bg-surface-hover text-ink-secondary text-[0.875rem] font-medium hover:text-ink-primary transition-colors">
-              Cancelar
-            </button>
-            <button type="submit" disabled={salvando} className="flex-1 flex items-center justify-center gap-[0.5rem] h-[2.5rem] rounded-lg bg-ads-500 hover:bg-ads-600 text-white text-[0.875rem] font-semibold transition-colors disabled:opacity-50">
-              {salvando ? <div className="w-[0.875rem] h-[0.875rem] border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+            <Button type="button" variant="secondary" size="lg" fullWidth onClick={onClose}>Cancelar</Button>
+            <Button type="submit" variant="primary" size="lg" fullWidth loading={salvando} icon={<Save className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}>
               Salvar
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -12105,6 +16909,54 @@ export function Tooltip({ content, children, side = 'top', delay = 400, classNam
     </div>
   )
 }
+```
+
+### `data\changelog.ts`
+
+```typescript
+export interface ChangelogEntry {
+  versao:   string
+  data:     string  // YYYY-MM-DD
+  novidades: string[]
+}
+
+export const CHANGELOG: ChangelogEntry[] = [
+  {
+    versao: '0.5.0',
+    data:   '2026-05-25',
+    novidades: [
+      'Activity Feed: veja o que aconteceu nas últimas 24h no dashboard',
+      'Health Score por cliente: score 0–100 visível nos cards',
+      'Onboarding Wizard: guia de primeiro uso ao entrar no sistema',
+      'Recomendações IA na Analytics: botão "Gerar Recomendações" por cliente',
+      'Ações do Dia: botão "Criar Task" direto a partir das ações pendentes',
+    ],
+  },
+  {
+    versao: '0.4.0',
+    data:   '2026-05-24',
+    novidades: [
+      'Memória do Cliente: arquivo .md editável com geração por IA',
+      'FloatingChat: chat IA disponível em todas as páginas',
+      'Middleware de autenticação: proteção automática de rotas',
+      'TaskModal: sub-tasks com checklist e responsável por tarefa',
+      'Modal de onboarding pós-criação de cliente com task automática',
+    ],
+  },
+  {
+    versao: '0.3.0',
+    data:   '2026-05-20',
+    novidades: [
+      'ChecklistCard: comentários e lembretes por item de checklist',
+      'Filtros avançados em Clientes: nicho, pagamento, batch select',
+      'Financeiro: editar, duplicar e deletar lançamentos por linha',
+      'Régua de cobrança: UI de configuração de triggers e templates',
+      'Morning Briefing: filtros por modo (completo, urgências, resumido)',
+    ],
+  },
+]
+
+export const VERSAO_ATUAL = CHANGELOG[0].versao
 ```
 
 ### `lib\astro-components.ts`
@@ -12664,29 +17516,66 @@ export async function fetchAuditLogs(filters?: {
 ### `lib\auth.ts`
 
 ```typescript
-import { supabase } from './supabase';
+import { getSupabaseBrowserClient } from './supabase-client';
+
+function getSupabaseClient() {
+  return getSupabaseBrowserClient();
+}
 
 export async function loginComEmail(email: string, senha: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password: senha,
-  });
-  if (error) throw new Error(error.message);
-  return data;
+  try {
+    console.log('[Auth] Attempting login for:', email, 'senha length:', senha.length);
+    const supabase = getSupabaseClient();
+    console.log('[Auth] Client initialized, calling signInWithPassword...');
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password: senha,
+    });
+
+    console.log('[Auth] Login response:', { error: error?.message, data: data ? '✓' : '✗' });
+
+    if (error) {
+      console.error('[Auth] Login error details:', error);
+      throw new Error(error.message);
+    }
+
+    // Aguarda mais tempo para garantir que a sessão foi completamente salva
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Verifica se a sessão foi realmente salva
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    console.log('[Auth] Session verification:', {
+      hasSesion: !!session,
+      sessionError: sessionError?.message,
+      userId: session?.user?.id
+    });
+
+    if (!session) {
+      throw new Error('Session not persisted after login');
+    }
+
+    return data;
+  } catch (err) {
+    console.error('[Auth] Login exception:', err);
+    throw err;
+  }
 }
 
 export async function logout() {
+  const supabase = getSupabaseClient();
   const { error } = await supabase.auth.signOut();
   if (error) throw new Error(error.message);
 }
 
 export async function obterSessao() {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase.auth.getSession();
   if (error) throw new Error(error.message);
   return data.session;
 }
 
 export async function obterUsuario() {
+  const supabase = getSupabaseClient();
   const { data, error } = await supabase.auth.getUser();
   if (error) return null;
   return data.user;
@@ -13062,6 +17951,46 @@ export async function obterAlertasPendentes(clienteId?: string) {
   const { data, error } = await query;
   if (error) throw new Error(`Erro ao obter alertas: ${error.message}`);
   return data ?? [];
+}
+
+// ============================================================
+// DASHBOARD LAYOUTS
+// ============================================================
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Layouts = Record<string, any[]>
+
+export async function carregarDashboardLayout(userId: string): Promise<Layouts | null> {
+  const { data, error } = await supabase
+    .from('configuracoes_usuario')
+    .select('preferencias')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[Dashboard] Erro ao carregar layout: ${error.message}`);
+    return null;
+  }
+
+  return (data?.preferencias as any)?.dashboard_layouts ?? null;
+}
+
+export async function salvarDashboardLayout(userId: string, layouts: Layouts): Promise<void> {
+  const { data } = await supabase
+    .from('configuracoes_usuario')
+    .select('preferencias')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const prefAtual = (data?.preferencias as Record<string, unknown>) ?? {};
+  const { error } = await supabase
+    .from('configuracoes_usuario')
+    .upsert(
+      { user_id: userId, preferencias: { ...prefAtual, dashboard_layouts: layouts } },
+      { onConflict: 'user_id' }
+    );
+
+  if (error) throw new Error(`Erro ao salvar layout do dashboard: ${error.message}`);
 }
 ```
 
@@ -14169,6 +19098,75 @@ export async function obterDeviceGA4(
 }
 ```
 
+### `lib\health-score.ts`
+
+```typescript
+import type { Cliente, Estagio } from './types'
+
+export interface HealthScore {
+  score:  number   // 0-100
+  nivel:  'critico' | 'atencao' | 'saudavel'
+  label:  string
+  color:  string
+  dot:    string
+}
+
+/**
+ * Calcula o health score de um cliente (0–100).
+ *
+ * Critérios:
+ *  +30 — Pagamento em dia (0 dias de atraso)
+ *  +25 — CPA dentro do esperado (saldo_google > 0 como proxy)
+ *  +20 — Checklist > 50% completo
+ *  +15 — Atualizado nos últimos 7 dias (updated_at)
+ *  +10 — Status ativo/onboarding (não congelado, cancelado ou inativo)
+ */
+export function calcularHealthScore(
+  cliente: Cliente,
+  estagio?: Estagio | null,
+): HealthScore {
+  let score = 0
+
+  // +30 — pagamento em dia
+  if ((cliente.dias_atraso ?? 0) === 0) score += 30
+
+  // +25 — integração google ativa (proxy de saúde de campanhas)
+  if (cliente.google_ads_enabled || (cliente.saldo_google ?? 0) > 0) score += 25
+
+  // +20 — checklist > 50%
+  if (estagio?.checklist && estagio.checklist.length > 0) {
+    const done  = estagio.checklist.filter((i) => i.done).length
+    const total = estagio.checklist.length
+    if (done / total > 0.5) score += 20
+  } else if (!estagio) {
+    // sem estágio ativo — dá metade dos pontos (neutro)
+    score += 10
+  }
+
+  // +15 — atualizado nos últimos 7 dias
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updated = cliente.data_atualizacao ?? (cliente as unknown as Record<string, unknown>)['updated_at'] as string | undefined
+  if (updated) {
+    const diffDias = (Date.now() - new Date(updated).getTime()) / (1000 * 60 * 60 * 24)
+    if (diffDias <= 7) score += 15
+  }
+
+  // +10 — status positivo
+  const statusPositivo = ['ativo', 'onboarding', 'setup_trafego', 'recebido']
+  if (statusPositivo.includes(cliente.status)) score += 10
+
+  const nivel: HealthScore['nivel'] = score >= 80 ? 'saudavel' : score >= 50 ? 'atencao' : 'critico'
+
+  const NIVEIS = {
+    saudavel: { label: `${score}`, color: 'text-status-green', dot: 'bg-status-green' },
+    atencao:  { label: `${score}`, color: 'text-status-orange', dot: 'bg-status-orange' },
+    critico:  { label: `${score}`, color: 'text-status-red',    dot: 'bg-status-red'    },
+  }
+
+  return { score, nivel, ...NIVEIS[nivel] }
+}
+```
+
 ### `lib\manifesto-generator.ts`
 
 ```typescript
@@ -14632,6 +19630,30 @@ export async function gerarRelatorioMensal(
 }
 ```
 
+### `lib\supabase-client.ts`
+
+```typescript
+'use client'
+
+import { createBrowserClient } from '@supabase/ssr'
+
+let client: ReturnType<typeof createBrowserClient> | null = null
+
+export function getSupabaseBrowserClient() {
+  if (!client) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    
+    if (!url || !key) {
+      throw new Error('Missing Supabase env vars')
+    }
+    
+    client = createBrowserClient(url, key)
+  }
+  return client
+}
+```
+
 ### `lib\supabase.ts`
 
 ```typescript
@@ -14685,8 +19707,10 @@ export type AssinaturaStatus =
 // ─── CHECKLIST ────────────────────────────────────────────────────────────────
 
 export interface ChecklistItem {
-  item: string
-  done: boolean
+  item:           string
+  done:           boolean
+  nota?:          string
+  lembrete_data?: string  // ISO date string
 }
 
 // ─── CLIENTE ──────────────────────────────────────────────────────────────────
@@ -14873,6 +19897,7 @@ export interface Tarefa {
   data_prazo?:     string
   responsavel_id?: string
   checklist?:      ChecklistItem[]
+  posicao?:        number
   created_at:      string
   updated_at:      string
 }
@@ -15275,6 +20300,7 @@ export function usePermissoes() {
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { useRightSidebarStore } from './right-sidebar-store'
 
 export interface RightSidebarAction {
   id: string
@@ -15295,12 +20321,14 @@ interface RightSidebarContextValue {
 const RightSidebarContext = createContext<RightSidebarContextValue | null>(null)
 
 export function RightSidebarProvider({ children }: { children: ReactNode }) {
+  const storeSetContextActions = useRightSidebarStore((s) => s.setContextActions)
   const [contextActions, setContextActionsState] = useState<RightSidebarAction[]>([])
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null)
 
   const setContextActions = useCallback((actions: RightSidebarAction[]) => {
     setContextActionsState(actions)
-  }, [])
+    storeSetContextActions(actions) // Também atualizar o store Zustand
+  }, [storeSetContextActions])
 
   const clearContextActions = useCallback(() => {
     setContextActionsState([])
@@ -15325,9 +20353,34 @@ export function RightSidebarProvider({ children }: { children: ReactNode }) {
 
 export function useRightSidebar() {
   const ctx = useContext(RightSidebarContext)
-  if (!ctx) throw new Error('useRightSidebar must be used within RightSidebarProvider')
   return ctx
 }
+```
+
+### `lib\store\right-sidebar-store.ts`
+
+```typescript
+import { create } from 'zustand'
+import type { LucideIcon } from 'lucide-react'
+
+export interface RightSidebarAction {
+  id: string
+  icon: LucideIcon
+  label: string
+  onClick: () => void
+}
+
+interface RightSidebarStore {
+  contextActions: RightSidebarAction[]
+  setContextActions: (actions: RightSidebarAction[]) => void
+  clearContextActions: () => void
+}
+
+export const useRightSidebarStore = create<RightSidebarStore>((set) => ({
+  contextActions: [],
+  setContextActions: (actions) => set({ contextActions: actions }),
+  clearContextActions: () => set({ contextActions: [] }),
+}))
 ```
 
 ### `lib\store\useAppStore.ts`

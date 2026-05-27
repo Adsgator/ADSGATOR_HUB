@@ -242,15 +242,100 @@ body {
   border-radius: 0.75rem !important;
   opacity: 1 !important;
 }
+
+/* ── Handles ocultos por padrão (fora de edit mode) ── */
 .react-grid-item > .react-resizable-handle {
   opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Em edit mode (.bento-edit-mode), handles visíveis ── */
+.bento-edit-mode .react-grid-item > .react-resizable-handle {
+  opacity: 1;
+  pointer-events: auto;
+  /* Base: handle como linha/ponto âmbar */
+  background: none;
   transition: opacity 150ms;
 }
-.react-grid-item:hover > .react-resizable-handle {
-  opacity: 0.4;
+
+/* Cantos SE, SW, NE, NW — bolinha âmbar */
+.bento-edit-mode .react-grid-item > .react-resizable-handle-se,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-sw,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-ne,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-nw {
+  width: 1rem;
+  height: 1rem;
 }
-.react-grid-item > .react-resizable-handle::after {
-  border-color: rgb(var(--ink-muted)) !important;
+.bento-edit-mode .react-grid-item > .react-resizable-handle-se::after,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-sw::after,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-ne::after,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-nw::after {
+  content: '';
+  position: absolute;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: rgba(255,177,0,0.7);
+  border: none !important;
+  inset: auto;
+  right: 0.25rem;
+  bottom: 0.25rem;
+}
+.bento-edit-mode .react-grid-item > .react-resizable-handle-sw::after { right: auto; left: 0.25rem; }
+.bento-edit-mode .react-grid-item > .react-resizable-handle-ne::after { bottom: auto; top: 0.25rem; right: 0.25rem; }
+.bento-edit-mode .react-grid-item > .react-resizable-handle-nw::after { bottom: auto; top: 0.25rem; right: auto; left: 0.25rem; }
+
+/* Bordas S, N — linha horizontal para resize de altura */
+.bento-edit-mode .react-grid-item > .react-resizable-handle-s,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-n {
+  width: calc(100% - 2rem);
+  height: 0.5rem;
+  left: 1rem;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bento-edit-mode .react-grid-item > .react-resizable-handle-s { bottom: 0; top: auto; }
+.bento-edit-mode .react-grid-item > .react-resizable-handle-n { top: 0; bottom: auto; }
+.bento-edit-mode .react-grid-item > .react-resizable-handle-s::after,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-n::after {
+  content: '';
+  width: 2.5rem;
+  height: 0.25rem;
+  border-radius: 999px;
+  background: rgba(255,177,0,0.5);
+  border: none !important;
+  position: static;
+}
+
+/* Bordas E, W — linha vertical para resize de largura */
+.bento-edit-mode .react-grid-item > .react-resizable-handle-e,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-w {
+  height: calc(100% - 2rem);
+  width: 0.5rem;
+  top: 1rem;
+  cursor: ew-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.bento-edit-mode .react-grid-item > .react-resizable-handle-e { right: 0; left: auto; }
+.bento-edit-mode .react-grid-item > .react-resizable-handle-w { left: 0; right: auto; }
+.bento-edit-mode .react-grid-item > .react-resizable-handle-e::after,
+.bento-edit-mode .react-grid-item > .react-resizable-handle-w::after {
+  content: '';
+  height: 2.5rem;
+  width: 0.25rem;
+  border-radius: 999px;
+  background: rgba(255,177,0,0.5);
+  border: none !important;
+  position: static;
+}
+
+/* Hover: aumenta visibilidade */
+.bento-edit-mode .react-grid-item > .react-resizable-handle:hover::after {
+  background: rgba(255,177,0,0.9) !important;
 }
 
 /* ─── LEAFLET PREMIUM ─────────────────────────────────────────────────────── */

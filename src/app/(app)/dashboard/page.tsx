@@ -491,7 +491,7 @@ export default function DashboardPage() {
           {editMode && <p className="text-ads-500 text-xs font-semibold mb-[1rem] animate-pulse">Modo de edição ativado — arraste e redimensione os cards</p>}
           {!editMode && <p className="text-ink-muted text-xs font-medium uppercase tracking-wider mb-[1rem]">Mais widgets</p>}
           <RGLResponsive
-            className="layout"
+            className={editMode ? 'layout bento-edit-mode' : 'layout'}
             layouts={layouts}
             breakpoints={BREAKPOINTS}
             cols={COLS}
@@ -504,6 +504,9 @@ export default function DashboardPage() {
             useCSSTransforms
             isResizable={editMode}
             isDraggable={editMode}
+            resizeHandles={['se', 's', 'e', 'sw', 'w', 'ne', 'nw', 'n']}
+            compactType="vertical"
+            preventCollision={false}
           >
           {/* ── KPIs ─────────────────────────────── */}
           <div key="kpi-ativos">

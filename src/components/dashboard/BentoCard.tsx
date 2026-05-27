@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { GripVertical, MoreVertical } from 'lucide-react'
+import { useState } from 'react'
+import { GripHorizontal, MoreVertical, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface BentoCardProps {
@@ -18,20 +18,29 @@ interface BentoCardProps {
 
 const SIZE_LABELS: Record<string, string> = {
   compact: 'Compacto',
-  normal: 'Normal',
-  large: 'Grande',
-  max: 'Máximo',
+  normal:  'Normal',
+  large:   'Grande',
+  max:     'Máximo',
 }
 
-function SizeMenu({ cardId, onSizeChange, onClose }: { cardId?: string; onSizeChange?: (preset: 'compact' | 'normal' | 'large' | 'max') => void; onClose: () => void }) {
+function SizeMenu({
+  cardId,
+  onSizeChange,
+  onClose,
+}: {
+  cardId?: string
+  onSizeChange?: (preset: 'compact' | 'normal' | 'large' | 'max') => void
+  onClose: () => void
+}) {
   if (!cardId || !onSizeChange) return null
 
   return (
-    <div className="absolute top-[2rem] right-[0.5rem] z-20 bg-surface-card border border-surface-border rounded-lg shadow-lg overflow-hidden min-w-[120px]">
+    <div className="absolute top-[2rem] right-0 z-30 bg-surface-elevated border border-surface-border rounded-lg shadow-xl overflow-hidden min-w-[130px]">
       {(['compact', 'normal', 'large', 'max'] as const).map((preset) => (
         <button
           key={preset}
-          onClick={() => {
+          onMouseDown={(e) => {
+            e.stopPropagation()
             onSizeChange(preset)
             onClose()
           }}
@@ -44,55 +53,71 @@ function SizeMenu({ cardId, onSizeChange, onClose }: { cardId?: string; onSizeCh
   )
 }
 
-export function BentoCard({ title, subtitle, actions, children, className, noPadding, cardId, onSizeChange, editMode }: BentoCardProps) {
+export function BentoCard({
+  title,
+  subtitle,
+  actions,
+  children,
+  className,
+  noPadding,
+  cardId,
+  onSizeChange,
+  editMode,
+}: BentoCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
 
-  const handleSizeSelect = (preset: 'compact' | 'normal' | 'large' | 'max') => {
-    if (cardId && onSizeChange) {
-      onSizeChange(preset)
-    }
-  }
   return (
     <div
       className={cn(
-        'group relative',
-        'bg-surface-card rounded-2xl h-full flex flex-col dark:border dark:border-surface-border',
-        'card-shadow card-interactive',
-        'overflow-hidden',
-        editMode && 'ring-1 ring-ads-500/20',
+        'group/card relative',
+        'bg-surface-card rounded-2xl h-full flex flex-col',
+        'dark:border dark:border-surface-border card-shadow',
+        // Em edit mode: sem hover lift, ring âmbar sutil
+        editMode
+          ? 'ring-1 ring-ads-500/30 cursor-default overflow-visible'
+          : 'card-interactive overflow-hidden',
         className,
       )}
     >
-      {/* Menu de tamanhos */}
-      <div ref={menuRef} className="relative">
-        {menuOpen && editMode && <SizeMenu cardId={cardId} onSizeChange={handleSizeSelect} onClose={() => setMenuOpen(false)} />}
-      </div>
-
-      {/* Drag handle + Size menu button — visível apenas em editMode */}
+      {/* ── FAIXA DE DRAG (edit mode) — ocupa o topo inteiro do card ── */}
       {editMode && (
-        <div className="absolute top-[0.5rem] right-[0.5rem] z-10 flex items-center gap-[0.25rem]">
+        <div className="bento-drag-handle absolute inset-x-0 top-0 h-[2rem] z-10 cursor-grab active:cursor-grabbing flex items-center justify-between px-[0.5rem] bg-surface-card/80 backdrop-blur-sm border-b border-ads-500/20 rounded-t-2xl select-none">
+          {/* Grip centralizado */}
+          <GripHorizontal className="w-[1rem] h-[1rem] text-ads-500/60 mx-auto" strokeWidth={1.75} />
+
+          {/* Botão de presets de tamanho — canto direito */}
           {cardId && onSizeChange && (
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              title="Tamanho do card"
-              className="p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-colors"
-            >
-              <MoreVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
-            </button>
+            <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+              <button
+                onMouseDown={(e) => {
+                  e.stopPropagation()
+                  setMenuOpen((v) => !v)
+                }}
+                title="Ajustar tamanho"
+                className="p-[0.25rem] rounded-[0.25rem] hover:bg-ads-500/10 transition-colors"
+              >
+                <MoreVertical className="w-[0.875rem] h-[0.875rem] text-ads-500/70" strokeWidth={1.75} />
+              </button>
+              {menuOpen && (
+                <SizeMenu
+                  cardId={cardId}
+                  onSizeChange={onSizeChange}
+                  onClose={() => setMenuOpen(false)}
+                />
+              )}
+            </div>
           )}
-          <div
-            className="bento-drag-handle cursor-grab active:cursor-grabbing p-[0.25rem] rounded-[0.25rem] hover:bg-surface-hover transition-colors"
-            title="Arrastar"
-          >
-            <GripVertical className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.75} />
-          </div>
         </div>
       )}
 
-      {/* Header */}
+      {/* ── Header normal (title/subtitle/actions) ── */}
       {(title || actions) && (
-        <div className="flex items-start justify-between px-[1.25rem] pt-[1.125rem] pb-[0.625rem] shrink-0">
+        <div
+          className={cn(
+            'flex items-start justify-between px-[1.25rem] pb-[0.625rem] shrink-0',
+            editMode ? 'pt-[2.25rem]' : 'pt-[1.125rem]',
+          )}
+        >
           {title && (
             <div className="min-w-0 pr-[1.5rem]">
               <h3 className="text-ink-primary font-semibold text-[0.875rem] leading-snug">{title}</h3>
@@ -103,8 +128,15 @@ export function BentoCard({ title, subtitle, actions, children, className, noPad
         </div>
       )}
 
-      {/* Conteúdo */}
-      <div className={cn('flex-1 min-h-0', noPadding ? '' : 'px-[1.25rem] pb-[1.25rem]', !title && !actions && !noPadding && 'pt-[1.25rem]')}>
+      {/* ── Conteúdo ── */}
+      <div
+        className={cn(
+          'flex-1 min-h-0',
+          noPadding ? '' : 'px-[1.25rem] pb-[1.25rem]',
+          !title && !actions && !noPadding && (editMode ? 'pt-[2.5rem]' : 'pt-[1.25rem]'),
+          !title && !actions && noPadding && editMode && 'pt-[2rem]',
+        )}
+      >
         {children}
       </div>
     </div>
