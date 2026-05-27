@@ -291,7 +291,7 @@ export default function DashboardPage() {
     setLayouts(allLayouts)
   }
 
-  const handleConfirmEdit = async () => {
+  const handleConfirmEdit = useCallback(async () => {
     setEditMode(false)
     if (userId) {
       try {
@@ -304,17 +304,17 @@ export default function DashboardPage() {
     }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts)) } catch {}
     toast.success('Layout salvo')
-  }
+  }, [userId, layouts])
 
-  const handleCancelEdit = () => {
+  const handleCancelEdit = useCallback(() => {
     setLayouts(layoutSnapshot)
     setEditMode(false)
-  }
+  }, [layoutSnapshot])
 
-  const enterEdit = () => {
+  const enterEdit = useCallback(() => {
     setLayoutSnapshot(layouts)
     setEditMode(true)
-  }
+  }, [layouts])
 
   const handleReset = async () => {
     setLayouts(DEFAULT_LAYOUTS)
@@ -381,7 +381,7 @@ export default function DashboardPage() {
       ])
     }
     return () => clearContextActions()
-  }, [editMode, layouts, userId])
+  }, [editMode])
 
   const progresso = dados.filter((d) =>
     d.cliente.status !== 'congelado' && d.cliente.status !== 'cancelado'
