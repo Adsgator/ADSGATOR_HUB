@@ -52,6 +52,16 @@ export function RightSidebarProvider({ children }: { children: ReactNode }) {
 
 export function useRightSidebar() {
   const ctx = useContext(RightSidebarContext)
-  if (!ctx) throw new Error('useRightSidebar must be used within RightSidebarProvider')
+  if (!ctx) {
+    // Fallback: retornar funções no-op quando fora do provider
+    return {
+      contextActions: [],
+      setContextActions: () => {},
+      clearContextActions: () => {},
+      activeDrawer: null,
+      openDrawer: () => {},
+      closeDrawer: () => {},
+    }
+  }
   return ctx
 }
