@@ -31,6 +31,7 @@ import { ActivityFeed }          from '@/components/dashboard/ActivityFeed'
 import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
 import { useRightSidebar }       from '@/lib/store/right-sidebar-context'
+import { useRightSidebarStore }  from '@/lib/store/right-sidebar-store'
 import { supabase }              from '@/lib/supabase'
 import { carregarDashboardLayout, salvarDashboardLayout, type Layouts as LayoutsType } from '@/lib/database'
 import { toast } from 'sonner'
@@ -213,7 +214,12 @@ const DEFAULT_LAYOUTS: LayoutsType = {
 
 export default function DashboardPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
-  const { setContextActions, clearContextActions } = useRightSidebar()
+  const ctx = useRightSidebar()
+  const store = useRightSidebarStore()
+
+  // Usar o context se disponível, caso contrário usar o store
+  const setContextActions = ctx?.setContextActions || store.setContextActions
+  const clearContextActions = ctx?.clearContextActions || store.clearContextActions
   const [saldoGoogle, setSaldoGoogle] = useState<number | null>(null)
   const [mostrarWizard, setMostrarWizard] = useState(false)
   const [editMode, setEditMode] = useState(false)

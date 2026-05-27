@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
+import { useRightSidebarStore } from './right-sidebar-store'
 
 export interface RightSidebarAction {
   id: string
@@ -22,12 +23,14 @@ interface RightSidebarContextValue {
 const RightSidebarContext = createContext<RightSidebarContextValue | null>(null)
 
 export function RightSidebarProvider({ children }: { children: ReactNode }) {
+  const storeSetContextActions = useRightSidebarStore((s) => s.setContextActions)
   const [contextActions, setContextActionsState] = useState<RightSidebarAction[]>([])
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null)
 
   const setContextActions = useCallback((actions: RightSidebarAction[]) => {
     setContextActionsState(actions)
-  }, [])
+    storeSetContextActions(actions) // Também atualizar o store Zustand
+  }, [storeSetContextActions])
 
   const clearContextActions = useCallback(() => {
     setContextActionsState([])
@@ -52,16 +55,5 @@ export function RightSidebarProvider({ children }: { children: ReactNode }) {
 
 export function useRightSidebar() {
   const ctx = useContext(RightSidebarContext)
-  if (!ctx) {
-    // Fallback: retornar funções no-op quando fora do provider
-    return {
-      contextActions: [],
-      setContextActions: () => {},
-      clearContextActions: () => {},
-      activeDrawer: null,
-      openDrawer: () => {},
-      closeDrawer: () => {},
-    }
-  }
   return ctx
 }
