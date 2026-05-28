@@ -28,6 +28,8 @@ import { DRESparkline }          from '@/components/dashboard/DRESparkline'
 import { AlertasCriticos }       from '@/components/dashboard/AlertasCriticos'
 import { GeminiChat }            from '@/components/dashboard/GeminiChat'
 import { ActivityFeed }          from '@/components/dashboard/ActivityFeed'
+import { NewsContainer }         from '@/components/dashboard/NewsContainer'
+import { TimelineCard }          from '@/components/dashboard/TimelineCard'
 import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
 import { useRightSidebar }       from '@/lib/store/right-sidebar-context'
@@ -48,7 +50,7 @@ interface AcaoItem {
   whatsapp?: string
 }
 
-const STORAGE_KEY = 'adsgator-bento-layouts-v3'
+const STORAGE_KEY = 'adsgator-bento-layouts-v4'
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
 
@@ -164,6 +166,10 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'clientes-foco',     x: 0,  y: 17, w: 8,  h: 4, minW: 6, minH: 3 },
     // ROW 17: Activity Feed
     { i: 'activity-feed',     x: 8,  y: 17, w: 4,  h: 4, minW: 3, minH: 3 },
+    // ROW 21: Timeline Cards (Onboarding, Recurring, Alerts)
+    { i: 'timeline-onboarding', x: 0, y: 21, w: 4, h: 5, minW: 3, minH: 3 },
+    { i: 'timeline-recurring',  x: 4, y: 21, w: 4, h: 5, minW: 3, minH: 3 },
+    { i: 'timeline-alerts',     x: 8, y: 21, w: 4, h: 5, minW: 3, minH: 3 },
   ],
   lg: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 6 },
@@ -179,6 +185,9 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'gemini-chat',       x: 5,  y: 13, w: 5,  h: 4 },
     { i: 'clientes-foco',     x: 0,  y: 17, w: 6,  h: 4 },
     { i: 'activity-feed',     x: 6,  y: 17, w: 4,  h: 4 },
+    { i: 'timeline-onboarding', x: 0, y: 21, w: 5, h: 5 },
+    { i: 'timeline-recurring',  x: 5, y: 21, w: 5, h: 5 },
+    { i: 'timeline-alerts',     x: 0, y: 26, w: 10, h: 5 },
   ],
   md: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 5 },
@@ -194,6 +203,9 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'gemini-chat',       x: 3,  y: 24, w: 3,  h: 4 },
     { i: 'clientes-foco',     x: 0,  y: 28, w: 6,  h: 4 },
     { i: 'activity-feed',     x: 0,  y: 32, w: 6,  h: 4 },
+    { i: 'timeline-onboarding', x: 0, y: 36, w: 6, h: 5 },
+    { i: 'timeline-recurring',  x: 0, y: 41, w: 6, h: 5 },
+    { i: 'timeline-alerts',     x: 0, y: 46, w: 6, h: 5 },
   ],
   sm: [
     { i: 'dre-sparkline',     x: 0, y: 0,  w: 2, h: 5 },
@@ -209,6 +221,9 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'gemini-chat',       x: 0, y: 39, w: 2, h: 4 },
     { i: 'clientes-foco',     x: 0, y: 43, w: 2, h: 4 },
     { i: 'activity-feed',     x: 0, y: 47, w: 2, h: 4 },
+    { i: 'timeline-onboarding', x: 0, y: 51, w: 2, h: 5 },
+    { i: 'timeline-recurring',  x: 0, y: 56, w: 2, h: 5 },
+    { i: 'timeline-alerts',     x: 0, y: 61, w: 2, h: 5 },
   ],
 }
 
@@ -455,34 +470,9 @@ export default function DashboardPage() {
     >
       <div className="page-enter space-y-[1.5rem]" ref={containerRef}>
         {/* ════════════════════════════════════════════════════════════ */}
-        {/* KPIs Compactos (3 cards) — Fixo                             */}
+        {/* News Container — Monitoramento por cliente (scroll horiz.)   */}
         {/* ════════════════════════════════════════════════════════════ */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-[1rem]">
-          <KpiCompactCard
-            label="Total Balance"
-            value={fmt(saldoGoogle !== null ? saldoGoogle : 0)}
-            delta={saldoGoogle !== null && saldoGoogle > 0 ? '+5.2%' : undefined}
-            deltaDir={saldoGoogle !== null && saldoGoogle > 0 ? 'up' : 'down'}
-            accentColor="blue"
-            icon={<CreditCard className="w-[1.25rem] h-[1.25rem] text-status-blue" strokeWidth={2} />}
-          />
-          <KpiCompactCard
-            label="Profit"
-            value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}`}
-            delta={metricas.ativos > 0 ? '+12.5%' : undefined}
-            deltaDir="up"
-            accentColor="green"
-            icon={<DollarSign className="w-[1.25rem] h-[1.25rem] text-status-green" strokeWidth={2} />}
-          />
-          <KpiCompactCard
-            label="Clientes Ativos"
-            value={metricas.ativos}
-            delta={metricas.ativos > 0 ? `${metricas.taxaRetencao}%` : undefined}
-            deltaDir="up"
-            accentColor="amber"
-            icon={<Users className="w-[1.25rem] h-[1.25rem] text-ads-500" strokeWidth={2} />}
-          />
-        </div>
+        <NewsContainer />
 
         {/* ════════════════════════════════════════════════════════════ */}
         {/* GRID CUSTOMIZÁVEL — (Rest da Dashboard anterior)            */}
@@ -749,6 +739,27 @@ export default function DashboardPage() {
               actions={<a href="/configuracoes" className="text-ads-500 text-[0.75rem] hover:underline">Ver auditoria</a>}
             >
               <ActivityFeed />
+            </BentoCard>
+          </div>
+
+          {/* ── TIMELINE ONBOARDING ─────────────────── */}
+          <div key="timeline-onboarding">
+            <BentoCard editMode={editMode} cardId="timeline-onboarding" onSizeChange={makeCardResizer('timeline-onboarding')} noPadding>
+              <TimelineCard type="onboarding" />
+            </BentoCard>
+          </div>
+
+          {/* ── TIMELINE RECURRING TASKS ───────────── */}
+          <div key="timeline-recurring">
+            <BentoCard editMode={editMode} cardId="timeline-recurring" onSizeChange={makeCardResizer('timeline-recurring')} noPadding>
+              <TimelineCard type="recurring_task" />
+            </BentoCard>
+          </div>
+
+          {/* ── TIMELINE ALERTS ─────────────────────── */}
+          <div key="timeline-alerts">
+            <BentoCard editMode={editMode} cardId="timeline-alerts" onSizeChange={makeCardResizer('timeline-alerts')} noPadding>
+              <TimelineCard type="alert" />
             </BentoCard>
           </div>
         </RGLResponsive>

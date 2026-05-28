@@ -7,6 +7,7 @@ import {
   obterGeografia,
   obterDevice,
   obterHorario,
+  obterLeilao,
 } from '@/lib/google-ads';
 import {
   obterDadosGA4,
@@ -14,6 +15,7 @@ import {
   obterFontesTrafego,
   obterGeoGA4,
   obterDeviceGA4,
+  obterEventosGA4,
 } from '@/lib/google-analytics';
 
 export const dynamic = 'force-dynamic';
@@ -79,6 +81,8 @@ export async function GET(
       fontesTrafego,
       geoGA4,
       deviceGA4,
+      leilao,
+      eventosGA4,
     ] = await Promise.allSettled([
       cliente.google_ads_enabled && cliente.google_ads_customer_id
         ? obterDadosCampanhasAds(cliente.google_ads_customer_id, mesAno)
@@ -113,6 +117,12 @@ export async function GET(
       cliente.ga4_enabled && cliente.ga4_property_id
         ? obterDeviceGA4(cliente.ga4_property_id, mesAno)
         : Promise.resolve([]),
+      cliente.google_ads_enabled && cliente.google_ads_customer_id
+        ? obterLeilao(cliente.google_ads_customer_id, mesAno)
+        : Promise.resolve([]),
+      cliente.ga4_enabled && cliente.ga4_property_id
+        ? obterEventosGA4(cliente.ga4_property_id, mesAno)
+        : Promise.resolve([]),
     ]);
 
     // Consolidar resultados
@@ -125,6 +135,7 @@ export async function GET(
         geografia: geografia.status === 'fulfilled' ? geografia.value : [],
         device: deviceAds.status === 'fulfilled' ? deviceAds.value : [],
         horario: horario.status === 'fulfilled' ? horario.value : [],
+        leilao: leilao.status === 'fulfilled' ? leilao.value : [],
       },
       ga4: {
         enabled: cliente.ga4_enabled,
@@ -133,6 +144,7 @@ export async function GET(
         fontesTrafego: fontesTrafego.status === 'fulfilled' ? fontesTrafego.value : [],
         geografia: geoGA4.status === 'fulfilled' ? geoGA4.value : [],
         device: deviceGA4.status === 'fulfilled' ? deviceGA4.value : [],
+        eventos: eventosGA4.status === 'fulfilled' ? eventosGA4.value : [],
       },
       periodo,
       atualizadoEm: new Date().toISOString(),

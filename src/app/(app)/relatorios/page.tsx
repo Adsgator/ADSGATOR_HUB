@@ -1,122 +1,191 @@
-﻿'use client';
+'use client'
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { TrendingUp, BarChart3, Download, RefreshCw, Calendar, ArrowUpRight, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
-import { MainLayout } from '@/components/layout/MainLayout';
-import { supabase } from '@/lib/supabase';
+import React, { useEffect, useState, useCallback } from 'react'
+import { BarChart3, RefreshCw, FileText, Globe, Sparkles, Mail, Send, Download } from 'lucide-react'
+import { toast } from 'sonner'
+import { MainLayout } from '@/components/layout/MainLayout'
+import { ReportPreview } from '@/components/relatorios/ReportPreview'
+import { EmailComposer } from '@/components/relatorios/EmailComposer'
+import { ReportHistory } from '@/components/relatorios/ReportHistory'
+import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
-// ─── TIPOS ───────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface RelatorioMensal {
-  id:                    string;
-  cliente_id:            string;
-  mes_ano:               string;
-  status_geracao:        'pendente' | 'processando' | 'gerado' | 'erro';
-  investimento_ads?:     number;
-  conversoes?:           number;
-  roi?:                  number;
-  sessoes_ga4?:          number;
-  usuarios_novos?:       number;
-  taxa_engajamento?:     number;
-  conteudo_markdown?:    string;
+  id: string
+  cliente_id: string
+  mes_ano: string
+  status_geracao: 'pendente' | 'processando' | 'gerado' | 'erro'
+  investimento_ads?: number
+  conversoes?: number
+  roi?: number
+  sessoes_ga4?: number
+  usuarios_novos?: number
+  taxa_engajamento?: number
+  conteudo_markdown?: string
   analise_ia?: {
-    resumo_executivo: string;
-    pontos_positivos: string[];
-    pontos_atencao:   string[];
-    recomendacoes:    string[];
-    proximo_passo:    string;
-  };
+    resumo_executivo: string
+    pontos_positivos: string[]
+    pontos_atencao: string[]
+    recomendacoes: string[]
+    proximo_passo: string
+  }
+  dados_ads?: {
+    impressoes: number
+    cliques: number
+    ctr: number
+    cpc_medio: number
+    conversoes: number
+    cpa: number
+    investimento: number
+    keywords?: Array<{ keyword: string; cliques: number; impressoes: number; ctr: number; cpc: number; conversoes: number }>
+    horario?: Array<{ hora: number; dia_semana: number; cliques: number; conversoes: number }>
+  }
+  dados_ga4?: {
+    usuarios: number
+    sessoes: number
+    visualizacoes_pagina: number
+    duracao_media_sessao?: number
+    taxa_rejeicao?: number
+    novos_usuarios?: number
+    paginas?: Array<{ pagina: string; visualizacoes: number; sessoes?: number; taxa_rejeicao?: number }>
+    fontes?: Array<{ fonte: string; sessoes: number; usuarios: number }>
+  }
 }
 
-const fmt = (v: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+type TabId = 'ads' | 'ga4' | 'executivo' | 'email'
 
-const fmtConversoes = (n: number): string =>
-  n % 1 !== 0 ? `${n.toFixed(1)}*` : String(n);
+const TABS: Array<{ id: TabId; label: string; icon: React.ElementType }> = [
+  { id: 'ads',       label: 'Relatório Ads',   icon: BarChart3 },
+  { id: 'ga4',       label: 'GA4',             icon: Globe     },
+  { id: 'executivo', label: 'Executivo',        icon: Sparkles  },
+  { id: 'email',     label: 'Enviar por Email', icon: Mail      },
+]
 
-// ─── PÁGINA ───────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function RelatoriosPage() {
-  const [clientes,    setClientes]    = useState<{ id: string; nome: string }[]>([]);
-  const [clienteSel,  setClienteSel]  = useState<string>('');
-  const [relatorios,  setRelatorios]  = useState<RelatorioMensal[]>([]);
-  const [selecionado, setSelecionado] = useState<RelatorioMensal | null>(null);
-  const [loading,     setLoading]     = useState(false);
-  const [gerando,     setGerando]     = useState(false);
+  const [clientes,     setClientes]     = useState<{ id: string; nome: string; email?: string }[]>([])
+  const [clienteSel,   setClienteSel]   = useState<string>('')
+  const [relatorios,   setRelatorios]   = useState<RelatorioMensal[]>([])
+  const [selecionado,  setSelecionado]  = useState<RelatorioMensal | null>(null)
+  const [loading,      setLoading]      = useState(false)
+  const [gerando,      setGerando]      = useState(false)
+  const [gerandoTodos, setGerandoTodos] = useState(false)
+  const [tab,          setTab]          = useState<TabId>('ads')
+  const [mesAnoSel,    setMesAnoSel]    = useState<string>('')
 
+  // Load clients
   useEffect(() => {
     supabase
       .from('clientes')
-      .select('id, nome')
+      .select('id, nome, email')
       .eq('status', 'ativo')
       .order('nome')
       .then(({ data }) => {
-        const lista = data ?? [];
-        setClientes(lista);
-        if (lista.length > 0) setClienteSel(lista[0].id);
-      });
-  }, []);
+        const lista = data ?? []
+        setClientes(lista)
+        if (lista.length > 0) setClienteSel(lista[0].id)
+      })
+  }, [])
+
+  // Default mes/ano = last month
+  useEffect(() => {
+    const hoje   = new Date()
+    const mesRef = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)
+    setMesAnoSel(`${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, '0')}`)
+  }, [])
 
   const carregar = useCallback(async () => {
-    if (!clienteSel) return;
-    setLoading(true);
+    if (!clienteSel) return
+    setLoading(true)
     try {
-      const res  = await fetch(`/api/analytics/${clienteSel}`);
-      const json = await res.json() as { relatorios: RelatorioMensal[] };
-      const lista = json.relatorios ?? [];
-      setRelatorios(lista);
-      setSelecionado(lista[0] ?? null);
+      const res  = await fetch(`/api/analytics/${clienteSel}`)
+      const json = await res.json() as { relatorios: RelatorioMensal[] }
+      const lista = json.relatorios ?? []
+      setRelatorios(lista)
+      const match = lista.find((r) => r.mes_ano === mesAnoSel) ?? lista[0] ?? null
+      setSelecionado(match)
     } catch (e) {
-      console.error(e);
+      console.error(e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [clienteSel]);
+  }, [clienteSel, mesAnoSel])
 
-  useEffect(() => { carregar(); }, [carregar]);
+  useEffect(() => { carregar() }, [carregar])
 
-  async function solicitarRelatorio() {
-    if (!clienteSel) return;
-    setGerando(true);
+  async function gerarRelatorio() {
+    if (!clienteSel || !mesAnoSel) return
+    setGerando(true)
     try {
-      const hoje   = new Date();
-      const mesRef = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
-      const mesAno = `${mesRef.getFullYear()}-${String(mesRef.getMonth() + 1).padStart(2, '0')}`;
-      await fetch(`/api/analytics/${clienteSel}`, {
+      const res = await fetch(`/api/analytics/${clienteSel}`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ mesAno }),
-      });
-      await carregar();
+        body:    JSON.stringify({ mesAno: mesAnoSel }),
+      })
+      if (res.ok) {
+        toast.success('Relatório solicitado! Aguarde o processamento.')
+        await carregar()
+      } else {
+        toast.error('Erro ao solicitar relatório.')
+      }
     } finally {
-      setGerando(false);
+      setGerando(false)
+    }
+  }
+
+  async function gerarTodos() {
+    if (!mesAnoSel) return
+    setGerandoTodos(true)
+    try {
+      let ok = 0
+      for (const c of clientes) {
+        await fetch(`/api/analytics/${c.id}`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ mesAno: mesAnoSel }),
+        })
+        ok++
+      }
+      toast.success(`${ok} relatórios solicitados.`)
+      await carregar()
+    } finally {
+      setGerandoTodos(false)
     }
   }
 
   function baixarMarkdown() {
-    if (!selecionado?.conteudo_markdown) return;
-    const blob = new Blob([selecionado.conteudo_markdown], { type: 'text/markdown' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `relatorio_${selecionado.mes_ano}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (!selecionado?.conteudo_markdown) return
+    const blob = new Blob([selecionado.conteudo_markdown], { type: 'text/markdown' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href     = url
+    a.download = `relatorio_${selecionado.mes_ano}.md`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
-  const kpis = selecionado ? [
-    { label: 'Investimento',  valor: fmt(selecionado.investimento_ads ?? 0),             sub: 'Google Ads',     icon: TrendingUp,  cor: 'text-status-blue'   },
-    { label: 'Conversões',    valor: fmtConversoes(selecionado.conversoes ?? 0),           sub: 'Leads/vendas',   icon: ArrowUpRight, cor: 'text-ads-500'      },
-    { label: 'ROI',           valor: `${(selecionado.roi ?? 0).toFixed(2)}x`,             sub: 'Retorno',        icon: BarChart3,   cor: 'text-status-purple' },
-    { label: 'Sessões (GA4)', valor: (selecionado.sessoes_ga4 ?? 0).toLocaleString(),     sub: 'Visitas ao site', icon: Calendar,   cor: 'text-status-orange' },
-  ] : [];
+  const geradosEsteMes = relatorios.filter((r) => r.status_geracao === 'gerado').length
+  const clienteAtual   = clientes.find((c) => c.id === clienteSel)
+
+  // Month/year options — last 12 months
+  const mesAnoOptions = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date()
+    d.setDate(1)
+    d.setMonth(d.getMonth() - 1 - i)
+    const val   = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    return { val, label }
+  })
 
   return (
     <MainLayout
       title="Relatórios"
-      subtitle="Google Ads + GA4 — histórico por cliente"
+      subtitle="Google Ads + GA4 por cliente"
       actions={
-        <div className="flex items-center gap-[0.625rem]">
+        <div className="flex items-center gap-[0.5rem] flex-wrap">
           <select
             value={clienteSel}
             onChange={(e) => setClienteSel(e.target.value)}
@@ -126,8 +195,23 @@ export default function RelatoriosPage() {
               <option key={c.id} value={c.id}>{c.nome}</option>
             ))}
           </select>
+
+          <select
+            value={mesAnoSel}
+            onChange={(e) => {
+              setMesAnoSel(e.target.value)
+              const match = relatorios.find((r) => r.mes_ano === e.target.value) ?? null
+              setSelecionado(match)
+            }}
+            className="h-[2rem] pl-[0.625rem] pr-[1.75rem] rounded-[0.375rem] bg-surface-card border border-surface-border text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/40 transition-colors"
+          >
+            {mesAnoOptions.map(({ val, label }) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+
           <button
-            onClick={solicitarRelatorio}
+            onClick={gerarRelatorio}
             disabled={gerando || !clienteSel}
             className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-ads-500 text-white text-[0.8125rem] font-medium hover:bg-ads-600 transition-colors disabled:opacity-50"
           >
@@ -135,203 +219,162 @@ export default function RelatoriosPage() {
               ? <div className="w-[0.75rem] h-[0.75rem] border-2 border-white border-t-transparent rounded-full animate-spin" />
               : <RefreshCw className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
             }
-            Solicitar
+            Gerar Relatório
+          </button>
+
+          <button
+            onClick={gerarTodos}
+            disabled={gerandoTodos}
+            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-card border border-surface-border text-ink-secondary text-[0.8125rem] font-medium hover:border-ads-500/40 transition-colors disabled:opacity-50"
+          >
+            {gerandoTodos
+              ? <div className="w-[0.75rem] h-[0.75rem] border-2 border-ink-secondary border-t-transparent rounded-full animate-spin" />
+              : <Send className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+            }
+            Gerar Todos
           </button>
         </div>
       }
     >
-
       <div className="page-enter">
-      {/* SELETOR DE MÊS */}
-      {relatorios.length > 0 && (
-        <div className="flex gap-[0.5rem] flex-wrap mb-[1.5rem]">
-          {relatorios.map((r) => {
-            const [ano, mes] = r.mes_ano.split('-')
-            const label = new Date(Number(ano), Number(mes) - 1).toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
-            return (
-              <button
-                key={r.mes_ano}
-                onClick={() => setSelecionado(r)}
-                className={`px-[0.875rem] h-[2rem] rounded-[0.375rem] text-[0.8125rem] font-medium transition-colors ${
-                  selecionado?.mes_ano === r.mes_ano
-                    ? 'bg-ads-500 text-white'
-                    : 'bg-surface-card border border-surface-border text-ink-secondary hover:border-ads-500/40'
-                }`}
-              >
-                {label}
-                {r.status_geracao === 'pendente' && (
-                  <span className="ml-[0.375rem] font-bold text-status-orange">●</span>
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
 
-      {/* LOADING */}
-      {loading && (
-        <div className="flex items-center justify-center h-[16rem]">
-          <div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" />
-        </div>
-      )}
-
-      {/* EMPTY */}
-      {!loading && relatorios.length === 0 && (
-        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[3rem] text-center">
-          <BarChart3 className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
-          <p className="text-ink-secondary text-[0.875rem]">
-            Nenhum relatório encontrado. Clique em &quot;Solicitar&quot; para gerar o primeiro.
-          </p>
-        </div>
-      )}
-
-      {!loading && selecionado && (
-        <>
-          {/* STATUS PENDENTE */}
-          {selecionado.status_geracao === 'pendente' && (
-            <div className="mb-[1.5rem] flex items-start gap-[0.75rem] bg-status-orange/10 border border-status-orange/20 rounded-xl px-[1rem] py-[0.875rem]">
-              <RefreshCw className="shrink-0 w-[0.875rem] h-[0.875rem] text-status-orange mt-[0.125rem]" strokeWidth={2} />
-              <p className="text-[0.875rem] text-status-orange">
-                Relatório em processamento. Recarregue em alguns instantes.
-              </p>
-            </div>
+        {/* Status summary bar */}
+        <div className="flex items-center gap-[1.5rem] bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[0.875rem] mb-[1.5rem] card-shadow">
+          <div className="flex items-center gap-[0.5rem]">
+            <FileText className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={1.5} />
+            <span className="text-ink-muted text-[0.8125rem]">Relatórios gerados:</span>
+            <span className="text-ink-primary font-semibold text-[0.8125rem]">{geradosEsteMes} / {clientes.length}</span>
+          </div>
+          {selecionado?.status_geracao === 'pendente' && (
+            <span className="flex items-center gap-[0.375rem] text-status-orange text-[0.75rem]">
+              <div className="w-[0.5rem] h-[0.5rem] rounded-full bg-status-orange animate-pulse" />
+              Processando…
+            </span>
           )}
+          {selecionado?.conteudo_markdown && (
+            <button
+              onClick={baixarMarkdown}
+              className="ml-auto flex items-center gap-[0.375rem] text-ink-secondary text-[0.75rem] hover:text-ads-500 transition-colors"
+            >
+              <Download className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+              Baixar .md
+            </button>
+          )}
+        </div>
 
-          {/* KPIs */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-[1rem] mb-[1.5rem]">
-            {kpis.map(({ label, valor, sub, icon: Icon, cor }) => (
-              <div key={label} className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.25rem] py-[1rem]">
-                <div className="flex items-start justify-between mb-[0.5rem]">
-                  <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold">{label}</p>
-                  <Icon className={`w-[1rem] h-[1rem] ${cor}`} strokeWidth={1.5} />
-                </div>
-                <p className={`text-[1.75rem] font-bold leading-none mb-[0.375rem] ${cor}`}>{valor}</p>
-                <p className="text-ink-muted text-[0.75rem]">{sub}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* DETALHE */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[1.5rem]">
-            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
-              <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
-                <TrendingUp className="w-[1rem] h-[1rem] text-status-blue" strokeWidth={1.5} />
-                <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Google Ads</h3>
-              </div>
-              {[
-                { label: 'Investimento', valor: fmt(selecionado.investimento_ads ?? 0) },
-                { label: 'Conversões',   valor: fmtConversoes(selecionado.conversoes ?? 0) },
-                { label: 'ROI',          valor: `${(selecionado.roi ?? 0).toFixed(2)}x` },
-              ].map(({ label, valor }) => (
-                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b border-surface-border last:border-0">
-                  <p className="text-ink-secondary text-[0.875rem]">{label}</p>
-                  <p className="text-ink-primary font-semibold text-[0.875rem]">{valor}</p>
-                </div>
-              ))}
-              {(selecionado.conversoes ?? 0) % 1 !== 0 && (
-                <p className="text-ink-muted text-[0.6875rem] mt-[0.5rem]">
-                  * Conversões data-driven (atribuição fracionada pelo Google)
-                </p>
+        {/* Tabs */}
+        <div className="flex gap-[0.25rem] border-b border-surface-border mb-[1.5rem]">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={cn(
+                'flex items-center gap-[0.375rem] px-[1rem] py-[0.625rem] text-[0.8125rem] font-medium border-b-2 -mb-px transition-colors',
+                tab === id
+                  ? 'border-ads-500 text-ads-500'
+                  : 'border-transparent text-ink-muted hover:text-ink-secondary'
               )}
-            </div>
+            >
+              <Icon className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.5} />
+              {label}
+            </button>
+          ))}
+        </div>
 
-            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
-              <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
-                <BarChart3 className="w-[1rem] h-[1rem] text-status-orange" strokeWidth={1.5} />
-                <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Google Analytics 4</h3>
-              </div>
-              {[
-                { label: 'Sessões',          valor: (selecionado.sessoes_ga4 ?? 0).toLocaleString()      },
-                { label: 'Novos Usuários',   valor: (selecionado.usuarios_novos ?? 0).toLocaleString()   },
-                { label: 'Taxa Engajamento', valor: `${(selecionado.taxa_engajamento ?? 0).toFixed(1)}%` },
-              ].map(({ label, valor }) => (
-                <div key={label} className="flex justify-between items-center py-[0.75rem] border-b border-surface-border last:border-0">
-                  <p className="text-ink-secondary text-[0.875rem]">{label}</p>
-                  <p className="text-ink-primary font-semibold text-[0.875rem]">{valor}</p>
-                </div>
-              ))}
-            </div>
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center h-[16rem]">
+            <div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" />
           </div>
+        )}
 
-          {/* ANÁLISE IA */}
-          {selecionado.analise_ia && (
-            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[1.5rem]">
-              <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
-                <Sparkles className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.5} />
-                <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Análise IA — Gemini</h3>
-              </div>
-              <p className="text-ink-secondary text-[0.875rem] mb-[1.25rem] leading-relaxed">
-                {selecionado.analise_ia.resumo_executivo}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-[1rem] mb-[1.25rem]">
-                {selecionado.analise_ia.pontos_positivos.length > 0 && (
-                  <div>
-                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-status-green mb-[0.5rem]">Pontos Positivos</p>
-                    <ul className="flex flex-col gap-[0.375rem]">
-                      {selecionado.analise_ia.pontos_positivos.map((p, i) => (
-                        <li key={i} className="flex items-start gap-[0.5rem]">
-                          <CheckCircle2 className="w-[0.875rem] h-[0.875rem] text-status-green shrink-0 mt-[0.125rem]" strokeWidth={2} />
-                          <span className="text-ink-secondary text-[0.875rem]">{p}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {selecionado.analise_ia.pontos_atencao.length > 0 && (
-                  <div>
-                    <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-status-orange mb-[0.5rem]">Pontos de Atenção</p>
-                    <ul className="flex flex-col gap-[0.375rem]">
-                      {selecionado.analise_ia.pontos_atencao.map((p, i) => (
-                        <li key={i} className="flex items-start gap-[0.5rem]">
-                          <AlertCircle className="w-[0.875rem] h-[0.875rem] text-status-orange shrink-0 mt-[0.125rem]" strokeWidth={2} />
-                          <span className="text-ink-secondary text-[0.875rem]">{p}</span>
-                        </li>
-                      ))}
-                    </ul>
+        {/* Empty state */}
+        {!loading && relatorios.length === 0 && tab !== 'email' && (
+          <div className="bg-surface-card border border-surface-border rounded-xl card-shadow p-[3rem] text-center">
+            <BarChart3 className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
+            <p className="text-ink-secondary text-[0.875rem]">
+              Nenhum relatório encontrado. Clique em &ldquo;Gerar Relatório&rdquo; para criar o primeiro.
+            </p>
+          </div>
+        )}
+
+        {!loading && (
+          <>
+            {/* Tab: Ads */}
+            {tab === 'ads' && (
+              <ReportPreview
+                clienteNome={clienteAtual?.nome ?? ''}
+                mesAno={mesAnoSel}
+                ads={selecionado?.dados_ads ?? (selecionado ? {
+                  impressoes: 0,
+                  cliques: 0,
+                  ctr: 0,
+                  cpc_medio: 0,
+                  conversoes: selecionado.conversoes ?? 0,
+                  cpa: 0,
+                  investimento: selecionado.investimento_ads ?? 0,
+                } : undefined)}
+                analise={selecionado?.analise_ia ? {
+                  resumo: selecionado.analise_ia.resumo_executivo,
+                  pontos_positivos: selecionado.analise_ia.pontos_positivos,
+                  pontos_atencao: selecionado.analise_ia.pontos_atencao,
+                  recomendacoes: selecionado.analise_ia.recomendacoes,
+                } : null}
+              />
+            )}
+
+            {/* Tab: GA4 */}
+            {tab === 'ga4' && (
+              <ReportPreview
+                clienteNome={clienteAtual?.nome ?? ''}
+                mesAno={mesAnoSel}
+                ga4={selecionado?.dados_ga4 ?? (selecionado ? {
+                  usuarios: selecionado.usuarios_novos ?? 0,
+                  sessoes: selecionado.sessoes_ga4 ?? 0,
+                  visualizacoes_pagina: 0,
+                  taxa_rejeicao: selecionado.taxa_engajamento,
+                } : undefined)}
+              />
+            )}
+
+            {/* Tab: Executivo */}
+            {tab === 'executivo' && selecionado?.analise_ia && (
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] card-shadow space-y-[1.25rem]">
+                <h3 className="text-ads-500 font-semibold text-[1rem] flex items-center gap-[0.5rem]">
+                  <Sparkles className="w-[1rem] h-[1rem]" strokeWidth={1.5} />
+                  Análise Executiva — Gemini
+                </h3>
+                <p className="text-ink-secondary text-[0.875rem] leading-relaxed">{selecionado.analise_ia.resumo_executivo}</p>
+                {selecionado.analise_ia.proximo_passo && (
+                  <div className="bg-ads-500/10 border border-ads-500/20 rounded-[0.5rem] px-[1rem] py-[0.875rem]">
+                    <p className="text-ads-500 text-[0.6875rem] font-semibold uppercase tracking-wide mb-[0.25rem]">Próximo Passo</p>
+                    <p className="text-ink-primary text-[0.875rem]">{selecionado.analise_ia.proximo_passo}</p>
                   </div>
                 )}
               </div>
-              {selecionado.analise_ia.recomendacoes.length > 0 && (
-                <div className="mb-[1rem]">
-                  <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-ink-muted mb-[0.5rem]">Recomendações</p>
-                  <ol className="flex flex-col gap-[0.375rem]">
-                    {selecionado.analise_ia.recomendacoes.map((r, i) => (
-                      <li key={i} className="flex items-start gap-[0.625rem]">
-                        <span className="w-[1.25rem] h-[1.25rem] rounded-full bg-ads-500 flex items-center justify-center text-white text-[0.6875rem] font-bold shrink-0">{i + 1}</span>
-                        <span className="text-ink-secondary text-[0.875rem]">{r}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-              {selecionado.analise_ia.proximo_passo && (
-                <div className="bg-ads-500/10 border border-ads-500/20 rounded-[0.375rem] px-[0.875rem] py-[0.75rem]">
-                  <p className="text-[0.6875rem] font-semibold text-ads-500 uppercase tracking-wide mb-[0.25rem]">Próximo Passo</p>
-                  <p className="text-ink-primary text-[0.875rem]">{selecionado.analise_ia.proximo_passo}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* DOWNLOAD */}
-          {selecionado.conteudo_markdown && (
-            <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.5rem] py-[1.25rem] flex items-center justify-between">
-              <div>
-                <p className="text-ink-primary font-semibold text-[0.875rem]">Relatório completo em Markdown</p>
-                <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">Pronto para compartilhar com o cliente</p>
+            )}
+            {tab === 'executivo' && !selecionado?.analise_ia && !loading && (
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[3rem] card-shadow text-center">
+                <Sparkles className="w-[2.5rem] h-[2.5rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
+                <p className="text-ink-secondary text-[0.875rem]">Nenhuma análise disponível. Gere o relatório para obter a análise IA.</p>
               </div>
-              <button
-                onClick={baixarMarkdown}
-                className="flex items-center gap-[0.5rem] bg-surface-hover border border-surface-border text-ink-primary text-[0.8125rem] font-semibold h-[2rem] px-[0.875rem] rounded-[0.375rem] hover:border-ads-500/40 transition-colors"
-              >
-                <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
-                Baixar .md
-              </button>
-            </div>
-          )}
-        </>
-      )}
+            )}
+
+            {/* Tab: Email */}
+            {tab === 'email' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem]">
+                <EmailComposer
+                  clienteId={clienteSel}
+                  clienteNome={clienteAtual?.nome}
+                  clienteEmail={clienteAtual?.email}
+                  defaultVariables={mesAnoSel ? { mes_ano: mesAnoSel, nome_cliente: clienteAtual?.nome ?? '' } : undefined}
+                />
+                <ReportHistory clienteId={clienteSel} />
+              </div>
+            )}
+          </>
+        )}
       </div>
     </MainLayout>
-  );
+  )
 }

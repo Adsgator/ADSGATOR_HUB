@@ -27,6 +27,13 @@ import { DeviceBreakdown } from '@/components/analytics/DeviceBreakdown'
 import { GA4Panel } from '@/components/analytics/GA4Panel'
 import { TrafficSources } from '@/components/analytics/TrafficSources'
 import { AnalyticsMap } from '@/components/analytics/AnalyticsMap'
+import { HourDayHeatmap } from '@/components/analytics/HourDayHeatmap'
+import { GenderBreakdown } from '@/components/analytics/GenderBreakdown'
+import { CityTable } from '@/components/analytics/CityTable'
+import { AuctionInsights } from '@/components/analytics/AuctionInsights'
+import { GA4PagesTable } from '@/components/analytics/GA4PagesTable'
+import { GA4TrafficDetail } from '@/components/analytics/GA4TrafficDetail'
+import { GA4EventsTable } from '@/components/analytics/GA4EventsTable'
 
 const fmt  = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 const fmtN = (v: number) => new Intl.NumberFormat('pt-BR').format(v)
@@ -575,6 +582,62 @@ export default function AnalyticsPage() {
               <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
                 <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Fontes de Tráfego</h4>
                 <TrafficSources data={liveData.ga4.fontesTrafego} loading={loadingLive} />
+              </div>
+            )}
+
+            {/* Heatmap de horários */}
+            {liveData.googleAds.enabled && (liveData.googleAds as any).horario?.length > 0 && (
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Performance por Horário</h4>
+                <HourDayHeatmap data={(liveData.googleAds as any).horario} loading={loadingLive} />
+              </div>
+            )}
+
+            {/* Gênero */}
+            {liveData.googleAds.enabled && liveData.googleAds.demografia.length > 0 && (
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Gênero</h4>
+                <GenderBreakdown data={liveData.googleAds.demografia} loading={loadingLive} />
+              </div>
+            )}
+
+            {/* Tabela de cidades */}
+            {liveData.googleAds.enabled && liveData.googleAds.geografia.length > 0 && (
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Cidades — Google Ads</h4>
+                <CityTable data={liveData.googleAds.geografia} loading={loadingLive} />
+              </div>
+            )}
+
+            {/* Leilão de concorrentes */}
+            {liveData.googleAds.enabled && (liveData.googleAds as any).leilao?.length > 0 && (
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Leilão de Concorrentes</h4>
+                <AuctionInsights data={(liveData.googleAds as any).leilao} loading={loadingLive} />
+              </div>
+            )}
+
+            {/* GA4 — Páginas expandido */}
+            {liveData.ga4.enabled && liveData.ga4.paginasTop.length > 0 && (
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Páginas Mais Acessadas</h4>
+                <GA4PagesTable data={liveData.ga4.paginasTop as any} loading={loadingLive} />
+              </div>
+            )}
+
+            {/* GA4 — Origem do tráfego detalhado */}
+            {liveData.ga4.enabled && liveData.ga4.fontesTrafego.length > 0 && (
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Origem do Tráfego — Detalhado</h4>
+                <GA4TrafficDetail data={liveData.ga4.fontesTrafego} loading={loadingLive} />
+              </div>
+            )}
+
+            {/* GA4 — Eventos */}
+            {liveData.ga4.enabled && (liveData.ga4 as any).eventos?.length > 0 && (
+              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
+                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Eventos Disparados</h4>
+                <GA4EventsTable data={(liveData.ga4 as any).eventos} loading={loadingLive} />
               </div>
             )}
           </div>

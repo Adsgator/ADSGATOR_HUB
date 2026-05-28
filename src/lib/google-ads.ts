@@ -453,3 +453,56 @@ export async function obterHorario(
     return [];
   }
 }
+
+// ─── 6. LEILÃO DE CONCORRENTES (AUCTION INSIGHTS) ────────────────────────────
+
+export interface LeilaoDados {
+  dominio:            string;
+  parcela_impressao:  number; // impression share %
+  posicao_superior:   number; // above rate %
+  primeira_posicao:   number; // top of page rate %
+  sobreposicao:       number; // overlap rate %
+}
+
+export async function obterLeilao(
+  customerId: string,
+  mesAno:     string,
+): Promise<LeilaoDados[]> {
+  const [ano, mes] = mesAno.split('-').map(Number);
+  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
+  const ultimoDia    = new Date(ano, mes, 0);
+  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
+
+  try {
+    const client   = criarClienteAds();
+    const customer = client.Customer({
+      customer_id:   customerId,
+      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
+      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
+    });
+
+    const results = await customer.query(`
+      SELECT
+        auction_insight.domain,
+        metrics.search_impression_share,
+        metrics.search_absolute_top_impression_share,
+        metrics.search_top_impression_share,
+        metrics.search_overlap_rate
+      FROM auction_insight
+      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      ORDER BY metrics.search_impression_share DESC
+      LIMIT 20
+    `);
+
+    return results.map((r: Record<string, any>) => ({
+      dominio:           String(r.auction_insight?.domain ?? ''),
+      parcela_impressao: (r.metrics?.search_impression_share ?? 0) * 100,
+      posicao_superior:  (r.metrics?.search_absolute_top_impression_share ?? 0) * 100,
+      primeira_posicao:  (r.metrics?.search_top_impression_share ?? 0) * 100,
+      sobreposicao:      (r.metrics?.search_overlap_rate ?? 0) * 100,
+    }));
+  } catch (error) {
+    console.error('Erro ao obter leilão:', error);
+    return [];
+  }
+}

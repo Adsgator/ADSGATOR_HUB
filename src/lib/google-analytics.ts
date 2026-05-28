@@ -17,7 +17,10 @@ export interface PaginaPerformance {
   pagina:               string;
   visualizacoes:        number;
   usuarios_unicos:      number;
+  novas_sessoes:        number;
+  sessoes:              number;
   taxa_engajamento:     number;
+  taxa_rejeicao:        number;
   tempo_medio_segundos: number;
 }
 
@@ -108,21 +111,27 @@ export async function obterPaginasTopPerformance(
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'pagePath' }],
       metrics: [
-        { name: 'screenPageViews'      },
-        { name: 'activeUsers'          },
-        { name: 'engagementRate'       },
+        { name: 'screenPageViews'        },
+        { name: 'activeUsers'            },
+        { name: 'newUsers'               },
+        { name: 'sessions'               },
+        { name: 'engagementRate'         },
+        { name: 'bounceRate'             },
         { name: 'averageSessionDuration' },
       ],
       orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-      limit: 10,
+      limit: 50,
     });
 
     return (response?.rows ?? []).map((row: Record<string, any>) => ({
       pagina:               row.dimensionValues?.[0]?.value ?? '/',
       visualizacoes:        parseFloat(row.metricValues?.[0]?.value ?? '0'),
       usuarios_unicos:      parseFloat(row.metricValues?.[1]?.value ?? '0'),
-      taxa_engajamento:     parseFloat(row.metricValues?.[2]?.value ?? '0') * 100,
-      tempo_medio_segundos: parseFloat(row.metricValues?.[3]?.value ?? '0'),
+      novas_sessoes:        parseFloat(row.metricValues?.[2]?.value ?? '0'),
+      sessoes:              parseFloat(row.metricValues?.[3]?.value ?? '0'),
+      taxa_engajamento:     parseFloat(row.metricValues?.[4]?.value ?? '0') * 100,
+      taxa_rejeicao:        parseFloat(row.metricValues?.[5]?.value ?? '0') * 100,
+      tempo_medio_segundos: parseFloat(row.metricValues?.[6]?.value ?? '0'),
     }));
   } catch (error) {
     console.error('Erro ao obter páginas GA4:', error);
@@ -269,3 +278,43 @@ export async function obterDeviceGA4(
     return [];
   }
 }
+
+// ─── EVENTOS GA4 ─────────────────────────────────────────────────────────────
+
+export interface EventoGA4 {
+  evento:      string;
+  contagem:    number;
+  usuarios:    number;
+}
+
+export async function obterEventosGA4(
+  propertyId: string,
+  mesAno:     string,
+): Promise<EventoGA4[]> {
+  const { startDate, endDate } = intervaloMes(mesAno);
+
+  try {
+    const client = criarClienteGA4();
+    const [response] = await client.runReport({
+      property:   `properties/${propertyId}`,
+      dateRanges: [{ startDate, endDate }],
+      dimensions: [{ name: 'eventName' }],
+      metrics: [
+        { name: 'eventCount'  },
+        { name: 'activeUsers' },
+      ],
+      orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+      limit: 30,
+    });
+
+    return (response?.rows ?? []).map((row: Record<string, any>) => ({
+      evento:   row.dimensionValues?.[0]?.value ?? '',
+      contagem: parseFloat(row.metricValues?.[0]?.value ?? '0'),
+      usuarios: parseFloat(row.metricValues?.[1]?.value ?? '0'),
+    }));
+  } catch (error) {
+    console.error('Erro ao obter eventos GA4:', error);
+    return [];
+  }
+}
+

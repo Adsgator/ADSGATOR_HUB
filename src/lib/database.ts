@@ -1,5 +1,7 @@
 import { supabase } from './supabase';
 import type { Cliente, Estagio, HistoricoAcao, Assinatura, ChecklistItem } from './types';
+import type { TimelineTemplate, TimelineInstance, TimelineAlert, TimelineAlertHistory } from './types/timeline';
+import type { EmailHistory } from './types/email';
 
 // ============================================================
 // CLIENTES
@@ -342,4 +344,175 @@ export async function salvarDashboardLayout(userId: string, layouts: Layouts): P
     );
 
   if (error) throw new Error(`Erro ao salvar layout do dashboard: ${error.message}`);
+}
+
+// ============================================================
+// TIMELINE TEMPLATES
+// ============================================================
+
+export async function listarTimelineTemplates(type?: string): Promise<TimelineTemplate[]> {
+  let query = supabase.from('timeline_templates').select('*').eq('is_active', true);
+  if (type) query = query.eq('type', type);
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw new Error(`Erro ao listar templates: ${error.message}`);
+  return (data ?? []) as TimelineTemplate[];
+}
+
+export async function obterTimelineTemplate(id: string): Promise<TimelineTemplate> {
+  const { data, error } = await supabase
+    .from('timeline_templates')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw new Error(`Erro ao obter template: ${error.message}`);
+  return data as TimelineTemplate;
+}
+
+export async function criarTimelineTemplate(dados: Partial<TimelineTemplate>): Promise<TimelineTemplate> {
+  const { data, error } = await supabase
+    .from('timeline_templates')
+    .insert([dados])
+    .select()
+    .single();
+  if (error) throw new Error(`Erro ao criar template: ${error.message}`);
+  return data as TimelineTemplate;
+}
+
+export async function atualizarTimelineTemplate(id: string, dados: Partial<TimelineTemplate>): Promise<void> {
+  const { error } = await supabase
+    .from('timeline_templates')
+    .update(dados)
+    .eq('id', id);
+  if (error) throw new Error(`Erro ao atualizar template: ${error.message}`);
+}
+
+export async function deletarTimelineTemplate(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('timeline_templates')
+    .delete()
+    .eq('id', id);
+  if (error) throw new Error(`Erro ao deletar template: ${error.message}`);
+}
+
+// ============================================================
+// TIMELINE INSTANCES
+// ============================================================
+
+export async function listarTimelineInstances(clienteId?: string, type?: string): Promise<TimelineInstance[]> {
+  let query = supabase
+    .from('timeline_instances')
+    .select('*, template:timeline_templates(*)')
+    .neq('status', 'archived');
+
+  if (clienteId) query = query.eq('client_id', clienteId);
+  if (type) query = query.eq('type', type);
+
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw new Error(`Erro ao listar instâncias: ${error.message}`);
+  return (data ?? []) as TimelineInstance[];
+}
+
+export async function obterTimelineInstance(id: string): Promise<TimelineInstance> {
+  const { data, error } = await supabase
+    .from('timeline_instances')
+    .select('*, template:timeline_templates(*)')
+    .eq('id', id)
+    .single();
+  if (error) throw new Error(`Erro ao obter instância: ${error.message}`);
+  return data as TimelineInstance;
+}
+
+export async function criarTimelineInstance(dados: Partial<TimelineInstance>): Promise<TimelineInstance> {
+  const { data, error } = await supabase
+    .from('timeline_instances')
+    .insert([dados])
+    .select()
+    .single();
+  if (error) throw new Error(`Erro ao criar instância: ${error.message}`);
+  return data as TimelineInstance;
+}
+
+export async function atualizarTimelineInstance(id: string, dados: Partial<TimelineInstance>): Promise<TimelineInstance> {
+  const { data, error } = await supabase
+    .from('timeline_instances')
+    .update(dados)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`Erro ao atualizar instância: ${error.message}`);
+  return data as TimelineInstance;
+}
+
+// ============================================================
+// TIMELINE ALERTS
+// ============================================================
+
+export async function listarTimelineAlerts(clienteId?: string): Promise<TimelineAlert[]> {
+  let query = supabase.from('timeline_alerts').select('*').eq('enabled', true);
+  if (clienteId) {
+    query = query.or(`client_id.eq.${clienteId},client_id.is.null`);
+  }
+  const { data, error } = await query.order('created_at', { ascending: false });
+  if (error) throw new Error(`Erro ao listar alertas: ${error.message}`);
+  return (data ?? []) as TimelineAlert[];
+}
+
+export async function criarTimelineAlert(dados: Partial<TimelineAlert>): Promise<TimelineAlert> {
+  const { data, error } = await supabase
+    .from('timeline_alerts')
+    .insert([dados])
+    .select()
+    .single();
+  if (error) throw new Error(`Erro ao criar alerta: ${error.message}`);
+  return data as TimelineAlert;
+}
+
+export async function listarAlertHistory(clienteId?: string, limit = 50): Promise<TimelineAlertHistory[]> {
+  let query = supabase
+    .from('timeline_alert_history')
+    .select('*')
+    .order('triggered_at', { ascending: false })
+    .limit(limit);
+
+  if (clienteId) query = query.eq('client_id', clienteId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Erro ao listar histórico de alertas: ${error.message}`);
+  return (data ?? []) as TimelineAlertHistory[];
+}
+
+export async function acknowledgeAlert(historyId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('timeline_alert_history')
+    .update({ acknowledged_at: new Date().toISOString(), acknowledged_by: userId })
+    .eq('id', historyId);
+  if (error) throw new Error(`Erro ao confirmar alerta: ${error.message}`);
+}
+
+// ============================================================
+// EMAIL HISTORY
+// ============================================================
+
+export async function listarEmailHistory(clienteId?: string, limit = 50): Promise<EmailHistory[]> {
+  let query = supabase
+    .from('email_history')
+    .select('*')
+    .order('enviado_em', { ascending: false })
+    .limit(limit);
+
+  if (clienteId) query = query.eq('cliente_id', clienteId);
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Erro ao listar histórico de emails: ${error.message}`);
+  return (data ?? []) as EmailHistory[];
+}
+
+export async function registrarEmailHistory(dados: Omit<EmailHistory, 'id' | 'enviado_em'>): Promise<EmailHistory> {
+  const { data, error } = await supabase
+    .from('email_history')
+    .insert([dados])
+    .select()
+    .single();
+  if (error) throw new Error(`Erro ao registrar email: ${error.message}`);
+  return data as EmailHistory;
 }

@@ -3,13 +3,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
-  ArrowLeft, User, CheckSquare, BarChart3, History,
+  ArrowLeft, User, CheckSquare, BarChart3, History, GitBranch,
   Phone, Mail, Globe, Calendar, DollarSign, AlertCircle,
   MessageCircle, Snowflake, Play, Pencil, Check, X as XIcon,
+  FileText, Send, ChevronDown, ChevronUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/Button'
+import { TimelineContent } from '@/components/dashboard/TimelineContent'
+import { EmailComposer } from '@/components/relatorios/EmailComposer'
 import { ChecklistCard } from '@/components/clientes/ChecklistCard'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
@@ -27,6 +30,14 @@ import {
 } from '@/lib/database'
 import type { Cliente, Estagio, HistoricoAcao } from '@/lib/types'
 import { toast } from 'sonner'
+
+interface TimelineInstanceSummary {
+  id: string
+  status: string
+  completed_steps: string[]
+  template?: { name: string; type: string; steps: { id: string; title: string }[] }
+  current_step_id?: string
+}
 
 // ── Componente de edição inline ───────────────────────────────────────────────
 function InlineEdit({
@@ -94,13 +105,14 @@ function InlineEdit({
   )
 }
 
-type AbaId = 'visao_geral' | 'checklist' | 'campanhas' | 'historico'
+type AbaId = 'visao_geral' | 'checklist' | 'campanhas' | 'historico' | 'timeline'
 
 const ABAS: { id: AbaId; label: string; icon: typeof User }[] = [
-  { id: 'visao_geral', label: 'Visão Geral',  icon: User       },
+  { id: 'visao_geral', label: 'Visão Geral',  icon: User        },
   { id: 'checklist',   label: 'Checklists',   icon: CheckSquare },
   { id: 'campanhas',   label: 'Campanhas',    icon: BarChart3   },
   { id: 'historico',   label: 'Histórico',    icon: History     },
+  { id: 'timeline',    label: 'Timeline',     icon: GitBranch   },
 ]
 
 const STATUS_LABELS: Record<string, string> = {
@@ -134,9 +146,18 @@ export default function ClienteDetalhePage() {
   const [historico, setHistorico] = useState<HistoricoAcao[]>([])
   const [abaAtiva,  setAbaAtiva]  = useState<AbaId>('visao_geral')
   const [carregando, setCarregando] = useState(true)
-  const [whatsappOpen, setWhatsappOpen] = useState(false)
-  const [agindo, setAgindo] = useState(false)
+  const [whatsappOpen,   setWhatsappOpen]   = useState(false)
+  const [agindo,         setAgindo]         = useState(false)
   const [filtroHistorico, setFiltroHistorico] = useState('')
+  const [emailOpen,      setEmailOpen]      = useState(false)
+  // Timeline tab state
+  const [timelineInstances,  setTimelineInstances]  = useState<TimelineInstanceSummary[]>([])
+  const [timelineTemplates,  setTimelineTemplates]  = useState<{ id: string; name: string }[]>([])
+  const [timelineLoading,    setTimelineLoading]    = useState(false)
+  const [timelineLoaded,     setTimelineLoaded]     = useState(false)
+  const [expandedInstance,   setExpandedInstance]   = useState<string | null>(null)
+  const [creatingTimeline,   setCreatingTimeline]   = useState(false)
+  const [selectedTemplate,   setSelectedTemplate]   = useState('')
 
   async function salvarCampo(campo: keyof Cliente, valor: string) {
     if (!cliente) return
@@ -144,6 +165,56 @@ export default function ClienteDetalhePage() {
     setCliente((prev) => prev ? { ...prev, [campo]: valor || null } : prev)
     toast.success('Campo atualizado')
   }
+
+  async function carregarTimelines() {
+    if (!id || timelineLoaded) return
+    setTimelineLoading(true)
+    try {
+      const [instRes, tplRes] = await Promise.all([
+        fetch(`/api/v1/timelines?clienteId=${id}`),
+        fetch('/api/v1/timeline-templates'),
+      ])
+      if (instRes.ok) {
+        const data = await instRes.json()
+        setTimelineInstances(Array.isArray(data) ? data : (data.data ?? []))
+      }
+      if (tplRes.ok) {
+        const data = await tplRes.json()
+        setTimelineTemplates(Array.isArray(data) ? data : (data.data ?? []))
+      }
+      setTimelineLoaded(true)
+    } catch {
+      toast.error('Erro ao carregar timelines')
+    } finally {
+      setTimelineLoading(false)
+    }
+  }
+
+  async function criarTimeline() {
+    if (!selectedTemplate || !id) return
+    setCreatingTimeline(true)
+    try {
+      const res = await fetch('/api/v1/timelines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ template_id: selectedTemplate, client_id: id }),
+      })
+      if (!res.ok) throw new Error('Falha ao criar timeline')
+      const nova = await res.json()
+      setTimelineInstances((prev) => [nova, ...prev])
+      setSelectedTemplate('')
+      toast.success('Timeline criada')
+    } catch {
+      toast.error('Erro ao criar timeline')
+    } finally {
+      setCreatingTimeline(false)
+    }
+  }
+
+  useEffect(() => {
+    if (abaAtiva === 'timeline') carregarTimelines()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [abaAtiva])
 
   useEffect(() => {
     if (!id) return
@@ -220,6 +291,24 @@ export default function ClienteDetalhePage() {
 
   const actions = (
     <div className="flex items-center gap-[0.5rem]">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => router.push(`/relatorios?clienteId=${cliente.id}`)}
+        icon={<FileText className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+        className="text-status-blue bg-status-blue/10 hover:bg-status-blue/20 hover:text-status-blue"
+      >
+        Gerar Relatório
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setEmailOpen(true)}
+        icon={<Send className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+        className="text-status-purple bg-status-purple/10 hover:bg-status-purple/20 hover:text-status-purple"
+      >
+        Enviar Email
+      </Button>
       <Button
         variant="ghost"
         size="sm"
@@ -347,6 +436,18 @@ export default function ClienteDetalhePage() {
               <Globe className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={1.5} />
               <InlineEdit value={cliente.dominio} type="url" onSave={(v) => salvarCampo('dominio', v)} placeholder="domínio" />
             </span>
+            {'email_relatorio' in cliente && (
+              <span className="flex items-center gap-[0.375rem]">
+                <FileText className="w-[0.875rem] h-[0.875rem] shrink-0" strokeWidth={1.5} />
+                <span className="text-ink-muted text-[0.75rem] mr-[0.25rem]">Email relatório:</span>
+                <InlineEdit
+                  value={(cliente as Cliente & { email_relatorio?: string }).email_relatorio}
+                  type="email"
+                  onSave={(v) => salvarCampo('email_relatorio' as keyof Cliente, v)}
+                  placeholder="email para relatórios"
+                />
+              </span>
+            )}
           </div>
         </div>
 
@@ -503,6 +604,108 @@ export default function ClienteDetalhePage() {
           )
         })()}
 
+        {abaAtiva === 'timeline' && (
+          <div className="space-y-[1rem]">
+            {/* Create new timeline */}
+            <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
+              <h3 className="text-ink-primary text-[0.9375rem] font-semibold mb-[0.75rem]">Nova Timeline</h3>
+              <div className="flex items-center gap-[0.75rem]">
+                <select
+                  value={selectedTemplate}
+                  onChange={(e) => setSelectedTemplate(e.target.value)}
+                  className="flex-1 h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:border-ads-500/60 focus:ring-2 focus:ring-ads-500/10 transition-colors"
+                >
+                  <option value="">Selecionar template…</option>
+                  {timelineTemplates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={criarTimeline}
+                  disabled={!selectedTemplate || creatingTimeline}
+                  className="h-[2.25rem] px-[1rem] rounded-lg bg-ads-500 hover:bg-ads-600 disabled:opacity-50 text-white text-[0.875rem] font-medium transition-colors"
+                >
+                  {creatingTimeline ? 'Criando…' : 'Criar'}
+                </button>
+              </div>
+            </div>
+
+            {/* Instances list */}
+            {timelineLoading ? (
+              <div className="flex items-center justify-center py-[3rem]">
+                <div className="w-[1.5rem] h-[1.5rem] border-2 border-ads-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : timelineInstances.length === 0 ? (
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[2rem] card-shadow text-center">
+                <GitBranch className="w-[2rem] h-[2rem] text-ink-muted mx-auto mb-[0.75rem]" strokeWidth={1.5} />
+                <p className="text-ink-secondary text-[0.875rem]">Nenhuma timeline ativa para este cliente.</p>
+              </div>
+            ) : (
+              <div className="space-y-[0.75rem]">
+                {timelineInstances.map((inst) => {
+                  const steps = inst.template?.steps ?? []
+                  const total = steps.length
+                  const done  = inst.completed_steps.length
+                  const pct   = total > 0 ? Math.round((done / total) * 100) : 0
+                  const currentStep = steps.find((s) => s.id === inst.current_step_id)
+                  const isExpanded = expandedInstance === inst.id
+
+                  return (
+                    <div key={inst.id} className="bg-surface-card border border-surface-border rounded-xl card-shadow overflow-hidden">
+                      <button
+                        onClick={() => setExpandedInstance(isExpanded ? null : inst.id)}
+                        className="w-full flex items-center justify-between px-[1.25rem] py-[1rem] hover:bg-surface-hover transition-colors"
+                      >
+                        <div className="flex items-center gap-[0.75rem] min-w-0">
+                          <GitBranch className="w-[1rem] h-[1rem] text-ads-500 shrink-0" strokeWidth={2} />
+                          <div className="text-left min-w-0">
+                            <p className="text-ink-primary text-[0.875rem] font-medium truncate">
+                              {inst.template?.name ?? 'Timeline'}
+                            </p>
+                            {currentStep && (
+                              <p className="text-ink-muted text-[0.75rem] truncate">Step atual: {currentStep.title}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-[1rem] shrink-0 ml-[0.75rem]">
+                          <div className="flex items-center gap-[0.5rem]">
+                            <div className="w-[6rem] h-[0.375rem] bg-surface-hover rounded-full overflow-hidden">
+                              <div className="h-full bg-ads-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="text-ink-muted text-[0.75rem] w-[2.5rem] text-right">{pct}%</span>
+                          </div>
+                          <span className={cn(
+                            'px-[0.5rem] py-[0.125rem] rounded-full text-[0.75rem] font-medium',
+                            inst.status === 'completed' ? 'bg-status-green/10 text-status-green'
+                            : inst.status === 'paused'  ? 'bg-status-orange/10 text-status-orange'
+                            : inst.status === 'archived' ? 'bg-ink-muted/10 text-ink-muted'
+                            : 'bg-status-blue/10 text-status-blue',
+                          )}>
+                            {inst.status}
+                          </span>
+                          {isExpanded
+                            ? <ChevronUp className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={2} />
+                            : <ChevronDown className="w-[0.875rem] h-[0.875rem] text-ink-muted" strokeWidth={2} />
+                          }
+                        </div>
+                      </button>
+                      {isExpanded && (
+                        <div className="border-t border-surface-border">
+                          <TimelineContent
+                            instance={inst as import('@/lib/types/timeline').TimelineInstance}
+                            onStepComplete={async () => {}}
+                            onStepWait={async () => {}}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
 
       {whatsappOpen && (
@@ -510,6 +713,30 @@ export default function ClienteDetalhePage() {
           cliente={cliente}
           onClose={() => setWhatsappOpen(false)}
         />
+      )}
+
+      {emailOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-[1rem]">
+          <div className="max-w-2xl w-full bg-surface-card border border-surface-border rounded-2xl flex flex-col max-h-[90vh] animate-fade-scale">
+            <div className="flex items-center justify-between px-[1.5rem] py-[1.125rem] border-b border-surface-border">
+              <h2 className="text-ink-primary text-[1rem] font-semibold">Enviar Email</h2>
+              <button
+                onClick={() => setEmailOpen(false)}
+                className="w-[1.75rem] h-[1.75rem] flex items-center justify-center rounded-lg text-ink-muted hover:text-ink-secondary hover:bg-surface-hover transition-colors"
+              >
+                <XIcon className="w-[1rem] h-[1rem]" strokeWidth={2} />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-[1.25rem]">
+              <EmailComposer
+                clienteId={cliente.id}
+                clienteNome={cliente.nome}
+                clienteEmail={cliente.email ?? undefined}
+                onSent={() => setEmailOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </MainLayout>
   )
