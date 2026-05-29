@@ -166,9 +166,14 @@ body {
   transition: transform 200ms cubic-bezier(0.4,0,0.2,1),
               box-shadow 200ms cubic-bezier(0.4,0,0.2,1),
               border-color 200ms cubic-bezier(0.4,0,0.2,1);
+  cursor: pointer;
 }
 .card-interactive:hover {
   transform: translateY(-0.0625rem);
+}
+.card-interactive:active {
+  transform: scale(0.985);
+  transition-duration: 80ms;
 }
 
 /* ─── PAGE ENTER — animação de entrada staggered ────────────────────────── */
@@ -424,4 +429,48 @@ body {
   font-family: var(--font-geist-mono);
   font-size: 0.8125rem;
   font-weight: 500;
+}
+
+/* ─── PRINT STYLES ─────────────────────────────────────────────────────────── */
+@media print {
+  /* Oculta elementos de layout */
+  .topbar-shell,
+  .sidebar-shell,
+  .rightsidebar-shell,
+  .statusbar-shell,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Fundo branco e texto preto para impressão */
+  body {
+    background: white !important;
+    color: black !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Conteúdo principal ocupa 100% */
+  main,
+  [role="main"] {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 1rem !important;
+  }
+
+  /* Remove sombras e transições para impressão */
+  * {
+    box-shadow: none !important;
+    transition: none !important;
+  }
+
+  /* Melhora para impressão */
+  a {
+    text-decoration: underline;
+  }
+
+  p {
+    orphans: 3;
+    widows: 3;
+  }
 }

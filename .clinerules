@@ -85,6 +85,34 @@ export default function Pagina() {
 
 ---
 
+## Padrão de ConfirmDialog (OBRIGATÓRIO — substituiu confirm() nativo)
+
+```typescript
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
+
+function handleDelete(id: string) {
+  const openConfirm = useConfirmDialogStore.getState().openConfirm
+  openConfirm('Título', 'Mensagem.', async () => {
+    // lógica de deleção aqui
+  })
+}
+```
+
+- NUNCA usar `window.confirm()` ou `confirm()` — sempre `openConfirm`
+- O `ConfirmDialog` já está no `MainLayout`, não precisa importar nas páginas
+
+---
+
+## Novos Módulos (desde Jun/2025)
+
+- `/base-conhecimento` — artigos internos
+- `/operacional` — planos por cliente
+- `/portfolio` — cases da agência
+- `/prospectar` — CRM prospecção
+- `/portal/[token]` — portal do cliente (público)
+
+---
+
 ## O que NÃO Fazer
 
 - Não criar arquivos que não foram pedidos
@@ -95,6 +123,7 @@ export default function Pagina() {
 - Não mudar convenções de import sem alinhar
 - Não adicionar comentários óbvios ao código
 - Não criar documentação extra não solicitada
+- Não usar `confirm()` nativo — usar `openConfirm` do `useConfirmDialogStore`
 
 ---
 

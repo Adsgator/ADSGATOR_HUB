@@ -39,11 +39,14 @@ export function NewsContainer() {
     setLoading(true)
     try {
       const res = await fetch('/api/v1/news')
-      if (!res.ok) return
+      if (!res.ok) {
+        setLoading(false)
+        return
+      }
       const json = await res.json()
       setClientes(json.data ?? [])
-    } catch {
-      // silently fail — non-critical
+    } catch (err) {
+      console.error('NewsContainer fetch error:', err)
     } finally {
       setLoading(false)
     }
@@ -80,6 +83,7 @@ export function NewsContainer() {
     el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' })
   }
 
+  // Ocultar apenas se tiver carregado e não há clientes
   if (!loading && clientes.length === 0) return null
 
   return (

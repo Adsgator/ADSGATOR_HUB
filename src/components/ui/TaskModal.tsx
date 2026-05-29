@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import { X, Save, Calendar, Flag, User, Plus, CheckSquare, Square, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { fadeScale, backdropVariants } from '@/lib/motion'
 import type { Tarefa, TarefaPrioridade } from '@/lib/types'
 
 interface SubTask { id: string; texto: string; concluido: boolean }
@@ -104,8 +106,8 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-[1rem]">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface-card border border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col animate-fade-scale">
+      <motion.div variants={backdropVariants} initial="hidden" animate="visible" exit="exit" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div variants={fadeScale} initial="hidden" animate="visible" exit="exit" className="relative bg-surface-card border border-surface-border rounded-2xl card-shadow shadow-2xl w-full max-w-[32rem] max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-b border-surface-border shrink-0">
           <p className="text-ink-primary font-semibold text-[0.9375rem]">
@@ -114,7 +116,7 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
           <Button variant="ghost" size="sm" onClick={onClose} icon={<X className="w-[1rem] h-[1rem]" strokeWidth={2} />} className="w-[2rem] px-0" />
         </div>
 
-        <form onSubmit={salvar} className="p-[1.5rem] flex flex-col gap-[1rem] overflow-y-auto">
+        <form onSubmit={salvar} className="p-[1.5rem] flex flex-col gap-[1rem] overflow-y-auto flex-1">
           {/* Título */}
           <div>
             <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">Título *</label>
@@ -279,7 +281,7 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
             </Button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   )
 }

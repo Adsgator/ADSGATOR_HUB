@@ -5,15 +5,18 @@ import {
   TrendingUp, DollarSign, AlertCircle,
   MessageCircle, RefreshCw, Users, Download,
   Target, Clock, Zap, Plus, X as XIcon,
-  Pencil, Copy, Trash2,
+  Pencil, Copy, Trash2, CheckCircle, Clock3, Filter,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { Button }     from '@/components/ui/Button'
-import { supabase }   from '@/lib/supabase'
+import { MainLayout }  from '@/components/layout/MainLayout'
+import { Button }      from '@/components/ui/Button'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { supabase }    from '@/lib/supabase'
+import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import type { FinanceiroLancamento, Cliente } from '@/lib/types'
 
 const fmt = (v: number) =>
@@ -105,6 +108,8 @@ export default function FinanceiroPage() {
   const [erroLanc,     setErroLanc]     = useState('')
   const [editandoLanc, setEditandoLanc] = useState<FinanceiroLancamento | null>(null)
   const [deletandoId,  setDeletandoId]  = useState<string | null>(null)
+
+  const { setContextActions, clearContextActions } = useRightSidebarStore()
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -216,6 +221,36 @@ export default function FinanceiroPage() {
     }
   }, [periodoSel])
 
+  useEffect(() => {
+    setContextActions([
+      {
+        id: 'nova-transacao',
+        icon: Plus,
+        label: 'Nova Transação',
+        onClick: () => setModalLanc(true),
+      },
+      {
+        id: 'exportar-csv',
+        icon: Download,
+        label: 'Exportar CSV',
+        onClick: () => gerarCSV(todosLancs),
+      },
+      {
+        id: 'filtrar',
+        icon: Filter,
+        label: 'Filtrar',
+        onClick: () => {},
+      },
+      {
+        id: 'atualizar',
+        icon: RefreshCw,
+        label: 'Atualizar',
+        onClick: () => carregar(),
+      },
+    ])
+    return () => clearContextActions()
+  }, [todosLancs, carregar, setContextActions, clearContextActions])
+
   useEffect(() => { carregar() }, [carregar])
 
   async function salvarLancamento() {
@@ -276,6 +311,15 @@ export default function FinanceiroPage() {
     await supabase.from('financeiro_lancamentos').delete().eq('id', id)
     setDeletandoId(null)
     carregar()
+  }
+
+  function confirmarDeletarLancamento(id: string, descricao: string) {
+    const openConfirm = useConfirmDialogStore.getState().openConfirm
+    openConfirm(
+      'Deletar Lançamento',
+      `Você está prestes a deletar "${descricao}". Esta ação não pode ser desfeita.`,
+      () => deletarLancamento(id)
+    )
   }
 
   if (loading || !dre) {
@@ -524,51 +568,87 @@ export default function FinanceiroPage() {
           ) : (
             <div className="flex flex-col divide-y divide-surface-border">
               {lancamentos.map((l) => (
-                <div key={l.id} className="flex items-center gap-[0.75rem] py-[0.625rem] group">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-ink-secondary text-[0.875rem] truncate">{l.descricao}</p>
-                    <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">
-                      {new Date(l.data).toLocaleDateString('pt-BR')}
-                      {' · '}
-                      <span className="capitalize">{l.tipo.replace(/_/g, ' ')}</span>
-                      {l.status === 'pendente' && (
-                        <span className="ml-[0.375rem] text-status-orange font-medium">pendente</span>
-                      )}
+                <ContextMenu
+                  key={l.id}
+                  items={[
+                    {
+                      label: 'Editar',
+                      icon: <Pencil className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                      onClick: () => { setEditandoLanc(l); setErroLanc('') },
+                      shortcut: 'E',
+                    },
+                    {
+                      label: 'Duplicar',
+                      icon: <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                      onClick: () => duplicarLancamento(l),
+                      shortcut: 'D',
+                    },
+                    {
+                      label: l.status === 'pendente' ? 'Marcar como confirmado' : 'Marcar como pendente',
+                      icon: l.status === 'pendente'
+                        ? <CheckCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                        : <Clock3 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                      onClick: async () => {
+                        await supabase.from('financeiro_lancamentos')
+                          .update({ status: l.status === 'pendente' ? 'confirmado' : 'pendente' })
+                          .eq('id', l.id)
+                        carregar()
+                      },
+                      separator: true,
+                    },
+                    {
+                      label: 'Deletar',
+                      icon: <Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                      variant: 'danger',
+                      onClick: () => confirmarDeletarLancamento(l.id, l.descricao),
+                      separator: true,
+                    },
+                  ]}
+                >
+                  <div className="flex items-center gap-[0.75rem] py-[0.625rem] group">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-ink-secondary text-[0.875rem] truncate">{l.descricao}</p>
+                      <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">
+                        {new Date(l.data).toLocaleDateString('pt-BR')}
+                        {' · '}
+                        <span className="capitalize">{l.tipo.replace(/_/g, ' ')}</span>
+                        {l.status === 'pendente' && (
+                          <span className="ml-[0.375rem] text-status-orange font-medium">pendente</span>
+                        )}
+                      </p>
+                    </div>
+                    <p className={`text-[0.9375rem] font-semibold shrink-0 ${
+                      l.tipo === 'receita' ? 'text-status-green' : 'text-status-red'
+                    }`}>
+                      {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
                     </p>
+                    {/* Ações — aparecem no hover */}
+                    <div className="flex items-center gap-[0.25rem] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                      <Button
+                        variant="ghost" size="sm" className="w-[2rem] px-0"
+                        title="Editar"
+                        onClick={() => { setEditandoLanc(l); setErroLanc('') }}
+                      >
+                        <Pencil className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm" className="w-[2rem] px-0"
+                        title="Duplicar"
+                        onClick={() => duplicarLancamento(l)}
+                      >
+                        <Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                      </Button>
+                      <Button
+                        variant="ghost" size="sm" className="w-[2rem] px-0 text-status-red hover:text-status-red hover:bg-status-red/10"
+                        title="Deletar"
+                        loading={deletandoId === l.id}
+                        onClick={() => confirmarDeletarLancamento(l.id, l.descricao)}
+                      >
+                        {deletandoId !== l.id && <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />}
+                      </Button>
+                    </div>
                   </div>
-                  <p className={`text-[0.9375rem] font-semibold shrink-0 ${
-                    l.tipo === 'receita' ? 'text-status-green' : 'text-status-red'
-                  }`}>
-                    {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
-                  </p>
-                  {/* Ações — aparecem no hover */}
-                  <div className="flex items-center gap-[0.25rem] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <Button
-                      variant="ghost" size="sm" className="w-[2rem] px-0"
-                      title="Editar"
-                      onClick={() => { setEditandoLanc(l); setErroLanc('') }}
-                    >
-                      <Pencil className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
-                    </Button>
-                    <Button
-                      variant="ghost" size="sm" className="w-[2rem] px-0"
-                      title="Duplicar"
-                      onClick={() => duplicarLancamento(l)}
-                    >
-                      <Copy className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
-                    </Button>
-                    <Button
-                      variant="ghost" size="sm" className="w-[2rem] px-0 text-status-red hover:text-status-red hover:bg-status-red/10"
-                      title="Deletar"
-                      loading={deletandoId === l.id}
-                      onClick={() => {
-                        if (confirm(`Deletar "${l.descricao}"?`)) deletarLancamento(l.id)
-                      }}
-                    >
-                      {deletandoId !== l.id && <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />}
-                    </Button>
-                  </div>
-                </div>
+                </ContextMenu>
               ))}
             </div>
           )}

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Edit2, Trash2, Layers } from 'lucide-react'
 import { toast } from 'sonner'
 import { MainLayout } from '@/components/layout/MainLayout'
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { TemplateBuilder } from '@/components/timeline/TemplateBuilder'
 import type { TemplateData } from '@/components/timeline/TemplateBuilder'
 import { cn } from '@/lib/utils'
@@ -40,9 +41,13 @@ export default function TemplatesPage() {
 
   useEffect(() => { carregar() }, [carregar])
 
-  async function handleDelete(id: string) {
-    if (!confirm('Remover este template? Esta ação não pode ser desfeita.')) return
-    setDeleting(id)
+  function handleDelete(id: string) {
+    const openConfirm = useConfirmDialogStore.getState().openConfirm
+    openConfirm(
+      'Deletar Template',
+      'Este template será removido permanentemente. Esta ação não pode ser desfeita.',
+      async () => {
+        setDeleting(id)
     try {
       const res = await fetch(`/api/v1/timeline-templates/${id}`, { method: 'DELETE' })
       if (res.ok) {
@@ -54,6 +59,8 @@ export default function TemplatesPage() {
     } finally {
       setDeleting(null)
     }
+      }
+    )
   }
 
   function handleSaved(saved: TemplateData) {

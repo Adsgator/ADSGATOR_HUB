@@ -40,23 +40,29 @@ src/
 │   │   ├── tarefas/
 │   │   ├── marketing/
 │   │   ├── biblioteca/
+│   │   ├── base-conhecimento/  # Knowledge base interno
+│   │   ├── operacional/        # Planos operacionais + fluxos
+│   │   ├── portfolio/          # Portfólio de cases da agência
+│   │   ├── prospectar/         # CRM de prospecção
 │   │   ├── configuracoes/
 │   │   └── ajuda/
+│   ├── (portal)/         # Portal do cliente (público autenticado)
 │   ├── api/              # API routes Next.js
 │   ├── login/
 │   ├── globals.css
 │   └── layout.tsx
 ├── components/
 │   ├── layout/           # Shell: TopBar, Sidebar, RightSidebar, StatusBar, MainLayout
-│   ├── ui/               # Componentes primitivos (ThemeToggle, etc.)
+│   ├── ui/               # Componentes primitivos (Button, ContextMenu, TaskModal, ConfirmDialog, etc.)
 │   ├── clientes/         # ClienteCard, ChecklistCard, AuditTimeline, etc.
 │   ├── analytics/
 │   ├── configuracoes/
-│   └── dashboard/
+│   └── dashboard/        # BentoCard, KpiCard, MorningBriefing, NewsContainer, etc.
 ├── lib/
-│   ├── hooks/            # useClientes, useRealtime, etc.
-│   ├── store/            # Zustand stores
+│   ├── hooks/            # useClientes, useConfirmDialog, usePermissoes, etc.
+│   ├── store/            # Zustand stores (right-sidebar, mobileMenu, appStore)
 │   ├── supabase/         # Cliente Supabase + types
+│   ├── motion.ts         # Framer Motion variants (fadeScale, slideInBottom, etc.)
 │   ├── utils.ts          # cn() helper
 │   ├── auth.ts
 │   ├── database.ts       # Queries tipadas
@@ -267,32 +273,45 @@ interface MainLayoutProps {
 
 | Rota                     | Módulo            |
 |--------------------------|-------------------|
-| `/dashboard`             | Home / Morning Briefing |
+| `/dashboard`             | Home / Morning Briefing / Bento Grid |
 | `/clientes`              | Lista de clientes |
 | `/clientes/novo`         | Formulário novo cliente |
 | `/clientes/[id]`         | Detalhe do cliente |
 | `/financeiro`            | DRE + transações + inadimplentes |
 | `/analytics`             | Google Ads + GA4 |
 | `/relatorios`            | Relatórios automáticos |
-| `/tarefas`               | Task manager |
+| `/tarefas`               | Task manager (lista + kanban) |
 | `/marketing`             | Calendário social |
 | `/biblioteca`            | Componentes Astro + manifestos |
-| `/configuracoes`         | Perfil, integrações, tema |
+| `/base-conhecimento`     | Knowledge base interno |
+| `/operacional`           | Planos operacionais + fluxos |
+| `/portfolio`             | Portfólio de cases |
+| `/prospectar`            | CRM de prospecção |
+| `/configuracoes`         | Perfil, integrações, tema (7 abas) |
 | `/ajuda`                 | Help center |
+| `/portal/[token]`        | Portal do cliente (público) |
 
 ---
 
 ## Banco de Dados (Tabelas Principais)
 
 ```sql
-clientes           — dados do cliente, status, mrr, dias_atraso
-assinaturas        — planos de cobrança dos clientes
-estagios           — checklist por fase (pre_vendas, onboarding, etc.)
+clientes              — dados do cliente, status, mrr, dias_atraso, saldo_google
+assinaturas           — planos de cobrança dos clientes
+estagios              — checklist por fase (pre_vendas, onboarding, etc.)
 financeiro_lancamentos — receitas e despesas da agência
-notificacoes       — alertas e notificações in-app
-historico_acoes    — audit log de todas as ações
-tarefas            — task manager
-memoria_cliente    — arquivo .md por cliente (contexto IA)
+notificacoes          — alertas e notificações in-app
+historico_acoes       — audit log de todas as ações
+tarefas               — task manager (checklist JSONB, prioridade, data_prazo)
+memoria_cliente       — arquivo .md por cliente (contexto IA)
+alertas               — alertas críticos do sistema (saldo, inadimplência)
+posts_marketing       — calendário social (rascunho/agendado/publicado)
+base_conhecimento     — artigos internos da agência
+analytics_snapshots   — snapshots Google Ads + GA4 por cliente
+metas                 — metas da agência com progresso
+prospects             — CRM de prospecção
+projetos              — projetos internos da agência
+planos_operacionais   — planos operacionais por cliente
 ```
 
 ---
@@ -312,31 +331,78 @@ supabase/functions/
 
 ---
 
+## Componentes UI Disponíveis
+
+| Componente        | Arquivo                          | Uso                                             |
+|-------------------|----------------------------------|-------------------------------------------------|
+| `Button`          | `components/ui/Button.tsx`       | Botão com variantes (primary, secondary, ghost, danger, subtle) |
+| `ConfirmDialog`   | `components/ui/ConfirmDialog.tsx`| Dialog de confirmação global (via Zustand)      |
+| `ContextMenu`     | `components/ui/ContextMenu.tsx`  | Menu de contexto (right-click ou botão)         |
+| `TaskModal`       | `components/ui/TaskModal.tsx`    | Modal criar/editar tarefa                       |
+| `DrawerEditor`    | `components/ui/DrawerEditor.tsx` | Drawer lateral com editor de conteúdo           |
+| `GlobalSearch`    | `components/ui/GlobalSearch.tsx` | Busca global (Ctrl+K)                           |
+| `ShortcutsOverlay`| `components/ui/ShortcutsOverlay.tsx`| Overlay de atalhos (?)                       |
+| `Tooltip`         | `components/ui/Tooltip.tsx`      | Tooltip simples                                 |
+| `Motion`          | `components/ui/Motion.tsx`       | Wrappers de animação Framer Motion              |
+
+### Padrão de ConfirmDialog (substituiu confirm() nativo)
+
+```typescript
+// Em vez de: if (confirm('Deletar?')) { ... }
+// Usar:
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
+
+function handleDelete(id: string) {
+  const openConfirm = useConfirmDialogStore.getState().openConfirm
+  openConfirm(
+    'Título do Dialog',
+    'Mensagem de confirmação.',
+    async () => {
+      // lógica async aqui
+    }
+  )
+}
+```
+
+O `ConfirmDialog` é renderizado globalmente no `MainLayout` — não precisa importar em cada página.
+
+---
+
 ## O que Está Implementado
 
-- [x] Shell de layout (TopBar + Sidebar + RightSidebar + StatusBar)
+- [x] Shell de layout (TopBar + Sidebar hover-expand + RightSidebar + StatusBar)
 - [x] Tema dark/light com CSS vars + ThemeToggle
 - [x] Autenticação Supabase (login, logout, sessão)
-- [x] Módulo Clientes — lista, novo (página de detalhe `[id]` tem bug — ver Pendente)
+- [x] Módulo Clientes — lista, novo, detalhe `[id]` com projetos e timeline
 - [x] Módulo Financeiro — DRE, transações, inadimplentes
 - [x] Módulo Relatórios — solicitação e histórico
-- [x] Módulo Dashboard — Bento Grid (react-grid-layout), Morning Briefing, KPIs, Ações do Dia, WeatherClock, DRE Sparkline, Alertas Críticos, Gemini Chat
-- [x] Módulo Tarefas — lista com filtros/grouping, criar/editar/concluir/deletar, adiar, TaskModal, context menu
+- [x] Módulo Dashboard — Bento Grid customizável (react-grid-layout), Morning Briefing, KPIs, Ações do Dia, WeatherClock, DRE Sparkline, Alertas Críticos, Gemini Chat, ActivityFeed, NewsContainer, Timeline, ChurnRisk, TopPerformers, CentralDeComando, GoalsCard
+- [x] Módulo Tarefas — lista + kanban, filtros/grouping, criar/editar/concluir/deletar, adiar, TaskModal, context menu
 - [x] Módulo Marketing — calendário semanal 4 semanas, criar/editar posts, KPIs, status (rascunho/agendado/publicado)
 - [x] Módulo Biblioteca — browse componentes Astro por categoria, construtor visual, gerador manifesto .md
 - [x] Módulo Configurações — 7 abas (Perfil, Notificações, Integrações, Financeiro, Aparência, Equipe, Auditoria)
 - [x] Módulo Analytics — UI completa, Google Ads + GA4 com dados reais quando credenciais configuradas
+- [x] Módulo Base de Conhecimento — artigos internos com busca
+- [x] Módulo Operacional — planos operacionais + fluxos por cliente
+- [x] Módulo Portfólio — cases da agência
+- [x] Módulo Prospectar — CRM de prospecção
+- [x] Portal do Cliente — rota pública `/portal/[token]`
+- [x] ConfirmDialog global — todos os `confirm()` nativos substituídos por design system
+- [x] GlobalSearch — busca Ctrl+K
+- [x] ShortcutsOverlay — overlay de atalhos `?`
 - [x] Design system completo (tokens, animações, utilitários)
 - [x] Seed de dados de teste (8 clientes)
+- [x] Migrations Supabase: knowledge_base, metas, prospects, projetos, planos_operacionais, alertas, posts_marketing
 - [x] Edge Functions: morning-briefing, gerar-insight-ia, gerar-relatorio-executivo, gerar-relatorio-md, gerar-relatorios-mensais, webhook-asaas, regua-cobranca, memoria-cliente, processar-alertas, sentinela
 
 ## O que Está Pendente (Lacunas Reais)
 
 - [ ] `/api/ia/hashtags` — rota ausente (botão "Gerar Hashtags" em Marketing não funciona)
 - [ ] Analytics — integração real Google Ads + GA4 (UI pronta, falta configurar credenciais e data binding)
+- [ ] analytics_snapshots — tabela existe mas sem dados reais (NewsContainer mostra zeros)
 - [ ] Notificações WhatsApp via Twilio (templates existem, envio real pendente)
 - [ ] Notificações Email automáticas (Resend SDK — cron + templates)
 - [ ] RBAC completo — regras RLS no Supabase para múltiplos usuários
-- [ ] Drag/drop persistente em Tarefas (reorder salvo no Supabase)
+- [ ] Drag/drop persistente em Tarefas (reorder salvo no Supabase — API `/api/v1/tarefas/reorder` criada)
 - [ ] Publicação real de posts via Meta API
 - [ ] TEST_MODE=false para webhook-asaas e regua-cobranca (requer checklist em docs/MODO_TESTE.md)

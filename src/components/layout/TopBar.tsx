@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Search, AlertCircle, Sun, Cloud, Moon } from 'lucide-react'
+import { Search, AlertCircle, Sun, Cloud, Moon, Menu } from 'lucide-react'
 import { GlobalSearch }     from '@/components/ui/GlobalSearch'
 import { ChangelogButton }  from '@/components/layout/ChangelogDrawer'
 import { useTheme } from '@/providers/ThemeProvider'
 import { supabase } from '@/lib/supabase'
+import { useMobileMenuStore } from '@/lib/store/mobileMenuStore'
 
 interface TopBarProps {
   title?: string
@@ -32,6 +33,7 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
   const [searchAberto, setSearchAberto] = useState(false)
   const [alertasCount, setAlertasCount] = useState(0)
   const [userName, setUserName] = useState<string>()
+  const { toggle } = useMobileMenuStore()
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -76,6 +78,15 @@ export function TopBar({ title, subtitle, actions }: TopBarProps) {
   return (
     <>
       <header className="topbar-shell h-[var(--topbar-h)] border-b border-surface-border/20 bg-surface-card z-50 flex items-center px-[1.25rem] gap-[1rem]">
+        {/* ── HAMBURGUER (mobile only) ───────────────── */}
+        <button
+          onClick={toggle}
+          className="flex md:hidden p-[0.25rem] text-ink-muted hover:text-ink-primary transition-colors"
+          title="Abrir menu"
+        >
+          <Menu className="w-[1.5rem] h-[1.5rem]" strokeWidth={1.75} />
+        </button>
+
         {/* ── LOGO ─────────────────────────────────── */}
         <Image
           src={isDark ? '/logo/logo-dark.svg' : '/logo/logo-light.svg'}

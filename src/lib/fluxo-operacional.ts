@@ -18,6 +18,66 @@ export interface ChecklistItem {
 
 export const FLUXO_OPERACIONAL: Record<string, EtapaFluxo> = {
 
+  // ── PRÉ-VENDA ─────────────────────────────────────────────────────────────
+  prospeccao: {
+    id:                 'prospeccao',
+    label:              'Prospecção',
+    descricao:          'Lead identificado. Aguardando primeiro contato.',
+    corBadge:           'bg-status-cyan/20 text-status-cyan',
+    icone:              'Search',
+    instrucao:          'Realize o primeiro contato apresentando a agência. Qualifique o lead com as perguntas do #QUALIFICACAO.',
+    whatsapp_templates: ['#QUALIFICACAO'],
+    proximo_estagio:    'diagnostico',
+    proxima_acao_label: 'Contato realizado → Diagnóstico',
+  },
+
+  diagnostico: {
+    id:                 'diagnostico',
+    label:              'Diagnóstico',
+    descricao:          'Entendendo a situação atual do lead.',
+    corBadge:           'bg-status-blue/20 text-status-blue',
+    icone:              'Stethoscope',
+    instrucao:          'Realize a call de diagnóstico. Mapeie dores, orçamento, histórico em anúncios e expectativas.',
+    whatsapp_templates: [],
+    checklist: [
+      { id: 'call-diag',       texto: 'Call de diagnóstico realizada' },
+      { id: 'dores-mapeadas',  texto: 'Dores e objetivos mapeados' },
+      { id: 'orcamento-ads',   texto: 'Orçamento disponível para anúncios confirmado' },
+      { id: 'concorrentes',    texto: 'Concorrentes identificados' },
+    ],
+    proximo_estagio:    'proposta',
+    proxima_acao_label: 'Diagnóstico concluído → Elaborar Proposta',
+  },
+
+  proposta: {
+    id:                 'proposta',
+    label:              'Proposta',
+    descricao:          'Proposta elaborada e aguardando resposta do lead.',
+    corBadge:           'bg-status-purple/20 text-status-purple',
+    icone:              'FileText',
+    instrucao:          'Envie a proposta comercial com o #PROPOSTA. Siga-up em 48h se não houver resposta.',
+    whatsapp_templates: ['#PROPOSTA', '#FOLLOWUP'],
+    checklist: [
+      { id: 'proposta-enviada', texto: 'Proposta enviada ao lead' },
+      { id: 'followup-1',      texto: 'Follow-up após 48h realizado' },
+    ],
+    proximo_estagio:    'negociacao',
+    proxima_acao_label: 'Proposta aceita → Negociação',
+  },
+
+  negociacao: {
+    id:                 'negociacao',
+    label:              'Negociação',
+    descricao:          'Ajustes finais antes do fechamento.',
+    corBadge:           'bg-status-yellow/20 text-status-yellow',
+    icone:              'Handshake',
+    instrucao:          'Negocie condições finais, desconto e prazo. Ao fechar, envie o link de pagamento e avance para Recebido.',
+    whatsapp_templates: ['#FECHAMENTO'],
+    proximo_estagio:    'recebido',
+    proxima_acao_label: 'Fechado e pago → Recebido',
+  },
+
+  // ── PRINCIPAL ──────────────────────────────────────────────────────────────
   recebido: {
     id:                 'recebido',
     label:              'Recebido',
@@ -100,6 +160,58 @@ export const FLUXO_OPERACIONAL: Record<string, EtapaFluxo> = {
     proxima_acao_label: '',
   },
 
+  // ── CANCELAMENTO ──────────────────────────────────────────────────────────
+  aviso_cancelamento: {
+    id:                 'aviso_cancelamento',
+    label:              'Aviso de Cancelamento',
+    descricao:          'Cliente sinalizou cancelamento. Tentativa de retenção em curso.',
+    corBadge:           'bg-status-orange/20 text-status-orange',
+    icone:              'AlertTriangle',
+    instrucao:          'Contate o cliente para entender o motivo e tentar reverter. Envie o #RETENCAO. Se não for possível reter, avance para Encerramento.',
+    whatsapp_templates: ['#RETENCAO'],
+    checklist: [
+      { id: 'motivo-levantado',  texto: 'Motivo do cancelamento levantado' },
+      { id: 'retencao-tentada',  texto: 'Tentativa de retenção realizada' },
+    ],
+    proximo_estagio:    'encerramento',
+    proxima_acao_label: 'Retenção não possível → Encerramento',
+  },
+
+  indisponibilidade: {
+    id:                 'indisponibilidade',
+    label:              'Indisponibilidade',
+    descricao:          'Serviços pausados temporariamente por solicitação do cliente.',
+    corBadge:           'bg-ink-muted/20 text-ink-muted',
+    icone:              'PauseCircle',
+    instrucao:          'Pause as campanhas no Google Ads. Envie o #AVISO_INDISPONIBILIDADE confirmando a pausa.',
+    whatsapp_templates: ['#AVISO_INDISPONIBILIDADE'],
+    checklist: [
+      { id: 'campanhas-pausadas', texto: 'Campanhas pausadas no Google Ads' },
+      { id: 'confirmacao-enviada', texto: 'Confirmação de pausa enviada ao cliente' },
+    ],
+    proximo_estagio:    'ativo',
+    proxima_acao_label: 'Cliente retornou → Reativar',
+  },
+
+  encerramento: {
+    id:                 'encerramento',
+    label:              'Encerramento',
+    descricao:          'Processo de offboarding em andamento.',
+    corBadge:           'bg-status-red/20 text-status-red',
+    icone:              'LogOut',
+    instrucao:          'Siga o checklist de encerramento. Encerre campanhas, remova acessos e arquive o projeto.',
+    whatsapp_templates: ['#ENCERRAMENTO'],
+    checklist: [
+      { id: 'campanhas-encerradas', texto: 'Campanhas encerradas no Google Ads' },
+      { id: 'lp-removida',          texto: 'Landing page removida do ar' },
+      { id: 'acessos-revogados',    texto: 'Acesso à conta Google Ads revogado' },
+      { id: 'assets-arquivados',    texto: 'Assets arquivados no Storage' },
+      { id: 'nps-solicitado',       texto: 'NPS/feedback solicitado ao cliente' },
+    ],
+    proximo_estagio:    'cancelado',
+    proxima_acao_label: 'Offboarding concluído → Cancelado',
+  },
+
   cancelado: {
     id:                 'cancelado',
     label:              'Cancelado',
@@ -113,7 +225,11 @@ export const FLUXO_OPERACIONAL: Record<string, EtapaFluxo> = {
   },
 };
 
-export const ORDEM_ESTAGIOS = ['recebido', 'onboarding', 'setup_trafego', 'ativo'] as const;
+export const ORDEM_ESTAGIOS_PREVENDA   = ['prospeccao', 'diagnostico', 'proposta', 'negociacao'] as const;
+export const ORDEM_ESTAGIOS_PRINCIPAL  = ['recebido', 'onboarding', 'setup_trafego', 'ativo'] as const;
+export const ORDEM_ESTAGIOS_CANCELAMENTO = ['aviso_cancelamento', 'indisponibilidade', 'encerramento', 'cancelado'] as const;
+/** @deprecated use ORDEM_ESTAGIOS_PRINCIPAL */
+export const ORDEM_ESTAGIOS = ORDEM_ESTAGIOS_PRINCIPAL;
 
 export const WHATSAPP_TEMPLATES: Record<string, { titulo: string; mensagem: string }> = {
   '#BOASVINDAS': {
@@ -167,6 +283,90 @@ Passando para avisar que o saldo da sua conta do Google Ads está próximo do li
 Para garantir que suas campanhas não parem e você não perca leads, é importante fazer uma recarga o quanto antes.
 
 Qualquer dúvida sobre como fazer a recarga, é só me chamar! 😊`,
+  },
+
+  '#QUALIFICACAO': {
+    titulo: 'Qualificação de Lead',
+    mensagem: `Olá! 👋
+
+Vi seu interesse em anunciar no Google e queria entender melhor o seu negócio para ver como posso te ajudar.
+
+Pode me responder rapidinho?
+
+✅ Qual é o seu negócio e o principal serviço/produto?
+✅ Qual cidade/região atende?
+✅ Já investe ou investiu em Google Ads antes?
+✅ Qual seria seu orçamento mensal para anúncios?
+
+Com isso já consigo entender se consigo te ajudar! 🙌`,
+  },
+
+  '#PROPOSTA': {
+    titulo: 'Envio de Proposta',
+    mensagem: `Olá! 📄
+
+Com base no nosso diagnóstico, preparei uma proposta personalizada para o seu negócio.
+
+Segue em anexo todos os detalhes: o que está incluído, o investimento e os próximos passos.
+
+Fico à disposição para qualquer dúvida! Se quiser, podemos marcar uma call rápida para eu te apresentar a proposta ao vivo. 😊`,
+  },
+
+  '#FOLLOWUP': {
+    titulo: 'Follow-up de Proposta',
+    mensagem: `Olá! 👋
+
+Passando para saber se você teve a oportunidade de analisar a proposta que enviei.
+
+Estou à disposição para tirar qualquer dúvida ou ajustar algum detalhe conforme a sua necessidade.
+
+Me avisa quando puder! 🙏`,
+  },
+
+  '#FECHAMENTO': {
+    titulo: 'Fechamento',
+    mensagem: `Que notícia incrível! 🎉
+
+Muito feliz em ter você como cliente. Vamos colocar seu negócio em outro nível!
+
+Segue o link para efetuar o pagamento e já dar início ao nosso projeto. Assim que confirmar, entro em contato para alinharmos os primeiros passos.
+
+Qualquer dúvida, estou aqui! 😊`,
+  },
+
+  '#RETENCAO': {
+    titulo: 'Retenção de Cancelamento',
+    mensagem: `Olá! 💛
+
+Soube que você está pensando em cancelar e quero entender melhor o que aconteceu.
+
+Fique à vontade para me contar: houve algum problema com os resultados, atendimento ou expectativas?
+
+Quero muito encontrar uma solução para continuar te ajudando, e se precisar ajustamos o que for necessário.
+
+Podemos conversar? 🙏`,
+  },
+
+  '#AVISO_INDISPONIBILIDADE': {
+    titulo: 'Aviso de Indisponibilidade',
+    mensagem: `Olá! ⏸️
+
+Conforme combinado, suas campanhas foram pausadas temporariamente.
+
+Quando você estiver pronto para reativar, é só me avisar que ativamos tudo de volta em menos de 24h.
+
+Qualquer dúvida, estou aqui! 😊`,
+  },
+
+  '#ENCERRAMENTO': {
+    titulo: 'Encerramento de Contrato',
+    mensagem: `Olá! 🤝
+
+Foi um prazer trabalhar com você! Já estou finalizando os processos de encerramento do nosso projeto.
+
+Gostaria muito de saber a sua opinião sobre o trabalho realizado. Se puder dedicar 2 minutinhos para um feedback, seria de grande ajuda para meu crescimento.
+
+Obrigado por confiar no meu trabalho e sucesso! 🙌`,
   },
 };
 

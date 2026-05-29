@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useCallback } from 'react'
-import { BarChart3, RefreshCw, FileText, Globe, Sparkles, Mail, Send, Download } from 'lucide-react'
+import { BarChart3, RefreshCw, FileText, Globe, Sparkles, Mail, Send, Download, FileDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { ReportPreview } from '@/components/relatorios/ReportPreview'
@@ -167,6 +167,14 @@ export default function RelatoriosPage() {
     URL.revokeObjectURL(url)
   }
 
+  function exportarPDF() {
+    if (!selecionado) {
+      toast.error('Selecione um relatório para exportar.')
+      return
+    }
+    window.print()
+  }
+
   const geradosEsteMes = relatorios.filter((r) => r.status_geracao === 'gerado').length
   const clienteAtual   = clientes.find((c) => c.id === clienteSel)
 
@@ -209,6 +217,16 @@ export default function RelatoriosPage() {
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
+
+          <button
+            onClick={exportarPDF}
+            disabled={!selecionado}
+            className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-surface-card border border-surface-border text-ink-secondary text-[0.8125rem] font-medium hover:border-ads-500/40 transition-colors disabled:opacity-50"
+            title="Exportar relatório como PDF"
+          >
+            <FileDown className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+            Exportar PDF
+          </button>
 
           <button
             onClick={gerarRelatorio}

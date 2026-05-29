@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   Search, X, User, CheckSquare,
   DollarSign, Clock, ArrowRight,
+  Plus, FileText, BarChart2, Megaphone, BookOpen,
 } from 'lucide-react'
 
 interface ResultCliente    { id: string; nome: string; email: string; nicho: string; status: string }
@@ -109,9 +110,25 @@ export function GlobalSearch({ onClose }: Props) {
         {/* Resultados */}
         <div className="max-h-[60vh] overflow-y-auto">
           {!query && (
-            <p className="text-ink-muted text-[0.8125rem] text-center py-[2.5rem]">
-              Digite para buscar em toda a plataforma
-            </p>
+            <div className="py-[0.75rem]">
+              <p className="text-ink-muted text-[0.625rem] font-semibold uppercase tracking-wide px-[1rem] py-[0.375rem]">Ações rápidas</p>
+              {[
+                { label: 'Novo cliente',     icon: Plus,      href: '/clientes/novo'      },
+                { label: 'Novo post',        icon: Megaphone, href: '/marketing'           },
+                { label: 'Ver relatórios',   icon: FileText,  href: '/relatorios'          },
+                { label: 'Analytics',        icon: BarChart2, href: '/analytics'           },
+                { label: 'Base de conhecimento', icon: BookOpen, href: '/base-conhecimento' },
+              ].map(({ label, icon: Icon, href }) => (
+                <button key={href} onClick={() => navegar(href)}
+                  className="w-full flex items-center gap-[0.75rem] px-[1rem] py-[0.5rem] hover:bg-surface-hover transition-colors text-left">
+                  <div className="w-[1.75rem] h-[1.75rem] rounded-full bg-ads-500/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
+                  </div>
+                  <span className="text-ink-secondary text-[0.875rem]">{label}</span>
+                  <ArrowRight className="w-[0.75rem] h-[0.75rem] text-ink-muted ml-auto shrink-0" strokeWidth={1.75} />
+                </button>
+              ))}
+            </div>
           )}
 
           {query.length >= 2 && !loading && !temResultados && (

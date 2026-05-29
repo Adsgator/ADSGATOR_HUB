@@ -55,8 +55,8 @@ export function RightSidebar() {
     <>
     <aside
       className={cn(
-        'rightsidebar-shell w-[var(--right-sidebar-w)] h-full',
-        'flex flex-col items-center',
+        'rightsidebar-shell hidden md:flex w-[var(--right-sidebar-w)] h-full',
+        'flex-col items-center',
         'bg-surface-card border-l border-surface-border',
         'py-[0.75rem]',
       )}

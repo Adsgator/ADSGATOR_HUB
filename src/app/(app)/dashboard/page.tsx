@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { pageTransition, fadeScale } from '@/lib/motion'
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
 const { Responsive: RGLResponsive } = require('react-grid-layout') as { Responsive: React.ComponentType<any> }
 import {
@@ -30,6 +32,11 @@ import { GeminiChat }            from '@/components/dashboard/GeminiChat'
 import { ActivityFeed }          from '@/components/dashboard/ActivityFeed'
 import { NewsContainer }         from '@/components/dashboard/NewsContainer'
 import { TimelineCard }          from '@/components/dashboard/TimelineCard'
+import { ProximasCobrancas }     from '@/components/dashboard/ProximasCobrancas'
+import { ChurnRisk }             from '@/components/dashboard/ChurnRisk'
+import { TopPerformers }         from '@/components/dashboard/TopPerformers'
+import { CentralDeComando }      from '@/components/dashboard/CentralDeComando'
+import { GoalsCard }             from '@/components/dashboard/GoalsCard'
 import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
 import { useRightSidebar }       from '@/lib/store/right-sidebar-context'
@@ -69,6 +76,11 @@ const CARD_DESCRIPTIONS: Record<string, string> = {
   'timeline-onboarding': 'Linha do tempo com todos os clientes em processo de onboarding, mostrando etapas concluídas, pendentes e próximas ações. Facilita o acompanhamento do progresso de entrada de novos clientes.',
   'timeline-recurring': 'Linha do tempo de tarefas recorrentes do portfólio: otimizações mensais, relatórios periódicos e outras atividades que se repetem regularmente para cada cliente.',
   'timeline-alerts': 'Linha do tempo consolidada de alertas ativos: vencimentos próximos, renovações de contrato, cobranças programadas e outros eventos que requerem atenção nos próximos dias.',
+  'proximas-cobrancas': 'Lista de clientes com pagamentos em atraso ordenados por dias de inadimplência. Mostra MRR de cada cliente e permite acesso rápido ao WhatsApp para cobrança.',
+  'churn-risk': 'Clientes com risco de churn: health score baixo, inadimplência ou status congelado. Ordena por nível de risco para priorizar ações de retenção.',
+  'top-performers': 'Top 5 clientes mais valiosos por MRR. Útil para identificar contas que merecem atenção especial e upsell.',
+  'central-comando': 'Central de Comando — agrega tudo que precisa de atenção hoje: tarefas vencidas, cobranças em atraso, posts para publicar e alertas não lidos. Visão única do dia.',
+  'goals-card': 'Metas da agência com barras de progresso: MRR, número de clientes, taxa de conversão e outras métricas configuradas. Gerencie em Configurações.',
 }
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
@@ -159,6 +171,36 @@ const CARD_SIZE_PRESETS: Record<string, SizePreset[]> = {
     { id: 'large', sizes: { xl: { w: 6, h: 5 }, lg: { w: 5, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
     { id: 'max', sizes: { xl: { w: 8, h: 6 }, lg: { w: 7, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
   ],
+  'proximas-cobrancas': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 5, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 7 }, lg: { w: 6, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'churn-risk': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 5, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 7 }, lg: { w: 6, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'top-performers': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 5, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 6, h: 7 }, lg: { w: 6, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'central-comando': [
+    { id: 'compact', sizes: { xl: { w: 4, h: 4 }, lg: { w: 4, h: 4 }, md: { w: 6, h: 4 }, sm: { w: 2, h: 4 } } },
+    { id: 'normal', sizes: { xl: { w: 6, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'large', sizes: { xl: { w: 8, h: 7 }, lg: { w: 7, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+    { id: 'max', sizes: { xl: { w: 12, h: 8 }, lg: { w: 10, h: 8 }, md: { w: 6, h: 8 }, sm: { w: 2, h: 7 } } },
+  ],
+  'goals-card': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 6, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 8, h: 7 }, lg: { w: 7, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
 }
 
 const fmt = (v: number) =>
@@ -189,6 +231,13 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'timeline-onboarding', x: 0, y: 21, w: 4, h: 5, minW: 3, minH: 3 },
     { i: 'timeline-recurring',  x: 4, y: 21, w: 4, h: 5, minW: 3, minH: 3 },
     { i: 'timeline-alerts',     x: 8, y: 21, w: 4, h: 5, minW: 3, minH: 3 },
+    // ROW 26: Novos cards operacionais
+    { i: 'proximas-cobrancas',  x: 0, y: 26, w: 4, h: 5, minW: 3, minH: 3 },
+    { i: 'churn-risk',          x: 4, y: 26, w: 4, h: 5, minW: 3, minH: 3 },
+    { i: 'top-performers',      x: 8, y: 26, w: 4, h: 5, minW: 3, minH: 3 },
+    // ROW 31: Central de Comando + Metas
+    { i: 'central-comando',     x: 0, y: 31, w: 8, h: 6, minW: 4, minH: 4 },
+    { i: 'goals-card',          x: 8, y: 31, w: 4, h: 6, minW: 3, minH: 4 },
   ],
   lg: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 6 },
@@ -207,6 +256,11 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'timeline-onboarding', x: 0, y: 21, w: 5, h: 5 },
     { i: 'timeline-recurring',  x: 5, y: 21, w: 5, h: 5 },
     { i: 'timeline-alerts',     x: 0, y: 26, w: 10, h: 5 },
+    { i: 'proximas-cobrancas',  x: 0, y: 31, w: 4, h: 5 },
+    { i: 'churn-risk',          x: 4, y: 31, w: 3, h: 5 },
+    { i: 'top-performers',      x: 7, y: 31, w: 3, h: 5 },
+    { i: 'central-comando',     x: 0, y: 36, w: 7, h: 6 },
+    { i: 'goals-card',          x: 7, y: 36, w: 3, h: 6 },
   ],
   md: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 5 },
@@ -225,6 +279,11 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'timeline-onboarding', x: 0, y: 36, w: 6, h: 5 },
     { i: 'timeline-recurring',  x: 0, y: 41, w: 6, h: 5 },
     { i: 'timeline-alerts',     x: 0, y: 46, w: 6, h: 5 },
+    { i: 'proximas-cobrancas',  x: 0, y: 51, w: 6, h: 5 },
+    { i: 'churn-risk',          x: 0, y: 56, w: 6, h: 5 },
+    { i: 'top-performers',      x: 0, y: 61, w: 6, h: 5 },
+    { i: 'central-comando',     x: 0, y: 66, w: 6, h: 6 },
+    { i: 'goals-card',          x: 0, y: 72, w: 6, h: 5 },
   ],
   sm: [
     { i: 'dre-sparkline',     x: 0, y: 0,  w: 2, h: 5 },
@@ -243,6 +302,11 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'timeline-onboarding', x: 0, y: 51, w: 2, h: 5 },
     { i: 'timeline-recurring',  x: 0, y: 56, w: 2, h: 5 },
     { i: 'timeline-alerts',     x: 0, y: 61, w: 2, h: 5 },
+    { i: 'proximas-cobrancas',  x: 0, y: 66, w: 2, h: 5 },
+    { i: 'churn-risk',          x: 0, y: 71, w: 2, h: 5 },
+    { i: 'top-performers',      x: 0, y: 76, w: 2, h: 5 },
+    { i: 'central-comando',     x: 0, y: 81, w: 2, h: 6 },
+    { i: 'goals-card',          x: 0, y: 87, w: 2, h: 5 },
   ],
 }
 
@@ -504,7 +568,7 @@ export default function DashboardPage() {
       subtitle={`Semana de ${new Date().toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}`}
       actions={topBarActions}
     >
-      <div className="page-enter space-y-[1.5rem]" ref={containerRef}>
+      <motion.div variants={pageTransition} initial="hidden" animate="visible" exit="exit" className="page-enter space-y-[1.5rem]" ref={containerRef}>
         {/* ════════════════════════════════════════════════════════════ */}
         {/* News Container — Monitoramento por cliente (scroll horiz.)   */}
         {/* ════════════════════════════════════════════════════════════ */}
@@ -804,9 +868,44 @@ export default function DashboardPage() {
               <TimelineCard type="alert" />
             </BentoCard>
           </div>
+
+          {/* ── PRÓXIMAS COBRANÇAS ───────────────────── */}
+          <div key="proximas-cobrancas">
+            <BentoCard editMode={editMode} cardId="proximas-cobrancas" onSizeChange={makeCardResizer('proximas-cobrancas')} title="Cobranças em Atraso" subtitle="Clientes inadimplentes" actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>} description={CARD_DESCRIPTIONS['proximas-cobrancas']} onEnterEdit={enterEdit}>
+              <ProximasCobrancas />
+            </BentoCard>
+          </div>
+
+          {/* ── CHURN RISK ───────────────────────────── */}
+          <div key="churn-risk">
+            <BentoCard editMode={editMode} cardId="churn-risk" onSizeChange={makeCardResizer('churn-risk')} title="Risco de Churn" subtitle="Clientes em risco" actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>} description={CARD_DESCRIPTIONS['churn-risk']} onEnterEdit={enterEdit}>
+              <ChurnRisk />
+            </BentoCard>
+          </div>
+
+          {/* ── TOP PERFORMERS ───────────────────────── */}
+          <div key="top-performers">
+            <BentoCard editMode={editMode} cardId="top-performers" onSizeChange={makeCardResizer('top-performers')} title="Top Performers" subtitle="Por MRR" description={CARD_DESCRIPTIONS['top-performers']} onEnterEdit={enterEdit}>
+              <TopPerformers />
+            </BentoCard>
+          </div>
+
+          {/* ── CENTRAL DE COMANDO ───────────────────── */}
+          <div key="central-comando">
+            <BentoCard editMode={editMode} cardId="central-comando" onSizeChange={makeCardResizer('central-comando')} title="Central de Comando" subtitle="O que fazer hoje" description={CARD_DESCRIPTIONS['central-comando']} onEnterEdit={enterEdit}>
+              <CentralDeComando />
+            </BentoCard>
+          </div>
+
+          {/* ── METAS DA AGÊNCIA ─────────────────────── */}
+          <div key="goals-card">
+            <BentoCard editMode={editMode} cardId="goals-card" onSizeChange={makeCardResizer('goals-card')} title="Metas" subtitle="Progresso da agência" actions={<a href="/configuracoes" className="text-ads-500 text-[0.75rem] hover:underline">Configurar</a>} description={CARD_DESCRIPTIONS['goals-card']} onEnterEdit={enterEdit}>
+              <GoalsCard />
+            </BentoCard>
+          </div>
         </RGLResponsive>
         </div>
-      </div>
+      </motion.div>
     </MainLayout>
 
     {mostrarWizard && (
@@ -814,10 +913,11 @@ export default function DashboardPage() {
     )}
 
     {/* ── Pop-up: Salvar como padrão ─────────────────────────────── */}
-    {showSaveConfirm && confirmBtnPos && (
-      <div className="fixed inset-0 z-[9998] pointer-events-none">
-        <div
-          className="pointer-events-auto animate-fade-scale bg-surface-elevated border border-surface-border rounded-xl shadow-2xl shadow-black/50 p-[1.25rem] w-[20rem] max-w-[90vw] absolute"
+    <AnimatePresence>
+      {showSaveConfirm && confirmBtnPos && (
+        <div className="fixed inset-0 z-[9998] pointer-events-none">
+          <motion.div variants={fadeScale} initial="hidden" animate="visible" exit="exit"
+            className="pointer-events-auto bg-surface-elevated border border-surface-border rounded-xl shadow-2xl shadow-black/50 p-[1.25rem] w-[20rem] max-w-[90vw] absolute"
           style={{
             top: Math.min(confirmBtnPos.top, window.innerHeight - 220),
             right: confirmBtnPos.right + 8,
@@ -858,10 +958,11 @@ export default function DashboardPage() {
             >
               Cancelar
             </button>
-          </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    )}
+      )}
+    </AnimatePresence>
     </>
   )
 }

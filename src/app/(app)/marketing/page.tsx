@@ -5,11 +5,13 @@ import {
   Megaphone, Plus, Calendar, Edit3, Instagram,
   Facebook, Image, Video, Layers, Film,
   Clock, CheckCircle, AlertCircle, RefreshCw,
-  Sparkles, X, Save,
+  Sparkles, X, Save, Pencil, Copy, Trash2,
 } from 'lucide-react'
-import { MainLayout } from '@/components/layout/MainLayout'
-import { Button }     from '@/components/ui/Button'
-import { supabase }   from '@/lib/supabase'
+import { MainLayout }  from '@/components/layout/MainLayout'
+import { Button }      from '@/components/ui/Button'
+import { ContextMenu } from '@/components/ui/ContextMenu'
+import { supabase }    from '@/lib/supabase'
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 
 type Rede   = 'instagram' | 'facebook'
 type Tipo   = 'foto' | 'video' | 'carrossel' | 'reels'
@@ -402,21 +404,65 @@ export default function MarketingPage() {
             const TipoIcon = TIPO_ICON[p.tipo]
             const StIcon   = STATUS_ICON[p.status]
             return (
-              <button key={p.id} onClick={() => abrirEditar(p)}
-                className="flex items-center gap-[1rem] bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.25rem] py-[0.875rem] hover:border-ads-500/30 transition-colors text-left">
-                <RedeIcon className={`w-[1.25rem] h-[1.25rem] shrink-0 ${REDE_COR[p.rede]}`} strokeWidth={1.75} />
-                <TipoIcon className="w-[1rem] h-[1rem] text-ink-muted shrink-0" strokeWidth={1.75} />
-                <p className="flex-1 text-ink-primary text-[0.875rem] truncate">{p.texto ?? `(${p.tipo})`}</p>
-                {p.agendado_para && (
-                  <span className="text-ink-muted text-[0.75rem] shrink-0">
-                    {new Date(p.agendado_para).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              <ContextMenu
+                key={p.id}
+                items={[
+                  {
+                    label: 'Editar',
+                    icon: <Pencil className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    onClick: () => abrirEditar(p),
+                    shortcut: 'E',
+                  },
+                  {
+                    label: 'Duplicar',
+                    icon: <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    onClick: async () => {
+                      await supabase.from('posts_agendados').insert({
+                        rede:         p.rede,
+                        tipo:         p.tipo,
+                        texto:        p.texto,
+                        status:       'rascunho',
+                        cliente_id:   p.cliente_id,
+                        agendado_para: null,
+                      })
+                      carregar()
+                    },
+                  },
+                  {
+                    label: 'Deletar',
+                    icon: <Trash2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    variant: 'danger',
+                    separator: true,
+                    onClick: () => {
+                      const openConfirm = useConfirmDialogStore.getState().openConfirm
+                      openConfirm(
+                        'Deletar Post',
+                        `Você está prestes a deletar este post. Esta ação não pode ser desfeita.`,
+                        async () => {
+                          await supabase.from('posts_agendados').delete().eq('id', p.id)
+                          carregar()
+                        }
+                      )
+                    },
+                  },
+                ]}
+              >
+                <button onClick={() => abrirEditar(p)}
+                  className="flex items-center gap-[1rem] bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow px-[1.25rem] py-[0.875rem] hover:border-ads-500/30 transition-colors text-left w-full">
+                  <RedeIcon className={`w-[1.25rem] h-[1.25rem] shrink-0 ${REDE_COR[p.rede]}`} strokeWidth={1.75} />
+                  <TipoIcon className="w-[1rem] h-[1rem] text-ink-muted shrink-0" strokeWidth={1.75} />
+                  <p className="flex-1 text-ink-primary text-[0.875rem] truncate">{p.texto ?? `(${p.tipo})`}</p>
+                  {p.agendado_para && (
+                    <span className="text-ink-muted text-[0.75rem] shrink-0">
+                      {new Date(p.agendado_para).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  )}
+                  <span className={`text-[0.6875rem] font-semibold px-[0.5rem] py-[0.125rem] rounded-full flex items-center gap-[0.25rem] ${STATUS_COR[p.status]}`}>
+                    <StIcon className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
+                    {p.status}
                   </span>
-                )}
-                <span className={`text-[0.6875rem] font-semibold px-[0.5rem] py-[0.125rem] rounded-full flex items-center gap-[0.25rem] ${STATUS_COR[p.status]}`}>
-                  <StIcon className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
-                  {p.status}
-                </span>
-              </button>
+                </button>
+              </ContextMenu>
             )
           })}
         </div>

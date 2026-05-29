@@ -1,20 +1,22 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Plus, Search, Users, AlertTriangle, Snowflake,
   LayoutGrid, List, MessageCircle, CheckSquare, Square,
-  Download, Tag, X as XIcon,
+  Download, Tag, X as XIcon, Eye, Copy, FileText,
 } from 'lucide-react'
 import { MainLayout }                from '@/components/layout/MainLayout'
 import { Button }                    from '@/components/ui/Button'
 import { ClienteProgressCard }       from '@/components/dashboard/ClienteProgressCard'
 import { WhatsAppTemplateModal }     from '@/components/clientes/WhatsAppTemplateModal'
+import { ContextMenu }               from '@/components/ui/ContextMenu'
 import { useClientes }               from '@/lib/hooks/useClientes'
 import { supabase }                  from '@/lib/supabase'
 import { toast }                     from 'sonner'
 import type { Cliente }              from '@/lib/types'
+import { useRightSidebarStore }      from '@/lib/store/right-sidebar-store'
 
 const STATUS_OPCOES = [
   { value: '',                 label: 'Todos'          },
@@ -77,6 +79,7 @@ function exportarCSV(clientes: Cliente[]) {
 
 export default function ClientesPage() {
   const { dados, loading, metricas, recarregar } = useClientes()
+  const { setContextActions, clearContextActions } = useRightSidebarStore()
   const [busca,        setBusca]        = useState('')
   const [filtro,       setFiltro]       = useState<StatusValue>('')
   const [filtroNicho,  setFiltroNicho]  = useState('')
@@ -88,6 +91,24 @@ export default function ClientesPage() {
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [batchStatus,  setBatchStatus]  = useState<StatusValue>('')
   const [salvandoBatch, setSalvandoBatch] = useState(false)
+
+  useEffect(() => {
+    setContextActions([
+      {
+        id: 'novo-cliente',
+        icon: Plus,
+        label: 'Novo cliente',
+        onClick: () => { window.location.href = '/clientes/novo' },
+      },
+      {
+        id: 'exportar-csv',
+        icon: Download,
+        label: 'Exportar CSV',
+        onClick: () => exportarCSV(visiveis.map((v) => v.cliente)),
+      },
+    ])
+    return () => clearContextActions()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCongelar(id: string) {
     await supabase.from('clientes').update({ status: 'congelado' }).eq('id', id)
@@ -474,9 +495,40 @@ export default function ClientesPage() {
               {visiveis.map(({ cliente: c }) => {
                 const temAlerta = (c.dias_atraso ?? 0) > 0
                 const sel = selecionados.has(c.id)
+                const tableCtxItems = [
+                  {
+                    label: 'Ver detalhes',
+                    icon: <Eye className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    onClick: () => { window.location.href = `/clientes/${c.id}` },
+                    shortcut: 'Enter',
+                  },
+                  {
+                    label: 'Gerar relatório',
+                    icon: <FileText className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    onClick: () => { window.location.href = `/relatorios?clienteId=${c.id}` },
+                  },
+                  ...(c.whatsapp ? [{
+                    label: 'WhatsApp',
+                    icon: <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    onClick: () => setWhatsappCliente(c),
+                    separator: true,
+                  }] : []),
+                  {
+                    label: 'Copiar nome',
+                    icon: <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    onClick: () => { navigator.clipboard.writeText(c.nome); toast.success('Nome copiado') },
+                  },
+                  {
+                    label: 'Congelar',
+                    icon: <Snowflake className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                    onClick: async () => { await supabase.from('clientes').update({ status: 'congelado' }).eq('id', c.id); toast.success('Cliente congelado') },
+                    separator: true,
+                    disabled: c.status === 'congelado' || c.status === 'cancelado',
+                  },
+                ]
                 return (
+                  <ContextMenu key={c.id} items={tableCtxItems}>
                   <tr
-                    key={c.id}
                     className={`border-b border-surface-border/30 last:border-0 hover:bg-surface-hover transition-colors ${sel ? 'bg-ads-500/5' : ''}`}
                   >
                     <td className="px-[1rem] py-[0.75rem]">
@@ -528,6 +580,7 @@ export default function ClientesPage() {
                       </div>
                     </td>
                   </tr>
+                  </ContextMenu>
                 )
               })}
             </tbody>
@@ -536,31 +589,66 @@ export default function ClientesPage() {
       ) : (
         /* ── MODO GRID ── */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem]">
-          {visiveis.map(({ cliente, estagio }) => (
-            <div key={cliente.id} className="relative group">
+          {visiveis.map(({ cliente: c, estagio }) => {
+            const cardCtxItems = [
+              {
+                label: 'Ver detalhes',
+                icon: <Eye className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                onClick: () => { window.location.href = `/clientes/${c.id}` },
+                shortcut: 'Enter',
+              },
+              {
+                label: 'Gerar relatório',
+                icon: <FileText className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                onClick: () => { window.location.href = `/relatorios?clienteId=${c.id}` },
+              },
+              ...(c.whatsapp ? [{
+                label: 'WhatsApp',
+                icon: <MessageCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                onClick: () => setWhatsappCliente(c),
+                separator: true,
+              }] : []),
+              {
+                label: 'Copiar nome',
+                icon: <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                onClick: () => { navigator.clipboard.writeText(c.nome); toast.success('Nome copiado') },
+              },
+              {
+                label: 'Congelar',
+                icon: <Snowflake className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+                onClick: async () => { await supabase.from('clientes').update({ status: 'congelado' }).eq('id', c.id); toast.success('Cliente congelado') },
+                separator: true,
+                disabled: c.status === 'congelado' || c.status === 'cancelado',
+              },
+            ]
+            return (
+            <ContextMenu key={c.id} items={cardCtxItems}>
+            <div className="relative group">
               {/* Checkbox sobre o card */}
               <button
-                onClick={() => toggleSelect(cliente.id)}
+                onClick={() => toggleSelect(c.id)}
                 className={`absolute top-[0.75rem] left-[0.75rem] z-10 flex items-center justify-center w-[1.5rem] h-[1.5rem] rounded transition-all ${
-                  selecionados.has(cliente.id)
+                  selecionados.has(c.id)
                     ? 'opacity-100'
                     : 'opacity-0 group-hover:opacity-100'
                 }`}
               >
-                {selecionados.has(cliente.id)
+                {selecionados.has(c.id)
                   ? <CheckSquare className="w-[1rem] h-[1rem] text-ads-500 drop-shadow" strokeWidth={2.5} />
                   : <Square className="w-[1rem] h-[1rem] text-ink-muted bg-surface-card rounded" strokeWidth={2} />
                 }
               </button>
-              <div className={selecionados.has(cliente.id) ? 'ring-2 ring-ads-500/40 rounded-2xl' : ''}>
+              <div className={selecionados.has(c.id) ? 'ring-2 ring-ads-500/40 rounded-2xl' : ''}>
                 <ClienteProgressCard
-                  cliente={cliente}
+                  cliente={c}
                   estagio={estagio}
                   onCongelar={handleCongelar}
                 />
               </div>
             </div>
-          ))}
+            </ContextMenu>
+            )
+          })}
         </div>
       )}
 

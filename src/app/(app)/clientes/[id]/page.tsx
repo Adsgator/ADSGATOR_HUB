@@ -6,9 +6,10 @@ import {
   ArrowLeft, User, CheckSquare, BarChart3, History, GitBranch,
   Phone, Mail, Globe, Calendar, DollarSign, AlertCircle,
   MessageCircle, Snowflake, Play, Pencil, Check, X as XIcon,
-  FileText, Send, ChevronDown, ChevronUp,
+  FileText, Send, ChevronDown, ChevronUp, LogOut, Layout, Plus, Trash2, ExternalLink, Copy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/Button'
 import { TimelineContent } from '@/components/dashboard/TimelineContent'
@@ -105,7 +106,7 @@ function InlineEdit({
   )
 }
 
-type AbaId = 'visao_geral' | 'checklist' | 'campanhas' | 'historico' | 'timeline'
+type AbaId = 'visao_geral' | 'checklist' | 'campanhas' | 'historico' | 'timeline' | 'sites'
 
 const ABAS: { id: AbaId; label: string; icon: typeof User }[] = [
   { id: 'visao_geral', label: 'Visão Geral',  icon: User        },
@@ -113,6 +114,7 @@ const ABAS: { id: AbaId; label: string; icon: typeof User }[] = [
   { id: 'campanhas',   label: 'Campanhas',    icon: BarChart3   },
   { id: 'historico',   label: 'Histórico',    icon: History     },
   { id: 'timeline',    label: 'Timeline',     icon: GitBranch   },
+  { id: 'sites',       label: 'Sites',        icon: Layout      },
 ]
 
 const STATUS_LABELS: Record<string, string> = {
@@ -158,6 +160,13 @@ export default function ClienteDetalhePage() {
   const [expandedInstance,   setExpandedInstance]   = useState<string | null>(null)
   const [creatingTimeline,   setCreatingTimeline]   = useState(false)
   const [selectedTemplate,   setSelectedTemplate]   = useState('')
+  // Sites tab state
+  interface ProjetoWeb { id: string; nome: string; url: string | null; plataforma: string; status: string; data_entrega: string | null }
+  const [projetos,       setProjetos]       = useState<ProjetoWeb[]>([])
+  const [projetosLoaded, setProjetosLoaded] = useState(false)
+  const [novoProjetoOpen, setNovoProjetoOpen] = useState(false)
+  const [editandoProjeto, setEditandoProjeto] = useState<ProjetoWeb | null>(null)
+  const [formProjeto, setFormProjeto] = useState({ nome: '', url: '', plataforma: 'astro', status: 'ativo', data_entrega: '' })
 
   async function salvarCampo(campo: keyof Cliente, valor: string) {
     if (!cliente) return
@@ -213,8 +222,42 @@ export default function ClienteDetalhePage() {
 
   useEffect(() => {
     if (abaAtiva === 'timeline') carregarTimelines()
+    if (abaAtiva === 'sites' && !projetosLoaded) carregarProjetos()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abaAtiva])
+
+  async function carregarProjetos() {
+    const { data } = await import('@/lib/supabase').then(m =>
+      m.supabase.from('projetos_web').select('*').eq('cliente_id', id).order('created_at', { ascending: false })
+    )
+    setProjetos((data ?? []) as ProjetoWeb[])
+    setProjetosLoaded(true)
+  }
+
+  async function salvarProjeto() {
+    const payload = { ...formProjeto, cliente_id: id, url: formProjeto.url || null, data_entrega: formProjeto.data_entrega || null }
+    if (editandoProjeto) {
+      await import('@/lib/supabase').then(m => m.supabase.from('projetos_web').update(payload).eq('id', editandoProjeto.id))
+    } else {
+      await import('@/lib/supabase').then(m => m.supabase.from('projetos_web').insert(payload))
+    }
+    setNovoProjetoOpen(false)
+    setEditandoProjeto(null)
+    setFormProjeto({ nome: '', url: '', plataforma: 'astro', status: 'ativo', data_entrega: '' })
+    carregarProjetos()
+  }
+
+  function deletarProjeto(projetoId: string) {
+    const openConfirm = useConfirmDialogStore.getState().openConfirm
+    openConfirm(
+      'Deletar Projeto',
+      'Este projeto será removido permanentemente. Esta ação não pode ser desfeita.',
+      async () => {
+        await import('@/lib/supabase').then(m => m.supabase.from('projetos_web').delete().eq('id', projetoId))
+        carregarProjetos()
+      }
+    )
+  }
 
   useEffect(() => {
     if (!id) return
@@ -244,6 +287,27 @@ export default function ClienteDetalhePage() {
     } finally {
       setAgindo(false)
     }
+  }
+
+  function handleIniciarCancelamento() {
+    if (!cliente) return
+    const openConfirm = useConfirmDialogStore.getState().openConfirm
+    openConfirm(
+      'Iniciar Cancelamento',
+      `Você está prestes a iniciar o fluxo de cancelamento para ${cliente.nome}. Esta ação não pode ser desfeita.`,
+      async () => {
+        setAgindo(true)
+        try {
+          await atualizarCliente(cliente.id, { status: 'cancelado' as Cliente['status'] })
+          setCliente((prev) => prev ? { ...prev, status: 'cancelado' } : prev)
+          toast.success('Fluxo de cancelamento iniciado')
+        } catch {
+          toast.error('Erro ao iniciar cancelamento')
+        } finally {
+          setAgindo(false)
+        }
+      }
+    )
   }
 
   async function handleDescongelar() {
@@ -337,6 +401,17 @@ export default function ClienteDetalhePage() {
           icon={<Snowflake className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
         >
           Congelar
+        </Button>
+      )}
+      {cliente.status !== 'cancelado' && cliente.status !== 'inativo' && (
+        <Button
+          variant="danger"
+          size="sm"
+          onClick={handleIniciarCancelamento}
+          disabled={agindo}
+          icon={<LogOut className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+        >
+          Cancelar
         </Button>
       )}
     </div>
@@ -477,6 +552,63 @@ export default function ClienteDetalhePage() {
         {abaAtiva === 'visao_geral' && (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-[1.5rem]">
             <div className="space-y-[1.5rem]">
+              {/* Portal do Cliente */}
+              {cliente.portal_token && (
+                <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
+                  <h3 className="text-ink-primary text-[0.9375rem] font-semibold mb-[1rem]">Portal do Cliente</h3>
+                  <div className="space-y-[0.75rem]">
+                    <div>
+                      <p className="text-ink-muted text-[0.75rem] mb-[0.375rem]">Token</p>
+                      <div className="flex items-center gap-[0.5rem]">
+                        <code className="flex-1 px-[0.75rem] py-[0.5rem] rounded-lg bg-surface-hover text-ink-primary text-[0.8125rem] font-mono border border-surface-border break-all">
+                          {cliente.portal_token}
+                        </code>
+                        <button
+                          onClick={async () => {
+                            try {
+                              if (cliente.portal_token) {
+                                await navigator.clipboard.writeText(cliente.portal_token)
+                                toast.success('Token copiado')
+                              }
+                            } catch {
+                              toast.error('Erro ao copiar')
+                            }
+                          }}
+                          title="Copiar token"
+                          className="flex-shrink-0 p-[0.5rem] rounded-lg hover:bg-surface-hover transition-colors text-ink-muted hover:text-ink-secondary"
+                        >
+                          <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-ink-muted text-[0.75rem] mb-[0.375rem]">Link do Portal</p>
+                      <div className="flex items-center gap-[0.5rem]">
+                        <code className="flex-1 px-[0.75rem] py-[0.5rem] rounded-lg bg-surface-hover text-ink-primary text-[0.8125rem] font-mono border border-surface-border break-all">
+                          seudominio.com/portal/{cliente.portal_token}
+                        </code>
+                        <button
+                          onClick={async () => {
+                            try {
+                              if (cliente.portal_token) {
+                                await navigator.clipboard.writeText(`https://seudominio.com/portal/${cliente.portal_token}`)
+                                toast.success('Link copiado')
+                              }
+                            } catch {
+                              toast.error('Erro ao copiar')
+                            }
+                          }}
+                          title="Copiar link"
+                          className="flex-shrink-0 p-[0.5rem] rounded-lg hover:bg-surface-hover transition-colors text-ink-muted hover:text-ink-secondary"
+                        >
+                          <Copy className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {estagio && (
                 <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
                   <h3 className="text-ink-primary text-[0.9375rem] font-semibold mb-[0.75rem]">Etapa Atual</h3>
@@ -701,6 +833,103 @@ export default function ClienteDetalhePage() {
                     </div>
                   )
                 })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {abaAtiva === 'sites' && (
+          <div className="flex flex-col gap-[1rem]">
+            <div className="flex items-center justify-between">
+              <p className="text-ink-muted text-[0.875rem]">Sites e landing pages deste cliente.</p>
+              <Button variant="primary" size="sm"
+                icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+                onClick={() => { setEditandoProjeto(null); setFormProjeto({ nome: '', url: '', plataforma: 'astro', status: 'ativo', data_entrega: '' }); setNovoProjetoOpen(true) }}>
+                Novo site
+              </Button>
+            </div>
+
+            {projetos.length === 0 && projetosLoaded ? (
+              <div className="bg-surface-card border border-surface-border rounded-xl p-[3rem] text-center card-shadow">
+                <Layout className="w-[2rem] h-[2rem] text-ink-muted mx-auto mb-[0.75rem]" strokeWidth={1} />
+                <p className="text-ink-secondary text-[0.875rem]">Nenhum site cadastrado.</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-[0.75rem]">
+                {projetos.map((p) => (
+                  <div key={p.id} className="flex items-center gap-[1rem] bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[0.875rem] card-shadow">
+                    <Layout className="w-[1.125rem] h-[1.125rem] text-ink-muted shrink-0" strokeWidth={1.5} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-ink-primary text-[0.875rem] font-medium">{p.nome}</p>
+                      <p className="text-ink-muted text-[0.75rem]">{p.plataforma}{p.data_entrega ? ` · entrega ${new Date(p.data_entrega).toLocaleDateString('pt-BR')}` : ''}</p>
+                    </div>
+                    <span className={cn('text-[0.6875rem] font-semibold px-[0.5rem] py-[0.125rem] rounded-full shrink-0',
+                      p.status === 'ativo' ? 'bg-status-green/10 text-status-green' : p.status === 'pausado' ? 'bg-status-orange/10 text-status-orange' : 'bg-ink-muted/10 text-ink-muted'
+                    )}>
+                      {p.status}
+                    </span>
+                    {p.url && (
+                      <a href={p.url} target="_blank" rel="noopener noreferrer"
+                        className="text-ink-muted hover:text-ads-500 transition-colors shrink-0">
+                        <ExternalLink className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                      </a>
+                    )}
+                    <Button variant="ghost" size="sm" className="w-[2rem] px-0 shrink-0"
+                      onClick={() => { setEditandoProjeto(p); setFormProjeto({ nome: p.nome, url: p.url ?? '', plataforma: p.plataforma, status: p.status, data_entrega: p.data_entrega ?? '' }); setNovoProjetoOpen(true) }}>
+                      <Pencil className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                    </Button>
+                    <Button variant="ghost" size="sm" className="w-[2rem] px-0 shrink-0 text-status-red hover:text-status-red hover:bg-status-red/10"
+                      onClick={() => deletarProjeto(p.id)}>
+                      <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {novoProjetoOpen && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-[1rem]">
+                <div className="w-full max-w-[28rem] bg-surface-card border border-surface-border rounded-2xl p-[1.5rem] animate-fade-scale flex flex-col gap-[1rem]">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-ink-primary text-[1rem] font-semibold">{editandoProjeto ? 'Editar site' : 'Novo site'}</h2>
+                    <button onClick={() => setNovoProjetoOpen(false)} className="text-ink-muted hover:text-ink-secondary transition-colors">
+                      <XIcon className="w-[1rem] h-[1rem]" strokeWidth={2} />
+                    </button>
+                  </div>
+                  {(['nome', 'url'] as const).map((f) => (
+                    <div key={f}>
+                      <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.25rem] capitalize">{f === 'url' ? 'URL do site' : 'Nome'}</label>
+                      <input value={formProjeto[f]} onChange={(e) => setFormProjeto((fp) => ({ ...fp, [f]: e.target.value }))}
+                        placeholder={f === 'url' ? 'https://...' : 'Ex: Landing Page Principal'}
+                        className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30" />
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-2 gap-[0.75rem]">
+                    <div>
+                      <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.25rem]">Plataforma</label>
+                      <select value={formProjeto.plataforma} onChange={(e) => setFormProjeto((fp) => ({ ...fp, plataforma: e.target.value }))}
+                        className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30">
+                        {['astro','wordpress','webflow','outro'].map((p) => <option key={p} value={p}>{p}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.25rem]">Status</label>
+                      <select value={formProjeto.status} onChange={(e) => setFormProjeto((fp) => ({ ...fp, status: e.target.value }))}
+                        className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30">
+                        {['ativo','pausado','encerrado'].map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.25rem]">Data de entrega</label>
+                    <input type="date" value={formProjeto.data_entrega} onChange={(e) => setFormProjeto((fp) => ({ ...fp, data_entrega: e.target.value }))}
+                      className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30" />
+                  </div>
+                  <div className="flex items-center gap-[0.75rem] pt-[0.25rem]">
+                    <Button variant="primary" size="sm" onClick={salvarProjeto} disabled={!formProjeto.nome.trim()}>Salvar</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setNovoProjetoOpen(false)}>Cancelar</Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>

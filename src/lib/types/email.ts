@@ -8,6 +8,11 @@ export type EmailTemplateId =
   | 'payment-reminder'
   | 'alert-saldo-baixo'
   | 'alert-performance'
+  | 'payment-followup'
+  | 'cancelamento-notice'
+  | 'aviso-indisponibilidade'
+  | 'encerramento'
+  | 'reativacao'
 
 export interface EmailHistory {
   id: string

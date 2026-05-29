@@ -190,4 +190,69 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
        <a href="{{dashboard_url}}/analytics" class="btn">Ver Analytics</a>`
     ),
   },
+
+  'payment-followup': {
+    subject: '📢 Seu pagamento ainda está pendente — AdsGator',
+    buildHtml: (v) => wrapEmailHtml(
+      'Pagamento Pendente',
+      `<p>Olá, <strong>${v.nome_cliente}</strong>!</p>
+       <p>Identificamos que seu pagamento está pendente há <strong class="highlight">${v.dias_atraso ?? '—'} dias</strong>.</p>
+       <p>Para evitar a interrupção dos seus serviços, regularize o pagamento o quanto antes.</p>
+       <p><strong>Valor:</strong> <span class="highlight">${v.valor ?? '—'}</span></p>
+       <p>Se já realizou o pagamento, desconsidere este aviso.</p>
+       <a href="${v.pagamento_url ?? '#'}" class="btn">Regularizar Agora</a>`
+    ),
+  },
+
+  'cancelamento-notice': {
+    subject: '⚠️ Aviso de cancelamento — {{nome_cliente}}',
+    buildHtml: (v) => wrapEmailHtml(
+      'Aviso de Cancelamento',
+      `<p>Olá, <strong>${v.nome_cliente}</strong>!</p>
+       <p>Recebemos seu pedido de cancelamento dos serviços AdsGator.</p>
+       <p>Nossa equipe entrará em contato em breve para entender o motivo e ver se existe alguma forma de continuar te ajudando.</p>
+       <p>Caso queira conversar diretamente, é só responder a este email.</p>
+       <a href="{{dashboard_url}}" class="btn">Falar com a Equipe</a>`
+    ),
+  },
+
+  'aviso-indisponibilidade': {
+    subject: '⏸️ Serviços pausados — {{nome_cliente}}',
+    buildHtml: (v) => wrapEmailHtml(
+      'Serviços Pausados',
+      `<p>Olá, <strong>${v.nome_cliente}</strong>!</p>
+       <p>Conforme solicitado, seus serviços foram pausados temporariamente.</p>
+       <p><strong>Data da pausa:</strong> ${v.data_pausa ?? '—'}</p>
+       <p>Suas campanhas no Google Ads estão pausadas. Quando quiser reativar, é só entrar em contato!</p>
+       <a href="{{dashboard_url}}" class="btn">Reativar Serviços</a>`
+    ),
+  },
+
+  'encerramento': {
+    subject: 'Encerrando parceria — AdsGator',
+    buildHtml: (v) => wrapEmailHtml(
+      'Encerramento de Parceria',
+      `<p>Olá, <strong>${v.nome_cliente}</strong>!</p>
+       <p>Chegou o momento de encerrar nossa parceria. Foi uma honra trabalhar com você!</p>
+       <p>Todas as suas campanhas foram desativadas e os acessos revogados.</p>
+       <p class="section-title">O que foi feito</p>
+       <ul style="color:#a1a1aa;font-size:13px;line-height:1.8">
+         <li>Campanhas Google Ads encerradas</li>
+         <li>Landing pages removidas</li>
+         <li>Acessos à conta revogados</li>
+       </ul>
+       <p>Se precisar de nós no futuro, as portas estão sempre abertas. Muito obrigado! 🙏</p>`
+    ),
+  },
+
+  'reativacao': {
+    subject: '🎉 Bem-vindo de volta, {{nome_cliente}}!',
+    buildHtml: (v) => wrapEmailHtml(
+      'Bem-vindo de Volta!',
+      `<p>Olá, <strong>${v.nome_cliente}</strong>!</p>
+       <p>Que ótima notícia — você está de volta! 🎉</p>
+       <p>Suas campanhas serão reativadas em até 24 horas e nossa equipe entrará em contato para alinhar os próximos passos.</p>
+       <a href="{{dashboard_url}}" class="btn">Acessar Dashboard</a>`
+    ),
+  },
 }

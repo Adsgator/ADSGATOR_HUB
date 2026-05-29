@@ -4,13 +4,16 @@ import React, { useEffect, useState } from 'react'
 import {
   Save, User, Bell, Plug, DollarSign,
   Palette, Users, Check, History, Download, Upload,
+  Layers, Tag, Plus, Trash2, Pencil, Mail,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
+import { AutomacaoEmail } from '@/components/configuracoes/AutomacaoEmail'
 
-type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'backup' | 'auditoria'
+type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'planos' | 'automacoes' | 'backup' | 'auditoria'
 
 const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'perfil',        label: 'Perfil',         icon: User       },
@@ -19,6 +22,9 @@ const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
   { id: 'financeiro',    label: 'Financeiro',      icon: DollarSign },
   { id: 'aparencia',     label: 'Aparência',       icon: Palette    },
   { id: 'equipe',        label: 'Equipe',          icon: Users      },
+  { id: 'operacional',   label: 'Operacional',     icon: Layers     },
+  { id: 'planos',        label: 'Planos',          icon: Tag        },
+  { id: 'automacoes',    label: 'Automações',      icon: Mail       },
   { id: 'backup',        label: 'Backup',          icon: Download   },
   { id: 'auditoria',     label: 'Auditoria',       icon: History    },
 ]
@@ -653,19 +659,272 @@ function AbaBackup() {
   )
 }
 
+// ── ABA OPERACIONAL ──────────────────────────────────────────────────────────
+interface ConfigOperacional {
+  sla_onboarding_dias:     number
+  sla_setup_trafego_dias:  number
+  sla_ativo_dias:          number
+  horario_inicio:          string
+  horario_fim:             string
+  alerta_inadimplencia_dias: number
+  alerta_saldo_ads_minimo: number
+}
+
+function AbaOperacional() {
+  const [cfg, setCfg] = useState<ConfigOperacional>({
+    sla_onboarding_dias:       7,
+    sla_setup_trafego_dias:    14,
+    sla_ativo_dias:            30,
+    horario_inicio:            '08:00',
+    horario_fim:               '18:00',
+    alerta_inadimplencia_dias: 3,
+    alerta_saldo_ads_minimo:   50,
+  })
+  const [salvando, setSalvando] = useState(false)
+  const [ok,       setOk]       = useState(false)
+  const [erro,     setErro]     = useState('')
+
+  useEffect(() => {
+    supabase.from('configuracoes_operacional').select('*').eq('agencia_id', 'adsgator-main').single()
+      .then(({ data }) => { if (data) setCfg(data as ConfigOperacional) })
+  }, [])
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvando(true); setOk(false); setErro('')
+    const { error } = await supabase.from('configuracoes_operacional')
+      .upsert({ ...cfg, agencia_id: 'adsgator-main' }, { onConflict: 'agencia_id' })
+    setSalvando(false)
+    if (error) { setErro(error.message); return }
+    setOk(true)
+    setTimeout(() => setOk(false), 3000)
+  }
+
+  const field = (label: string, key: keyof ConfigOperacional, type: string = 'number', suffix?: string) => (
+    <div>
+      <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">{label}</label>
+      <div className="flex items-center gap-[0.5rem]">
+        <input
+          type={type}
+          value={cfg[key] as string | number}
+          onChange={(e) => setCfg((c) => ({ ...c, [key]: type === 'number' ? Number(e.target.value) : e.target.value }))}
+          className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30 w-[10rem]"
+        />
+        {suffix && <span className="text-ink-muted text-[0.8125rem]">{suffix}</span>}
+      </div>
+    </div>
+  )
+
+  return (
+    <form onSubmit={salvar} className="flex flex-col gap-[2rem] max-w-[36rem]">
+      <div>
+        <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">SLA por estágio</h3>
+        <div className="flex flex-col gap-[1rem]">
+          {field('Onboarding — prazo máximo', 'sla_onboarding_dias', 'number', 'dias')}
+          {field('Setup de tráfego — prazo máximo', 'sla_setup_trafego_dias', 'number', 'dias')}
+          {field('Revisão periódica de clientes ativos', 'sla_ativo_dias', 'number', 'dias')}
+        </div>
+      </div>
+      <div>
+        <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">Horário de trabalho</h3>
+        <div className="flex gap-[1.5rem]">
+          {field('Início', 'horario_inicio', 'time')}
+          {field('Fim', 'horario_fim', 'time')}
+        </div>
+      </div>
+      <div>
+        <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[1rem]">Alertas automáticos</h3>
+        <div className="flex flex-col gap-[1rem]">
+          {field('Alertar inadimplência após', 'alerta_inadimplencia_dias', 'number', 'dias de atraso')}
+          {field('Alertar saldo Google Ads abaixo de', 'alerta_saldo_ads_minimo', 'number', 'R$')}
+        </div>
+      </div>
+      <div className="flex items-center gap-[1rem]">
+        <BtnSalvar salvando={salvando} />
+        <FeedbackSalvo ok={ok} erro={erro} />
+      </div>
+    </form>
+  )
+}
+
+// ── ABA PLANOS ───────────────────────────────────────────────────────────────
+interface PlanoServico {
+  id:         string
+  nome:       string
+  valor:      number
+  cor:        string
+  features:   string[]
+  ativo:      boolean
+}
+
+const CORES_PLANO = ['#FFB100', '#22c55e', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4']
+
+function AbaPlanos() {
+  const [planos,    setPlanos]   = useState<PlanoServico[]>([])
+  const [loading,   setLoading]  = useState(true)
+  const [editando,  setEditando] = useState<PlanoServico | null>(null)
+  const [novo,      setNovo]     = useState(false)
+
+  const carregar = async () => {
+    setLoading(true)
+    const { data } = await supabase.from('planos_servico').select('*').order('valor')
+    setPlanos((data ?? []) as PlanoServico[])
+    setLoading(false)
+  }
+
+  useEffect(() => { carregar() }, [])
+
+  async function salvarPlano(p: Partial<PlanoServico> & { nome: string; valor: number }) {
+    if (p.id) {
+      await supabase.from('planos_servico').update(p).eq('id', p.id)
+    } else {
+      await supabase.from('planos_servico').insert({ ...p, ativo: true, features: p.features ?? [] })
+    }
+    setEditando(null); setNovo(false); carregar()
+  }
+
+  function deletarPlano(id: string) {
+    const openConfirm = useConfirmDialogStore.getState().openConfirm
+    openConfirm(
+      'Deletar Plano',
+      'Este plano será removido permanentemente. Esta ação não pode ser desfeita.',
+      async () => {
+        await supabase.from('planos_servico').delete().eq('id', id)
+        carregar()
+      }
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-[1.5rem] max-w-[42rem]">
+      <div className="flex items-center justify-between">
+        <p className="text-ink-muted text-[0.875rem]">Configure os planos oferecidos pela sua agência.</p>
+        <Button variant="primary" size="sm" icon={<Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+          onClick={() => { setNovo(true); setEditando({ id: '', nome: '', valor: 0, cor: CORES_PLANO[0], features: [], ativo: true }) }}>
+          Novo plano
+        </Button>
+      </div>
+
+      {loading ? (
+        <p className="text-ink-muted text-[0.875rem]">Carregando…</p>
+      ) : planos.length === 0 && !novo ? (
+        <div className="bg-surface-hover border border-surface-border rounded-xl p-[2rem] text-center">
+          <Tag className="w-[2rem] h-[2rem] text-ink-muted mx-auto mb-[0.75rem]" strokeWidth={1} />
+          <p className="text-ink-secondary text-[0.875rem]">Nenhum plano cadastrado ainda.</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-[0.75rem]">
+          {planos.map((p) => (
+            editando?.id === p.id ? (
+              <PlanoForm key={p.id} plano={editando} onSave={salvarPlano} onCancel={() => setEditando(null)} />
+            ) : (
+              <div key={p.id} className="flex items-center gap-[1rem] bg-surface-card border border-surface-border rounded-xl px-[1.25rem] py-[0.875rem]">
+                <div className="w-[0.625rem] h-[0.625rem] rounded-full shrink-0" style={{ background: p.cor }} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-ink-primary text-[0.875rem] font-semibold">{p.nome}</p>
+                  <p className="text-ink-muted text-[0.75rem]">{p.features.length} feature{p.features.length !== 1 ? 's' : ''}</p>
+                </div>
+                <p className="text-ink-primary font-semibold text-[0.9375rem] shrink-0">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.valor)}<span className="text-ink-muted text-[0.75rem] font-normal">/mês</span>
+                </p>
+                <div className="flex items-center gap-[0.25rem]">
+                  <Button variant="ghost" size="sm" className="w-[2rem] px-0" onClick={() => setEditando(p)}>
+                    <Pencil className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="w-[2rem] px-0 text-status-red hover:text-status-red hover:bg-status-red/10" onClick={() => deletarPlano(p.id)}>
+                    <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={1.75} />
+                  </Button>
+                </div>
+              </div>
+            )
+          ))}
+          {novo && editando && !editando.id && (
+            <PlanoForm plano={editando} onSave={salvarPlano} onCancel={() => { setNovo(false); setEditando(null) }} />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PlanoForm({ plano, onSave, onCancel }: { plano: PlanoServico; onSave: (p: PlanoServico) => void; onCancel: () => void }) {
+  const [form, setForm] = useState<PlanoServico>(plano)
+  const [featInput, setFeatInput] = useState('')
+
+  function addFeature() {
+    const v = featInput.trim()
+    if (!v) return
+    setForm((f) => ({ ...f, features: [...f.features, v] }))
+    setFeatInput('')
+  }
+
+  return (
+    <div className="bg-surface-elevated border border-ads-500/30 rounded-xl p-[1.25rem] flex flex-col gap-[1rem]">
+      <div className="grid grid-cols-2 gap-[0.75rem]">
+        <div>
+          <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.25rem]">Nome</label>
+          <input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
+            className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30" placeholder="Ex: Starter" />
+        </div>
+        <div>
+          <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.25rem]">Valor mensal (R$)</label>
+          <input type="number" value={form.valor} onChange={(e) => setForm((f) => ({ ...f, valor: Number(e.target.value) }))}
+            className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30" />
+        </div>
+      </div>
+      <div>
+        <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.375rem]">Cor</label>
+        <div className="flex gap-[0.5rem]">
+          {CORES_PLANO.map((c) => (
+            <button key={c} type="button" onClick={() => setForm((f) => ({ ...f, cor: c }))}
+              className={`w-[1.5rem] h-[1.5rem] rounded-full transition-all ${form.cor === c ? 'ring-2 ring-offset-2 ring-ads-500' : ''}`}
+              style={{ background: c }} />
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.375rem]">Features incluídas</label>
+        <div className="flex gap-[0.5rem] mb-[0.5rem]">
+          <input value={featInput} onChange={(e) => setFeatInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFeature() } }}
+            placeholder="Adicionar feature…"
+            className="flex-1 h-[2rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30" />
+          <Button variant="secondary" size="sm" onClick={addFeature}>Adicionar</Button>
+        </div>
+        <div className="flex flex-wrap gap-[0.375rem]">
+          {form.features.map((f, i) => (
+            <span key={i} className="flex items-center gap-[0.25rem] px-[0.5rem] py-[0.125rem] bg-surface-hover border border-surface-border rounded-full text-[0.75rem] text-ink-secondary">
+              {f}
+              <button type="button" onClick={() => setForm((f2) => ({ ...f2, features: f2.features.filter((_, j) => j !== i) }))}
+                className="text-ink-muted hover:text-status-red transition-colors">×</button>
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="flex items-center gap-[0.75rem] pt-[0.25rem]">
+        <Button variant="primary" size="sm" onClick={() => onSave(form)} disabled={!form.nome.trim()}>Salvar plano</Button>
+        <Button variant="ghost" size="sm" onClick={onCancel}>Cancelar</Button>
+      </div>
+    </div>
+  )
+}
+
 // ── PÁGINA PRINCIPAL ────────────────────────────────────────────────────────
 export default function ConfiguracoesPage() {
   const [aba, setAba] = useState<AbaId>('perfil')
 
   const ABA_CONTENT: Record<AbaId, React.ReactNode> = {
-    perfil:       <AbaPerfil />,
-    notificacoes: <AbaNotificacoes />,
-    integracoes:  <AbaIntegracoes />,
-    financeiro:   <AbaFinanceiro />,
-    aparencia:    <AbaAparencia />,
-    equipe:       <AbaEquipe />,
-    backup:       <AbaBackup />,
-    auditoria:    <AuditLogViewer />,
+    perfil:        <AbaPerfil />,
+    notificacoes:  <AbaNotificacoes />,
+    integracoes:   <AbaIntegracoes />,
+    financeiro:    <AbaFinanceiro />,
+    aparencia:     <AbaAparencia />,
+    equipe:        <AbaEquipe />,
+    operacional:   <AbaOperacional />,
+    planos:        <AbaPlanos />,
+    automacoes:    <AutomacaoEmail />,
+    backup:        <AbaBackup />,
+    auditoria:     <AuditLogViewer />,
   }
 
   return (

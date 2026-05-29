@@ -10,21 +10,25 @@ export async function GET() {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  // Buscar clientes ativos do user
+  // Buscar clientes ativos do user (sem limit, mostra todos que qualificam)
   const { data: clientes, error: clientesError } = await supabase
     .from('clientes')
     .select('id, nome, status, nicho, saldo_google, dominio, website, dias_atraso, mrr')
     .eq('user_id', user.id)
-    .in('status', ['ativo', 'onboarding'])
-    .order('nome')
+    .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido'])
+    .order('mrr', { ascending: false })
+    .limit(20)
 
   if (clientesError) {
     return NextResponse.json({ error: clientesError.message }, { status: 500 })
   }
 
   if (!clientes || clientes.length === 0) {
+    console.log('[/api/v1/news] Nenhum cliente ativo encontrado')
     return NextResponse.json({ data: [] })
   }
+
+  console.log(`[/api/v1/news] ${clientes.length} clientes encontrados`)
 
   // Para cada cliente, buscar o último snapshot de analytics
   const clienteIds = clientes.map(c => c.id)
@@ -49,6 +53,7 @@ export async function GET() {
   const newsData: NewsClienteData[] = clientes.map(cliente => {
     const snap = latestByCliente.get(cliente.id)
 
+    // Se há snapshot, usa dados reais; senão usa defaults (0)
     const investimento = snap?.investimento ?? 0
     const cliques = snap?.cliques ?? 0
     const impressoes = snap?.impressoes ?? 0
@@ -58,7 +63,6 @@ export async function GET() {
     const sessoes = snap?.sessoes ?? 0
 
     const cpc_medio = cliques > 0 ? investimento / cliques : 0
-    // Estimar visualizações de página como sessões * 1.5 (não temos campo direto)
     const visualizacoes_pagina = Math.round(sessoes * 1.5)
 
     return {
@@ -84,5 +88,6 @@ export async function GET() {
     }
   })
 
+  // Retorna sempre com dados — mesmo que vazio, para não desaparecer
   return NextResponse.json({ data: newsData })
 }

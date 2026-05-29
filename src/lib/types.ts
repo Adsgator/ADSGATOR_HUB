@@ -56,6 +56,8 @@ export interface Cliente {
   congelado_em?:    string
   data_criacao?:    string
   data_atualizacao?: string
+  // Portal do cliente
+  portal_token?:    string
 }
 
 // ─── ESTAGIO ──────────────────────────────────────────────────────────────────

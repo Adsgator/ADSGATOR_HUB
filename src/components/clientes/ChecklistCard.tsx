@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, Circle, MessageSquare, Bell, X, Check } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { fadeUp, slideInLeft } from '@/lib/motion'
 import type { ChecklistItem } from '@/lib/types'
 
 interface ChecklistCardProps {
@@ -99,8 +101,9 @@ export function ChecklistCard({ clienteId: _clienteId, estagioId, items: itemsIn
       </div>
 
       <ul className="space-y-[0.25rem]">
-        {items.map((item, i) => (
-          <li key={i} className="group rounded-lg">
+        <AnimatePresence>
+          {items.map((item, i) => (
+            <motion.li key={i} variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="group rounded-lg">
             <div className="flex items-start gap-[0.5rem] px-[0.375rem] py-[0.375rem] rounded-lg hover:bg-surface-hover transition-colors">
               {/* Toggle done */}
               <button
@@ -157,8 +160,9 @@ export function ChecklistCard({ clienteId: _clienteId, estagioId, items: itemsIn
             </div>
 
             {/* Painel inline de edição */}
-            {editando === i && (
-              <div className="mx-[0.375rem] mb-[0.25rem] p-[0.75rem] rounded-lg bg-surface-elevated border border-surface-border/60 animate-fade-up">
+            <AnimatePresence>
+              {editando === i && (
+                <motion.div variants={fadeUp} initial="hidden" animate="visible" exit="exit" className="mx-[0.375rem] mb-[0.25rem] p-[0.75rem] rounded-lg bg-surface-elevated border border-surface-border/60">
                 <div className="flex flex-col gap-[0.5rem]">
                   <div>
                     <label className="block text-ink-muted text-[0.6875rem] font-medium mb-[0.25rem] uppercase tracking-wide">Nota</label>
@@ -196,17 +200,21 @@ export function ChecklistCard({ clienteId: _clienteId, estagioId, items: itemsIn
                     </button>
                   </div>
                 </div>
-              </div>
-            )}
+              </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Nota existente (quando não está editando) */}
-            {item.nota && editando !== i && (
-              <p className="mx-[0.375rem] mb-[0.25rem] px-[0.75rem] py-[0.375rem] rounded-lg bg-surface-elevated border border-surface-border/40 text-ink-muted text-[0.75rem] leading-relaxed italic">
-                {item.nota}
-              </p>
-            )}
-          </li>
-        ))}
+            <AnimatePresence>
+              {item.nota && editando !== i && (
+                <motion.p variants={slideInLeft} initial="hidden" animate="visible" exit="exit" className="mx-[0.375rem] mb-[0.25rem] px-[0.75rem] py-[0.375rem] rounded-lg bg-surface-elevated border border-surface-border/40 text-ink-muted text-[0.75rem] leading-relaxed italic">
+                  {item.nota}
+                </motion.p>
+              )}
+            </AnimatePresence>
+            </motion.li>
+          ))}
+        </AnimatePresence>
       </ul>
     </div>
   )

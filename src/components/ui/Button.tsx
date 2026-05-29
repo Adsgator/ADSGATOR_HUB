@@ -46,7 +46,8 @@ export function Button({
       disabled={isDisabled}
       className={cn(
         'inline-flex items-center justify-center shrink-0',
-        'transition-colors duration-150',
+        'transition-all duration-150',
+        'active:scale-[0.97]',
         'focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50',
         variantClasses[variant],
         sizeClasses[size],
