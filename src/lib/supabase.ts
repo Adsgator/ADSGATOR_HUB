@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from './supabase-client';
 
 const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -7,12 +7,7 @@ if (!supabaseUrl || !supabaseAnon) {
   throw new Error('[Adsgator] NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY são obrigatórias.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnon, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-  },
-});
+export const supabase = getSupabaseBrowserClient();
 
 // Cliente server-side (Edge Functions / API Routes que precisam bypassar RLS)
 export function criarClienteServiceRole() {

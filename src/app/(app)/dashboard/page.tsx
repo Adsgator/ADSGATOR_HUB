@@ -51,6 +51,25 @@ interface AcaoItem {
 }
 
 const STORAGE_KEY = 'adsgator-bento-layouts-v4'
+
+const CARD_DESCRIPTIONS: Record<string, string> = {
+  'kpi-ativos': 'Exibe o total de clientes com status "ativo" no momento. O número é calculado em tempo real a partir do banco de dados. Clique para acessar a lista completa de clientes.',
+  'kpi-mrr': 'MRR (Monthly Recurring Revenue) — receita recorrente mensal agregada de todos os clientes ativos. Calculado somando o valor mensal de cada assinatura ativa. Clique para ver o módulo financeiro.',
+  'kpi-retencao': 'Taxa de retenção percentual dos clientes: total de ativos dividido pelo total geral de clientes cadastrados. Indica a saúde do portfólio — quanto mais próximo de 100%, melhor.',
+  'kpi-saldo': 'Saldo agregado de Google Ads de todos os clientes ativos. Quando o saldo cai abaixo de R$ 200, o card emite alerta vermelho e sugere o envio da mensagem #SALDOGOOGLE ao cliente.',
+  'morning-briefing': 'Briefing matinal gerado por IA (Gemini Flash) com resumo do dia: inadimplentes, clientes em onboarding, alertas críticos e oportunidades de crescimento. Atualizado ao carregar a página.',
+  'weather-clock': 'Relógio digital com hora e data em tempo real, além de condições climáticas da localização atual (temperatura, descrição, ícone). Os dados de clima são obtidos via API de geolocalização.',
+  'acoes-dia': 'Lista das 5 ações prioritárias do dia, calculadas automaticamente com base no status dos clientes: cobranças em atraso (crítico ≥15d, atenção ≥7d), novos clientes recebidos e clientes congelados aguardando retorno.',
+  'clientes-progresso': 'Lista vertical com todos os clientes em progresso (não congelados e não cancelados), mostrando status com indicador colorido e dias em atraso quando aplicável. Acesso rápido ao WhatsApp e página do cliente.',
+  'dre-sparkline': 'DRE (Demonstrativo de Resultado) com gráficos sparkline de receita, despesas e lucro nos últimos meses. Permite visualizar a tendência financeira da agência de forma compacta.',
+  'alertas-criticos': 'Painel de alertas críticos do sistema: clientes com inadimplência acima do limite, saldo Google Ads baixo, e outros alertas configurados. Cada alerta tem link direto para resolução.',
+  'gemini-chat': 'Chat integrado com Gemini AI para consultas rápidas sobre os dados da agência: análise de clientes, sugestões de ações, resumos de campanhas e muito mais. Contexto carregado automaticamente.',
+  'clientes-foco': 'Cards horizontais dos clientes que precisam de atenção imediata — inadimplentes ou congelados — ordenados por urgência. Exibe dias em atraso e botões de ação rápida (WhatsApp, página do cliente).',
+  'activity-feed': 'Feed das últimas ações realizadas no sistema nas últimas 24h: criação de tarefas, atualizações de clientes, pagamentos recebidos e outras atividades registradas no audit log.',
+  'timeline-onboarding': 'Linha do tempo com todos os clientes em processo de onboarding, mostrando etapas concluídas, pendentes e próximas ações. Facilita o acompanhamento do progresso de entrada de novos clientes.',
+  'timeline-recurring': 'Linha do tempo de tarefas recorrentes do portfólio: otimizações mensais, relatórios periódicos e outras atividades que se repetem regularmente para cada cliente.',
+  'timeline-alerts': 'Linha do tempo consolidada de alertas ativos: vencimentos próximos, renovações de contrato, cobranças programadas e outros eventos que requerem atenção nos próximos dias.',
+}
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
 
@@ -239,6 +258,9 @@ export default function DashboardPage() {
   const [mostrarWizard, setMostrarWizard] = useState(false)
   const [editMode, setEditMode] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false)
+  const [saveAsDefault, setSaveAsDefault] = useState(false)
+  const [confirmBtnPos, setConfirmBtnPos] = useState<{ top: number; right: number } | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [layouts, setLayouts] = useState<LayoutsType>(DEFAULT_LAYOUTS)
   const [layoutSnapshot, setLayoutSnapshot] = useState<LayoutsType>(DEFAULT_LAYOUTS)
@@ -306,7 +328,15 @@ export default function DashboardPage() {
     setLayouts(allLayouts)
   }
 
-  const handleConfirmEdit = useCallback(async () => {
+  const handleConfirmEdit = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setConfirmBtnPos({ top: rect.top, right: window.innerWidth - rect.left })
+    setShowSaveConfirm(true)
+  }, [])
+
+  const handleSaveLayout = useCallback(async (asDefault: boolean) => {
+    setShowSaveConfirm(false)
+    setConfirmBtnPos(null)
     setEditMode(false)
     if (userId) {
       try {
@@ -318,7 +348,13 @@ export default function DashboardPage() {
       }
     }
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(layouts)) } catch {}
-    toast.success('Layout salvo')
+    if (asDefault) {
+      try { localStorage.setItem(`${STORAGE_KEY}-default`, JSON.stringify(layouts)) } catch {}
+      toast.success('Layout salvo e definido como padrão da conta')
+    } else {
+      toast.success('Layout salvo')
+    }
+    setSaveAsDefault(false)
   }, [userId, layouts])
 
   const handleCancelEdit = useCallback(() => {
@@ -500,7 +536,7 @@ export default function DashboardPage() {
           >
           {/* ── KPIs ─────────────────────────────── */}
           <div key="kpi-ativos">
-            <BentoCard editMode={editMode} cardId="kpi-ativos" onSizeChange={makeCardResizer('kpi-ativos')} noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-ativos" onSizeChange={makeCardResizer('kpi-ativos')} noPadding description={CARD_DESCRIPTIONS['kpi-ativos']} onEnterEdit={enterEdit}>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Clientes Ativos" value={metricas.ativos} accentColor="amber" icon={<Users className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/clientes" />
@@ -509,7 +545,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-mrr">
-            <BentoCard editMode={editMode} cardId="kpi-mrr" onSizeChange={makeCardResizer('kpi-mrr')} noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-mrr" onSizeChange={makeCardResizer('kpi-mrr')} noPadding description={CARD_DESCRIPTIONS['kpi-mrr']} onEnterEdit={enterEdit}>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="MRR" value={`R$ ${metricas.mrr.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`} accentColor="green" icon={<DollarSign className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} href="/financeiro" />
@@ -518,7 +554,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-retencao">
-            <BentoCard editMode={editMode} cardId="kpi-retencao" onSizeChange={makeCardResizer('kpi-retencao')} noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-retencao" onSizeChange={makeCardResizer('kpi-retencao')} noPadding description={CARD_DESCRIPTIONS['kpi-retencao']} onEnterEdit={enterEdit}>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Taxa de Retenção" value={`${metricas.taxaRetencao}%`} accentColor="red" icon={<Percent className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
@@ -527,7 +563,7 @@ export default function DashboardPage() {
           </div>
 
           <div key="kpi-saldo">
-            <BentoCard editMode={editMode} cardId="kpi-saldo" onSizeChange={makeCardResizer('kpi-saldo')} noPadding>
+            <BentoCard editMode={editMode} cardId="kpi-saldo" onSizeChange={makeCardResizer('kpi-saldo')} noPadding description={CARD_DESCRIPTIONS['kpi-saldo']} onEnterEdit={enterEdit}>
               {loading
                 ? <div className="h-full rounded-xl skeleton-shimmer" />
                 : <KpiCard label="Saldo Google" value={saldoGoogle !== null ? `R$ ${saldoGoogle.toLocaleString('pt-BR')}` : '…'} delta={saldoGoogle !== null && saldoGoogle < 200 ? 'Baixo' : undefined} deltaDir={saldoGoogle !== null && saldoGoogle < 200 ? 'down' : undefined} accentColor="blue" alert={saldoGoogle !== null && saldoGoogle < 200} alertLabel="Envie #SALDOGOOGLE" icon={<CreditCard className="w-[1rem] h-[1rem]" strokeWidth={1.75} />} />
@@ -537,21 +573,21 @@ export default function DashboardPage() {
 
           {/* ── MORNING BRIEFING ─────────────────── */}
           <div key="morning-briefing">
-            <BentoCard editMode={editMode} cardId="morning-briefing" onSizeChange={makeCardResizer('morning-briefing')} noPadding>
+            <BentoCard editMode={editMode} cardId="morning-briefing" onSizeChange={makeCardResizer('morning-briefing')} noPadding description={CARD_DESCRIPTIONS['morning-briefing']} onEnterEdit={enterEdit}>
               <MorningBriefing />
             </BentoCard>
           </div>
 
           {/* ── WEATHER CLOCK ────────────────────── */}
           <div key="weather-clock">
-            <BentoCard editMode={editMode} cardId="weather-clock" onSizeChange={makeCardResizer('weather-clock')} noPadding>
+            <BentoCard editMode={editMode} cardId="weather-clock" onSizeChange={makeCardResizer('weather-clock')} noPadding description={CARD_DESCRIPTIONS['weather-clock']} onEnterEdit={enterEdit}>
               <WeatherClock />
             </BentoCard>
           </div>
 
           {/* ── AÇÕES DO DIA ─────────────────────── */}
           <div key="acoes-dia">
-            <BentoCard editMode={editMode} cardId="acoes-dia" onSizeChange={makeCardResizer('acoes-dia')} title="Ações do Dia" subtitle="Prioridades de hoje">
+            <BentoCard editMode={editMode} cardId="acoes-dia" onSizeChange={makeCardResizer('acoes-dia')} title="Ações do Dia" subtitle="Prioridades de hoje" description={CARD_DESCRIPTIONS['acoes-dia']} onEnterEdit={enterEdit}>
               {loading || acoesDoDia.length === 0
                 ? <div className="flex items-center justify-center h-full text-ink-muted text-[0.8125rem]">Nenhuma ação pendente</div>
                 : <AcoesDoDia items={acoesDoDia} onCongelar={handleCongelar} onCriarTask={handleCriarTaskDeAcao} />
@@ -568,6 +604,8 @@ export default function DashboardPage() {
               title="Clientes em Progresso"
               subtitle={`${progresso.length} de ${metricas.total} clientes`}
               actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
+              description={CARD_DESCRIPTIONS['clientes-progresso']}
+              onEnterEdit={enterEdit}
             >
               {loading ? (
                 <div className="flex flex-col gap-[0.5rem]">
@@ -631,21 +669,21 @@ export default function DashboardPage() {
 
           {/* ── DRE SPARKLINE ────────────────────── */}
           <div key="dre-sparkline">
-            <BentoCard editMode={editMode} cardId="dre-sparkline" onSizeChange={makeCardResizer('dre-sparkline')} noPadding>
+            <BentoCard editMode={editMode} cardId="dre-sparkline" onSizeChange={makeCardResizer('dre-sparkline')} noPadding description={CARD_DESCRIPTIONS['dre-sparkline']} onEnterEdit={enterEdit}>
               <DRESparkline />
             </BentoCard>
           </div>
 
           {/* ── ALERTAS CRÍTICOS ─────────────────── */}
           <div key="alertas-criticos">
-            <BentoCard editMode={editMode} cardId="alertas-criticos" onSizeChange={makeCardResizer('alertas-criticos')} noPadding>
+            <BentoCard editMode={editMode} cardId="alertas-criticos" onSizeChange={makeCardResizer('alertas-criticos')} noPadding description={CARD_DESCRIPTIONS['alertas-criticos']} onEnterEdit={enterEdit}>
               <AlertasCriticos />
             </BentoCard>
           </div>
 
           {/* ── GEMINI CHAT ──────────────────────── */}
           <div key="gemini-chat">
-            <BentoCard editMode={editMode} cardId="gemini-chat" onSizeChange={makeCardResizer('gemini-chat')} noPadding>
+            <BentoCard editMode={editMode} cardId="gemini-chat" onSizeChange={makeCardResizer('gemini-chat')} noPadding description={CARD_DESCRIPTIONS['gemini-chat']} onEnterEdit={enterEdit}>
               <GeminiChat />
             </BentoCard>
           </div>
@@ -666,6 +704,8 @@ export default function DashboardPage() {
                   title="Clientes em Foco"
                   subtitle={emFoco.length > 0 ? `${emFoco.length} cliente${emFoco.length > 1 ? 's' : ''} precisam de atenção` : 'Tudo em dia'}
                   actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
+                  description={CARD_DESCRIPTIONS['clientes-foco']}
+                  onEnterEdit={enterEdit}
                 >
                   {loading ? (
                     <div className="flex gap-[0.75rem]">
@@ -737,6 +777,8 @@ export default function DashboardPage() {
               title="Atividade Recente"
               subtitle="Últimas 24h"
               actions={<a href="/configuracoes" className="text-ads-500 text-[0.75rem] hover:underline">Ver auditoria</a>}
+              description={CARD_DESCRIPTIONS['activity-feed']}
+              onEnterEdit={enterEdit}
             >
               <ActivityFeed />
             </BentoCard>
@@ -744,21 +786,21 @@ export default function DashboardPage() {
 
           {/* ── TIMELINE ONBOARDING ─────────────────── */}
           <div key="timeline-onboarding">
-            <BentoCard editMode={editMode} cardId="timeline-onboarding" onSizeChange={makeCardResizer('timeline-onboarding')} noPadding>
+            <BentoCard editMode={editMode} cardId="timeline-onboarding" onSizeChange={makeCardResizer('timeline-onboarding')} noPadding description={CARD_DESCRIPTIONS['timeline-onboarding']} onEnterEdit={enterEdit}>
               <TimelineCard type="onboarding" />
             </BentoCard>
           </div>
 
           {/* ── TIMELINE RECURRING TASKS ───────────── */}
           <div key="timeline-recurring">
-            <BentoCard editMode={editMode} cardId="timeline-recurring" onSizeChange={makeCardResizer('timeline-recurring')} noPadding>
+            <BentoCard editMode={editMode} cardId="timeline-recurring" onSizeChange={makeCardResizer('timeline-recurring')} noPadding description={CARD_DESCRIPTIONS['timeline-recurring']} onEnterEdit={enterEdit}>
               <TimelineCard type="recurring_task" />
             </BentoCard>
           </div>
 
           {/* ── TIMELINE ALERTS ─────────────────────── */}
           <div key="timeline-alerts">
-            <BentoCard editMode={editMode} cardId="timeline-alerts" onSizeChange={makeCardResizer('timeline-alerts')} noPadding>
+            <BentoCard editMode={editMode} cardId="timeline-alerts" onSizeChange={makeCardResizer('timeline-alerts')} noPadding description={CARD_DESCRIPTIONS['timeline-alerts']} onEnterEdit={enterEdit}>
               <TimelineCard type="alert" />
             </BentoCard>
           </div>
@@ -769,6 +811,56 @@ export default function DashboardPage() {
 
     {mostrarWizard && (
       <OnboardingWizard onConcluir={() => setMostrarWizard(false)} />
+    )}
+
+    {/* ── Pop-up: Salvar como padrão ─────────────────────────────── */}
+    {showSaveConfirm && confirmBtnPos && (
+      <div className="fixed inset-0 z-[9998] pointer-events-none">
+        <div
+          className="pointer-events-auto animate-fade-scale bg-surface-elevated border border-surface-border rounded-xl shadow-2xl shadow-black/50 p-[1.25rem] w-[20rem] max-w-[90vw] absolute"
+          style={{
+            top: Math.min(confirmBtnPos.top, window.innerHeight - 220),
+            right: confirmBtnPos.right + 8,
+          }}
+        >
+          <div className="flex items-start gap-[0.75rem] mb-[1.25rem]">
+            <div className="w-[2.25rem] h-[2.25rem] rounded-xl bg-ads-500/10 flex items-center justify-center shrink-0">
+              <LayoutDashboard className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="text-ink-primary text-[0.9375rem] font-semibold leading-snug">Salvar layout</p>
+              <p className="text-ink-muted text-[0.8125rem] mt-[0.25rem]">Deseja também definir este layout como padrão da conta?</p>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-[0.5rem] mb-[1.25rem] cursor-pointer group">
+            <input
+              type="checkbox"
+              checked={saveAsDefault}
+              onChange={(e) => setSaveAsDefault(e.target.checked)}
+              className="w-[1rem] h-[1rem] accent-ads-500 rounded cursor-pointer"
+            />
+            <span className="text-ink-secondary text-[0.8125rem] group-hover:text-ink-primary transition-colors">
+              Definir como posicionamento padrão da conta
+            </span>
+          </label>
+
+          <div className="flex gap-[0.5rem]">
+            <button
+              onClick={() => handleSaveLayout(saveAsDefault)}
+              className="flex-1 h-[2.25rem] rounded-lg bg-ads-500 text-white text-[0.8125rem] font-semibold hover:bg-ads-600 transition-colors"
+            >
+              {saveAsDefault ? 'Salvar como padrão' : 'Salvar'}
+            </button>
+            <button
+              onClick={() => { setShowSaveConfirm(false); setConfirmBtnPos(null); setSaveAsDefault(false) }}
+              className="flex-1 h-[2.25rem] rounded-lg bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] font-medium hover:text-ink-primary transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
     )}
     </>
   )

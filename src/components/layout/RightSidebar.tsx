@@ -13,7 +13,7 @@ interface SidebarIconButtonProps {
   label: string
   active?: boolean
   badge?: number
-  onClick: () => void
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
 }
 
 function SidebarIconButton({ icon: Icon, label, active, badge, onClick }: SidebarIconButtonProps) {
@@ -87,7 +87,7 @@ export function RightSidebar() {
                 key={action.id}
                 icon={action.icon}
                 label={action.label}
-                onClick={action.onClick}
+                onClick={(e) => action.onClick(e)}
               />
             ))}
           </div>

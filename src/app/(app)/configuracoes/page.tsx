@@ -196,31 +196,86 @@ function AbaNotificacoes() {
 }
 
 // ── ABA INTEGRAÇÕES ─────────────────────────────────────────────────────────
+type IntegracaoStatus = 'ok' | 'warn' | 'error' | 'not_configured' | 'loading'
+
+interface IntegracaoInfo {
+  nome: string
+  status: IntegracaoStatus
+  mensagem: string
+  variaveis: string[]
+}
+
+function BadgeStatus({ status, mensagem }: { status: IntegracaoStatus; mensagem: string }) {
+  const map: Record<IntegracaoStatus, { cls: string; label: string }> = {
+    ok:             { cls: 'bg-status-green/15 text-status-green',   label: '✓ Conectado'       },
+    warn:           { cls: 'bg-status-orange/15 text-status-orange', label: '⚠ Atenção'          },
+    error:          { cls: 'bg-status-red/15 text-status-red',       label: '✗ Erro'             },
+    not_configured: { cls: 'bg-surface-hover text-ink-muted',        label: '— Não configurado'  },
+    loading:        { cls: 'bg-surface-hover text-ink-muted',        label: 'Verificando…'       },
+  }
+  const { cls, label } = map[status]
+  return (
+    <span className={`text-[0.75rem] font-semibold px-[0.5rem] py-[0.125rem] rounded-full ${cls}`} title={mensagem}>
+      {label}
+    </span>
+  )
+}
+
 function AbaIntegracoes() {
-  const integracoes = [
-    { nome: 'Google Ads',   status: !!process.env.NEXT_PUBLIC_GOOGLE_ADS_CONNECTED, detalhe: 'OAuth configurado via variável de ambiente' },
-    { nome: 'GA4',          status: !!process.env.NEXT_PUBLIC_GA4_CONNECTED,        detalhe: 'Property ID configurado' },
-    { nome: 'Asaas',        status: !!process.env.NEXT_PUBLIC_ASAAS_CONNECTED,      detalhe: 'Webhook ativo' },
-    { nome: 'Vertex AI',    status: !!process.env.NEXT_PUBLIC_VERTEX_CONNECTED,     detalhe: 'Gemini 2.0 Flash + 2.5 Pro' },
-    { nome: 'WhatsApp',     status: false,                                            detalhe: 'Não configurado' },
-  ]
+  const [integracoes, setIntegracoes] = useState<IntegracaoInfo[]>([
+    { nome: 'Google Ads', status: 'loading', mensagem: '', variaveis: ['GOOGLE_ADS_CLIENT_ID', 'GOOGLE_ADS_CLIENT_SECRET', 'GOOGLE_ADS_REFRESH_TOKEN', 'GOOGLE_ADS_DEVELOPER_TOKEN', 'GOOGLE_ADS_MANAGER_ID'] },
+    { nome: 'Asaas',      status: 'loading', mensagem: '', variaveis: ['ASAAS_API_KEY', 'ASAAS_WEBHOOK_KEY'] },
+    { nome: 'Vertex AI',  status: 'loading', mensagem: '', variaveis: ['VERTEX_AI_PROJECT_ID', 'VERTEX_AI_LOCATION', 'VERTEX_AI_CREDENTIALS'] },
+    { nome: 'GA4',        status: 'loading', mensagem: '', variaveis: ['GOOGLE_APPLICATION_CREDENTIALS'] },
+    { nome: 'WhatsApp',   status: 'not_configured', mensagem: 'Integração via Twilio pendente', variaveis: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN'] },
+  ])
+
+  useEffect(() => {
+    fetch('/api/status')
+      .then((r) => r.json())
+      .then((data) => {
+        setIntegracoes((prev) => prev.map((i) => {
+          if (i.nome === 'Google Ads') return { ...i, status: data.googleAds?.status ?? 'error', mensagem: data.googleAds?.message ?? '' }
+          if (i.nome === 'Asaas')      return { ...i, status: data.asaas?.status    ?? 'error', mensagem: data.asaas?.message    ?? '' }
+          if (i.nome === 'Vertex AI')  return { ...i, status: data.vertexAI?.status ?? 'error', mensagem: data.vertexAI?.message  ?? '' }
+          if (i.nome === 'GA4')        return { ...i, status: data.ga4?.status      ?? 'error', mensagem: data.ga4?.message       ?? '' }
+          return i
+        }))
+      })
+      .catch(() => {
+        setIntegracoes((prev) => prev.map((i) =>
+          i.status === 'loading' ? { ...i, status: 'error', mensagem: 'Falha ao verificar status' } : i
+        ))
+      })
+  }, [])
 
   return (
-    <div className="flex flex-col gap-[0.75rem] max-w-[32rem]">
+    <div className="flex flex-col gap-[0.75rem] max-w-[36rem]">
       {integracoes.map((i) => (
-        <div key={i.nome} className="flex items-center justify-between bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-          <div>
+        <div key={i.nome} className="flex items-start justify-between bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] gap-[1rem]">
+          <div className="flex flex-col gap-[0.375rem] min-w-0">
             <p className="text-ink-primary font-semibold text-[0.9375rem]">{i.nome}</p>
-            <p className="text-ink-muted text-[0.75rem]">{i.detalhe}</p>
+            {i.mensagem && (
+              <p className="text-ink-muted text-[0.75rem]">{i.mensagem}</p>
+            )}
+            <div className="flex flex-wrap gap-[0.25rem] mt-[0.125rem]">
+              {i.variaveis.map((v) => (
+                <code key={v} className="text-[0.6875rem] bg-surface-hover px-[0.375rem] py-[0.0625rem] rounded text-ink-muted font-mono">
+                  {v}
+                </code>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-[0.75rem]">
-            <span className={`text-[0.75rem] font-semibold px-[0.5rem] py-[0.125rem] rounded-full ${i.status ? 'bg-status-green/15 text-status-green' : 'bg-surface-hover text-ink-muted'}`}>
-              {i.status ? '✓ Conectado' : '— Desconectado'}
-            </span>
+          <div className="shrink-0 pt-[0.125rem]">
+            <BadgeStatus status={i.status} mensagem={i.mensagem} />
           </div>
         </div>
       ))}
-      <p className="text-ink-muted text-[0.75rem] mt-[0.5rem]">Configure as variáveis de ambiente no painel Supabase ou no arquivo <code className="bg-surface-hover px-[0.25rem] rounded">.env.local</code> para ativar cada integração.</p>
+      <p className="text-ink-muted text-[0.75rem] mt-[0.5rem]">
+        Configure as variáveis no arquivo{' '}
+        <code className="bg-surface-hover px-[0.25rem] rounded">.env.local</code>{' '}
+        e reinicie o servidor para aplicar.
+      </p>
     </div>
   )
 }

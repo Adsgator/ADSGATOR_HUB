@@ -8,7 +8,7 @@ export interface RightSidebarAction {
   id: string
   icon: LucideIcon
   label: string
-  onClick: () => void
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
 }
 
 interface RightSidebarContextValue {
