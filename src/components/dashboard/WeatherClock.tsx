@@ -93,11 +93,14 @@ function AnalogClock({ date }: { date: Date }) {
 
 // ── Componente principal ─────────────────────────────────────────────────────
 export function WeatherClock() {
-  const [now,     setNow]     = useState(new Date())
+  // Inicia como null para evitar mismatch de hidratação (servidor x cliente
+  // renderizariam horários diferentes). Só vira Date após montar no cliente.
+  const [now,     setNow]     = useState<Date | null>(null)
   const [weather, setWeather] = useState<WeatherData>({ temp: null, chuva: null, chuva2h: null })
 
   // Tick a cada segundo para o analógico
   useEffect(() => {
+    setNow(new Date())
     const id = setInterval(() => setNow(new Date()), 1_000)
     return () => clearInterval(id)
   }, [])
@@ -110,6 +113,15 @@ export function WeatherClock() {
       .catch(() => {})
   }, [])
 
+
+  // Antes de montar no cliente, renderiza placeholder estável (igual no SSR).
+  if (!now) {
+    return (
+      <div className="p-[1.25rem] h-full">
+        <div className="h-full min-h-[6rem] rounded-xl skeleton-shimmer" />
+      </div>
+    )
+  }
 
   const hora = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const data = now.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })

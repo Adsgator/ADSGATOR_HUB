@@ -37,6 +37,8 @@ import { ChurnRisk }             from '@/components/dashboard/ChurnRisk'
 import { TopPerformers }         from '@/components/dashboard/TopPerformers'
 import { CentralDeComando }      from '@/components/dashboard/CentralDeComando'
 import { GoalsCard }             from '@/components/dashboard/GoalsCard'
+import { AlertaSaldoGoogle }     from '@/components/dashboard/AlertaSaldoGoogle'
+import { RecentTransactions }    from '@/components/dashboard/RecentTransactions'
 import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
 import { useRightSidebar }       from '@/lib/store/right-sidebar-context'
@@ -81,6 +83,8 @@ const CARD_DESCRIPTIONS: Record<string, string> = {
   'top-performers': 'Top 5 clientes mais valiosos por MRR. Útil para identificar contas que merecem atenção especial e upsell.',
   'central-comando': 'Central de Comando — agrega tudo que precisa de atenção hoje: tarefas vencidas, cobranças em atraso, posts para publicar e alertas não lidos. Visão única do dia.',
   'goals-card': 'Metas da agência com barras de progresso: MRR, número de clientes, taxa de conversão e outras métricas configuradas. Gerencie em Configurações.',
+  'alerta-saldo-google': 'Alerta preditivo de saldo Google Ads: cruza o saldo atual de cada cliente com o gasto médio diário dos últimos snapshots para estimar em quantos dias a verba acaba. Mostra apenas clientes em alerta (≤7 dias) ou crítico (≤3 dias).',
+  'recent-transactions': 'Últimos lançamentos financeiros da agência (receitas e despesas) em tempo real, direto da tabela financeiro_lancamentos. Receitas em verde, custos em vermelho. Clique em "Ver todas" para o módulo Financeiro completo.',
 }
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
@@ -201,6 +205,18 @@ const CARD_SIZE_PRESETS: Record<string, SizePreset[]> = {
     { id: 'large', sizes: { xl: { w: 6, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
     { id: 'max', sizes: { xl: { w: 8, h: 7 }, lg: { w: 7, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
   ],
+  'alerta-saldo-google': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 3 }, lg: { w: 3, h: 3 }, md: { w: 3, h: 3 }, sm: { w: 2, h: 3 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 4 } } },
+    { id: 'large', sizes: { xl: { w: 6, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 5 } } },
+    { id: 'max', sizes: { xl: { w: 8, h: 7 }, lg: { w: 7, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 6 } } },
+  ],
+  'recent-transactions': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 4 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 5 } } },
+    { id: 'large', sizes: { xl: { w: 5, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 6 } } },
+    { id: 'max', sizes: { xl: { w: 7, h: 7 }, lg: { w: 6, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 7 } } },
+  ],
 }
 
 const fmt = (v: number) =>
@@ -238,6 +254,8 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     // ROW 31: Central de Comando + Metas
     { i: 'central-comando',     x: 0, y: 31, w: 8, h: 6, minW: 4, minH: 4 },
     { i: 'goals-card',          x: 8, y: 31, w: 4, h: 6, minW: 3, minH: 4 },
+    { i: 'alerta-saldo-google', x: 0, y: 37, w: 4, h: 5, minW: 3, minH: 3 },
+    { i: 'recent-transactions', x: 4, y: 37, w: 4, h: 5, minW: 3, minH: 4 },
   ],
   lg: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 6 },
@@ -261,6 +279,8 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'top-performers',      x: 7, y: 31, w: 3, h: 5 },
     { i: 'central-comando',     x: 0, y: 36, w: 7, h: 6 },
     { i: 'goals-card',          x: 7, y: 36, w: 3, h: 6 },
+    { i: 'alerta-saldo-google', x: 0, y: 42, w: 4, h: 5 },
+    { i: 'recent-transactions', x: 4, y: 42, w: 4, h: 5 },
   ],
   md: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 5 },
@@ -284,6 +304,8 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'top-performers',      x: 0, y: 61, w: 6, h: 5 },
     { i: 'central-comando',     x: 0, y: 66, w: 6, h: 6 },
     { i: 'goals-card',          x: 0, y: 72, w: 6, h: 5 },
+    { i: 'alerta-saldo-google', x: 0, y: 77, w: 6, h: 5 },
+    { i: 'recent-transactions', x: 0, y: 82, w: 6, h: 5 },
   ],
   sm: [
     { i: 'dre-sparkline',     x: 0, y: 0,  w: 2, h: 5 },
@@ -307,6 +329,8 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'top-performers',      x: 0, y: 76, w: 2, h: 5 },
     { i: 'central-comando',     x: 0, y: 81, w: 2, h: 6 },
     { i: 'goals-card',          x: 0, y: 87, w: 2, h: 5 },
+    { i: 'alerta-saldo-google', x: 0, y: 92, w: 2, h: 5 },
+    { i: 'recent-transactions', x: 0, y: 97, w: 2, h: 5 },
   ],
 }
 
@@ -901,6 +925,20 @@ export default function DashboardPage() {
           <div key="goals-card">
             <BentoCard editMode={editMode} cardId="goals-card" onSizeChange={makeCardResizer('goals-card')} title="Metas" subtitle="Progresso da agência" actions={<a href="/configuracoes" className="text-ads-500 text-[0.75rem] hover:underline">Configurar</a>} description={CARD_DESCRIPTIONS['goals-card']} onEnterEdit={enterEdit}>
               <GoalsCard />
+            </BentoCard>
+          </div>
+
+          {/* ── ALERTA SALDO GOOGLE ADS ──────────────── */}
+          <div key="alerta-saldo-google" data-grid={{ x: 0, y: 92, w: 4, h: 5, minW: 3, minH: 3 }}>
+            <BentoCard editMode={editMode} cardId="alerta-saldo-google" onSizeChange={makeCardResizer('alerta-saldo-google')} noPadding description={CARD_DESCRIPTIONS['alerta-saldo-google']} onEnterEdit={enterEdit}>
+              <AlertaSaldoGoogle />
+            </BentoCard>
+          </div>
+
+          {/* ── TRANSAÇÕES RECENTES ──────────────────── */}
+          <div key="recent-transactions" data-grid={{ x: 4, y: 92, w: 4, h: 5, minW: 3, minH: 4 }}>
+            <BentoCard editMode={editMode} cardId="recent-transactions" onSizeChange={makeCardResizer('recent-transactions')} noPadding description={CARD_DESCRIPTIONS['recent-transactions']} onEnterEdit={enterEdit}>
+              <RecentTransactions />
             </BentoCard>
           </div>
         </RGLResponsive>

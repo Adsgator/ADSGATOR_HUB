@@ -253,8 +253,7 @@ export default function NomeDaPagina() {
 | `Sidebar`          | `components/layout/Sidebar.tsx`      | Nav lateral slim (hover expande)               |
 | `RightSidebar`     | `components/layout/RightSidebar.tsx` | Barra direita (ações contextuais)             |
 | `StatusBar`        | `components/layout/StatusBar.tsx`    | Barra inferior (status, info)                  |
-| `NotificationBell` | `components/layout/NotificationBell.tsx` | Badge + drawer de notificações           |
-| `NotificationDrawer` | `components/layout/NotificationDrawer.tsx` | Panel de notificações              |
+| `NotificationDrawer` | `components/layout/NotificationDrawer.tsx` | Drawer (aberto pela RightSidebar) — abas Alertas (inadimplência, saldo Google baixo, onboarding parado, congelados) + Notificações |
 
 ### Props do MainLayout
 
@@ -397,12 +396,42 @@ O `ConfirmDialog` é renderizado globalmente no `MainLayout` — não precisa im
 
 ## O que Está Pendente (Lacunas Reais)
 
-- [ ] `/api/ia/hashtags` — rota ausente (botão "Gerar Hashtags" em Marketing não funciona)
+> Atualizado em 30/05/2026 após auditoria. Vários itens antes listados como
+> "pendentes" já estavam implementados — a causa real era um bug de autenticação
+> nas rotas `/api/v1/*` (ver nota abaixo), agora corrigido.
+
+- [x] ~~`/api/ia/hashtags`~~ — **existe e está conectada** ao botão "Gerar Hashtags" em Marketing.
+- [x] ~~Drag/drop persistente em Tarefas~~ — API `/api/v1/tarefas/reorder` existe e **persiste** (destravada com o fix de auth).
 - [ ] Analytics — integração real Google Ads + GA4 (UI pronta, falta configurar credenciais e data binding)
-- [ ] analytics_snapshots — tabela existe mas sem dados reais (NewsContainer mostra zeros)
-- [ ] Notificações WhatsApp via Twilio (templates existem, envio real pendente)
-- [ ] Notificações Email automáticas (Resend SDK — cron + templates)
-- [ ] RBAC completo — regras RLS no Supabase para múltiplos usuários
-- [ ] Drag/drop persistente em Tarefas (reorder salvo no Supabase — API `/api/v1/tarefas/reorder` criada)
+- [ ] analytics_snapshots — sem dados reais ainda → NewsContainer mostra os clientes, mas com métricas 0 até o sync popular a tabela
+- [ ] Notificações WhatsApp via Twilio (templates existem, envio real pendente — hoje o envio é via `wa.me`)
+- [ ] Notificações Email automáticas (Resend wired em `lib/email.ts` — falta `RESEND_API_KEY` + cron)
+- [ ] RBAC/RLS por usuário no Supabase (isolamento hoje é por `user_id` na aplicação)
 - [ ] Publicação real de posts via Meta API
-- [ ] TEST_MODE=false para webhook-asaas e regua-cobranca (requer checklist em docs/MODO_TESTE.md)
+- [ ] TEST_MODE=false para webhook-asaas e regua-cobranca (requer checklist em docs/Arquivo/MODO_TESTE.md)
+
+### Correções da auditoria (30/05/2026)
+
+- **Auth das rotas de API**: `/api/v1/*` e `analytics/live` usavam um cliente Supabase
+  que não lia os cookies no servidor → retornavam sempre 401. Criado `lib/supabase/server.ts`
+  (padrão `@supabase/ssr`) e repontadas todas as rotas. Destravou timelines, reorder,
+  NewsContainer, e-mail de relatórios e templates.
+- **Portal do cliente**: middleware bloqueava `/portal/[token]`; adicionado às rotas públicas.
+- **Segurança**: rotas `/api/ia/*` (custo Vertex) e `/api/search` (service-role) agora exigem sessão.
+- **Limpeza**: removidos componentes mortos/duplicados, 4 widgets com dados mock e o
+  `src/project_snapshot.md`. Clientes Supabase consolidados em `@/lib/supabase` (browser)
+  e `@/lib/supabase/server` (servidor).
+
+#### 2ª rodada (mesmo dia)
+
+- **Hidratação (React #418)**: `WeatherClock` iniciava `useState(new Date())` → servidor e
+  cliente renderizavam horários diferentes. Agora inicia `null` e só vira `Date` após montar.
+  ⚠️ Regra: nunca usar `new Date()` / `Math.random()` em estado inicial ou direto no JSX renderizado no SSR.
+- **z-index do drawer de notificação**: usava `z-60` (classe Tailwind inexistente) e ficava
+  atrás do overlay. Corrigido para `z-[60]`. ⚠️ Tailwind só tem `z-0/10/20/30/40/50`; acima disso usar `z-[N]`.
+- **Drawer de notificações enriquecido**: aba "Alertas" agora unifica inadimplência, saldo
+  Google baixo, onboarding/setup parado e congelados (tudo calculado do estado dos clientes).
+- **`RecentTransactions`** reconstruído com dados reais de `financeiro_lancamentos` e plugado no dashboard.
+- **`AlertaSaldoGoogle`** plugado no dashboard (alerta preditivo de fim de verba).
+- **Login** redesenhado no padrão do design system; `NotificationBell` (órfão) removido.
+- Biblioteca de WhatsApp do cliente com as 13 mensagens reais (MENSAGENS ATENTIMENTO), por categoria.

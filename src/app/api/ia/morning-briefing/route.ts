@@ -1,5 +1,6 @@
 import { NextResponse }         from 'next/server'
 import { createClient }         from '@supabase/supabase-js'
+import { createClient as createSessionClient } from '@/lib/supabase/server'
 import { VertexAI }             from '@google-cloud/vertexai'
 import { MODELO_PRO }           from '@/lib/vertex-ai'
 
@@ -58,6 +59,10 @@ Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de açã
 }
 
 export async function GET(req: Request) {
+  const session = await createSessionClient()
+  const { data: { user } } = await session.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const filtro = (searchParams.get('filtro') ?? 'completo') as FiltroModo
   const hoje = new Date().toISOString().slice(0, 10)

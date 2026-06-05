@@ -5,7 +5,7 @@ import {
   Clock, DollarSign, UserPlus, CheckSquare, AlertTriangle,
   Snowflake, Play, MessageCircle, Settings, Filter,
 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 
 interface AuditLog {
@@ -53,7 +53,6 @@ function tempoRelativo(dateStr: string): string {
 }
 
 export function AuditTimeline({ clienteId }: { clienteId: string }) {
-  const supabase = createClient()
   const [logs,         setLogs]        = useState<AuditLog[]>([])
   const [loading,      setLoading]     = useState(true)
   const [filtroTipo,   setFiltroTipo]  = useState('')

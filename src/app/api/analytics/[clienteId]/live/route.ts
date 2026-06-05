@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/server';
 import {
   obterDadosCampanhasAds,
   obterTermosPesquisa,
@@ -25,6 +25,8 @@ export async function GET(
   { params }: { params: Promise<{ clienteId: string }> },
 ) {
   const { clienteId } = await params;
+
+  const supabase = await createClient();
 
   // Verificar autenticação via cookie/headers
   const { data: { user } } = await supabase.auth.getUser();

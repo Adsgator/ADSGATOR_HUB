@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { VertexAI }                  from '@google-cloud/vertexai'
 import { MODELO_FLASH }              from '@/lib/vertex-ai'
+import { createClient }              from '@/lib/supabase/server'
 
 function criarVertexAI() {
   return new VertexAI({
@@ -11,6 +12,10 @@ function criarVertexAI() {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+
   const body = await req.json() as { texto: string; rede?: string }
   const { texto, rede = 'instagram' } = body
 

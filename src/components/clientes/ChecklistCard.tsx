@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, Circle, MessageSquare, Bell, X, Check } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { fadeUp, slideInLeft } from '@/lib/motion'
 import type { ChecklistItem } from '@/lib/types'
 
@@ -19,7 +19,6 @@ interface ItemEditState {
 }
 
 export function ChecklistCard({ clienteId: _clienteId, estagioId, items: itemsInicial }: ChecklistCardProps) {
-  const supabase = createClient()
   const [items,        setItems]        = useState(itemsInicial)
   const [editando,     setEditando]     = useState<number | null>(null)
   const [editState,    setEditState]    = useState<ItemEditState>({ nota: '', lembrete_data: '' })

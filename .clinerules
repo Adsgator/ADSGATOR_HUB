@@ -24,7 +24,8 @@ Leia o `CLAUDE.md` na raiz do projeto para contexto completo.
 
 ### Imports Obrigatórios
 - `cn()` helper: sempre de `@/lib/utils`
-- Supabase client: sempre de `@/lib/supabase`
+- Supabase no cliente (componentes 'use client'): `import { supabase } from '@/lib/supabase'`
+- Supabase em Route Handlers (`app/api/**`) e Server Components: `import { createClient } from '@/lib/supabase/server'` + `const supabase = await createClient()` — esse lê os cookies da sessão (o cliente de browser NÃO funciona no servidor e devolve 401)
 - Ícones: sempre de `lucide-react` (import direto, nunca sublibrary)
 - MainLayout: de `@/components/layout/MainLayout`
 
@@ -124,6 +125,9 @@ function handleDelete(id: string) {
 - Não adicionar comentários óbvios ao código
 - Não criar documentação extra não solicitada
 - Não usar `confirm()` nativo — usar `openConfirm` do `useConfirmDialogStore`
+- Não usar `new Date()`, `Date.now()` ou `Math.random()` em estado inicial (`useState(...)`) nem direto no JSX renderizado no servidor — causa erro de hidratação (React #418). Inicie `null` e preencha em `useEffect`.
+- Não usar classes de z-index acima de 50 sem colchetes — o Tailwind só tem `z-0/10/20/30/40/50`. Para mais alto, use valor arbitrário: `z-[60]`, `z-[100]`.
+- Em rotas de API (`app/api/**`), nunca usar o cliente de browser para `auth.getUser()` — usar `@/lib/supabase/server`.
 
 ---
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 /**
  * GET /api/v1/clientes
@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
  * Query params: status, nicho, limit, offset
  */
 export async function GET(req: NextRequest) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // Verificar autenticação
   const { data: { user } } = await supabase.auth.getUser()
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
  * Criar novo cliente
  */
 export async function POST(req: NextRequest) {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {

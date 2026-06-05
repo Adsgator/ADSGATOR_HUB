@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
+import { createClient as createSessionClient } from '@/lib/supabase/server'
 import { VertexAI }                  from '@google-cloud/vertexai'
 import { MODELO_FLASH }              from '@/lib/vertex-ai'
 import type { ChatMensagem }         from '@/lib/types'
@@ -46,6 +47,10 @@ Exemplos que requerem ação:
 - "adiciona uma notificação sobre saldo baixo" → create_notification`
 
 export async function POST(req: NextRequest) {
+  const session = await createSessionClient()
+  const { data: { user } } = await session.auth.getUser()
+  if (!user) return NextResponse.json({ content: 'Não autorizado' } satisfies ChatResponse, { status: 401 })
+
   const body = await req.json() as {
     messages:             ChatMensagem[]
     contexto_cliente_id?: string

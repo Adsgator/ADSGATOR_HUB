@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Brain, Save, RefreshCw, Sparkles } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 interface Props {
@@ -10,7 +10,6 @@ interface Props {
 }
 
 export function ClienteMemoria({ clienteId }: Props) {
-  const supabase    = createClient()
   const [conteudo,  setConteudo]  = useState('')
   const [original,  setOriginal]  = useState('')
   const [salvando,  setSalvando]  = useState(false)
