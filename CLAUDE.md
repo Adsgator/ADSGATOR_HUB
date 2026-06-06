@@ -333,6 +333,18 @@ supabase/functions/
 
 ⚠️ **MODO DE TESTE ATIVO** — `TEST_MODE = true` nas Edge Functions webhook-asaas e regua-cobranca.
 
+### Sync de Analytics
+
+Os clients Google rodam em Node (SDKs `google-ads-api` / `@google-analytics/data`),
+que **não funcionam em Deno** — por isso o sync é uma rota Next.js, não Edge Function.
+
+- **Lógica:** `lib/analytics-sync.ts` (`sincronizarCliente`, `sincronizarTodos`) —
+  agrega Google Ads + GA4 e faz upsert idempotente em `analytics_snapshots`
+  (1 linha por fonte/período; constraint única via migration `20260606_*`).
+- **Rota:** `POST /api/v1/analytics/sync` (botão "Sincronizar" na UI, sessão) e
+  `GET` (Vercel Cron, header `Authorization: Bearer $CRON_SECRET`).
+- **Agendamento:** `vercel.json` → diário às 06:00. Requer env `CRON_SECRET`.
+
 ---
 
 ## Componentes UI Disponíveis
@@ -407,8 +419,8 @@ O `ConfirmDialog` é renderizado globalmente no `MainLayout` — não precisa im
 
 - [x] ~~`/api/ia/hashtags`~~ — **existe e está conectada** ao botão "Gerar Hashtags" em Marketing.
 - [x] ~~Drag/drop persistente em Tarefas~~ — API `/api/v1/tarefas/reorder` existe e **persiste** (destravada com o fix de auth).
-- [ ] Analytics — integração real Google Ads + GA4 (UI pronta, falta configurar credenciais e data binding)
-- [ ] analytics_snapshots — sem dados reais ainda → NewsContainer mostra os clientes, mas com métricas 0 até o sync popular a tabela
+- [x] ~~Analytics — integração real~~ — dados ao vivo (`/api/analytics/[id]/live`) e sync histórico prontos. Falta apenas **configurar as credenciais** Google Ads/GA4 nas env vars e marcar `google_ads_enabled`/`ga4_enabled` no cliente.
+- [x] ~~analytics_snapshots vazio~~ — sync implementado: `lib/analytics-sync.ts` + `POST/GET /api/v1/analytics/sync`. Roda pelo botão "Sincronizar" na página Analytics (manual) e por Vercel Cron diário (06:00, ver `vercel.json`). Requer env `CRON_SECRET`.
 - [ ] Notificações WhatsApp — hoje o envio é via `wa.me` (link manual). Automação de envio fora de escopo por ora.
 - [ ] Notificações Email automáticas (Resend wired em `lib/email.ts` — falta `RESEND_API_KEY` + cron)
 - [ ] RBAC/RLS por usuário no Supabase (isolamento hoje é por `user_id` na aplicação)

@@ -5,7 +5,7 @@ import {
   BarChart2, TrendingUp, ArrowUpRight, RefreshCw,
   MousePointerClick, DollarSign, AlertTriangle,
   Users, Globe, Zap, Calendar, ChevronDown,
-  Sparkles, X,
+  Sparkles, X, DatabaseZap,
 } from 'lucide-react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -151,6 +151,7 @@ export default function AnalyticsPage() {
   const [periodo, setPeriodo] = useState<Periodo>('30d')
   const [liveData, setLiveData] = useState<LiveAnalyticsData | null>(null)
   const [loadingLive, setLoadingLive] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [iaRecs,        setIaRecs]        = useState<string>('')
   const [loadingIaRecs, setLoadingIaRecs] = useState(false)
   const [mostrarIaRecs, setMostrarIaRecs] = useState(false)
@@ -210,6 +211,33 @@ export default function AnalyticsPage() {
     const interval = setInterval(carregarLive, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [carregarLive])
+
+  // Sincroniza snapshots (popula analytics_snapshots) e recarrega a leitura.
+  const sincronizar = useCallback(async () => {
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/v1/analytics/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clienteSel ? { clienteId: clienteSel } : {}),
+      })
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({ error: 'Erro desconhecido' }))
+        throw new Error(e.error || `HTTP ${res.status}`)
+      }
+      const data = await res.json()
+      const oks = (data.resultados ?? []).filter(
+        (r: { google_ads: string; ga4: string }) => r.google_ads === 'ok' || r.ga4 === 'ok',
+      ).length
+      toast.success(oks > 0 ? `Sincronizado: ${oks} cliente(s)` : 'Nada para sincronizar (sem integração ativa)')
+      await carregar()
+    } catch (error) {
+      console.error('Erro ao sincronizar analytics:', error)
+      toast.error(error instanceof Error ? error.message : 'Erro ao sincronizar')
+    } finally {
+      setSyncing(false)
+    }
+  }, [clienteSel, carregar])
 
   // ── KPIs agregados ────────────────────────────────────────────────
   const totais = dados.reduce((acc, { ultimo: u }) => {
@@ -317,6 +345,15 @@ export default function AnalyticsPage() {
             icon={<RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />}
             className="w-[2rem] px-0"
           />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={sincronizar}
+            disabled={syncing}
+            icon={<DatabaseZap className={`w-[0.875rem] h-[0.875rem] ${syncing ? 'animate-pulse' : ''}`} strokeWidth={1.75} />}
+          >
+            {syncing ? 'Sincronizando…' : 'Sincronizar'}
+          </Button>
         </div>
       }
     >
