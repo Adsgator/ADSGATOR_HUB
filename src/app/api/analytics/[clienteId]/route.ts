@@ -36,7 +36,7 @@ export async function POST(
 
     const { data: cliente, error: errCliente } = await supabase
       .from('clientes')
-      .select('google_ads_customer_id, ga4_property_id, nome')
+      .select('google_ads_customer_id, ga4_property_id, nome, email')
       .eq('id', clienteId)
       .single();
 
@@ -87,6 +87,20 @@ export async function POST(
           .eq('mes_ano', body.mesAno);
       } catch (iaErr) {
         console.error('Vertex AI (não crítico):', iaErr);
+      }
+
+      // Email automático ao cliente (só se a automação estiver ativa).
+      try {
+        const { dispararEmailAutomatico } = await import('@/lib/email-automation');
+        await dispararEmailAutomatico(supabase, {
+          tipo: 'email_relatorio_mensal',
+          templateId: 'report-google-ads',
+          destinatario: (cliente as { email?: string }).email ?? '',
+          clienteId,
+          variables: { nome_cliente: cliente.nome, mes_ano: body.mesAno },
+        });
+      } catch (mailErr) {
+        console.error('Email de relatório (não crítico):', mailErr);
       }
 
       return NextResponse.json({ success: true, status: 'gerado' });
