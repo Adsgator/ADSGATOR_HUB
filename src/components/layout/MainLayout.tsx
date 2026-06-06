@@ -7,7 +7,6 @@ import { TopBar }               from './TopBar'
 import { RightSidebar }         from './RightSidebar'
 import { StatusBar }            from './StatusBar'
 import { FloatingChat }         from './FloatingChat'
-import { RightSidebarProvider } from '@/lib/store/right-sidebar-context'
 import { ShortcutsOverlay }     from '@/components/ui/ShortcutsOverlay'
 import { ConfirmDialog }        from '@/components/ui/ConfirmDialog'
 
@@ -79,7 +78,7 @@ export function MainLayout({ children, title, subtitle, actions }: MainLayoutPro
   }, [router])
 
   return (
-    <RightSidebarProvider>
+    <>
       <div className="h-screen w-screen overflow-hidden bg-surface-base grid grid-rows-[var(--topbar-h)_1fr_var(--statusbar-h)] md:grid-cols-[var(--sidebar-w)_1fr_var(--right-sidebar-w)] grid-cols-1">
         {/* ── ROW 1: TOP BAR (ocupa todas as colunas) ──────── */}
         <div className="md:col-span-3 col-span-1 z-50">
@@ -111,6 +110,6 @@ export function MainLayout({ children, title, subtitle, actions }: MainLayoutPro
 
       {/* ── CONFIRMAÇÃO CUSTOMIZADA ────────────── */}
       <ConfirmDialog />
-    </RightSidebarProvider>
+    </>
   )
 }

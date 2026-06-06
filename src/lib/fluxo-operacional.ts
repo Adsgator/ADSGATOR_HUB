@@ -228,8 +228,6 @@ export const FLUXO_OPERACIONAL: Record<string, EtapaFluxo> = {
 export const ORDEM_ESTAGIOS_PREVENDA   = ['prospeccao', 'diagnostico', 'proposta', 'negociacao'] as const;
 export const ORDEM_ESTAGIOS_PRINCIPAL  = ['recebido', 'onboarding', 'setup_trafego', 'ativo'] as const;
 export const ORDEM_ESTAGIOS_CANCELAMENTO = ['aviso_cancelamento', 'indisponibilidade', 'encerramento', 'cancelado'] as const;
-/** @deprecated use ORDEM_ESTAGIOS_PRINCIPAL */
-export const ORDEM_ESTAGIOS = ORDEM_ESTAGIOS_PRINCIPAL;
 
 export const WHATSAPP_TEMPLATES: Record<string, { titulo: string; mensagem: string }> = {
   '#BOASVINDAS': {

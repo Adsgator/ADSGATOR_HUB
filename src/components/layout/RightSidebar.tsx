@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Bell, MessageCircle, HelpCircle, Settings, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
-import { useRightSidebar } from '@/lib/store/right-sidebar-context'
 import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
 import { NotificationDrawer } from './NotificationDrawer'
 import { cn } from '@/lib/utils'
@@ -41,12 +40,8 @@ function SidebarIconButton({ icon: Icon, label, active, badge, onClick }: Sideba
 
 export function RightSidebar() {
   const { theme, setTheme } = useTheme()
-  const ctx = useRightSidebar()
-  const { contextActions } = useRightSidebarStore()
+  const { contextActions, activeDrawer, openDrawer } = useRightSidebarStore()
   const [notifOpen, setNotifOpen] = useState(false)
-
-  const activeDrawer = ctx?.activeDrawer ?? null
-  const openDrawer = ctx?.openDrawer ?? (() => {})
 
   const nextTheme = theme === 'dark' ? 'light' : 'dark'
   const ThemeIcon = theme === 'dark' ? Sun : Moon
