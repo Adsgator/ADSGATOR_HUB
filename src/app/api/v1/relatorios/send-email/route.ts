@@ -35,8 +35,18 @@ export async function POST(request: NextRequest) {
     ...variables,
   }
 
-  const html = renderTemplate(template.buildHtml(enrichedVars), enrichedVars)
-  const subject = renderTemplate(assunto_override ?? template.subject, enrichedVars)
+  // Override editado pelo usuário (se houver) tem prioridade sobre o template do código.
+  const { data: override } = await supabase
+    .from('email_templates')
+    .select('subject_override, html_override')
+    .eq('id', template_id)
+    .maybeSingle()
+
+  const baseHtml = override?.html_override ?? template.buildHtml(enrichedVars)
+  const baseSubject = assunto_override ?? override?.subject_override ?? template.subject
+
+  const html = renderTemplate(baseHtml, enrichedVars)
+  const subject = renderTemplate(baseSubject, enrichedVars)
 
   try {
     const { id: resendId } = await sendEmail({ to: destinatario, cc, subject, html })
