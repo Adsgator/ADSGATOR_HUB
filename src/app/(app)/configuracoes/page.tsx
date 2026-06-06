@@ -233,7 +233,6 @@ function AbaIntegracoes() {
     { nome: 'Asaas',      status: 'loading', mensagem: '', variaveis: ['ASAAS_API_KEY', 'ASAAS_WEBHOOK_KEY'] },
     { nome: 'Vertex AI',  status: 'loading', mensagem: '', variaveis: ['VERTEX_AI_PROJECT_ID', 'VERTEX_AI_LOCATION', 'VERTEX_AI_CREDENTIALS'] },
     { nome: 'GA4',        status: 'loading', mensagem: '', variaveis: ['GOOGLE_APPLICATION_CREDENTIALS'] },
-    { nome: 'WhatsApp',   status: 'not_configured', mensagem: 'Integração via Twilio pendente', variaveis: ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN'] },
   ])
 
   useEffect(() => {

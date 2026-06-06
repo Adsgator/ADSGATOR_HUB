@@ -409,7 +409,7 @@ O `ConfirmDialog` é renderizado globalmente no `MainLayout` — não precisa im
 - [x] ~~Drag/drop persistente em Tarefas~~ — API `/api/v1/tarefas/reorder` existe e **persiste** (destravada com o fix de auth).
 - [ ] Analytics — integração real Google Ads + GA4 (UI pronta, falta configurar credenciais e data binding)
 - [ ] analytics_snapshots — sem dados reais ainda → NewsContainer mostra os clientes, mas com métricas 0 até o sync popular a tabela
-- [ ] Notificações WhatsApp via Twilio (templates existem, envio real pendente — hoje o envio é via `wa.me`)
+- [ ] Notificações WhatsApp — hoje o envio é via `wa.me` (link manual). Automação de envio fora de escopo por ora.
 - [ ] Notificações Email automáticas (Resend wired em `lib/email.ts` — falta `RESEND_API_KEY` + cron)
 - [ ] RBAC/RLS por usuário no Supabase (isolamento hoje é por `user_id` na aplicação)
 - [ ] Publicação real de posts via Meta API

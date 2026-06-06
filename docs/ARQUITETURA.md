@@ -392,7 +392,7 @@ adsgator-hub/
                  │
 ┌────────────────▼─────────────────────────────────────────┐
 │       INTEGRAÇÕES EXTERNAS                              │
-│  Google APIs | Vertex AI | Asaas | Twilio               │
+│  Google APIs | Vertex AI | Asaas                        │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -927,7 +927,7 @@ CREATE POLICY "Users can see own clients"
 **Abas:**
 1. **Perfil** — Nome, email, foto, bio
 2. **Notificações** — Preferências (email, SMS, WhatsApp, push)
-3. **Integrações** — Google Ads, GA4, Asaas, Twilio
+3. **Integrações** — Google Ads, GA4, Asaas
 4. **Financeiro** — Dados bancários, margem de lucro, taxa de desconto
 5. **Aparência** — Tema (dark/light), fonte, zoom
 6. **Equipe** — Usuários, roles (admin/manager/view-only), permissões
@@ -1163,9 +1163,9 @@ Regras:
 4. dias_atraso > 30 → contato via call (escalação)
 
 TEST_MODE = true:  Apenas cria notificações (sem enviar)
-TEST_MODE = false: Envia SMS, e-mail, etc
+TEST_MODE = false: Envia e-mail, etc
 
-Integra: Twilio (SMS), Resend (e-mail)
+Integra: Resend (e-mail). WhatsApp hoje via wa.me (link manual).
 ```
 
 ### 8. **memoria-cliente** 🧠
@@ -1607,7 +1607,7 @@ Visualizável em Configurações → Auditoria
 |--------|-----------|--------|-----------|
 | `/api/ia/hashtags` | Rota não implementada | Botão em Marketing não funciona | Alta |
 | Analytics Credenciais | Google Ads + GA4 sem credenciais configuradas | Dados vazios em Analytics | Alta |
-| Notificações WhatsApp | Twilio integrado mas não enviando | Cobranças não notificam cliente | Alta |
+| Notificações WhatsApp | Envio via wa.me (link manual); automação fora de escopo | Cobranças notificadas manualmente | Baixa |
 | Notificações Email | Resend SDK falta implementar | Relatórios não enviam por email | Média |
 | RBAC Completo | Apenas owner_id, sem roles/permissions | Acesso não granular | Média |
 | Drag-drop Persistente | Tarefas arrastra mas não salva ordem | UX confusa | Média |

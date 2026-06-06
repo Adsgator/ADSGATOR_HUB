@@ -143,7 +143,6 @@ Cada card mostra:
 - **Tempo desde última interação**: "5 dias atrás"
 - **Botões rápidos**:
   - 💬 Abrir WhatsApp com template pré-preenchido
-  - 📱 Chamar (Twilio para VOIP)
   - 📋 Ir para página do cliente
   - ⏳ Adiar ação para amanhã
   - 🔒 Congelar cliente (se aguardando dele)
@@ -1129,7 +1128,7 @@ Dia 1º do mês 10h: Relatório mensal
 Toda sexta 17h: Resumo da semana
 ```
 
-### 3. WHATSAPP (Twilio)
+### 3. WHATSAPP (via wa.me)
 
 Para clientes seus (não automático para você, apenas se ativar):
 ```
@@ -1234,12 +1233,6 @@ Tudo que você precisa customizar está aqui:
 │ API Key: ***************************** (oculta)│
 │ Webhook Configurado: ✓                        │
 │ [Testar Webhook] [Gerar Nova Key]             │
-└─────────────────────────────────────────────────┘
-
-┌─ WHATSAPP (TWILIO) ────────────────────────────┐
-│ Status: ✓ Conectado                            │
-│ Número: +55 11 9 XXXX-XXXX                    │
-│ [Desconectar]                                 │
 └─────────────────────────────────────────────────┘
 
 ┌─ GEMINI (IA) ──────────────────────────────────┐
@@ -2263,7 +2256,7 @@ ASAAS_API_KEY=
 |--------------------------------------------------|---------------|------------|
 | Analytics — binding real Google Ads + GA4        | Analytics     | Alta       |
 | Notificações Email automáticas (Resend SDK)      | Notificações  | Média      |
-| Notificações WhatsApp via Twilio                 | Notificações  | Média      |
+| Notificações WhatsApp — hoje via wa.me (manual)  | Notificações  | Baixa      |
 | RBAC — políticas RLS no Supabase por role        | Segurança     | Média      |
 | Drag/drop persistente em Tarefas (ordem no DB)   | Tarefas       | Baixa      |
 | Publicação real de posts via Meta API            | Marketing     | Baixa      |
