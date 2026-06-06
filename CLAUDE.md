@@ -60,12 +60,14 @@ src/
 │   └── dashboard/        # BentoCard, KpiCard, MorningBriefing, NewsContainer, etc.
 ├── lib/
 │   ├── hooks/            # useClientes, useConfirmDialog, usePermissoes, etc.
-│   ├── store/            # Zustand stores (right-sidebar, mobileMenu, appStore)
+│   ├── store/            # Zustand stores (right-sidebar, mobileMenu)
 │   ├── supabase/         # Cliente Supabase + types
 │   ├── motion.ts         # Framer Motion variants (fadeScale, slideInBottom, etc.)
 │   ├── utils.ts          # cn() helper
 │   ├── auth.ts
 │   ├── database.ts       # Queries tipadas
+│   ├── cobranca.ts       # Política de inadimplência (D+7/D+15/D+30) — fonte única
+│   ├── health-score.ts   # Cálculo de health score do cliente (0–100)
 │   └── *.ts
 └── providers/
     └── ThemeProvider.tsx
@@ -198,6 +200,9 @@ Classes CSS utilitárias:
 1. **Sempre rem** — nunca px para tamanhos/espaçamentos
 2. **Nunca `dark:` prefix** — os tokens CSS vars já são dark/light aware
 3. **Tema via `.dark` class** — controlado pelo `ThemeProvider`
+4. **Inadimplência via `lib/cobranca.ts`** — nunca recalcular limiares de atraso à
+   mão (`dias_atraso > N`). Use `estagioInadimplencia()` / `isInadimplente()` /
+   `statusInadimplencia()`. A política é D+7 (suspensão), D+15 (grave), D+30 (crítico).
 
 ### Imports obrigatórios
 

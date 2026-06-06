@@ -8,6 +8,7 @@ import {
   Globe, BarChart2, Pencil, Trash2, Copy, Archive,
 } from 'lucide-react';
 import type { Cliente, Estagio } from '@/lib/types';
+import { isInadimplente } from '@/lib/cobranca';
 import { FLUXO_OPERACIONAL, gerarLinkWhatsApp } from '@/lib/fluxo-operacional';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ContextMenu } from '@/components/ui/ContextMenu';
@@ -55,7 +56,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
   const IconeStatus = ICONES_ESTAGIO[cliente.status as keyof typeof ICONES_ESTAGIO] ?? TrendingUp;
   const badgeCor    = BADGE_CORES[cliente.status] ?? 'bg-surface-hover text-ink-secondary';
   const borderCor   = STATUS_BORDER[cliente.status] ?? 'border-l-surface-border';
-  const temAtraso   = (cliente.dias_atraso ?? 0) > 0;
+  const temAtraso   = isInadimplente(cliente);
 
   const contextItems = [
     {

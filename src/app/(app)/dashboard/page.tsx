@@ -46,6 +46,7 @@ import { supabase }              from '@/lib/supabase'
 import { carregarDashboardLayout, salvarDashboardLayout, type Layouts as LayoutsType } from '@/lib/database'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
+import { estagioInadimplencia } from '@/lib/cobranca'
 
 type Urgencia = 'critica' | 'atencao' | 'review'
 
@@ -802,8 +803,8 @@ export default function DashboardPage() {
                     <div className="flex gap-[0.75rem] overflow-x-auto pb-[0.25rem]">
                       {emFoco.map((c) => {
                         const iniciais = c.nome.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
-                        const isInadimplente = (c.dias_atraso ?? 0) > 0
-                        const urgencia = (c.dias_atraso ?? 0) >= 30 ? 'critica' : isInadimplente ? 'atencao' : 'congelado'
+                        const estagioAtraso = estagioInadimplencia(c.dias_atraso)
+                        const urgencia = estagioAtraso === 'critico' ? 'critica' : estagioAtraso !== 'em_dia' ? 'atencao' : 'congelado'
                         const corBorda = urgencia === 'critica' ? 'border-status-red/40' : urgencia === 'atencao' ? 'border-status-orange/40' : 'border-status-blue/40'
                         const corBg    = urgencia === 'critica' ? 'bg-status-red/5'   : urgencia === 'atencao' ? 'bg-status-orange/5'   : 'bg-status-blue/5'
                         const corTag   = urgencia === 'critica' ? 'text-status-red bg-status-red/10' : urgencia === 'atencao' ? 'text-status-orange bg-status-orange/10' : 'text-status-blue bg-status-blue/10'

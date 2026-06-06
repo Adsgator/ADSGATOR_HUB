@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { isInadimplente } from '@/lib/cobranca'
 import type { Cliente, Estagio } from '@/lib/types'
 
 export type ClienteComEstagio = {
@@ -83,7 +84,7 @@ export function useClientes() {
     retidos:      dados.filter((d) => d.cliente.status === 'congelado').length,
     recebidos:    dados.filter((d) => d.cliente.status === 'recebido').length,
     onboarding:   dados.filter((d) => d.cliente.status === 'onboarding').length,
-    inadimplentes: dados.filter((d) => (d.cliente.dias_atraso ?? 0) > 0).length,
+    inadimplentes: dados.filter((d) => isInadimplente(d.cliente)).length,
     mrr:          dados.reduce((s, d) => s + (d.cliente.mrr ?? 0), 0),
     taxaRetencao: dados.length > 0
       ? Math.round((dados.filter((d) => d.cliente.status === 'ativo').length / dados.length) * 100)

@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { AlertTriangle, Clock, CreditCard, Zap, MessageCircle, ExternalLink, CheckCircle2, ClipboardList } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { estagioInadimplencia } from '@/lib/cobranca'
+import { ALERT_TYPES } from '@/lib/alert-types'
 import { TaskModal } from '@/components/ui/TaskModal'
 import { toast } from 'sonner'
 
@@ -33,9 +35,10 @@ export function AlertasCriticos() {
     const itens: AlertaItem[] = []
 
     for (const c of (clientes ?? []) as { id: string; nome: string; dias_atraso?: number; saldo_google?: number; whatsapp?: string }[]) {
-      if ((c.dias_atraso ?? 0) >= 15) {
+      const estagio = estagioInadimplencia(c.dias_atraso)
+      if (estagio === 'grave' || estagio === 'critico') {
         itens.push({ id: `ina-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — quebra de contrato`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
-      } else if ((c.dias_atraso ?? 0) >= 7) {
+      } else if (estagio === 'suspensao') {
         itens.push({ id: `ina7-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — suspensão iminente`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
       }
       if ((c.saldo_google ?? Infinity) < limite) {
@@ -44,7 +47,16 @@ export function AlertasCriticos() {
     }
 
     for (const a of (alertasDb ?? []) as { id: string; tipo: string; mensagem: string; cliente_id?: string }[]) {
-      itens.push({ id: `alerta-${a.id}`, tipo: 'alerta', label: a.tipo, detalhe: a.mensagem, href: a.cliente_id ? `/clientes/${a.cliente_id}` : undefined, urgente: false, alertaDbId: a.id })
+      const cfg = ALERT_TYPES[a.tipo]
+      itens.push({
+        id: `alerta-${a.id}`,
+        tipo: 'alerta',
+        label: cfg?.label ?? a.tipo,
+        detalhe: a.mensagem || cfg?.description || '',
+        href: a.cliente_id ? `/clientes/${a.cliente_id}` : undefined,
+        urgente: cfg?.severity === 'critical',
+        alertaDbId: a.id,
+      })
     }
 
     setAlertas(itens.slice(0, 5))

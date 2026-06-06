@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { estagioInadimplencia } from '@/lib/cobranca'
 
 interface Cliente {
   id: string
@@ -18,8 +19,10 @@ interface Cliente {
 type RiskLevel = 'Alto' | 'Médio' | 'Baixo'
 
 function getRisk(c: Cliente): RiskLevel {
-  if (c.dias_atraso > 3) return 'Alto'
-  if (c.status === 'congelado') return 'Médio'
+  // 'suspensao' (D+7) ou pior conta como risco alto, conforme política de cobrança.
+  const estagio = estagioInadimplencia(c.dias_atraso)
+  if (estagio === 'suspensao' || estagio === 'grave' || estagio === 'critico') return 'Alto'
+  if (estagio === 'atencao' || c.status === 'congelado') return 'Médio'
   return 'Baixo'
 }
 

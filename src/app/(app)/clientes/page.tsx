@@ -13,6 +13,7 @@ import { ClienteProgressCard }       from '@/components/dashboard/ClienteProgres
 import { WhatsAppTemplateModal }     from '@/components/clientes/WhatsAppTemplateModal'
 import { ContextMenu }               from '@/components/ui/ContextMenu'
 import { useClientes }               from '@/lib/hooks/useClientes'
+import { isInadimplente }            from '@/lib/cobranca'
 import { supabase }                  from '@/lib/supabase'
 import { toast }                     from 'sonner'
 import type { Cliente }              from '@/lib/types'
@@ -128,8 +129,8 @@ export default function ClientesPage() {
       const matchPag    = filtroPag === ''
         ? true
         : filtroPag === 'inadimplente'
-          ? (c.dias_atraso ?? 0) > 0
-          : (c.dias_atraso ?? 0) === 0
+          ? isInadimplente(c)
+          : !isInadimplente(c)
       const q = busca.toLowerCase()
       const matchBusca  = busca === '' ||
         c.nome.toLowerCase().includes(q) ||
