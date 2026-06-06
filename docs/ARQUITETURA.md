@@ -236,20 +236,20 @@ adsgator-hub/
 │   │   │   ├── useClientes.ts        # Hook customizado para clientes
 │   │   │   └── usePermissoes.ts      # Hook para RBAC
 │   │   ├── store/
-│   │   │   ├── useAppStore.ts        # Zustand store global
-│   │   │   └── right-sidebar-context.tsx # Context para RightSidebar
-│   │   ├── supabase.ts               # Exportações principais Supabase
+│   │   │   ├── right-sidebar-store.ts # Zustand: ações contextuais + drawer
+│   │   │   └── mobileMenu             # Zustand: menu mobile
+│   │   ├── supabase.ts               # Exportações principais Supabase (browser)
+│   │   ├── supabase/server.ts        # Cliente server-side (@supabase/ssr)
 │   │   ├── auth.ts                   # Funções de autenticação
 │   │   ├── database.ts               # Queries tipadas (database layer)
 │   │   ├── utils.ts                  # cn() e utilidades gerais
 │   │   ├── vertex-ai.ts              # Integração Vertex AI (Gemini)
 │   │   ├── google-ads.ts             # Google Ads API client
 │   │   ├── google-analytics.ts       # GA4 API client
-│   │   ├── rbac.ts                   # Role-Based Access Control
+│   │   ├── cobranca.ts               # Política de inadimplência (fonte única)
 │   │   ├── audit.ts                  # Audit logging
 │   │   ├── health-score.ts           # Cálculo de health score do cliente
 │   │   ├── fluxo-operacional.ts      # Estados e transições de estágios
-│   │   ├── financeiro.ts             # Cálculos financeiros
 │   │   ├── relatorio-generator.ts    # Gerador de relatórios
 │   │   ├── manifesto-generator.ts    # Gerador de manifesto de componente
 │   │   ├── astro-components.ts       # Componentes Astro
@@ -357,8 +357,9 @@ adsgator-hub/
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│           ESTADO GLOBAL (Zustand)                        │
-│  useAppStore — tema, usuário, notificações              │
+│           ESTADO (Zustand focado + local)                │
+│  stores pequenos (right-sidebar, mobileMenu) · tema:    │
+│  ThemeProvider · dados: hooks (useClientes)             │
 └────────────────┬─────────────────────────────────────────┘
                  │
 ┌────────────────▼─────────────────────────────────────────┐
@@ -540,7 +541,7 @@ idx_notificacoes_usuario  — Listar notificações não lidas
 -- Authenticated users podem ver seus próprios dados
 CREATE POLICY "Users can see own clients"
   ON clientes FOR SELECT
-  USING (auth.uid() = owner_id);
+  USING (auth.uid() = user_id);
 
 -- Service role (Edge Functions) pode ver tudo
 -- (bypass automático em Edge Functions)
@@ -575,12 +576,12 @@ CREATE POLICY "Users can see own clients"
                │
                ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 5. useAppStore salva usuário em Zustand (client-side)   │
+│ 5. Sessão Supabase mantém usuário (client-side)         │
 └──────────────┬──────────────────────────────────────────┘
                │
                ▼
 ┌─────────────────────────────────────────────────────────┐
-│ 6. RLS automático filtra dados por owner_id             │
+│ 6. RLS automático filtra dados por user_id              │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -604,7 +605,7 @@ CREATE POLICY "Users can see own clients"
                       │
                       ▼
 ┌──────────────────────────────────────────────────────────┐
-│ Supabase filtra por RLS (owner_id = auth.uid())         │
+│ Supabase filtra por RLS (user_id = auth.uid())          │
 └─────────────────────┬──────────────────────────────────┘
                       │
                       ▼
@@ -974,7 +975,7 @@ if (!session) redirect('/login');
 
 // 4. RLS Automático
 // Todas as queries herdam auth.uid()
-// Exemplo: SELECT * FROM clientes WHERE owner_id = auth.uid()
+// Exemplo: SELECT * FROM clientes WHERE user_id = auth.uid()
 
 // 5. Refresh Token (automático)
 // @supabase/ssr renova token antes da expiração
@@ -1315,49 +1316,51 @@ Chama: OpenWeatherMap (ou similar)
 Cache: 30min
 ```
 
+### 9. `/api/status` — Status das Integrações
+
+```
+GET /api/status
+Returns: status de cada integração (Google Ads, Asaas, Vertex AI, GA4)
+Consumido pela aba Integrações em /configuracoes
+```
+
+### API REST versionada — `/api/v1/*`
+
+API REST com autenticação por sessão (`@supabase/ssr`), pensada para integração
+**externa** com o ecossistema da agência (Prospector, Astroteca, webhooks). O front
+do Hub não a consome — usa o cliente Supabase direto via hooks. Inclui rotas para
+`clientes`, `financeiro`, `tarefas` (+ `reorder`), `alerts`, `news`, `relatorios`
+(generate/preview-html/send-email/email-history), `timelines` e `timeline-templates`.
+`GET /api/v1` retorna o índice de discovery.
+
 ---
 
 ## Estado Global (Zustand)
 
-### `useAppStore`
+O projeto usa **stores Zustand pequenos e focados**, não um store global único.
+Estado de dados (clientes, financeiro, etc.) vive em hooks (`useClientes`) que
+buscam do Supabase; estado de UI fica local nos componentes. Tema é gerido pelo
+`ThemeProvider` (CSS vars + classe `.dark`), não por store.
+
+Stores existentes em `src/lib/store/`:
 
 ```typescript
-interface AppStore {
-  // Usuário
-  user: User | null
-  setUser: (user: User) => void
-  logout: () => void
-
-  // Tema
-  isDark: boolean
-  toggleTheme: () => void
-
-  // Notificações
-  notificacoes: Notificacao[]
-  addNotificacao: (n: Notificacao) => void
-  removeNotificacao: (id: string) => void
-
-  // UI State
-  sidebarExpanded: boolean
-  toggleSidebar: () => void
-  rightSidebarOpen: boolean
-  setRightSidebarOpen: (open: boolean) => void
-
-  // Cliente Selecionado
-  clienteId: string | null
-  setClienteId: (id: string) => void
-
-  // Filtros
-  filtros: {
-    status?: string
-    nicho?: string
-    periodo?: string
-  }
-  setFiltros: (filtros: Partial<Filtros>) => void
+// right-sidebar-store.ts — ações contextuais da RightSidebar + drawer ativo
+interface RightSidebarStore {
+  contextActions: RightSidebarAction[]
+  setContextActions: (actions: RightSidebarAction[]) => void
+  clearContextActions: () => void
+  activeDrawer: string | null
+  openDrawer: (id: string) => void
+  closeDrawer: () => void
 }
+
+// mobileMenu — controle do menu mobile
 ```
 
-**Persistência:** Zustand + localStorage (tema, sidebar state)
+> Histórico: já existiu um `useAppStore` (notificações/alertas) e um wrapper de
+> Context API sobre o right-sidebar. Ambos foram removidos ao consolidar o estado
+> em stores Zustand focados + estado local. Não recriar um store global "tudo-em-um".
 
 ---
 
@@ -1413,7 +1416,7 @@ export async function fetchClientes() {
   const { data, error } = await supabase
     .from('clientes')
     .select('*, assinaturas(*)')
-    .eq('owner_id', user.id)
+    .eq('user_id', user.id)
     .order('data_criacao', { ascending: false })
   
   if (error) throw new Error(error.message)
@@ -1533,7 +1536,7 @@ Todas as tabelas têm políticas RLS que garantem:
 ```sql
 CREATE POLICY "Users can only see own clientes"
   ON clientes FOR SELECT
-  USING (auth.uid() = owner_id);
+  USING (auth.uid() = user_id);
 
 CREATE POLICY "Admins can see all clientes"
   ON clientes FOR SELECT
@@ -1542,23 +1545,20 @@ CREATE POLICY "Admins can see all clientes"
 
 ### Role-Based Access Control (RBAC)
 
-Implementado em `src/lib/rbac.ts`:
+Definido no hook `src/lib/hooks/usePermissoes.ts` (vocabulário em português, papel
+lido da tabela `equipe_membros`). **Ainda não está ligado na UI** — hoje o sistema
+opera como proprietário único; o hook existe pronto para quando houver equipe.
 
 ```typescript
-enum Role {
-  ADMIN = 'admin',
-  MANAGER = 'manager',
-  VIEWER = 'viewer'
-}
+type Papel = 'proprietario' | 'gerenciador' | 'analista' | 'viewer'
 
-export function canCreateCliente(role: Role): boolean {
-  return role === Role.ADMIN || role === Role.MANAGER
-}
-
-export function canDeleteCliente(role: Role, ownerId: string, currentUserId: string): boolean {
-  return (role === Role.ADMIN) || (role === Role.MANAGER && ownerId === currentUserId)
-}
+// hasPermission(acao) confere a ação contra o papel do usuário logado
+const { papel, loading, hasPermission } = usePermissoes()
+if (hasPermission('excluir_cliente')) { /* ... */ }
 ```
+
+> Já existiu um `src/lib/rbac.ts` com vocabulário em inglês (admin/manager/viewer);
+> foi removido por duplicar este hook. Usar sempre `usePermissoes`.
 
 ### Auditoria
 
@@ -1605,39 +1605,40 @@ Visualizável em Configurações → Auditoria
 
 | Lacuna | Descrição | Impacto | Prioridade |
 |--------|-----------|--------|-----------|
-| `/api/ia/hashtags` | Rota não implementada | Botão em Marketing não funciona | Alta |
-| Analytics Credenciais | Google Ads + GA4 sem credenciais configuradas | Dados vazios em Analytics | Alta |
-| Notificações WhatsApp | Envio via wa.me (link manual); automação fora de escopo | Cobranças notificadas manualmente | Baixa |
-| Notificações Email | Resend SDK falta implementar | Relatórios não enviam por email | Média |
-| RBAC Completo | Apenas owner_id, sem roles/permissions | Acesso não granular | Média |
-| Drag-drop Persistente | Tarefas arrastra mas não salva ordem | UX confusa | Média |
+| Analytics — sync de dados | `analytics_snapshots` só é lida, nunca populada; falta pipeline Google Ads + GA4 | Métricas zeradas em Analytics/NewsContainer | Alta |
+| Notificações Email | Resend wired em `lib/email.ts`; falta `RESEND_API_KEY` + cron | Relatórios não enviam por email | Média |
+| RBAC/RLS por usuário | `usePermissoes` pronto mas não ligado; isolamento hoje por `user_id` na aplicação | Acesso não granular | Média |
 | Meta API | Publicação real de posts | Posts não publicam em rede | Média |
-| TEST_MODE Documentação | Sem documentação de como desativar | Difícil passar para produção | Baixa |
+| TEST_MODE=false | webhook-asaas e regua-cobranca em modo teste (checklist em docs/Arquivo/MODO_TESTE.md) | Pagamentos/cobranças não reais | Média |
+| Notificações WhatsApp | Envio via wa.me (link manual); automação fora de escopo | Cobranças notificadas manualmente | Baixa |
 | Particionamento DB | Sem partição de tabelas grandes | Lentidão em escala (1M+ registros) | Baixa |
 | CI/CD | Sem pipeline de testes | Risco de regressão | Baixa |
+
+> Itens já resolvidos (auditoria 30/05–06/06): `/api/ia/hashtags` ligada ao botão de
+> Marketing, drag-drop de tarefas persistindo (`/api/v1/tarefas/reorder`), auth das
+> rotas `/api/v1/*` corrigida, política de inadimplência centralizada (`lib/cobranca.ts`).
 
 ---
 
 ## Roadmap de Conclusão
 
-**v0.6.0** (Atual) — Core funcional
-- ✅ Clientes, Financeiro, Tarefas, Marketing, Biblioteca
-- ✅ Dashboard com IA (Morning Briefing)
-- ✅ Autenticação + RLS
-- ✅ Analytics UI (sem dados)
+**Atual** — Core funcional + auditado
+- ✅ Clientes, Financeiro, Tarefas, Marketing, Biblioteca, Operacional, Portfólio, Prospectar
+- ✅ Dashboard com IA (Morning Briefing) + Bento Grid customizável
+- ✅ Autenticação + RLS base; portal do cliente
+- ✅ Analytics UI (binding real quando credenciais configuradas; falta o sync que popula snapshots)
+- ✅ `/api/ia/hashtags`, drag-drop persistente, auth de `/api/v1/*`, `lib/cobranca.ts`
 
-**v0.7.0** (Próxima)
-- [ ] Implementar `/api/ia/hashtags`
-- [ ] Configurar Google Ads + GA4 credenciais
-- [ ] WhatsApp + Email notifications (live)
+**Próxima**
+- [ ] Pipeline de sync Google Ads + GA4 → popular `analytics_snapshots`
+- [ ] Email notifications live (Resend: `RESEND_API_KEY` + cron)
 - [ ] Publicação real Meta API
+- [ ] TEST_MODE=false (webhook-asaas + regua-cobranca)
 
-**v1.0.0** (Production)
-- [ ] RBAC completo com roles/permissions
-- [ ] Drag-drop persistente (tarefas)
+**Production (v1.0.0)**
+- [ ] RBAC/RLS por usuário (ligar `usePermissoes` + políticas no Supabase)
 - [ ] Performance optimization (índices, cache)
-- [ ] Documentação de TEST_MODE → PRODUCTION
-- [ ] CI/CD pipeline
+- [ ] CI/CD pipeline + testes
 - [ ] SLA monitoring + alertas
 
 ---
@@ -1656,4 +1657,4 @@ A arquitetura suporta escalabilidade horizontalmente (Vercel + Supabase) e é f�
 ---
 
 **Mantido por:** AdsGator Chief Engineer  
-**Última atualização:** 26/05/2026 às 14:30 UTC
+**Última atualização:** 06/06/2026 (auditoria — estado real do projeto)
