@@ -278,6 +278,6 @@ export interface RelatorioMensal {
   taxa_engajamento: number | null
   roi:              number | null
   markdown_content: string | null
-  status_geracao:   'pendente' | 'processando' | 'completo' | 'erro'
+  status_geracao:   'pendente' | 'processando' | 'gerado' | 'erro'
   created_at:       string
 }

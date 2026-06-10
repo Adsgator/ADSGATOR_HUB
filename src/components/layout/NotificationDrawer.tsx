@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { X, MessageCircle, CheckCircle, Bell, ExternalLink, CreditCard, Clock, PauseCircle, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { estagioInadimplencia, statusInadimplencia } from '@/lib/cobranca'
 
 type Severidade = 'critica' | 'atencao' | 'leve'
 type TipoAlerta = 'inadimplencia' | 'saldo_baixo' | 'onboarding_parado' | 'congelado'
@@ -73,12 +74,16 @@ function construirAlertas(clientes: ClienteRow[]): AlertaItem[] {
 
     // 1 — Inadimplência
     if (dias > 0) {
-      const severidade: Severidade = dias >= 15 ? 'critica' : dias >= 7 ? 'atencao' : 'leve'
+      const estagio = estagioInadimplencia(dias)
+      const status  = statusInadimplencia({ dias_atraso: dias })
+      const severidade: Severidade =
+        estagio === 'critico' || estagio === 'grave' ? 'critica' :
+        estagio === 'suspensao' ? 'atencao' : 'leve'
       alertas.push({
         id: `inad-${c.id}`, tipo: 'inadimplencia', clienteId: c.id, clienteNome: c.nome,
         whatsapp: c.whatsapp, severidade,
         titulo: `${c.nome} — ${dias} dias em atraso`,
-        detalhe: dias >= 15 ? 'Quebra de contrato iminente' : dias >= 7 ? 'Suspensão de campanha iminente' : 'Pagamento pendente',
+        detalhe: status.detalhe,
         msgWhatsapp: `Olá ${primeiroNome(c.nome)}! Passando para verificar sobre o pagamento em atraso (${dias} dias).`,
       })
     }

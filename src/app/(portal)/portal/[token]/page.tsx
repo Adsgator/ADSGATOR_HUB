@@ -1,5 +1,4 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { criarClienteServiceRole } from '@/lib/supabase'
 import type { Cliente, Estagio, RelatorioMensal } from '@/lib/types'
 import { Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 
@@ -47,36 +46,37 @@ function getStatusLabel(status: string) {
 
 export default async function PortalPage({ params }: PageParams) {
   const { token } = await params
-  const cookieStore = await cookies()
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll()
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options as Parameters<typeof cookieStore.set>[2])
-          })
-        },
-      },
-    }
-  )
+  if (!token || token.length < 16) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface-base px-[1rem]">
+        <div className="max-w-[28rem] w-full">
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[2rem] text-center card-shadow">
+            <AlertCircle className="mx-auto mb-[1rem] text-status-orange" size={48} />
+            <h1 className="text-2xl font-semibold text-ink-primary mb-[0.5rem]">Link Inválido</h1>
+            <p className="text-ink-secondary mb-[1.5rem]">Este link de acesso expirou ou é inválido. Por favor, solicite um novo link ao seu gerente Adsgator.</p>
+            <div className="pt-[1rem] border-t border-surface-border">
+              <p className="text-xs text-ink-muted">Powered by Adsgator</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-  // Buscar cliente pelo portal_token
+  const supabase = criarClienteServiceRole()
+
+  // Buscar cliente pelo portal_token — server-side com service role, sem depender de RLS
   let cliente: Cliente | null = null
   try {
     const { data } = await supabase
       .from('clientes')
-      .select('*')
+      .select('id, nome, email, whatsapp, dominio, nicho, status, mrr, dias_atraso')
       .eq('portal_token', token)
       .single()
 
     cliente = data as Cliente
-  } catch (error) {
+  } catch {
     // Token inválido ou cliente não encontrado
   }
 
@@ -103,7 +103,7 @@ export default async function PortalPage({ params }: PageParams) {
   try {
     const { data } = await supabase
       .from('relatorios_mensais')
-      .select('*')
+      .select('id, mes_ano, created_at, status_geracao, investimento_ads, conversoes, cpa, sessoes_ga4, taxa_engajamento')
       .eq('cliente_id', cliente.id)
       .order('created_at', { ascending: false })
       .limit(3)
@@ -118,7 +118,7 @@ export default async function PortalPage({ params }: PageParams) {
   try {
     const { data } = await supabase
       .from('estagios')
-      .select('*')
+      .select('id, nome, descricao, acao_label, ativo, concluido_em, created_at')
       .eq('cliente_id', cliente.id)
       .order('created_at', { ascending: true })
 
@@ -187,9 +187,9 @@ export default async function PortalPage({ params }: PageParams) {
                       </p>
                     </div>
                     <span className={`text-xs font-medium px-[0.5rem] py-[0.25rem] rounded-full ${
-                      relatorio.status_geracao === 'completo' ? 'bg-status-green/10 text-status-green' : 'bg-status-orange/10 text-status-orange'
+                      relatorio.status_geracao === 'gerado' ? 'bg-status-green/10 text-status-green' : 'bg-status-orange/10 text-status-orange'
                     }`}>
-                      {relatorio.status_geracao === 'completo' ? 'Completo' : 'Processando'}
+                      {relatorio.status_geracao === 'gerado' ? 'Completo' : 'Processando'}
                     </span>
                   </div>
 

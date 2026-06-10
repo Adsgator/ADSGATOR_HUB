@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { TEST_MODE, TEST_CONFIG, logTest, maskSensitive } from '../_shared/test-mode.ts';
+import { LIMIARES_ATRASO } from '../_shared/cobranca.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +16,17 @@ const supabase = createClient(
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // Valida token de autenticação do Asaas (configurado em Webhooks → Auth token)
+  const expectedToken = Deno.env.get('ASAAS_WEBHOOK_KEY');
+  const receivedToken = req.headers.get('asaas-access-token');
+  if (!expectedToken || !receivedToken || receivedToken !== expectedToken) {
+    console.error('[ASAAS WEBHOOK] Token inválido ou ausente');
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -187,14 +199,14 @@ serve(async (req) => {
       }
 
       // Processar apenas se o nível de atraso subiu (evita re-processamento)
-      if (diasAtraso >= 7 && diasAtraso < 15 && assinatura.dias_atraso < 7) {
-        await supabase.from('assinaturas').update({ dias_atraso: 7, status: 'atraso_7_dias' }).eq('id', assinatura.id);
+      if (diasAtraso >= LIMIARES_ATRASO.suspensao && diasAtraso < LIMIARES_ATRASO.grave && assinatura.dias_atraso < LIMIARES_ATRASO.suspensao) {
+        await supabase.from('assinaturas').update({ dias_atraso: LIMIARES_ATRASO.suspensao, status: 'atraso_7_dias' }).eq('id', assinatura.id);
         await supabase.from('historico_acoes').insert({
           cliente_id:      assinatura.cliente_id,
           tipo_acao:       'alerta_atraso_7_dias',
           descricao:       '⚠️ Pagamento com 7 dias de atraso. Suspensão de campanhas iminente em 8 dias.',
           valor_impactado: assinatura.valor_mensal,
-          metadata:        { dias_atraso: 7, marcador: 'laranja' },
+          metadata:        { dias_atraso: LIMIARES_ATRASO.suspensao, marcador: 'laranja' },
         });
         await supabase.from('estagios').insert({
           cliente_id: assinatura.cliente_id,
@@ -204,26 +216,26 @@ serve(async (req) => {
         });
       }
 
-      if (diasAtraso >= 15 && diasAtraso < 30 && assinatura.dias_atraso < 15) {
-        await supabase.from('assinaturas').update({ dias_atraso: 15, status: 'atraso_15_dias' }).eq('id', assinatura.id);
+      if (diasAtraso >= LIMIARES_ATRASO.grave && diasAtraso < LIMIARES_ATRASO.critico && assinatura.dias_atraso < LIMIARES_ATRASO.grave) {
+        await supabase.from('assinaturas').update({ dias_atraso: LIMIARES_ATRASO.grave, status: 'atraso_15_dias' }).eq('id', assinatura.id);
         await supabase.from('historico_acoes').insert({
           cliente_id:      assinatura.cliente_id,
           tipo_acao:       'notificacao_quebra_contrato',
           descricao:       '🔴 Pagamento com 15 dias de atraso. Contrato quebrado. Aguardando instrução para remover LP.',
           valor_impactado: assinatura.valor_mensal,
-          metadata:        { dias_atraso: 15, marcador: 'vermelho' },
+          metadata:        { dias_atraso: LIMIARES_ATRASO.grave, marcador: 'vermelho' },
         });
       }
 
-      if (diasAtraso >= 30 && assinatura.dias_atraso < 30) {
-        await supabase.from('assinaturas').update({ dias_atraso: 30, status: 'cancelado_debito' }).eq('id', assinatura.id);
+      if (diasAtraso >= LIMIARES_ATRASO.critico && assinatura.dias_atraso < LIMIARES_ATRASO.critico) {
+        await supabase.from('assinaturas').update({ dias_atraso: LIMIARES_ATRASO.critico, status: 'cancelado_debito' }).eq('id', assinatura.id);
         await supabase.from('clientes').update({ status: 'cancelado_debito' }).eq('id', assinatura.cliente_id);
         await supabase.from('historico_acoes').insert({
           cliente_id:      assinatura.cliente_id,
           tipo_acao:       'cancelamento_automatico_30_dias',
           descricao:       '❌ Assinatura cancelada. 30+ dias de atraso. Ação necessária: remover LP e assets do Storage.',
           valor_impactado: assinatura.valor_mensal,
-          metadata:        { dias_atraso: 30, status_final: 'cancelado_debito' },
+          metadata:        { dias_atraso: LIMIARES_ATRASO.critico, status_final: 'cancelado_debito' },
         });
       }
     }

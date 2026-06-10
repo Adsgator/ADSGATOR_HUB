@@ -1,7 +1,7 @@
 // MODO DE TESTE - CONFIGURAÇÃO GLOBAL
 // ATENÇÃO: Quando TEST_MODE = true, nenhum dado real deve ser enviado a clientes
 
-export const TEST_MODE = true; // ← ALTERAR PARA false PARA VOLTAR AO MODO PRODUÇÃO
+export const TEST_MODE = false; // ← ALTERAR PARA false PARA VOLTAR AO MODO PRODUÇÃO
 
 // Configurações de teste
 export const TEST_CONFIG = {

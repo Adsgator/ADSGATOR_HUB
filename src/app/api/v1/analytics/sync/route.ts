@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({})) as { clienteId?: string; mesAno?: string }
+  const body = await req.json().catch(() => { console.warn('[analytics/sync] body JSON inválido — usando vazio'); return {} }) as { clienteId?: string; mesAno?: string }
   const mesAno = body.mesAno || mesAtual()
 
   // ── Modo cron (POST com Bearer) ──────────────────────────────

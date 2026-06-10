@@ -67,18 +67,26 @@ export async function GET(req: Request) {
   const filtro = (searchParams.get('filtro') ?? 'completo') as FiltroModo
   const hoje = new Date().toISOString().slice(0, 10)
 
-  const [{ data: clientes }, { data: alertas }] = await Promise.all([
-    supabase
-      .from('clientes')
-      .select('nome, status, dias_atraso, mrr, nicho')
-      .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido']),
-    supabase
-      .from('alertas')
-      .select('tipo, mensagem')
-      .eq('resolvido', false)
-      .order('created_at', { ascending: false })
-      .limit(5),
-  ])
+  const { data: clientesData } = await supabase
+    .from('clientes')
+    .select('id, nome, status, dias_atraso, mrr, nicho')
+    .eq('user_id', user.id)
+    .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido'])
+
+  const clienteIds = (clientesData ?? []).map((c) => c.id)
+
+  const { data: alertasData } = clienteIds.length > 0
+    ? await supabase
+        .from('alertas')
+        .select('tipo, mensagem')
+        .in('cliente_id', clienteIds)
+        .eq('resolvido', false)
+        .order('created_at', { ascending: false })
+        .limit(5)
+    : { data: [] }
+
+  const clientes = clientesData
+  const alertas  = alertasData
 
   const clientesTyped = (clientes ?? []) as { nome: string; status: string; dias_atraso?: number; mrr?: number; nicho?: string }[]
   const alertasTyped  = (alertas ?? []) as { tipo: string; mensagem: string }[]

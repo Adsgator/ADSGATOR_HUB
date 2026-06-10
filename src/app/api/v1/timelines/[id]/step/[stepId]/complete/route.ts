@@ -10,7 +10,7 @@ export async function POST(
   if (authError || !user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const { id, stepId } = await params
-  const body = await request.json().catch(() => ({}))
+  const body = await request.json().catch(() => { console.warn('[timelines/step/complete] body JSON inválido — usando vazio'); return {} })
   const formData: Record<string, unknown> = body.data ?? {}
 
   // Fetch instance + template

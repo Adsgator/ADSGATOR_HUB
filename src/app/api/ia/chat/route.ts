@@ -60,13 +60,22 @@ export async function POST(req: NextRequest) {
 
   let contextoCliente = ''
   if (contexto_cliente_id) {
-    const [{ data: cliente }, { data: memoria }] = await Promise.all([
-      supabase.from('clientes').select('id, nome, nicho, status, mrr, dias_atraso').eq('id', contexto_cliente_id).single(),
-      supabase.from('memoria_clientes').select('conteudo_md').eq('cliente_id', contexto_cliente_id).maybeSingle(),
-    ])
+    // Verifica propriedade antes de expor dados do cliente
+    const { data: cliente } = await supabase
+      .from('clientes')
+      .select('id, nome, nicho, status, mrr, dias_atraso, user_id')
+      .eq('id', contexto_cliente_id)
+      .eq('user_id', user.id)
+      .single()
+
     if (cliente) {
       const c = cliente as { id: string; nome: string; nicho?: string; status: string; mrr?: number; dias_atraso?: number }
       contextoCliente = `\n\nCliente em contexto: ${c.nome} (${c.nicho ?? 'sem nicho'}), status: ${c.status}, MRR: R$ ${c.mrr ?? 0}. ID: ${c.id}`
+      const { data: memoria } = await supabase
+        .from('memoria_clientes')
+        .select('conteudo_md')
+        .eq('cliente_id', cliente.id)
+        .maybeSingle()
       if (memoria?.conteudo_md) {
         contextoCliente += `\nMemória: ${(memoria.conteudo_md as string).slice(0, 500)}`
       }

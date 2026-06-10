@@ -17,6 +17,7 @@ import { ContextMenu } from '@/components/ui/ContextMenu'
 import { supabase }    from '@/lib/supabase'
 import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
+import { estagioInadimplencia } from '@/lib/cobranca'
 import type { FinanceiroLancamento, Cliente } from '@/lib/types'
 
 const fmt = (v: number) =>
@@ -752,8 +753,9 @@ export default function FinanceiroPage() {
                     </td>
                     <td className="py-[0.875rem]">
                       <span className={`inline-flex items-center text-[0.75rem] font-bold px-[0.5rem] py-[0.125rem] rounded ${
-                        (c.dias_atraso ?? 0) >= 30 ? 'bg-status-red/15 text-status-red'
-                        : (c.dias_atraso ?? 0) >= 15 ? 'bg-status-orange/15 text-status-orange'
+                        estagioInadimplencia(c.dias_atraso) === 'critico' ? 'bg-status-red/15 text-status-red'
+                        : estagioInadimplencia(c.dias_atraso) === 'grave' ? 'bg-status-red/15 text-status-red'
+                        : estagioInadimplencia(c.dias_atraso) === 'suspensao' ? 'bg-status-orange/15 text-status-orange'
                         : 'bg-yellow-500/15 text-yellow-500'
                       }`}>
                         {c.dias_atraso}d

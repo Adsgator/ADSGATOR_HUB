@@ -524,10 +524,11 @@ export default function DashboardPage() {
   const acoesDoDia = useMemo(() => {
     const acoes: AcaoItem[] = []
     dados.forEach(({ cliente, estagio }) => {
-      const dias = cliente.dias_atraso ?? 0
-      if (dias >= 15) {
+      const dias           = cliente.dias_atraso ?? 0
+      const nivelCobranca  = estagioInadimplencia(dias)
+      if (nivelCobranca === 'critico' || nivelCobranca === 'grave') {
         acoes.push({ cliente, estagio, urgencia: 'critica', descricao: `${dias} dias sem pagamento — envie notificação de rescisão`, acaoLabel: '#COBRANÇA', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}. Em razão do atraso de ${dias} dias, comunicamos a rescisão contratual.`)}` : undefined })
-      } else if (dias >= 7) {
+      } else if (nivelCobranca === 'suspensao') {
         acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: `${dias} dias em atraso — campanha em risco de suspensão`, acaoLabel: '#ALERTA D+7', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Seu pagamento está em atraso há ${dias} dias.`)}` : undefined })
       } else if (cliente.status === 'recebido') {
         acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: 'Novo cliente — envie o #BOASVINDAS agora', acaoLabel: '#BOASVINDAS', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator!')}` : undefined })

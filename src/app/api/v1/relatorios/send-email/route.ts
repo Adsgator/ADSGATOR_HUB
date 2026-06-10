@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       assunto: subject,
       status: 'failed',
       metadata: { error: msg },
-    }).catch(() => {})
+    }).catch((e: unknown) => console.error('[send-email] falha ao registrar email_history:', e))
 
     return NextResponse.json({ error: msg }, { status: 500 })
   }
