@@ -190,9 +190,14 @@ interface ServiceAccount {
   token_uri?:   string
 }
 
-async function getServiceAccountToken(credPath: string, scope: string): Promise<string> {
-  const absPath = path.resolve(process.cwd(), credPath)
-  const raw = await readFile(absPath, 'utf-8')
+async function getServiceAccountToken(credPathOrJson: string, scope: string): Promise<string> {
+  let raw: string
+  if (credPathOrJson.trimStart().startsWith('{')) {
+    raw = credPathOrJson
+  } else {
+    const absPath = path.resolve(process.cwd(), credPathOrJson)
+    raw = await readFile(absPath, 'utf-8')
+  }
   const sa: ServiceAccount = JSON.parse(raw)
 
   const now = Math.floor(Date.now() / 1000)

@@ -78,7 +78,7 @@ export function StatusBar() {
   })
 
   return (
-    <footer className="md:col-span-3 col-span-1 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border/20 flex items-center px-[1rem] gap-[1rem] text-[0.6875rem] select-none z-30 overflow-x-auto">
+    <footer className="md:col-span-3 col-span-1 h-[var(--statusbar-h)] bg-surface-card border-t border-surface-border/20 flex items-center px-[1rem] gap-[1rem] text-[0.6875rem] select-none z-30 overflow-visible">
       {/* ── ESQUERDA: Status das APIs ─────────────── */}
       <div className="flex items-center gap-[0.75rem]">
         <span className="text-ink-muted font-medium uppercase tracking-wider">STATUS APIS</span>
