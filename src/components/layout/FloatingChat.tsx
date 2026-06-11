@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bot, Send, User, X, Minus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
 import type { ChatMensagem } from '@/lib/types'
 import type { ChatAction } from '@/app/api/ia/chat/route'
 import { toast } from 'sonner'
@@ -15,8 +16,11 @@ interface MensagemComAcoes extends ChatMensagem {
   actions?: ChatAction[]
 }
 
+// Aberto/fechado é controlado pelo botão "Assistente IA" da RightSidebar
+// (via right-sidebar-store) — não há mais botão flutuante próprio.
 export function FloatingChat() {
-  const [aberto,    setAberto]    = useState(false)
+  const aberto      = useRightSidebarStore((s) => s.activeDrawer === 'chat')
+  const closeDrawer = useRightSidebarStore((s) => s.closeDrawer)
   const [minimized, setMinimized] = useState(false)
   const [mensagens, setMensagens] = useState<MensagemComAcoes[]>([])
   const [input,     setInput]     = useState('')
@@ -99,22 +103,6 @@ export function FloatingChat() {
 
   return (
     <>
-      {/* Botão flutuante */}
-      {!aberto && (
-        <button
-          onClick={() => setAberto(true)}
-          className="fixed bottom-[3rem] right-[3.5rem] z-40 w-[3rem] h-[3rem] rounded-full bg-ads-500 hover:bg-ads-600 shadow-lg flex items-center justify-center transition-colors group"
-          title="Assistente Adsgator"
-        >
-          <Bot className="w-[1.25rem] h-[1.25rem] text-white" strokeWidth={1.75} />
-          {mensagens.length > 0 && (
-            <span className="absolute -top-[0.25rem] -right-[0.25rem] w-[1rem] h-[1rem] rounded-full bg-status-red text-white text-[0.5625rem] font-bold flex items-center justify-center">
-              {mensagens.filter(m => m.role === 'assistant').length}
-            </span>
-          )}
-        </button>
-      )}
-
       {/* Janela do chat */}
       {aberto && (
         <div className="fixed bottom-[3rem] right-[3.5rem] z-40 w-[22rem] rounded-2xl bg-surface-card border border-surface-border shadow-2xl flex flex-col overflow-hidden animate-fade-scale">
@@ -137,7 +125,7 @@ export function FloatingChat() {
                 <Minus className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
               </button>
               <button
-                onClick={() => { setAberto(false); setMinimized(false) }}
+                onClick={() => { closeDrawer(); setMinimized(false) }}
                 className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
               >
                 <X className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Bell, MessageCircle, HelpCircle, Settings, Sun, Moon } from 'lucide-react'
+import { Bell, Bot, HelpCircle, Settings, Sun, Moon } from 'lucide-react'
 import { useTheme } from '@/providers/ThemeProvider'
 import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
 import { NotificationDrawer } from './NotificationDrawer'
@@ -65,8 +65,8 @@ export function RightSidebar() {
           onClick={() => setNotifOpen((v) => !v)}
         />
         <SidebarIconButton
-          icon={MessageCircle}
-          label="Chat de Ajuda"
+          icon={Bot}
+          label="Assistente IA"
           active={activeDrawer === 'chat'}
           onClick={() => openDrawer('chat')}
         />
