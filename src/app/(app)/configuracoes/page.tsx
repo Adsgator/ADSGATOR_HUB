@@ -138,20 +138,40 @@ function AbaPerfil() {
 }
 
 // ── ABA NOTIFICAÇÕES ────────────────────────────────────────────────────────
+const PREFS_DEFAULT = {
+  email_alertas_criticos:  true,
+  email_relatorio_semanal: false,
+  email_relatorio_mensal:  true,
+  inapp_criticos:          true,
+  inapp_conversoes:        false,
+  inapp_verbose:           false,
+  dnd_ativo:               false,
+  dnd_inicio:              '22:00',
+  dnd_fim:                 '08:00',
+}
+
 function AbaNotificacoes() {
-  const [prefs, setPrefs] = useState({
-    email_alertas_criticos:  true,
-    email_relatorio_semanal: false,
-    email_relatorio_mensal:  true,
-    inapp_criticos:          true,
-    inapp_conversoes:        false,
-    inapp_verbose:           false,
-    dnd_ativo:               false,
-    dnd_inicio:              '22:00',
-    dnd_fim:                 '08:00',
-  })
+  const [prefs, setPrefs] = useState(PREFS_DEFAULT)
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
+  const [carregando, setCarregando] = useState(true)
+
+  useEffect(() => {
+    async function carregar() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { setCarregando(false); return }
+      const { data } = await supabase
+        .from('configuracoes_usuario')
+        .select('preferencias')
+        .eq('user_id', user.id)
+        .single()
+      if (data?.preferencias) {
+        setPrefs((p) => ({ ...p, ...data.preferencias }))
+      }
+      setCarregando(false)
+    }
+    carregar()
+  }, [])
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
@@ -168,6 +188,8 @@ function AbaNotificacoes() {
   function set<K extends keyof typeof prefs>(k: K, v: (typeof prefs)[K]) {
     setPrefs((p) => ({ ...p, [k]: v }))
   }
+
+  if (carregando) return <div className="text-ink-muted text-[0.875rem]">Carregando preferências…</div>
 
   return (
     <form onSubmit={salvar} className="flex flex-col gap-[2rem] max-w-[28rem]">
