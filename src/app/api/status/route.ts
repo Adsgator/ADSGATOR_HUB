@@ -83,7 +83,7 @@ async function checkGoogleAds(): Promise<{ status: 'ok' | 'warn' | 'error' | 'no
   // listAccessibleCustomers, que retorna 200 mesmo com developer token básico/inválido.
   try {
     const adsRes = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${managerId!.replace(/-/g, '')}/googleAdsFields:search`,
+      `https://googleads.googleapis.com/v19/customers/${managerId!.replace(/-/g, '')}/googleAdsFields:search`,
       {
         method: 'POST',
         headers: {
@@ -295,7 +295,7 @@ async function checkVertexAI(): Promise<StatusResult> {
   // com projeto suspenso ou billing desativado — o erro de billing só aparece aqui.
   // Prompt de 1 token para minimizar latência e custo.
   try {
-    const model = 'gemini-2.0-flash-001'
+    const model = 'gemini-2.5-flash'
     const url = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/${model}:generateContent`
 
     const res = await fetch(url, {
