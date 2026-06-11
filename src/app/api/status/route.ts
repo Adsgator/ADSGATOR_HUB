@@ -377,10 +377,11 @@ async function checkGA4(): Promise<StatusResult> {
     return { status: 'warn', message: `Falha na autenticação GA4: ${msg}` }
   }
 
-  // Listar properties acessíveis pela service account
+  // accountSummaries lista contas/properties que a service account acessa
+  // (o endpoint /properties exige filter de ancestor, não serve para descoberta)
   try {
     const res = await fetch(
-      'https://analyticsadmin.googleapis.com/v1beta/properties?pageSize=1',
+      'https://analyticsadmin.googleapis.com/v1beta/accountSummaries?pageSize=200',
       {
         headers: { Authorization: `Bearer ${accessToken}` },
         signal: AbortSignal.timeout(8000),
@@ -389,11 +390,16 @@ async function checkGA4(): Promise<StatusResult> {
 
     if (res.ok) {
       const data = await res.json().catch(() => ({}))
-      // Lista vazia = service account autenticada mas sem acesso a nenhuma property
-      if (Array.isArray(data?.properties) && data.properties.length === 0) {
-        return { status: 'warn', message: 'Autenticado, mas a service account não tem acesso a nenhuma GA4 property — adicione-a como usuário no GA4' }
+      const contas = Array.isArray(data?.accountSummaries) ? data.accountSummaries : []
+      const properties = contas.reduce(
+        (n: number, a: { propertySummaries?: unknown[] }) => n + (a.propertySummaries?.length ?? 0),
+        0,
+      )
+      // Vazio = service account autenticada mas sem acesso a nenhuma property
+      if (properties === 0) {
+        return { status: 'warn', message: 'Autenticado, mas a service account não tem acesso a nenhuma GA4 property — adicione-a como Leitor no GA4 de cada cliente' }
       }
-      return { status: 'ok', message: 'GA4 autenticado e com acesso a properties' }
+      return { status: 'ok', message: `GA4 autenticado — acesso a ${properties} propriedade(s)` }
     }
 
     const body = await res.json().catch(() => ({}))
