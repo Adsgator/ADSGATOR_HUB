@@ -11,6 +11,7 @@ import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { useTheme } from '@/providers/ThemeProvider'
+import { toast } from 'sonner'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 import { AutomacaoEmail } from '@/components/configuracoes/AutomacaoEmail'
 
@@ -276,6 +277,7 @@ function BadgeStatus({ status, mensagem }: { status: IntegracaoStatus; mensagem:
 }
 
 function AbaIntegracoes() {
+  const [importando, setImportando] = useState(false)
   const [integracoes, setIntegracoes] = useState<IntegracaoInfo[]>([
     { nome: 'Google Ads', status: 'loading', mensagem: '', variaveis: ['GOOGLE_ADS_CLIENT_ID', 'GOOGLE_ADS_CLIENT_SECRET', 'GOOGLE_ADS_REFRESH_TOKEN', 'GOOGLE_ADS_DEVELOPER_TOKEN', 'GOOGLE_ADS_MANAGER_ID'] },
     { nome: 'Asaas',      status: 'loading', mensagem: '', variaveis: ['ASAAS_API_KEY', 'ASAAS_WEBHOOK_KEY'] },
@@ -302,6 +304,52 @@ function AbaIntegracoes() {
       })
   }, [])
 
+  // Importa clientes do Asaas em 2 etapas: dry-run (preview) → confirmação → grava.
+  // Nenhum email/cobrança é disparado — só espelha dados nas tabelas.
+  async function importarDoAsaas() {
+    setImportando(true)
+    try {
+      const preview = await fetch('/api/v1/asaas/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      }).then((r) => r.json())
+
+      if (preview.error) {
+        toast.error(preview.error)
+        return
+      }
+
+      const { criar, pular } = preview.plano
+      if (criar === 0) {
+        toast.info(`Nada a importar — ${pular} assinatura(s) já existem no Hub.`)
+        return
+      }
+
+      const nomes = (preview.detalhes.criar as { nome: string }[]).slice(0, 8).map((c) => c.nome).join(', ')
+      const openConfirm = useConfirmDialogStore.getState().openConfirm
+      openConfirm(
+        'Importar clientes do Asaas',
+        `${criar} cliente(s) com assinatura ativa serão criados (${pular} pulados por já existirem). ` +
+        `Inclui: ${nomes}${criar > 8 ? '…' : ''}. Nenhum email ou cobrança será disparado.`,
+        async () => {
+          const res = await fetch('/api/v1/asaas/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirmar: true }),
+          }).then((r) => r.json())
+          if (res.error) toast.error(res.error)
+          else if (res.falhas?.length) toast.warning(`${res.importados} importados, ${res.falhas.length} falha(s): ${res.falhas[0]?.erro ?? ''}`)
+          else toast.success(`${res.importados} cliente(s) importados do Asaas!`)
+        }
+      )
+    } catch {
+      toast.error('Falha ao consultar o Asaas.')
+    } finally {
+      setImportando(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-[0.75rem] max-w-[36rem]">
       {integracoes.map((i) => (
@@ -318,6 +366,13 @@ function AbaIntegracoes() {
                 </code>
               ))}
             </div>
+            {i.nome === 'Asaas' && i.status === 'ok' && (
+              <div className="mt-[0.5rem]">
+                <Button variant="secondary" size="sm" onClick={importarDoAsaas} disabled={importando}>
+                  {importando ? 'Consultando Asaas…' : 'Importar clientes do Asaas'}
+                </Button>
+              </div>
+            )}
           </div>
           <div className="shrink-0 pt-[0.125rem]">
             <BadgeStatus status={i.status} mensagem={i.mensagem} />
