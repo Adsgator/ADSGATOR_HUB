@@ -137,6 +137,35 @@ function AbaPerfil() {
   )
 }
 
+// ── PREFERÊNCIAS DO USUÁRIO (JSONB compartilhado entre abas) ────────────────
+// A coluna `preferencias` guarda chaves de Notificações E Aparência.
+// Sempre fazer merge com o que já existe — upsert direto apaga as chaves da outra aba.
+async function salvarPreferencias(parcial: Record<string, unknown>): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return 'Sessão expirada — faça login novamente'
+  const { data } = await supabase
+    .from('configuracoes_usuario')
+    .select('preferencias')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  const atual = (data?.preferencias ?? {}) as Record<string, unknown>
+  const { error } = await supabase
+    .from('configuracoes_usuario')
+    .upsert({ user_id: user.id, preferencias: { ...atual, ...parcial } }, { onConflict: 'user_id' })
+  return error ? error.message : null
+}
+
+async function carregarPreferencias(): Promise<Record<string, unknown> | null> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data } = await supabase
+    .from('configuracoes_usuario')
+    .select('preferencias')
+    .eq('user_id', user.id)
+    .maybeSingle()
+  return (data?.preferencias as Record<string, unknown>) ?? null
+}
+
 // ── ABA NOTIFICAÇÕES ────────────────────────────────────────────────────────
 const PREFS_DEFAULT = {
   email_alertas_criticos:  true,
@@ -154,34 +183,30 @@ function AbaNotificacoes() {
   const [prefs, setPrefs] = useState(PREFS_DEFAULT)
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
+  const [erro, setErro] = useState('')
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    async function carregar() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { setCarregando(false); return }
-      const { data } = await supabase
-        .from('configuracoes_usuario')
-        .select('preferencias')
-        .eq('user_id', user.id)
-        .single()
-      if (data?.preferencias) {
-        setPrefs((p) => ({ ...p, ...data.preferencias }))
+    carregarPreferencias().then((salvas) => {
+      if (salvas) {
+        setPrefs((p) => {
+          const next = { ...p }
+          for (const k of Object.keys(PREFS_DEFAULT) as (keyof typeof PREFS_DEFAULT)[]) {
+            if (k in salvas) (next as Record<string, unknown>)[k] = salvas[k]
+          }
+          return next
+        })
       }
       setCarregando(false)
-    }
-    carregar()
+    })
   }, [])
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
-    setSalvando(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('configuracoes_usuario').upsert({ user_id: user.id, preferencias: prefs }, { onConflict: 'user_id' })
-    }
-    setSalvo(true)
-    setTimeout(() => setSalvo(false), 3000)
+    setSalvando(true); setErro(''); setSalvo(false)
+    const msgErro = await salvarPreferencias(prefs)
+    if (msgErro) setErro(msgErro)
+    else { setSalvo(true); setTimeout(() => setSalvo(false), 3000) }
     setSalvando(false)
   }
 
@@ -217,7 +242,7 @@ function AbaNotificacoes() {
       </div>
       <div className="flex items-center gap-[1rem]">
         <BtnSalvar salvando={salvando} />
-        <FeedbackSalvo ok={salvo} erro="" />
+        <FeedbackSalvo ok={salvo} erro={erro} />
       </div>
     </form>
   )
@@ -472,16 +497,23 @@ function AbaAparencia() {
   const [fuso,    setFuso]    = useState('America/Sao_Paulo')
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)
+  const [erro, setErro] = useState('')
+
+  useEffect(() => {
+    carregarPreferencias().then((salvas) => {
+      if (!salvas) return
+      if (typeof salvas.tema === 'string')   setTema(salvas.tema as 'dark' | 'light' | 'system')
+      if (typeof salvas.idioma === 'string') setIdioma(salvas.idioma)
+      if (typeof salvas.fuso === 'string')   setFuso(salvas.fuso)
+    })
+  }, [])
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
-    setSalvando(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      await supabase.from('configuracoes_usuario').upsert({ user_id: user.id, preferencias: { tema, idioma, fuso } }, { onConflict: 'user_id' })
-    }
-    setSalvo(true)
-    setTimeout(() => setSalvo(false), 3000)
+    setSalvando(true); setErro(''); setSalvo(false)
+    const msgErro = await salvarPreferencias({ tema, idioma, fuso })
+    if (msgErro) setErro(msgErro)
+    else { setSalvo(true); setTimeout(() => setSalvo(false), 3000) }
     setSalvando(false)
   }
 
@@ -516,7 +548,7 @@ function AbaAparencia() {
       </Campo>
       <div className="flex items-center gap-[1rem]">
         <BtnSalvar salvando={salvando} />
-        <FeedbackSalvo ok={salvo} erro="" />
+        <FeedbackSalvo ok={salvo} erro={erro} />
       </div>
     </form>
   )

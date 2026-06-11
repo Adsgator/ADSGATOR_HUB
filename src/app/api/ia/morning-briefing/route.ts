@@ -1,21 +1,12 @@
 import { NextResponse }         from 'next/server'
 import { createClient }         from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
-import { VertexAI }             from '@google-cloud/vertexai'
-import { MODELO_PRO }           from '@/lib/vertex-ai'
+import { MODELO_PRO, criarVertexAI } from '@/lib/vertex-ai'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
-
-function criarVertexAI() {
-  return new VertexAI({
-    project:  process.env.VERTEX_AI_PROJECT_ID!,
-    location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
-    googleAuthOptions: { keyFilename: process.env.VERTEX_AI_CREDENTIALS },
-  })
-}
 
 type FiltroModo = 'completo' | 'urgencias' | 'resumido'
 

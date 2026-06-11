@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
-import { VertexAI }                  from '@google-cloud/vertexai'
-import { MODELO_FLASH }              from '@/lib/vertex-ai'
+import { MODELO_FLASH, criarVertexAI } from '@/lib/vertex-ai'
 import type { ChatMensagem }         from '@/lib/types'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
-
-function criarVertexAI() {
-  return new VertexAI({
-    project:  process.env.VERTEX_AI_PROJECT_ID!,
-    location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
-    googleAuthOptions: { keyFilename: process.env.VERTEX_AI_CREDENTIALS },
-  })
-}
 
 export interface ChatAction {
   type:  'create_task' | 'create_notification'

@@ -33,9 +33,14 @@ export interface FonteTrafego {
 }
 
 // ─── CLIENTE GA4 ─────────────────────────────────────────────────────────────
-// O SDK lê GOOGLE_APPLICATION_CREDENTIALS automaticamente do ambiente.
+// GOOGLE_APPLICATION_CREDENTIALS aceita caminho de arquivo (local, o SDK lê
+// sozinho) ou o JSON inteiro da service account (Vercel, sem filesystem).
 
 function criarClienteGA4() {
+  const cred = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? '';
+  if (cred.trimStart().startsWith('{')) {
+    return new BetaAnalyticsDataClient({ credentials: JSON.parse(cred) });
+  }
   return new BetaAnalyticsDataClient();
 }
 

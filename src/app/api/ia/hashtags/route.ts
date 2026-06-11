@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { VertexAI }                  from '@google-cloud/vertexai'
-import { MODELO_FLASH }              from '@/lib/vertex-ai'
+import { MODELO_FLASH, criarVertexAI } from '@/lib/vertex-ai'
 import { createClient }              from '@/lib/supabase/server'
-
-function criarVertexAI() {
-  return new VertexAI({
-    project:  process.env.VERTEX_AI_PROJECT_ID!,
-    location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
-    googleAuthOptions: { keyFilename: process.env.VERTEX_AI_CREDENTIALS },
-  })
-}
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()

@@ -20,13 +20,18 @@ export interface AnaliseRelatorio {
 
 // ─── CLIENTE VERTEX AI ────────────────────────────────────────────────────────
 
-function criarVertexAI() {
+// VERTEX_AI_CREDENTIALS aceita caminho de arquivo (local) ou o JSON inteiro
+// da service account (Vercel, onde não há filesystem para credenciais).
+export function criarVertexAI() {
+  const cred = process.env.VERTEX_AI_CREDENTIALS ?? '';
+  const googleAuthOptions = cred.trimStart().startsWith('{')
+    ? { credentials: JSON.parse(cred) }
+    : { keyFilename: cred };
+
   return new VertexAI({
     project:  process.env.VERTEX_AI_PROJECT_ID!,
     location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
-    googleAuthOptions: {
-      keyFilename: process.env.VERTEX_AI_CREDENTIALS,
-    },
+    googleAuthOptions,
   });
 }
 

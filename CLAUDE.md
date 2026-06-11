@@ -12,7 +12,7 @@ Frontend:  Next.js 15 + React 19 + TypeScript
 Styling:   Tailwind CSS 3 com design system customizado (rem-based)
 State:     Zustand 5 + Supabase Realtime
 Backend:   Supabase (PostgreSQL + Auth + Realtime + Storage)
-IA:        Vertex AI Gemini (Flash, Pro) via @google-cloud/vertexai
+IA:        Vertex AI Gemini 2.5 (Flash, Pro) via @google-cloud/vertexai
 APIs:      Google Ads API, Google Analytics Data API, Asaas webhook
 Fontes:    Geist Sans + Geist Mono (via `geist` package)
 Icons:     lucide-react
@@ -93,7 +93,8 @@ O layout segue o conceito IDE (VS Code / Figma): moldura fixa + área de conteú
 ```
 
 **CSS Variables de layout:**
-```css
+
+```
 --topbar-h:         3.5rem
 --sidebar-w:        3.5rem   /* colapsado */
 --sidebar-expanded: 15rem    /* hover */
@@ -115,21 +116,21 @@ ads-600: #E6A000   ads-700: #CC8E00   ads-800: #B37B00   ads-900: #8C6200
 
 ### Superfícies (CSS Vars — dark/light aware)
 
-| Token                  | Light          | Dark           |
-|------------------------|----------------|----------------|
-| `surface-base`         | #DADCE9        | #0a0a0b        |
-| `surface-card`         | #FFFFFF         | #141416        |
-| `surface-hover`        | #F4F4F8        | #1c1c1f        |
-| `surface-elevated`     | #F9F9FD        | #242428        |
-| `surface-border`       | #CED0DE        | #2a2a2e        |
+| Token              | Light   | Dark    |
+| ------------------ | ------- | ------- |
+| `surface-base`     | #DADCE9 | #0a0a0b |
+| `surface-card`     | #FFFFFF | #141416 |
+| `surface-hover`    | #F4F4F8 | #1c1c1f |
+| `surface-elevated` | #F9F9FD | #242428 |
+| `surface-border`   | #CED0DE | #2a2a2e |
 
 ### Texto (CSS Vars)
 
-| Token             | Light      | Dark       |
-|-------------------|------------|------------|
-| `ink-primary`     | #111111    | #fafafa    |
-| `ink-secondary`   | #52525b    | #a1a1aa    |
-| `ink-muted`       | #a1a1aa    | #71717a    |
+| Token           | Light   | Dark    |
+| --------------- | ------- | ------- |
+| `ink-primary`   | #111111 | #fafafa |
+| `ink-secondary` | #52525b | #a1a1aa |
+| `ink-muted`     | #a1a1aa | #71717a |
 
 ### Status
 
@@ -159,6 +160,7 @@ Classes: `.glow-green`, `.glow-amber`, `.glow-cyan`, `.glow-red`, `.glow-blue`, 
 Fonte: **Geist Sans** (sans) + **Geist Mono** (mono)
 
 Escala de tamanhos (rem):
+
 ```
 2xs: 0.625rem  |  xs: 0.75rem  |  sm: 0.875rem  |  base: 1rem
 lg: 1.125rem   |  xl: 1.25rem  |  2xl: 1.5rem   |  3xl: 1.875rem  |  4xl: 2.25rem
@@ -179,6 +181,7 @@ animate-accordion-down / animate-accordion-up
 ```
 
 Classes CSS utilitárias:
+
 ```
 .animate-fade-up     — entrada padrão de elementos
 .animate-fade-scale  — entrada de modais/cards
@@ -207,27 +210,25 @@ Classes CSS utilitárias:
 ### Imports obrigatórios
 
 ```typescript
-import { cn }       from '@/lib/utils'          // cn() helper
-import { supabase } from '@/lib/supabase'        // cliente Supabase
-import { MainLayout } from '@/components/layout/MainLayout'
-import { NomeDoIcone } from 'lucide-react'       // ícones — import direto
+import { cn } from "@/lib/utils"; // cn() helper
+import { supabase } from "@/lib/supabase"; // cliente Supabase
+import { MainLayout } from "@/components/layout/MainLayout";
+import { NomeDoIcone } from "lucide-react"; // ícones — import direto
 ```
 
 ### Padrão de componente de página
 
 ```tsx
-'use client'
+"use client";
 
-import { MainLayout } from '@/components/layout/MainLayout'
+import { MainLayout } from "@/components/layout/MainLayout";
 
 export default function NomeDaPagina() {
   return (
     <MainLayout title="Título" subtitle="Subtítulo opcional">
-      <div className="page-enter">
-        {/* conteúdo */}
-      </div>
+      <div className="page-enter">{/* conteúdo */}</div>
     </MainLayout>
-  )
+  );
 }
 ```
 
@@ -251,23 +252,23 @@ export default function NomeDaPagina() {
 
 ## Componentes de Layout Disponíveis
 
-| Componente         | Arquivo                              | Uso                                           |
-|--------------------|--------------------------------------|-----------------------------------------------|
-| `MainLayout`       | `components/layout/MainLayout.tsx`   | Wrapper de página com title/subtitle/actions  |
-| `TopBar`           | `components/layout/TopBar.tsx`       | Barra superior (logo, busca, notif, tema)      |
-| `Sidebar`          | `components/layout/Sidebar.tsx`      | Nav lateral slim (hover expande)               |
-| `RightSidebar`     | `components/layout/RightSidebar.tsx` | Barra direita (ações contextuais)             |
-| `StatusBar`        | `components/layout/StatusBar.tsx`    | Barra inferior (status, info)                  |
+| Componente           | Arquivo                                    | Uso                                                                                                                                |
+| -------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `MainLayout`         | `components/layout/MainLayout.tsx`         | Wrapper de página com title/subtitle/actions                                                                                       |
+| `TopBar`             | `components/layout/TopBar.tsx`             | Barra superior (logo, busca, notif, tema)                                                                                          |
+| `Sidebar`            | `components/layout/Sidebar.tsx`            | Nav lateral slim (hover expande)                                                                                                   |
+| `RightSidebar`       | `components/layout/RightSidebar.tsx`       | Barra direita (ações contextuais)                                                                                                  |
+| `StatusBar`          | `components/layout/StatusBar.tsx`          | Barra inferior (status, info)                                                                                                      |
 | `NotificationDrawer` | `components/layout/NotificationDrawer.tsx` | Drawer (aberto pela RightSidebar) — abas Alertas (inadimplência, saldo Google baixo, onboarding parado, congelados) + Notificações |
 
 ### Props do MainLayout
 
 ```typescript
 interface MainLayoutProps {
-  title?: string
-  subtitle?: string
-  actions?: React.ReactNode  // botões no TopBar
-  children: React.ReactNode
+  title?: string;
+  subtitle?: string;
+  actions?: React.ReactNode; // botões no TopBar
+  children: React.ReactNode;
 }
 ```
 
@@ -275,25 +276,25 @@ interface MainLayoutProps {
 
 ## Rotas da Aplicação
 
-| Rota                     | Módulo            |
-|--------------------------|-------------------|
-| `/dashboard`             | Home / Morning Briefing / Bento Grid |
-| `/clientes`              | Lista de clientes |
-| `/clientes/novo`         | Formulário novo cliente |
-| `/clientes/[id]`         | Detalhe do cliente |
-| `/financeiro`            | DRE + transações + inadimplentes |
-| `/analytics`             | Google Ads + GA4 |
-| `/relatorios`            | Relatórios automáticos |
-| `/tarefas`               | Task manager (lista + kanban) |
-| `/marketing`             | Calendário social |
-| `/biblioteca`            | Componentes Astro + manifestos |
-| `/base-conhecimento`     | Knowledge base interno |
-| `/operacional`           | Planos operacionais + fluxos |
-| `/portfolio`             | Portfólio de cases |
-| `/prospectar`            | CRM de prospecção |
-| `/configuracoes`         | Perfil, integrações, tema (7 abas) |
-| `/ajuda`                 | Help center |
-| `/portal/[token]`        | Portal do cliente (público) |
+| Rota                 | Módulo                               |
+| -------------------- | ------------------------------------ |
+| `/dashboard`         | Home / Morning Briefing / Bento Grid |
+| `/clientes`          | Lista de clientes                    |
+| `/clientes/novo`     | Formulário novo cliente              |
+| `/clientes/[id]`     | Detalhe do cliente                   |
+| `/financeiro`        | DRE + transações + inadimplentes     |
+| `/analytics`         | Google Ads + GA4                     |
+| `/relatorios`        | Relatórios automáticos               |
+| `/tarefas`           | Task manager (lista + kanban)        |
+| `/marketing`         | Calendário social                    |
+| `/biblioteca`        | Componentes Astro + manifestos       |
+| `/base-conhecimento` | Knowledge base interno               |
+| `/operacional`       | Planos operacionais + fluxos         |
+| `/portfolio`         | Portfólio de cases                   |
+| `/prospectar`        | CRM de prospecção                    |
+| `/configuracoes`     | Perfil, integrações, tema (7 abas)   |
+| `/ajuda`             | Help center                          |
+| `/portal/[token]`    | Portal do cliente (público)          |
 
 ---
 
@@ -367,34 +368,30 @@ toggle correspondente estar ativo.
 
 ## Componentes UI Disponíveis
 
-| Componente        | Arquivo                          | Uso                                             |
-|-------------------|----------------------------------|-------------------------------------------------|
-| `Button`          | `components/ui/Button.tsx`       | Botão com variantes (primary, secondary, ghost, danger, subtle) |
-| `ConfirmDialog`   | `components/ui/ConfirmDialog.tsx`| Dialog de confirmação global (via Zustand)      |
-| `ContextMenu`     | `components/ui/ContextMenu.tsx`  | Menu de contexto (right-click ou botão)         |
-| `TaskModal`       | `components/ui/TaskModal.tsx`    | Modal criar/editar tarefa                       |
-| `DrawerEditor`    | `components/ui/DrawerEditor.tsx` | Drawer lateral com editor de conteúdo           |
-| `GlobalSearch`    | `components/ui/GlobalSearch.tsx` | Busca global (Ctrl+K)                           |
-| `ShortcutsOverlay`| `components/ui/ShortcutsOverlay.tsx`| Overlay de atalhos (?)                       |
-| `Tooltip`         | `components/ui/Tooltip.tsx`      | Tooltip simples                                 |
-| `Motion`          | `components/ui/Motion.tsx`       | Wrappers de animação Framer Motion              |
+| Componente         | Arquivo                              | Uso                                                             |
+| ------------------ | ------------------------------------ | --------------------------------------------------------------- |
+| `Button`           | `components/ui/Button.tsx`           | Botão com variantes (primary, secondary, ghost, danger, subtle) |
+| `ConfirmDialog`    | `components/ui/ConfirmDialog.tsx`    | Dialog de confirmação global (via Zustand)                      |
+| `ContextMenu`      | `components/ui/ContextMenu.tsx`      | Menu de contexto (right-click ou botão)                         |
+| `TaskModal`        | `components/ui/TaskModal.tsx`        | Modal criar/editar tarefa                                       |
+| `DrawerEditor`     | `components/ui/DrawerEditor.tsx`     | Drawer lateral com editor de conteúdo                           |
+| `GlobalSearch`     | `components/ui/GlobalSearch.tsx`     | Busca global (Ctrl+K)                                           |
+| `ShortcutsOverlay` | `components/ui/ShortcutsOverlay.tsx` | Overlay de atalhos (?)                                          |
+| `Tooltip`          | `components/ui/Tooltip.tsx`          | Tooltip simples                                                 |
+| `Motion`           | `components/ui/Motion.tsx`           | Wrappers de animação Framer Motion                              |
 
 ### Padrão de ConfirmDialog (substituiu confirm() nativo)
 
 ```typescript
 // Em vez de: if (confirm('Deletar?')) { ... }
 // Usar:
-import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
+import { useConfirmDialogStore } from "@/lib/hooks/useConfirmDialog";
 
 function handleDelete(id: string) {
-  const openConfirm = useConfirmDialogStore.getState().openConfirm
-  openConfirm(
-    'Título do Dialog',
-    'Mensagem de confirmação.',
-    async () => {
-      // lógica async aqui
-    }
-  )
+  const openConfirm = useConfirmDialogStore.getState().openConfirm;
+  openConfirm("Título do Dialog", "Mensagem de confirmação.", async () => {
+    // lógica async aqui
+  });
 }
 ```
 
