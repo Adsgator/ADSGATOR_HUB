@@ -10,6 +10,7 @@ import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
+import { useTheme } from '@/providers/ThemeProvider'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 import { AutomacaoEmail } from '@/components/configuracoes/AutomacaoEmail'
 
@@ -492,7 +493,9 @@ function AbaFinanceiro() {
 
 // ── ABA APARÊNCIA ───────────────────────────────────────────────────────────
 function AbaAparencia() {
-  const [tema,    setTema]    = useState<'dark' | 'light' | 'system'>('dark')
+  // O tema vem do ThemeProvider (fonte de verdade, persiste em localStorage)
+  // e é aplicado na hora ao clicar. O save persiste tudo no banco.
+  const { theme: tema, setTheme: setTema } = useTheme()
   const [idioma,  setIdioma]  = useState('pt-BR')
   const [fuso,    setFuso]    = useState('America/Sao_Paulo')
   const [salvando, setSalvando] = useState(false)
@@ -502,7 +505,6 @@ function AbaAparencia() {
   useEffect(() => {
     carregarPreferencias().then((salvas) => {
       if (!salvas) return
-      if (typeof salvas.tema === 'string')   setTema(salvas.tema as 'dark' | 'light' | 'system')
       if (typeof salvas.idioma === 'string') setIdioma(salvas.idioma)
       if (typeof salvas.fuso === 'string')   setFuso(salvas.fuso)
     })
