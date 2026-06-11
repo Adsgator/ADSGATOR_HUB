@@ -79,11 +79,12 @@ async function checkGoogleAds(): Promise<{ status: 'ok' | 'warn' | 'error' | 'no
   }
 
   // Passo 2: confirmar acesso real à API do Google Ads com o developer token.
-  // Usamos searchGoogleAdsFields (query leve, sem dados de campanha) em vez de
-  // listAccessibleCustomers, que retorna 200 mesmo com developer token básico/inválido.
+  // Query GAQL mínima via googleAds:search — valida developer token, permissão
+  // na conta e versão da API de uma vez (listAccessibleCustomers retorna 200
+  // mesmo com developer token básico/inválido).
   try {
     const adsRes = await fetch(
-      `https://googleads.googleapis.com/v19/customers/${managerId!.replace(/-/g, '')}/googleAdsFields:search`,
+      `https://googleads.googleapis.com/v19/customers/${managerId!.replace(/-/g, '')}/googleAds:search`,
       {
         method: 'POST',
         headers: {
@@ -92,7 +93,7 @@ async function checkGoogleAds(): Promise<{ status: 'ok' | 'warn' | 'error' | 'no
           'login-customer-id': managerId!.replace(/-/g, ''),
           'Content-Type':      'application/json',
         },
-        body: JSON.stringify({ query: 'SELECT campaign.id FROM campaign LIMIT 1' }),
+        body: JSON.stringify({ query: 'SELECT customer.id FROM customer LIMIT 1' }),
         signal: AbortSignal.timeout(8000),
       }
     )
