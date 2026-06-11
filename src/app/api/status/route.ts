@@ -84,7 +84,7 @@ async function checkGoogleAds(): Promise<{ status: 'ok' | 'warn' | 'error' | 'no
   // mesmo com developer token básico/inválido).
   try {
     const adsRes = await fetch(
-      `https://googleads.googleapis.com/v19/customers/${managerId!.replace(/-/g, '')}/googleAds:search`,
+      `https://googleads.googleapis.com/v23/customers/${managerId!.replace(/-/g, '')}/googleAds:search`,
       {
         method: 'POST',
         headers: {
