@@ -7,10 +7,11 @@ import { createClient as createSessionClient } from '@/lib/supabase/server'
  *
  * Importa clientes e assinaturas do Asaas para o Hub.
  *
- * Body: { confirmar?: boolean }
+ * Body: { confirmar?: boolean, ids?: string[] }
  *  - confirmar ausente/false → DRY-RUN: retorna o plano (o que seria criado/pulado)
  *    sem gravar NADA no banco.
- *  - confirmar: true → executa o plano e grava.
+ *  - confirmar: true → executa o plano e grava. Se `ids` (asaas_subscription_id)
+ *    vier preenchido, importa apenas os selecionados.
  *
  * Não dispara nenhum email, cobrança ou mensagem — apenas espelha dados
  * do Asaas nas tabelas clientes/assinaturas. Auth: sessão obrigatória.
@@ -82,8 +83,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ASAAS_API_KEY não configurada' }, { status: 500 })
   }
 
-  const body = await req.json().catch(() => ({})) as { confirmar?: boolean }
+  const body = await req.json().catch(() => ({})) as { confirmar?: boolean; ids?: string[] }
   const confirmar = body.confirmar === true
+  const idsSelecionados = Array.isArray(body.ids) ? new Set(body.ids) : null
 
   // ── 1. Buscar tudo do Asaas ────────────────────────────────────────────────
   let customers: AsaasCustomer[]
@@ -162,9 +164,13 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 5. Execução ───────────────────────────────────────────────────────────
+  const aImportar = idsSelecionados
+    ? criar.filter((i) => idsSelecionados.has(i.asaas_subscription_id))
+    : criar
+
   const resultados: { nome: string; ok: boolean; erro?: string }[] = []
 
-  for (const item of criar) {
+  for (const item of aImportar) {
     try {
       // Reusa cliente existente com mesmo email; senão cria
       let clienteId = clientePorEmail.get(item.email.toLowerCase())
