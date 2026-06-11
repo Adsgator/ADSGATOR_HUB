@@ -25,11 +25,48 @@ export function FloatingChat() {
   const [mensagens, setMensagens] = useState<MensagemComAcoes[]>([])
   const [input,     setInput]     = useState('')
   const [enviando,  setEnviando]  = useState(false)
+  const [size,      setSize]      = useState({ w: 352, h: 480 })
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [mensagens])
+
+  // Restaura o tamanho salvo (só no cliente, para não divergir do SSR)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('adsgator-chat-size')
+      if (saved) {
+        const s = JSON.parse(saved) as { w?: number; h?: number }
+        if (typeof s.w === 'number' && typeof s.h === 'number') setSize({ w: s.w, h: s.h })
+      }
+    } catch { /* tamanho padrão */ }
+  }, [])
+
+  // Redimensiona arrastando o canto superior esquerdo (janela é ancorada
+  // embaixo/direita, então crescer é puxar para cima/esquerda)
+  function iniciarResize(e: React.MouseEvent) {
+    e.preventDefault()
+    const startX = e.clientX
+    const startY = e.clientY
+    const { w: startW, h: startH } = size
+
+    function onMove(ev: MouseEvent) {
+      const w = Math.min(Math.max(startW + (startX - ev.clientX), 300), window.innerWidth - 120)
+      const h = Math.min(Math.max(startH + (startY - ev.clientY), 380), window.innerHeight - 120)
+      setSize({ w, h })
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      setSize((s) => {
+        localStorage.setItem('adsgator-chat-size', JSON.stringify(s))
+        return s
+      })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }
 
   async function executarAcoes(actions: ChatAction[]) {
     for (const action of actions) {
@@ -105,7 +142,20 @@ export function FloatingChat() {
     <>
       {/* Janela do chat */}
       {aberto && (
-        <div className="fixed bottom-[3rem] right-[3.5rem] z-40 w-[22rem] rounded-2xl bg-surface-card border border-surface-border shadow-2xl flex flex-col overflow-hidden animate-fade-scale">
+        <div
+          className="fixed bottom-[3rem] right-[3.5rem] z-40 rounded-2xl bg-surface-card border border-surface-border shadow-2xl flex flex-col overflow-hidden animate-fade-scale"
+          style={{ width: size.w, height: minimized ? undefined : size.h }}
+        >
+          {/* Alça de redimensionamento (canto superior esquerdo) */}
+          {!minimized && (
+            <div
+              onMouseDown={iniciarResize}
+              title="Redimensionar"
+              className="absolute top-0 left-0 w-[1.25rem] h-[1.25rem] cursor-nwse-resize z-10 group"
+            >
+              <div className="absolute top-[0.3125rem] left-[0.3125rem] w-[0.5rem] h-[0.5rem] border-t-2 border-l-2 border-ink-muted/40 group-hover:border-ads-500 rounded-tl-[0.25rem] transition-colors" />
+            </div>
+          )}
           {/* Header */}
           <div className="flex items-center justify-between px-[1rem] py-[0.75rem] border-b border-surface-border/50 bg-surface-elevated">
             <div className="flex items-center gap-[0.5rem]">
@@ -137,7 +187,7 @@ export function FloatingChat() {
           {!minimized && (
             <>
               {/* Histórico */}
-              <div className="flex flex-col gap-[0.5rem] p-[0.875rem] h-[16rem] overflow-y-auto">
+              <div className="flex flex-col gap-[0.5rem] p-[0.875rem] flex-1 min-h-0 overflow-y-auto">
                 {mensagens.length === 0 && (
                   <div className="flex flex-col items-center justify-center h-full text-center gap-[0.5rem]">
                     <div className="w-[2.5rem] h-[2.5rem] rounded-xl bg-ads-500/10 flex items-center justify-center">
