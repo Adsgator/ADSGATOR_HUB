@@ -646,7 +646,7 @@ export default function ClienteDetalhePage() {
                         <div>
                           <p className="text-ink-secondary text-[0.8125rem]">{h.descricao}</p>
                           <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">
-                            {new Date(h.data_acao).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                            {new Date(h.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                           </p>
                         </div>
                       </div>
@@ -718,7 +718,7 @@ export default function ClienteDetalhePage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-ink-secondary text-[0.875rem]">{h.descricao}</p>
                         <p className="text-ink-muted text-[0.75rem] mt-[0.25rem]">
-                          {new Date(h.data_acao).toLocaleDateString('pt-BR', {
+                          {new Date(h.created_at).toLocaleDateString('pt-BR', {
                             day: '2-digit', month: 'long', year: 'numeric',
                             hour: '2-digit', minute: '2-digit',
                           })}

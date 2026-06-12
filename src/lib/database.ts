@@ -221,7 +221,7 @@ export async function obterHistoricoCliente(clienteId: string): Promise<Historic
     .from('historico_acoes')
     .select('*')
     .eq('cliente_id', clienteId)
-    .order('data_acao', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(50);
 
   if (error) throw new Error(`Erro ao obter histórico: ${error.message}`);

@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.11.2',
+    data:   '2026-06-12',
+    novidades: [
+      'Correção: detalhe do cliente não abria — o histórico era ordenado por uma coluna que não existe (data_acao); corrigido para created_at na página, na Gator e na API',
+    ],
+  },
+  {
     versao: '0.11.1',
     data:   '2026-06-12',
     novidades: [

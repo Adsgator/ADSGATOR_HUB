@@ -846,9 +846,9 @@ export const TOOLS: Record<string, Tool> = {
       if (!id) throw new Error('cliente_id é obrigatório.')
       await ownCliente(ctx, id)
       const { data, error } = await ctx.db.from('historico_acoes')
-        .select('tipo_acao, descricao, valor_impactado, data_acao')
+        .select('tipo_acao, descricao, valor_impactado, created_at')
         .eq('cliente_id', id)
-        .order('data_acao', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(30)
       if (error) throw new Error(error.message)
       return { total: data.length, historico: data }

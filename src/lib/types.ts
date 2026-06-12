@@ -165,7 +165,7 @@ export interface HistoricoAcao {
   descricao:       string
   valor_impactado: number | null
   usuario_id:      string | null
-  data_acao:       string
+  created_at:      string
   metadata:        Record<string, unknown>
 }
 
