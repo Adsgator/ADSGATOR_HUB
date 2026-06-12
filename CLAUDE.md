@@ -206,6 +206,11 @@ Classes CSS utilitárias:
 4. **Inadimplência via `lib/cobranca.ts`** — nunca recalcular limiares de atraso à
    mão (`dias_atraso > N`). Use `estagioInadimplencia()` / `isInadimplente()` /
    `statusInadimplencia()`. A política é D+7 (suspensão), D+15 (grave), D+30 (crítico).
+5. **Feature entregue = registro no mesmo commit** — toda feature visível ao
+   usuário entra em `src/data/changelog.ts` (nova versão no topo), e mudanças
+   de produto (módulo, integração, lacuna fechada) atualizam
+   `lib/ia/system-map.ts` (autoconhecimento da Gator). Nada de entregar e
+   deixar o changelog/mapa para depois.
 
 ### Imports obrigatórios
 

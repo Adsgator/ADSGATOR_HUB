@@ -4,7 +4,53 @@ export interface ChangelogEntry {
   novidades: string[]
 }
 
+// ⚠️ Mantenha em dia: toda feature visível ao usuário entra aqui no mesmo
+// commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
+  {
+    versao: '0.9.0',
+    data:   '2026-06-12',
+    novidades: [
+      'Gator: agente IA com acesso total — consulta e opera clientes, tarefas, financeiro, marketing e APIs por conversa (Ctrl+I em qualquer página)',
+      'Conversas salvas: sessões com renomear, excluir e exportar .md',
+      'Memória de longo prazo: ensine fatos ("lembre que…") e ela lembra para sempre',
+      'Multimodal: envie prints e arquivos .md, dite por voz e ouça as respostas',
+      'Autoconhecimento: a Gator conhece o próprio Hub, sugere melhorias e transforma ideias aprovadas em tasks',
+    ],
+  },
+  {
+    versao: '0.8.0',
+    data:   '2026-06-11',
+    novidades: [
+      'Integração Asaas completa: cliente nasce automaticamente no checkout (assinatura ou compra única)',
+      'Importador de clientes do Asaas com seleção individual',
+      'Blindagem: verificação diária de inadimplência, webhook resiliente e monitoramento de eventos',
+      'Auditoria de segurança e virada para produção: RLS owner-scoped e portal do cliente',
+      'Status real das integrações: checks de Google Ads, Asaas, Vertex AI, GA4 e Resend',
+    ],
+  },
+  {
+    versao: '0.7.0',
+    data:   '2026-06-06',
+    novidades: [
+      'Automações de email: relatório mensal, régua de cobrança e alertas críticos (toggles em Configurações)',
+      'Templates de email editáveis',
+      'Sync de Analytics: snapshots Google Ads + GA4 com cron diário às 06:00',
+      'Política de inadimplência centralizada (D+7 / D+15 / D+30) em todo o sistema',
+      'Auditoria geral: APIs destravadas, dados reais nos widgets e limpeza de código morto',
+    ],
+  },
+  {
+    versao: '0.6.0',
+    data:   '2026-05-29',
+    novidades: [
+      'Dashboard com edit mode: arraste, redimensione e salve seu layout',
+      'Novos módulos: Base de Conhecimento, Operacional, Portfólio e Prospectar (CRM)',
+      'Autenticação SSR robusta com proteção automática de rotas',
+      'AuditTimeline com filtros por tipo e ícones coloridos',
+      'Design system unificado em todos os módulos',
+    ],
+  },
   {
     versao: '0.5.0',
     data:   '2026-05-25',
