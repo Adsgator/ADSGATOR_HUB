@@ -364,6 +364,40 @@ toggle correspondente estar ativo.
 - **Crons:** `vercel.json` — cobrança 09:00, alertas 08:00. Requerem `CRON_SECRET`.
 - **Env necessárias:** `RESEND_API_KEY`, `EMAIL_FROM`, `ALERT_EMAIL`.
 
+### Agente IA "Gator" (chat global com acesso total)
+
+A IA do Hub é um **agente com function calling** (Gemini Flash via Vertex), não
+um chat de texto: ela consulta e opera o sistema de verdade. Persona: **Gator**,
+sócia-operadora — direta, proativa, respostas curtas por padrão (economia de
+tokens definida no system prompt).
+
+- **Backend:** `POST /api/ia/agent` — loop agêntico (máx 10 passos). Toolbox em
+  `lib/ia/tools.ts` (~25 ferramentas): CRUD de clientes/tarefas/financeiro/
+  posts/prospects, alertas, notificações, analytics (snapshots e `ads_ao_vivo`
+  via `/api/analytics/[id]/live`, payload compactado), histórico, busca global,
+  memória de cliente, memória própria, `status_sistema` (checa `/api/status`) e
+  `mapa_do_sistema` (autoconhecimento do produto + toggles de automação).
+  Tudo roda com service role e **toda query filtra/verifica `user_id`**.
+- ⚠️ **Ao mudar o produto** (módulo novo, integração, lacuna fechada), atualize
+  `lib/ia/system-map.ts` — é o autoconhecimento da Gator para sugerir melhorias.
+- **Persistência:** `ia_conversas`, `ia_mensagens`, `ia_memoria` (migration
+  `20260613_ia_agente.sql`, RLS owner-scoped). A memória de longo prazo
+  (`ia_memoria`) é injetada no system prompt de toda conversa; o agente salva
+  fatos com `salvar_memoria` quando o usuário ensina algo.
+- **UI:** painel global em todas as páginas (**Ctrl+I** ou botão "Assistente IA"
+  da RightSidebar) com modo expandido + lista de sessões (renomear/excluir/
+  exportar .md). Widget do dashboard (`GeminiChat`) usa o **mesmo motor e mesma
+  conversa ativa** via `lib/store/assistant-store.ts`. Componentes em
+  `components/ia/` (`ChatThread`, `Composer`, `Markdown`).
+- **Multimodal:** envio de imagens (upload ou colar print — comprimidas no
+  client), arquivos `.md/.txt/.csv/.json`, ditado por voz (Web Speech API
+  pt-BR), leitura da resposta em voz alta (speechSynthesis) e export da
+  conversa em `.md`.
+- **Contexto:** o agente recebe data/hora SP, página atual, panorama da agência,
+  cliente em contexto (seletor no painel) e memória do cliente.
+- `/api/ia/chat` permanece apenas como **completion one-shot** (recomendações
+  em Analytics, gerar memória de cliente) — sem actions, sem sessão.
+
 ---
 
 ## Componentes UI Disponíveis
@@ -418,6 +452,7 @@ O `ConfirmDialog` é renderizado globalmente no `MainLayout` — não precisa im
 - [x] Módulo Portfólio — cases da agência
 - [x] Módulo Prospectar — CRM de prospecção
 - [x] Portal do Cliente — rota pública `/portal/[token]`
+- [x] Agente IA global — function calling com toolbox completo, sessões persistentes, memória de longo prazo, multimodal (imagem/voz/.md), Ctrl+I em qualquer página
 - [x] ConfirmDialog global — todos os `confirm()` nativos substituídos por design system
 - [x] GlobalSearch — busca Ctrl+K
 - [x] ShortcutsOverlay — overlay de atalhos `?`

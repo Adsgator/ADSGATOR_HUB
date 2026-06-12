@@ -9,36 +9,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-export interface ChatAction {
-  type:  'create_task' | 'create_notification'
-  data:  Record<string, unknown>
-}
-
+// Endpoint leve de completion one-shot (recomendações de analytics, geração de
+// memória .md). O chat conversacional do Hub usa /api/ia/agent (loop agêntico
+// com ferramentas) — não este.
 interface ChatResponse {
   content: string
-  actions?: ChatAction[]
 }
 
-const SYSTEM_PROMPT_BASE = `Você é um assistente operacional da agência Adsgator, especializado em Google Ads e gestão de clientes. Responda de forma direta, prática e conversacional.
+const SYSTEM_PROMPT_BASE = `Você é a IA da agência Adsgator, especializada em Google Ads e gestão de clientes. Responda de forma direta, prática e em português brasileiro.
 
-Você recebe abaixo um PANORAMA atualizado da agência (clientes, tarefas, alertas). Use esses dados para responder perguntas sobre o estado do negócio — cite nomes, valores e prazos reais. Se perguntarem algo fora do panorama, diga o que você não tem acesso.
-
-Você pode executar ações quando o usuário pedir explicitamente. Quando for executar uma ação, responda em JSON puro (sem markdown):
-{
-  "content": "sua resposta ao usuário",
-  "actions": [
-    { "type": "create_task", "data": { "titulo": "...", "descricao": "...", "prioridade": "normal|alto|critico", "cliente_id": "..." } },
-    { "type": "create_notification", "data": { "titulo": "...", "mensagem": "..." } }
-  ]
-}
-Para vincular uma task a um cliente, use o ID entre colchetes listado no panorama.
-
-Se NÃO há ação, responda normalmente em texto puro (não em JSON). Máx 4 parágrafos.
-
-Exemplos que requerem ação:
-- "crie uma task para ligar para o João" → create_task
-- "me lembre de verificar o CPA amanhã" → create_task
-- "adiciona uma notificação sobre saldo baixo" → create_notification`
+Você recebe abaixo um PANORAMA atualizado da agência (clientes, tarefas, alertas). Use esses dados para responder com nomes, valores e prazos reais. Se pedirem algo fora do panorama, diga o que você não tem acesso. Responda em texto/markdown puro.`
 
 // ── Panorama operacional ──────────────────────────────────────────────────────
 // Snapshot compacto do estado da agência injetado em toda conversa, para a IA
@@ -165,14 +145,6 @@ export async function POST(req: NextRequest) {
     const model  = vertex.preview.getGenerativeModel({ model: MODELO_FLASH })
     const result = await model.generateContent({ contents })
     const texto  = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
-
-    // Tentar parsear como JSON (resposta com actions)
-    if (texto.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(texto) as ChatResponse
-        if (parsed.content) return NextResponse.json(parsed)
-      } catch { /* não era JSON válido — tratar como texto */ }
-    }
 
     return NextResponse.json({ content: texto || 'Desculpe, não consegui processar sua mensagem.' } satisfies ChatResponse)
   } catch (err) {

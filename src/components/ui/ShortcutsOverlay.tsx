@@ -9,6 +9,7 @@ const GROUPS: { title: string; shortcuts: { keys: string[]; label: string }[] }[
     title: 'Navegação',
     shortcuts: [
       { keys: ['Ctrl', 'K'],   label: 'Busca global / Ações rápidas' },
+      { keys: ['Ctrl', 'I'],   label: 'Abrir IA Adsgator (agente)'   },
       { keys: ['?'],           label: 'Mostrar atalhos'              },
       { keys: ['Esc'],         label: 'Fechar painel / modal'        },
     ],

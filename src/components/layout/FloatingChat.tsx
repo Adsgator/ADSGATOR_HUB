@@ -1,36 +1,141 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Bot, Send, User, X, Minus } from 'lucide-react'
+import { usePathname } from 'next/navigation'
+import {
+  Bot, Check, Download, History, Maximize2, Minimize2, Minus,
+  Pencil, Plus, Trash2, X,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
-import type { ChatMensagem } from '@/lib/types'
-import type { ChatAction } from '@/app/api/ia/chat/route'
-import { toast } from 'sonner'
+import { useAssistantStore } from '@/lib/store/assistant-store'
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
+import { ChatThread } from '@/components/ia/ChatThread'
+import { Composer } from '@/components/ia/Composer'
 
-function gerarId() {
-  return Math.random().toString(36).slice(2, 10)
+interface ClienteOpcao {
+  id:   string
+  nome: string
 }
 
-interface MensagemComAcoes extends ChatMensagem {
-  actions?: ChatAction[]
+// ── Lista de sessões (sidebar no modo expandido / overlay no compacto) ───────
+function ListaConversas({ onSelecionar }: { onSelecionar?: () => void }) {
+  const conversas       = useAssistantStore((s) => s.conversas)
+  const conversaId      = useAssistantStore((s) => s.conversaId)
+  const abrirConversa   = useAssistantStore((s) => s.abrirConversa)
+  const renomear        = useAssistantStore((s) => s.renomearConversa)
+  const excluir         = useAssistantStore((s) => s.excluirConversa)
+  const [editando, setEditando] = useState<string | null>(null)
+  const [titulo,   setTitulo]   = useState('')
+
+  function confirmarExclusao(id: string) {
+    useConfirmDialogStore.getState().openConfirm(
+      'Excluir conversa',
+      'A conversa e todas as mensagens serão removidas. Continuar?',
+      async () => { await excluir(id) },
+    )
+  }
+
+  if (!conversas.length) {
+    return <p className="text-ink-muted text-[0.6875rem] italic text-center py-[1rem] px-[0.5rem]">Nenhuma conversa salva ainda.</p>
+  }
+
+  return (
+    <div className="flex flex-col gap-[0.125rem] p-[0.375rem] overflow-y-auto">
+      {conversas.map((c) => (
+        <div
+          key={c.id}
+          className={`group flex items-center gap-[0.25rem] rounded-lg px-[0.5rem] py-[0.375rem] cursor-pointer transition-colors ${
+            c.id === conversaId ? 'bg-ads-500/10 text-ink-primary' : 'hover:bg-surface-hover text-ink-secondary'
+          }`}
+          onClick={() => {
+            if (editando === c.id) return
+            void abrirConversa(c.id)
+            onSelecionar?.()
+          }}
+        >
+          {editando === c.id ? (
+            <>
+              <input
+                value={titulo}
+                autoFocus
+                onChange={(e) => setTitulo(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { void renomear(c.id, titulo.trim() || c.titulo); setEditando(null) }
+                  if (e.key === 'Escape') setEditando(null)
+                }}
+                className="flex-1 min-w-0 h-[1.5rem] px-[0.375rem] rounded bg-surface-card border border-ads-500/50 text-[0.75rem] text-ink-primary focus:outline-none"
+              />
+              <button
+                onClick={(e) => { e.stopPropagation(); void renomear(c.id, titulo.trim() || c.titulo); setEditando(null) }}
+                className="w-[1.25rem] h-[1.25rem] rounded flex items-center justify-center text-status-green hover:bg-surface-hover shrink-0"
+              >
+                <Check className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="flex-1 min-w-0 truncate text-[0.75rem]">{c.titulo}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); setTitulo(c.titulo); setEditando(c.id) }}
+                title="Renomear"
+                className="opacity-0 group-hover:opacity-100 w-[1.25rem] h-[1.25rem] rounded flex items-center justify-center text-ink-muted hover:text-ink-primary shrink-0 transition-opacity"
+              >
+                <Pencil className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); confirmarExclusao(c.id) }}
+                title="Excluir"
+                className="opacity-0 group-hover:opacity-100 w-[1.25rem] h-[1.25rem] rounded flex items-center justify-center text-ink-muted hover:text-status-red shrink-0 transition-opacity"
+              >
+                <Trash2 className="w-[0.625rem] h-[0.625rem]" strokeWidth={2} />
+              </button>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  )
 }
 
-// Aberto/fechado é controlado pelo botão "Assistente IA" da RightSidebar
-// (via right-sidebar-store) — não há mais botão flutuante próprio.
+// ── Painel do agente — aberto pela RightSidebar ('chat') ou Ctrl+I ───────────
 export function FloatingChat() {
   const aberto      = useRightSidebarStore((s) => s.activeDrawer === 'chat')
+  const openDrawer  = useRightSidebarStore((s) => s.openDrawer)
   const closeDrawer = useRightSidebarStore((s) => s.closeDrawer)
-  const [minimized, setMinimized] = useState(false)
-  const [mensagens, setMensagens] = useState<MensagemComAcoes[]>([])
-  const [input,     setInput]     = useState('')
-  const [enviando,  setEnviando]  = useState(false)
-  const [size,      setSize]      = useState({ w: 352, h: 480 })
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const pathname    = usePathname()
 
+  const mensagens   = useAssistantStore((s) => s.mensagens)
+  const enviando    = useAssistantStore((s) => s.enviando)
+  const anexos      = useAssistantStore((s) => s.anexos)
+  const clienteCtx  = useAssistantStore((s) => s.clienteContextoId)
+
+  const [minimized,    setMinimized]    = useState(false)
+  const [expandido,    setExpandido]    = useState(false)
+  const [mostrarLista, setMostrarLista] = useState(false)
+  const [clientes,     setClientes]     = useState<ClienteOpcao[]>([])
+  const [size,         setSize]         = useState({ w: 384, h: 540 })
+
+  // Ctrl+I — abre/fecha o agente em qualquer página
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [mensagens])
+    function onKey(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+        e.preventDefault()
+        openDrawer('chat')
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [openDrawer])
+
+  // Ao abrir: carrega sessões e opções de cliente
+  useEffect(() => {
+    if (!aberto) return
+    void useAssistantStore.getState().carregarConversas()
+    supabase.from('clientes').select('id, nome').order('nome').limit(100)
+      .then(({ data }) => setClientes((data ?? []) as ClienteOpcao[]))
+  }, [aberto])
 
   // Restaura o tamanho salvo (só no cliente, para não divergir do SSR)
   useEffect(() => {
@@ -43,8 +148,7 @@ export function FloatingChat() {
     } catch { /* tamanho padrão */ }
   }, [])
 
-  // Redimensiona arrastando o canto superior esquerdo (janela é ancorada
-  // embaixo/direita, então crescer é puxar para cima/esquerda)
+  // Redimensiona arrastando o canto superior esquerdo (janela ancorada embaixo/direita)
   function iniciarResize(e: React.MouseEvent) {
     e.preventDefault()
     const startX = e.clientX
@@ -52,8 +156,8 @@ export function FloatingChat() {
     const { w: startW, h: startH } = size
 
     function onMove(ev: MouseEvent) {
-      const w = Math.min(Math.max(startW + (startX - ev.clientX), 300), window.innerWidth - 120)
-      const h = Math.min(Math.max(startH + (startY - ev.clientY), 380), window.innerHeight - 120)
+      const w = Math.min(Math.max(startW + (startX - ev.clientX), 320), window.innerWidth - 120)
+      const h = Math.min(Math.max(startH + (startY - ev.clientY), 400), window.innerHeight - 120)
       setSize({ w, h })
     }
     function onUp() {
@@ -68,195 +172,161 @@ export function FloatingChat() {
     document.addEventListener('mouseup', onUp)
   }
 
-  async function executarAcoes(actions: ChatAction[]) {
-    for (const action of actions) {
-      if (action.type === 'create_task') {
-        const d = action.data as { titulo?: string; descricao?: string; prioridade?: string; cliente_id?: string }
-        await supabase.from('tarefas').insert({
-          titulo:     d.titulo     ?? 'Task criada pelo assistente',
-          descricao:  d.descricao  ?? '',
-          prioridade: d.prioridade ?? 'normal',
-          status:     'pendente',
-          cliente_id: d.cliente_id || undefined,
-        })
-      } else if (action.type === 'create_notification') {
-        const d = action.data as { titulo?: string; mensagem?: string }
-        await supabase.from('notificacoes').insert({
-          titulo:   d.titulo   ?? 'Lembrete do assistente',
-          mensagem: d.mensagem ?? '',
-          tipo:     'info',
-          lida:     false,
-        })
-      }
-    }
-  }
-
-  async function enviar() {
-    const texto = input.trim()
-    if (!texto || enviando) return
-
-    const nova: MensagemComAcoes = {
-      id: gerarId(), role: 'user', content: texto, created_at: new Date().toISOString(),
-    }
-    setMensagens((p) => [...p, nova])
-    setInput('')
-    setEnviando(true)
+  function enviar(texto: string) {
     if (minimized) setMinimized(false)
-
-    try {
-      const res  = await fetch('/api/ia/chat', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ messages: [...mensagens, nova] }),
-      })
-      const json = await res.json() as { content?: string; actions?: ChatAction[]; error?: string }
-
-      if (json.actions?.length) {
-        await executarAcoes(json.actions)
-        json.actions.forEach((a) => {
-          if (a.type === 'create_task')         toast.success('Task criada!')
-          if (a.type === 'create_notification') toast.success('Notificação criada!')
-        })
-      }
-
-      setMensagens((p) => [
-        ...p,
-        {
-          id: gerarId(), role: 'assistant',
-          content: json.content ?? json.error ?? 'Erro ao responder.',
-          created_at: new Date().toISOString(),
-          actions: json.actions,
-        },
-      ])
-    } catch {
-      setMensagens((p) => [
-        ...p,
-        { id: gerarId(), role: 'assistant', content: 'Sem conexão com o assistente.', created_at: new Date().toISOString() },
-      ])
-    } finally {
-      setEnviando(false)
-    }
+    void useAssistantStore.getState().enviar(texto, pathname ?? undefined)
   }
 
-  return (
-    <>
-      {/* Janela do chat */}
-      {aberto && (
-        <div
-          className="fixed bottom-[3rem] right-[3.5rem] z-40 rounded-2xl bg-surface-card border border-surface-border shadow-2xl flex flex-col overflow-hidden animate-fade-scale"
-          style={{ width: size.w, height: minimized ? undefined : size.h }}
+  if (!aberto) return null
+
+  const store = useAssistantStore.getState()
+
+  const header = (
+    <div className="flex items-center justify-between px-[0.875rem] py-[0.625rem] border-b border-surface-border/50 bg-surface-elevated shrink-0">
+      <div className="flex items-center gap-[0.5rem] min-w-0">
+        <div className="relative w-[1.75rem] h-[1.75rem] rounded-lg bg-ads-500/15 flex items-center justify-center shrink-0">
+          <Bot className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
+          <span className="absolute -bottom-[0.0625rem] -right-[0.0625rem] w-[0.5rem] h-[0.5rem] rounded-full bg-status-green border-2 border-surface-elevated" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-ink-primary text-[0.8125rem] font-semibold leading-none">Gator</p>
+          <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem] truncate">IA do Hub · acesso total</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-[0.125rem] shrink-0">
+        {!expandido && (
+          <button
+            onClick={() => setMostrarLista((v) => !v)}
+            title="Conversas"
+            className={`w-[1.75rem] h-[1.75rem] rounded-lg flex items-center justify-center transition-colors ${mostrarLista ? 'bg-ads-500/15 text-ads-500' : 'hover:bg-surface-hover text-ink-muted hover:text-ink-primary'}`}
+          >
+            <History className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+          </button>
+        )}
+        <button
+          onClick={() => { store.novaConversa(); setMostrarLista(false) }}
+          title="Nova conversa"
+          className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
         >
-          {/* Alça de redimensionamento (canto superior esquerdo) */}
-          {!minimized && (
-            <div
-              onMouseDown={iniciarResize}
-              title="Redimensionar"
-              className="absolute top-0 left-0 w-[1.25rem] h-[1.25rem] cursor-nwse-resize z-10 group"
-            >
-              <div className="absolute top-[0.3125rem] left-[0.3125rem] w-[0.5rem] h-[0.5rem] border-t-2 border-l-2 border-ink-muted/40 group-hover:border-ads-500 rounded-tl-[0.25rem] transition-colors" />
-            </div>
-          )}
-          {/* Header */}
-          <div className="flex items-center justify-between px-[1rem] py-[0.75rem] border-b border-surface-border/50 bg-surface-elevated">
-            <div className="flex items-center gap-[0.5rem]">
-              <div className="w-[1.75rem] h-[1.75rem] rounded-lg bg-ads-500/15 flex items-center justify-center">
-                <Bot className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
-              </div>
-              <div>
-                <p className="text-ink-primary text-[0.8125rem] font-semibold leading-none">Assistente</p>
-                <p className="text-ink-muted text-[0.6875rem] mt-[0.125rem]">Adsgator IA</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-[0.25rem]">
-              <button
-                onClick={() => setMinimized((v) => !v)}
-                className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
-              >
-                <Minus className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
-              </button>
-              <button
-                onClick={() => { closeDrawer(); setMinimized(false) }}
-                className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
-              >
-                <X className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
-              </button>
+          <Plus className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+        </button>
+        {mensagens.length > 0 && (
+          <button
+            onClick={() => store.exportarMarkdown()}
+            title="Exportar conversa (.md)"
+            className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+          >
+            <Download className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+          </button>
+        )}
+        <button
+          onClick={() => { setExpandido((v) => !v); setMinimized(false); setMostrarLista(false) }}
+          title={expandido ? 'Janela compacta' : 'Expandir'}
+          className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+        >
+          {expandido
+            ? <Minimize2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+            : <Maximize2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+          }
+        </button>
+        {!expandido && (
+          <button
+            onClick={() => setMinimized((v) => !v)}
+            title="Minimizar"
+            className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+          >
+            <Minus className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+          </button>
+        )}
+        <button
+          onClick={() => { closeDrawer(); setMinimized(false); setExpandido(false) }}
+          title="Fechar (Ctrl+I)"
+          className="w-[1.75rem] h-[1.75rem] rounded-lg hover:bg-surface-hover flex items-center justify-center text-ink-muted hover:text-ink-primary transition-colors"
+        >
+          <X className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+        </button>
+      </div>
+    </div>
+  )
+
+  const seletorCliente = (
+    <div className="px-[0.875rem] py-[0.5rem] border-b border-surface-border/30 shrink-0">
+      <select
+        value={clienteCtx}
+        onChange={(e) => store.setClienteContexto(e.target.value)}
+        className="w-full h-[1.75rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.6875rem] focus:outline-none focus:ring-1 focus:ring-ads-500/30"
+      >
+        <option value="">Conversa geral (sem cliente fixo)</option>
+        {clientes.map((c) => (
+          <option key={c.id} value={c.id}>Contexto: {c.nome}</option>
+        ))}
+      </select>
+    </div>
+  )
+
+  const corpo = (
+    <>
+      <ChatThread mensagens={mensagens} enviando={enviando} />
+      <Composer
+        enviando={enviando}
+        anexos={anexos}
+        onEnviar={enviar}
+        onAddArquivos={(files) => void store.adicionarArquivos(files)}
+        onRemoverAnexo={store.removerAnexo}
+        autoFocus
+      />
+    </>
+  )
+
+  // ── Modo expandido: overlay central com sidebar de sessões ─────────────────
+  if (expandido) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-[2rem] bg-black/40 backdrop-blur-sm animate-fade-scale">
+        <div className="w-full max-w-[64rem] h-full max-h-[44rem] rounded-2xl bg-surface-card border border-surface-border shadow-2xl flex flex-col overflow-hidden">
+          {header}
+          <div className="flex flex-1 min-h-0">
+            <aside className="w-[14rem] border-r border-surface-border/40 bg-surface-elevated/50 flex flex-col shrink-0">
+              <p className="px-[0.75rem] pt-[0.75rem] pb-[0.375rem] text-[0.625rem] font-semibold uppercase tracking-wider text-ink-muted">Conversas</p>
+              <ListaConversas />
+            </aside>
+            <div className="flex flex-col flex-1 min-w-0">
+              {seletorCliente}
+              {corpo}
             </div>
           </div>
+        </div>
+      </div>
+    )
+  }
 
-          {/* Corpo — colapsa ao minimizar */}
-          {!minimized && (
-            <>
-              {/* Histórico */}
-              <div className="flex flex-col gap-[0.5rem] p-[0.875rem] flex-1 min-h-0 overflow-y-auto">
-                {mensagens.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-full text-center gap-[0.5rem]">
-                    <div className="w-[2.5rem] h-[2.5rem] rounded-xl bg-ads-500/10 flex items-center justify-center">
-                      <Bot className="w-[1.25rem] h-[1.25rem] text-ads-500" strokeWidth={1.75} />
-                    </div>
-                    <p className="text-ink-muted text-[0.75rem] leading-relaxed">
-                      Pergunte sobre clientes, campanhas<br />ou peça para criar tasks.
-                    </p>
-                  </div>
-                )}
-
-                {mensagens.map((m) => (
-                  <div key={m.id} className={`flex gap-[0.375rem] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                    <div className={`w-[1.375rem] h-[1.375rem] rounded-full flex items-center justify-center shrink-0 ${m.role === 'user' ? 'bg-ads-500/20' : 'bg-surface-hover'}`}>
-                      {m.role === 'user'
-                        ? <User className="w-[0.625rem] h-[0.625rem] text-ads-500" strokeWidth={2} />
-                        : <Bot  className="w-[0.625rem] h-[0.625rem] text-ink-muted" strokeWidth={1.75} />
-                      }
-                    </div>
-                    <div className={`rounded-xl px-[0.625rem] py-[0.4375rem] max-w-[82%] text-[0.75rem] leading-relaxed ${
-                      m.role === 'user'
-                        ? 'bg-ads-500/15 text-ink-primary'
-                        : 'bg-surface-hover text-ink-secondary'
-                    }`}>
-                      {m.content}
-                    </div>
-                  </div>
-                ))}
-
-                {enviando && (
-                  <div className="flex gap-[0.375rem]">
-                    <div className="w-[1.375rem] h-[1.375rem] rounded-full bg-surface-hover flex items-center justify-center shrink-0">
-                      <Bot className="w-[0.625rem] h-[0.625rem] text-ink-muted" strokeWidth={1.75} />
-                    </div>
-                    <div className="bg-surface-hover rounded-xl px-[0.625rem] py-[0.5rem]">
-                      <div className="flex gap-[0.25rem] items-center h-[0.875rem]">
-                        {[0, 120, 240].map((d) => (
-                          <div key={d} className="w-[0.3125rem] h-[0.3125rem] rounded-full bg-ink-muted animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={bottomRef} />
-              </div>
-
-              {/* Input */}
-              <div className="flex gap-[0.375rem] px-[0.875rem] pb-[0.875rem]">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && enviar()}
-                  placeholder="Pergunte ou peça uma ação…"
-                  disabled={enviando}
-                  className="flex-1 h-[2rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 transition-colors disabled:opacity-50"
-                />
-                <button
-                  onClick={enviar}
-                  disabled={!input.trim() || enviando}
-                  className="w-[2rem] h-[2rem] rounded-lg bg-ads-500 hover:bg-ads-600 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                >
-                  <Send className="w-[0.75rem] h-[0.75rem] text-white" strokeWidth={2} />
-                </button>
-              </div>
-            </>
-          )}
+  // ── Modo compacto: janela flutuante redimensionável ────────────────────────
+  return (
+    <div
+      className="fixed bottom-[3rem] right-[3.5rem] z-40 rounded-2xl bg-surface-card border border-surface-border shadow-2xl flex flex-col overflow-hidden animate-fade-scale"
+      style={{ width: size.w, height: minimized ? undefined : size.h }}
+    >
+      {!minimized && (
+        <div
+          onMouseDown={iniciarResize}
+          title="Redimensionar"
+          className="absolute top-0 left-0 w-[1.25rem] h-[1.25rem] cursor-nwse-resize z-10 group"
+        >
+          <div className="absolute top-[0.3125rem] left-[0.3125rem] w-[0.5rem] h-[0.5rem] border-t-2 border-l-2 border-ink-muted/40 group-hover:border-ads-500 rounded-tl-[0.25rem] transition-colors" />
         </div>
       )}
-    </>
+      {header}
+      {!minimized && (
+        mostrarLista ? (
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <ListaConversas onSelecionar={() => setMostrarLista(false)} />
+          </div>
+        ) : (
+          <>
+            {seletorCliente}
+            {corpo}
+          </>
+        )
+      )}
+    </div>
   )
 }
