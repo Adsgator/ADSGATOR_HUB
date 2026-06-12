@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
 import { asaasGetAll } from '@/lib/asaas'
+import { provisionarClienteNovo } from '@/lib/cliente-provisioning'
 
 /**
  * POST /api/v1/asaas/import
@@ -282,6 +283,13 @@ async function executarImportacao(opts: OpcoesImportacao) {
         if (errCliente) throw new Error(errCliente.message)
         clienteId = novo.id as string
         clientePorEmail.set(item.email.toLowerCase(), clienteId)
+
+        // Tarefa de setup automática — falha não derruba a importação
+        try {
+          await provisionarClienteNovo(supabaseAdmin, userId, { id: clienteId, nome: item.nome }, 'import')
+        } catch (provErr) {
+          console.error(`Provisionamento falhou para ${item.nome}:`, provErr)
+        }
       }
 
       const { error: errAssinatura } = await supabaseAdmin.from('assinaturas').insert({
@@ -339,6 +347,15 @@ async function executarImportacao(opts: OpcoesImportacao) {
         .single()
       if (errCliente) throw new Error(errCliente.message)
       clientePorEmail.set(item.email.toLowerCase(), novo.id as string)
+
+      // Setup só para avulso ativo (entrega em andamento) — inativo é histórico
+      if (recente) {
+        try {
+          await provisionarClienteNovo(supabaseAdmin, userId, { id: novo.id as string, nome: item.nome }, 'import')
+        } catch (provErr) {
+          console.error(`Provisionamento falhou para ${item.nome}:`, provErr)
+        }
+      }
 
       await supabaseAdmin.from('historico_acoes').insert({
         cliente_id:      novo.id,

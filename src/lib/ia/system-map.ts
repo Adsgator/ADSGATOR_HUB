@@ -23,6 +23,7 @@ MÓDULOS (rota → o que faz):
 
 INTEGRAÇÕES:
 - Asaas (cobrança): webhook cria cliente no SUBSCRIPTION_CREATED (checkout-first), processa pagamentos, sync diário de inadimplência. Edge Functions com TEST_MODE=true ainda.
+- Provisionamento automático: todo cliente novo (form, importador ou webhook Asaas) gera tarefa "Setup do cliente" com checklist do template setup-cliente (idempotente). Retroativo disponível na aba Setup para clientes sem IDs Google.
 - Google Ads + GA4: sync de snapshots (cron 06:00) e consultas ao vivo. Depende de credenciais nas env vars.
 - Resend (email): 3 fluxos automáticos com toggle individual (relatório mensal→cliente, cobrança vencida→cliente, alerta crítico→operador). Desativados por padrão.
 - Vertex AI Gemini: agente Gator (Flash), relatórios executivos (Pro), insights, copy, hashtags.

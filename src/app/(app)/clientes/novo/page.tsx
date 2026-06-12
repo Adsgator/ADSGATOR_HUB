@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, MessageCircle, CheckSquare, ArrowRight, X } from 'lucide-react'
 import { criarCliente, criarAssinatura } from '@/lib/database'
 import { supabase } from '@/lib/supabase'
+import { provisionarClienteNovo } from '@/lib/cliente-provisioning'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/Button'
 import type { ClienteStatus, Cliente } from '@/lib/types'
@@ -20,51 +21,17 @@ const MSG_BOASVINDAS = (nome: string) =>
   `Olá ${nome.split(' ')[0]}! 👋 Bem-vindo(a) à Adsgator!\n\nEstamos muito felizes em ter você como cliente. Nos próximos dias entraremos em contato para iniciar o onboarding e configurar suas campanhas.\n\nQualquer dúvida, estou à disposição!`
 
 // ── Modal de onboarding pós-criação ─────────────────────────────────────────
-function OnboardingModal({ cliente, onClose, onConcluir }: {
-  cliente:    Cliente
-  onClose:    () => void
-  onConcluir: () => void
+function OnboardingModal({ cliente, setupCriado, onClose, onConcluir }: {
+  cliente:     Cliente
+  setupCriado: boolean
+  onClose:     () => void
+  onConcluir:  () => void
 }) {
-  const [criandoTask, setCriandoTask] = useState(false)
-  const [taskCriada,  setTaskCriada]  = useState(false)
-
   function abrirWhatsApp() {
     const num = cliente.whatsapp?.replace(/\D/g, '')
     if (!num) { toast.error('WhatsApp não cadastrado.'); return }
     const msg = encodeURIComponent(MSG_BOASVINDAS(cliente.nome))
     window.open(`https://wa.me/55${num}?text=${msg}`, '_blank')
-  }
-
-  async function criarTaskOnboarding() {
-    setCriandoTask(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    const prazo = new Date()
-    prazo.setDate(prazo.getDate() + 3)
-
-    const { error } = await supabase.from('tarefas').insert({
-      titulo:     `Onboarding — ${cliente.nome}`,
-      descricao:  'Iniciar processo de onboarding: coletar briefing, configurar Google Ads, agendar reunião de alinhamento.',
-      prioridade: 'alto',
-      status:     'pendente',
-      cliente_id: cliente.id,
-      data_prazo: prazo.toISOString(),
-      user_id:    user?.id,
-      checklist: [
-        { item: 'Enviar mensagem de boas-vindas',    done: false },
-        { item: 'Coletar briefing do cliente',       done: false },
-        { item: 'Agendar reunião de alinhamento',    done: false },
-        { item: 'Configurar Google Ads / GA4',       done: false },
-        { item: 'Criar primeiras campanhas',         done: false },
-      ],
-    })
-
-    if (error) {
-      toast.error('Erro ao criar task de onboarding.')
-    } else {
-      setTaskCriada(true)
-      toast.success('Task de onboarding criada com sub-tasks!')
-    }
-    setCriandoTask(false)
   }
 
   return (
@@ -111,29 +78,24 @@ function OnboardingModal({ cliente, onClose, onConcluir }: {
             <ArrowRight className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-status-green shrink-0 transition-colors" strokeWidth={1.75} />
           </button>
 
-          {/* Task onboarding */}
-          <button
-            onClick={taskCriada ? undefined : criarTaskOnboarding}
-            disabled={criandoTask || taskCriada}
-            className={`w-full flex items-center gap-[0.75rem] p-[0.875rem] rounded-xl border transition-colors text-left ${
-              taskCriada
-                ? 'bg-ads-500/5 border-ads-500/20 opacity-70 cursor-default'
-                : 'bg-ads-500/5 border-ads-500/20 hover:bg-ads-500/10'
-            }`}
-          >
-            <div className="w-[2.25rem] h-[2.25rem] rounded-lg bg-ads-500/15 flex items-center justify-center shrink-0">
-              <CheckSquare className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+          {/* Tarefa de setup — criada automaticamente junto com o cliente */}
+          <div className={`w-full flex items-center gap-[0.75rem] p-[0.875rem] rounded-xl border ${
+            setupCriado ? 'bg-ads-500/5 border-ads-500/20' : 'bg-status-orange/5 border-status-orange/20'
+          }`}>
+            <div className={`w-[2.25rem] h-[2.25rem] rounded-lg flex items-center justify-center shrink-0 ${setupCriado ? 'bg-ads-500/15' : 'bg-status-orange/15'}`}>
+              <CheckSquare className={`w-[1rem] h-[1rem] ${setupCriado ? 'text-ads-500' : 'text-status-orange'}`} strokeWidth={2} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-ink-primary text-[0.875rem] font-medium">
-                {taskCriada ? 'Task de onboarding criada ✓' : 'Criar task de onboarding'}
+                {setupCriado ? 'Tarefa de setup criada ✓' : 'Tarefa de setup não criada'}
               </p>
-              <p className="text-ink-muted text-[0.75rem]">5 sub-tasks • prazo em 3 dias • prioridade alta</p>
+              <p className="text-ink-muted text-[0.75rem]">
+                {setupCriado
+                  ? 'Checklist de integrações e contexto já está em /tarefas'
+                  : 'Crie manualmente em Tarefas usando o template "Setup do cliente"'}
+              </p>
             </div>
-            {!taskCriada && (
-              <ArrowRight className="w-[0.875rem] h-[0.875rem] text-ink-muted group-hover:text-ads-500 shrink-0 transition-colors" strokeWidth={1.75} />
-            )}
-          </button>
+          </div>
         </div>
 
         {/* Footer */}
@@ -163,6 +125,7 @@ export default function NovoClientePage() {
   const [salvando,         setSalvando]         = useState(false)
   const [erro,             setErro]             = useState('')
   const [clienteCriado,    setClienteCriado]    = useState<Cliente | null>(null)
+  const [setupCriado,      setSetupCriado]      = useState(false)
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -190,6 +153,17 @@ export default function NovoClientePage() {
           plano_nome:   form.plano_nome.trim(),
           valor_mensal: parseFloat(form.valor_mensal),
         })
+      }
+
+      // Tarefa de setup automática — falha não bloqueia a criação do cliente
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await provisionarClienteNovo(supabase, user.id, { id: novoCliente.id, nome: novoCliente.nome }, 'form')
+          setSetupCriado(true)
+        }
+      } catch (provErr) {
+        console.error('Provisionamento falhou:', provErr)
       }
 
       setClienteCriado(novoCliente)
@@ -279,6 +253,7 @@ export default function NovoClientePage() {
       {clienteCriado && (
         <OnboardingModal
           cliente={clienteCriado}
+          setupCriado={setupCriado}
           onClose={() => router.push(`/clientes/${clienteCriado.id}`)}
           onConcluir={() => router.push(`/clientes/${clienteCriado.id}`)}
         />

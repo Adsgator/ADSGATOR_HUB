@@ -53,6 +53,60 @@ interface AsaasCustomerData {
   phone?:       string
 }
 
+// ⚠️ Espelho de src/lib/cliente-provisioning.ts (Deno não importa libs Next).
+// Ambos leem o template `setup-cliente` de tarefa_templates — só este fallback
+// é duplicado. Se mudar o fallback lá, mude aqui também.
+const FALLBACK_SETUP = {
+  titulo:     'Setup do cliente — {cliente}',
+  descricao:  'Provisionamento técnico de cliente novo: conectar integrações Google, saldo e contexto.',
+  prioridade: 'alto',
+  prazo_dias: 5,
+  checklist: [
+    'Preencher Google Ads customer ID no cliente',
+    'Preencher GA4 property ID no cliente',
+    'Habilitar toggles google_ads_enabled / ga4_enabled',
+    'Registrar saldo Google Ads inicial',
+    'Criar/gerar memória .md do cliente',
+    'Conferir plano e MRR cadastrados',
+  ],
+};
+
+/** Cria a tarefa "Setup do cliente — {nome}" (idempotente por prefixo+cliente). */
+async function provisionarSetupCliente(clienteId: string, nome: string, ownerId: string): Promise<void> {
+  const { data: existente } = await supabase
+    .from('tarefas')
+    .select('id')
+    .eq('cliente_id', clienteId)
+    .ilike('titulo', 'Setup do cliente%')
+    .limit(1)
+    .maybeSingle();
+  if (existente) return;
+
+  const { data: tpl } = await supabase
+    .from('tarefa_templates')
+    .select('titulo, descricao, prioridade, prazo_dias, checklist')
+    .eq('slug', 'setup-cliente')
+    .maybeSingle();
+
+  const itens = (Array.isArray(tpl?.checklist) && tpl.checklist.length > 0
+    ? tpl.checklist
+    : FALLBACK_SETUP.checklist) as string[];
+  const prazo = new Date();
+  prazo.setDate(prazo.getDate() + (tpl?.prazo_dias ?? FALLBACK_SETUP.prazo_dias));
+
+  const { error } = await supabase.from('tarefas').insert({
+    user_id:    ownerId,
+    titulo:     (tpl?.titulo ?? FALLBACK_SETUP.titulo).replace('{cliente}', nome),
+    descricao:  `${tpl?.descricao ?? FALLBACK_SETUP.descricao}\n\n(criada automaticamente — origem: webhook)`,
+    prioridade: tpl?.prioridade ?? FALLBACK_SETUP.prioridade,
+    status:     'pendente',
+    cliente_id: clienteId,
+    data_prazo: prazo.toISOString(),
+    checklist:  itens.map((texto) => ({ id: crypto.randomUUID(), texto, concluido: false })),
+  });
+  if (error) throw new Error(error.message);
+}
+
 /**
  * Busca cliente por email ou cria um novo em 'recebido' com estágio de
  * onboarding e notificação. Núcleo comum de assinatura e compra única.
@@ -125,6 +179,15 @@ async function obterOuCriarCliente(
     acao_label: '#BOASVINDAS',
     acao_url:   `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`,
   });
+
+  // Tarefa de setup automática — falha não pode derrubar o fluxo de pagamento
+  if (owner) {
+    try {
+      await provisionarSetupCliente(clienteId, novo.nome as string, owner);
+    } catch (provErr) {
+      console.error(`Provisionamento de setup falhou para ${novo.nome}:`, provErr);
+    }
+  }
 
   return { clienteId, criado: true };
 }
