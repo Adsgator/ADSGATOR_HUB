@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     supabase.from('clientes').select('id, nome, email, nicho, status').or(`nome.ilike.${like},email.ilike.${like}`).limit(5),
     supabase.from('tarefas').select('id, titulo, prioridade, data_prazo, status').ilike('titulo', like).neq('status', 'feito').limit(5),
     supabase.from('financeiro_lancamentos').select('id, descricao, valor, tipo, data').ilike('descricao', like).limit(5),
-    supabase.from('historico_acoes').select('id, descricao, tipo, created_at, cliente_id').ilike('descricao', like).order('created_at', { ascending: false }).limit(5),
+    supabase.from('historico_acoes').select('id, descricao, tipo:tipo_acao, created_at, cliente_id').ilike('descricao', like).order('created_at', { ascending: false }).limit(5),
   ])
 
   return NextResponse.json({

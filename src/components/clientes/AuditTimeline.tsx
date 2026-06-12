@@ -62,7 +62,7 @@ export function AuditTimeline({ clienteId }: { clienteId: string }) {
     setLoading(true)
     supabase
       .from('historico_acoes')
-      .select('id, acao, descricao, created_at')
+      .select('id, acao:tipo_acao, descricao, created_at')
       .eq('cliente_id', clienteId)
       .order('created_at', { ascending: false })
       .limit(30)

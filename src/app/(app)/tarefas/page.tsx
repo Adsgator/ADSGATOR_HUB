@@ -435,7 +435,7 @@ export default function TarefasPage() {
     if (t.cliente_id) {
       await supabase.from('historico_acoes').insert({
         cliente_id: t.cliente_id,
-        tipo:       'tarefa_concluida',
+        tipo_acao:  'tarefa_concluida',
         descricao:  `Tarefa concluída: ${t.titulo}`,
       })
     }

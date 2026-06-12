@@ -128,7 +128,7 @@ export default function FinanceiroPage() {
         supabase.from('financeiro_lancamentos').select('*').gte('data', dozeStr).order('data', { ascending: true }),
         supabase.from('clientes').select('*').gt('dias_atraso', 0).neq('status', 'cancelado'),
         supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,tipo_tributacao,imposto_percentual').eq('agencia_id', 'adsgator-main').single(),
-        supabase.from('historico_acoes').select('tipo, created_at').in('tipo', ['cliente_criado', 'cancelado']).order('created_at', { ascending: true }),
+        supabase.from('historico_acoes').select('tipo:tipo_acao, created_at').in('tipo_acao', ['cliente_criado', 'cancelado']).order('created_at', { ascending: true }),
         supabase.from('clientes').select('id, nome').in('status', ['ativo', 'onboarding', 'setup_trafego']).order('nome'),
       ])
       setClientesLista((clientesData ?? []) as { id: string; nome: string }[])
