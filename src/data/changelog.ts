@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.11.0',
+    data:   '2026-06-12',
+    novidades: [
+      'Agendamentos configuráveis: horário (fuso de Brasília) e liga/desliga de cada job automático (sync analytics, briefing, import Asaas, alertas, cobrança) em Configurações → Automações → Agendamentos',
+      'Dispatcher único de crons: roda a cada 30 min, executa cada job na primeira janela após o horário configurado, no máximo 1x por dia — sem precisar de deploy para mudar horário',
+      'Gator sabe os horários: nova ferramenta listar_agendamentos responde quando e se cada job automático roda',
+    ],
+  },
+  {
     versao: '0.10.0',
     data:   '2026-06-12',
     novidades: [

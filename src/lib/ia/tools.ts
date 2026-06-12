@@ -1042,6 +1042,25 @@ export const TOOLS: Record<string, Tool> = {
     resumo: () => 'Consultou o mapa do sistema',
   },
 
+  listar_agendamentos: {
+    declaration: {
+      name: 'listar_agendamentos',
+      description: 'Lista os agendamentos automáticos do Hub (cron_settings): sync de analytics, briefing, import Asaas, alertas e cobrança — com horário configurado (fuso de Brasília), ativo/inativo e último run. Use quando perguntarem quando ou se um job automático roda. Configuração: Configurações → Automações → Agendamentos.',
+      parameters: { type: T.OBJECT, properties: {} },
+    },
+    execute: async (_args, ctx) => {
+      const { data, error } = await ctx.db
+        .from('cron_settings')
+        .select('tipo, nome, descricao, ativo, horario, ultimo_run')
+        .order('horario')
+      if (error) {
+        return { agendamentos: [], aviso: 'Tabela cron_settings ainda não migrada — jobs rodam nos horários padrão.' }
+      }
+      return { agendamentos: data ?? [] }
+    },
+    resumo: () => 'Listou os agendamentos automáticos',
+  },
+
   buscar: {
     declaration: {
       name: 'buscar',

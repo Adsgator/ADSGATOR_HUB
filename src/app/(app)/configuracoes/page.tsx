@@ -13,6 +13,7 @@ import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { useTheme } from '@/providers/ThemeProvider'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 import { AutomacaoEmail } from '@/components/configuracoes/AutomacaoEmail'
+import { Agendamentos } from '@/components/configuracoes/Agendamentos'
 import { ImportAsaasModal } from '@/components/configuracoes/ImportAsaasModal'
 import { SetupChecklist } from '@/components/configuracoes/SetupChecklist'
 
@@ -1004,7 +1005,12 @@ export default function ConfiguracoesPage() {
     equipe:        <AbaEquipe />,
     operacional:   <AbaOperacional />,
     planos:        <AbaPlanos />,
-    automacoes:    <AutomacaoEmail />,
+    automacoes:    (
+      <div className="flex flex-col gap-[2rem]">
+        <AutomacaoEmail />
+        <Agendamentos />
+      </div>
+    ),
     backup:        <AbaBackup />,
     auditoria:     <AuditLogViewer />,
   }

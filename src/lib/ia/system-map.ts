@@ -11,7 +11,7 @@ MÓDULOS (rota → o que faz):
 - /dashboard — Bento grid customizável: Morning Briefing, KPIs, ações do dia, DRE sparkline, alertas, chat Gator, feed, notícias, churn risk, top performers, metas.
 - /clientes — lista, cadastro, detalhe com projetos, estágios/checklist (pré-vendas→onboarding→ativo), timeline de auditoria, memória .md por cliente, health score 0-100.
 - /financeiro — DRE, lançamentos (receita/custo fixo/variável), inadimplentes (política D+7 suspensão, D+15 grave, D+30 crítico — centralizada em lib/cobranca.ts).
-- /analytics — Google Ads + GA4: snapshots históricos (sync diário 06:00 via cron) + dados ao vivo por cliente.
+- /analytics — Google Ads + GA4: snapshots históricos (sync diário via dispatcher de agendamentos) + dados ao vivo por cliente.
 - /relatorios — relatórios executivos gerados com Gemini Pro, envio por email ao cliente.
 - /tarefas — lista + kanban, prioridades, prazos, checklist, drag-drop persistente. Templates de processo (tarefa_templates, editáveis em Configurações → Templates) geram tarefas com checklist pronto — os de sistema (setup-cliente, onboarding-cliente) alimentam o provisionamento automático.
 - /marketing — calendário social 4 semanas (rascunho/agendado/publicado), gerador de hashtags IA.
@@ -24,12 +24,12 @@ MÓDULOS (rota → o que faz):
 INTEGRAÇÕES:
 - Asaas (cobrança): webhook cria cliente no SUBSCRIPTION_CREATED (checkout-first), processa pagamentos, sync diário de inadimplência. Edge Functions com TEST_MODE=true ainda.
 - Provisionamento automático: todo cliente novo (form, importador ou webhook Asaas) gera tarefa "Setup do cliente" com checklist do template setup-cliente (idempotente). Retroativo disponível na aba Setup para clientes sem IDs Google.
-- Google Ads + GA4: sync de snapshots (cron 06:00) e consultas ao vivo. Depende de credenciais nas env vars.
+- Google Ads + GA4: sync de snapshots (diário, via dispatcher) e consultas ao vivo. Depende de credenciais nas env vars.
 - Resend (email): 3 fluxos automáticos com toggle individual (relatório mensal→cliente, cobrança vencida→cliente, alerta crítico→operador). Desativados por padrão. Templates editáveis e CRIÁVEIS (personalizados custom-*) em /configuracoes/emails; envio manual por template via tool enviar_email (sempre com confirmação explícita do usuário).
 - Vertex AI Gemini: agente Gator (Flash), relatórios executivos (Pro), insights, copy, hashtags.
 - WhatsApp: manual via links wa.me com biblioteca de 13 mensagens prontas — SEM automação (decisão de escopo).
 
-CRONS (vercel.json): sync analytics 06:00, briefing matinal 06:30 (gera e salva na tabela briefings, dashboard lê do banco), import Asaas 07:00, alertas 08:00, cobrança 09:00.
+CRONS: dispatcher único (vercel.json, a cada 30 min) lê a tabela cron_settings e executa cada job — sync analytics, briefing matinal (gera e salva na tabela briefings, dashboard lê do banco), import Asaas, alertas, cobrança — na primeira janela após o horário configurado, no máximo 1x por dia. Horários (fuso de Brasília) e liga/desliga configuráveis em Configurações → Automações → Agendamentos; a tool listar_agendamentos consulta o estado atual.
 
 LACUNAS CONHECIDAS (pendências reais — sugestões nessas áreas são bem-vindas):
 - Credenciais Google Ads/GA4 não configuradas nas env vars → analytics sem dados reais ainda.

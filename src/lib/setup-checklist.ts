@@ -111,12 +111,13 @@ export async function computarSetupChecklist(
     label:   'CRON_SECRET (agendamentos Vercel)',
     status:  process.env.CRON_SECRET ? 'ok' : 'pendente',
     detalhe: process.env.CRON_SECRET
-      ? 'Configurado — crons de sync, cobrança, alertas e briefing autorizados'
-      : 'Sem CRON_SECRET os crons da Vercel são recusados (sync 06:00, alertas 08:00, cobrança 09:00)',
+      ? 'Configurado — dispatcher de agendamentos autorizado (sync, briefing, import, alertas, cobrança)'
+      : 'Sem CRON_SECRET o dispatcher único (/api/v1/cron/dispatch, a cada 30 min) é recusado e nenhum job automático roda',
     passos: [
       'Gere um segredo aleatório (ex.: openssl rand -hex 32)',
       'Adicione CRON_SECRET no .env.local e nas env vars da Vercel',
-      'Redeploy — os crons do vercel.json passam a autenticar',
+      'Redeploy — o dispatcher do vercel.json passa a autenticar',
+      'Horários e liga/desliga de cada job: Configurações → Automações → Agendamentos',
     ],
   })
 
