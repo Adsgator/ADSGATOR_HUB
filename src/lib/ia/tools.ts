@@ -9,6 +9,7 @@ import type { FunctionDeclaration } from '@google-cloud/vertexai'
 import { FunctionDeclarationSchemaType as T } from '@google-cloud/vertexai'
 import { estagioInadimplencia } from '@/lib/cobranca'
 import { SYSTEM_MAP } from '@/lib/ia/system-map'
+import { computarSetupChecklist } from '@/lib/setup-checklist'
 
 export interface ToolCtx {
   db:     SupabaseClient
@@ -882,6 +883,18 @@ export const TOOLS: Record<string, Tool> = {
       return await res.json()
     },
     resumo: () => 'Verificou status das APIs',
+  },
+
+  prontidao_sistema: {
+    declaration: {
+      name: 'prontidao_sistema',
+      description: 'Checklist de prontidão do Hub: o que falta configurar (credenciais, CRON_SECRET, automações, TEST_MODE, clientes sem IDs Google), com % de completude e passos de como resolver cada item. Use quando perguntarem "o que falta configurar?" ou ao diagnosticar por que algo não funciona.',
+      parameters: { type: T.OBJECT, properties: {} },
+    },
+    execute: async (_args, ctx) => {
+      return await computarSetupChecklist(ctx.db, ctx.userId)
+    },
+    resumo: () => 'Verificou a prontidão do sistema',
   },
 
   mapa_do_sistema: {

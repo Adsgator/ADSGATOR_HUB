@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import {
   Save, User, Bell, Plug, DollarSign,
   Palette, Users, Check, History, Download, Upload,
-  Layers, Tag, Plus, Trash2, Pencil, Mail,
+  Layers, Tag, Plus, Trash2, Pencil, Mail, Zap,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
@@ -14,10 +14,12 @@ import { useTheme } from '@/providers/ThemeProvider'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
 import { AutomacaoEmail } from '@/components/configuracoes/AutomacaoEmail'
 import { ImportAsaasModal } from '@/components/configuracoes/ImportAsaasModal'
+import { SetupChecklist } from '@/components/configuracoes/SetupChecklist'
 
-type AbaId = 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'planos' | 'automacoes' | 'backup' | 'auditoria'
+type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'planos' | 'automacoes' | 'backup' | 'auditoria'
 
 const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
+  { id: 'setup',         label: 'Setup',          icon: Zap        },
   { id: 'perfil',        label: 'Perfil',         icon: User       },
   { id: 'notificacoes',  label: 'Notificações',    icon: Bell       },
   { id: 'integracoes',   label: 'Integrações',     icon: Plug       },
@@ -985,7 +987,15 @@ function PlanoForm({ plano, onSave, onCancel }: { plano: PlanoServico; onSave: (
 export default function ConfiguracoesPage() {
   const [aba, setAba] = useState<AbaId>('perfil')
 
+  // Deep-link ?tab=<aba> lido via window.location (useSearchParams exigiria
+  // Suspense boundary no Next 15 — desnecessário para um parâmetro estático).
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab')
+    if (tab && ABAS.some((a) => a.id === tab)) setAba(tab as AbaId)
+  }, [])
+
   const ABA_CONTENT: Record<AbaId, React.ReactNode> = {
+    setup:         <SetupChecklist onAbrirAba={(a) => { if (ABAS.some((x) => x.id === a)) setAba(a as AbaId) }} />,
     perfil:        <AbaPerfil />,
     notificacoes:  <AbaNotificacoes />,
     integracoes:   <AbaIntegracoes />,

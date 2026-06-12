@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { MainLayout }            from '@/components/layout/MainLayout'
 import { BentoCard }             from '@/components/dashboard/BentoCard'
+import { SetupProgressCard }     from '@/components/dashboard/SetupProgressCard'
 import { KpiCard }               from '@/components/dashboard/KpiCard'
 import { AcoesDoDia }            from '@/components/dashboard/AcoesDoDia'
 import { KpiCompactCard }        from '@/components/dashboard/KpiCompactCard'
@@ -589,6 +590,9 @@ export default function DashboardPage() {
       actions={topBarActions}
     >
       <motion.div variants={pageTransition} initial="hidden" animate="visible" exit="exit" className="page-enter space-y-[1.5rem]" ref={containerRef}>
+        {/* Banner de prontidão — fora do grid RGL, some quando setup = 100% */}
+        <SetupProgressCard />
+
         {/* ════════════════════════════════════════════════════════════ */}
         {/* News Container — Monitoramento por cliente (scroll horiz.)   */}
         {/* ════════════════════════════════════════════════════════════ */}

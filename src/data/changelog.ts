@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.10.0',
+    data:   '2026-06-12',
+    novidades: [
+      'Central de Prontidão: aba Setup em Configurações mostra o que falta configurar (credenciais, crons, automações) com passo a passo e % de completude',
+      'Banner "Sistema pronto: X%" no dashboard com atalho para completar o setup',
+      'Gator sabe o que falta: nova ferramenta prontidao_sistema responde "o que falta configurar?" com o checklist ao vivo',
+    ],
+  },
+  {
     versao: '0.9.0',
     data:   '2026-06-12',
     novidades: [
