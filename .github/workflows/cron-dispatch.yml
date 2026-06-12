@@ -1,0 +1,26 @@
+# Aciona o dispatcher de crons do Hub a cada 30 min.
+#
+# O plano Hobby da Vercel só permite cron DIÁRIO — um schedule "*/30 * * * *"
+# no vercel.json bloqueia o deploy inteiro (erro cron_jobs_limits_reached).
+# Por isso a janela de 30 min roda aqui, e o vercel.json mantém só um
+# fallback diário (12:00 UTC = 09:00 SP).
+#
+# Requer o secret CRON_SECRET no repositório (Settings → Secrets → Actions),
+# com o mesmo valor da env CRON_SECRET na Vercel.
+
+name: Cron dispatch
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar /api/v1/cron/dispatch
+        run: |
+          curl -fsS --max-time 290 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://app.adsgator.com.br/api/v1/cron/dispatch

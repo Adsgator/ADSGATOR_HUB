@@ -10,7 +10,10 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 /**
- * GET /api/v1/cron/dispatch — único cron do vercel.json (a cada 30 min).
+ * GET /api/v1/cron/dispatch — acionado a cada 30 min pelo GitHub Actions
+ * (.github/workflows/cron-dispatch.yml) + fallback diário no vercel.json.
+ * Vercel Hobby só permite cron diário — agenda de 30 em 30 min no
+ * vercel.json bloqueia o deploy (cron_jobs_limits_reached).
  *
  * Para cada job em `cron_settings`, checa horário configurado (SP) e
  * liga/desliga (lib/cron-settings.ts) e executa na primeira janela após o
