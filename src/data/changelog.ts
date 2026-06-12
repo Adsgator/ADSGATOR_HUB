@@ -23,6 +23,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Morning Briefing transparente: aviso discreto quando o texto vem do fallback por Vertex AI não configurado',
       'Briefing proativo: cron diário às 06:30 gera e salva o briefing antes de você acordar — o dashboard carrega instantâneo, com notificação "☀️ Briefing do dia pronto"',
       'Briefing mais rico: agora considera tarefas com prazo hoje e clientes com saldo Google baixo',
+      'Templates de email personalizados: crie do zero (não só editar os 12 fixos), com preview e exclusão',
+      'Gator envia emails: ferramentas listar_templates_email e enviar_email (com confirmação explícita), registradas em email_logs',
     ],
   },
   {

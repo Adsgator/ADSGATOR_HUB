@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Mail, Eye, X, Loader2, Pencil, RotateCcw } from 'lucide-react'
+import { Mail, Eye, X, Loader2, Pencil, RotateCcw, Plus, Trash2 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { DrawerEditor } from '@/components/ui/DrawerEditor'
 import { Button } from '@/components/ui/Button'
+import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -15,6 +16,7 @@ interface TemplateInfo {
   subject_efetivo: string
   html_efetivo: string
   editado: boolean
+  custom: boolean
   atualizado_em: string | null
 }
 
@@ -105,6 +107,13 @@ export default function EmailTemplatesPage() {
   const [editHtml, setEditHtml]       = useState('')
   const [saving, setSaving]           = useState(false)
 
+  // Criação de template customizado
+  const [criando, setCriando]       = useState(false)
+  const [novoNome, setNovoNome]     = useState('')
+  const [novaDescricao, setNovaDescricao] = useState('')
+  const [novoSubject, setNovoSubject] = useState('')
+  const [novoHtml, setNovoHtml]     = useState('')
+
   const carregar = useCallback(async () => {
     setLoading(true)
     try {
@@ -152,6 +161,45 @@ export default function EmailTemplatesPage() {
     }
   }
 
+  async function criarTemplate() {
+    setSaving(true)
+    try {
+      const res = await fetch('/api/v1/email-templates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: novoNome, descricao: novaDescricao, subject: novoSubject, html: novoHtml }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success('Template criado')
+      setCriando(false)
+      setNovoNome(''); setNovaDescricao(''); setNovoSubject(''); setNovoHtml('')
+      await carregar()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao criar template')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  function excluirTemplate(t: TemplateInfo) {
+    const openConfirm = useConfirmDialogStore.getState().openConfirm
+    openConfirm(
+      'Excluir Template',
+      `O template personalizado "${t.nome}" será removido permanentemente.`,
+      async () => {
+        try {
+          const res = await fetch(`/api/v1/email-templates?id=${encodeURIComponent(t.id)}`, { method: 'DELETE' })
+          if (!res.ok) throw new Error((await res.json()).error)
+          toast.success('Template excluído')
+          await carregar()
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : 'Erro ao excluir')
+        }
+      },
+    )
+  }
+
   async function restaurar(t: TemplateInfo) {
     try {
       const res = await fetch('/api/v1/email-templates', {
@@ -171,6 +219,15 @@ export default function EmailTemplatesPage() {
     <MainLayout
       title="Templates de Email"
       subtitle="Edite o assunto e o HTML de cada email. Sem edição, usa o template padrão."
+      actions={
+        <button
+          onClick={() => setCriando(true)}
+          className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-ads-500 text-white text-[0.8125rem] font-medium hover:bg-ads-600 transition-colors"
+        >
+          <Plus className="w-[0.75rem] h-[0.75rem]" strokeWidth={2.5} />
+          Novo template
+        </button>
+      }
     >
       <div className="page-enter space-y-[1rem]">
         {loading ? (
@@ -188,7 +245,11 @@ export default function EmailTemplatesPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-[0.5rem]">
                     <p className="text-ink-primary font-semibold text-[0.875rem]">{tmpl.nome}</p>
-                    {tmpl.editado && (
+                    {tmpl.custom ? (
+                      <span className="px-[0.5rem] py-[0.0625rem] rounded-full text-[0.625rem] font-medium bg-status-purple/10 text-status-purple">
+                        Personalizado
+                      </span>
+                    ) : tmpl.editado && (
                       <span className="px-[0.5rem] py-[0.0625rem] rounded-full text-[0.625rem] font-medium bg-ads-500/10 text-ads-600">
                         Editado
                       </span>
@@ -200,13 +261,22 @@ export default function EmailTemplatesPage() {
               </div>
 
               <div className="flex items-center gap-[0.375rem] shrink-0">
-                {tmpl.editado && (
+                {tmpl.editado && !tmpl.custom && (
                   <button
                     onClick={() => restaurar(tmpl)}
                     title="Restaurar padrão"
                     className="flex items-center gap-[0.375rem] h-[2rem] px-[0.625rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-muted text-[0.8125rem] hover:text-status-orange hover:border-status-orange/40 transition-colors"
                   >
                     <RotateCcw className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+                  </button>
+                )}
+                {tmpl.custom && (
+                  <button
+                    onClick={() => excluirTemplate(tmpl)}
+                    title="Excluir template"
+                    className="flex items-center gap-[0.375rem] h-[2rem] px-[0.625rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-muted text-[0.8125rem] hover:text-status-red hover:border-status-red/40 transition-colors"
+                  >
+                    <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
                   </button>
                 )}
                 <button
@@ -268,6 +338,57 @@ export default function EmailTemplatesPage() {
             </Button>
           </div>
         )}
+      </DrawerEditor>
+
+      {/* Drawer de criação de template customizado */}
+      <DrawerEditor
+        open={criando}
+        onClose={() => setCriando(false)}
+        onSave={criarTemplate}
+        saving={saving}
+        title="Novo template de email"
+        subtitle="Use {{variavel}} para campos dinâmicos (ex.: {{nome_cliente}})"
+        width="40rem"
+      >
+        <div className="space-y-[1rem]">
+          <div>
+            <label className="block text-[0.8125rem] font-medium text-ink-secondary mb-[0.375rem]">Nome *</label>
+            <input
+              value={novoNome}
+              onChange={(e) => setNovoNome(e.target.value)}
+              placeholder="Ex.: Proposta comercial"
+              className="w-full bg-surface-base border border-surface-border rounded-[0.5rem] px-[0.75rem] py-[0.5rem] text-[0.875rem] text-ink-primary focus-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-[0.8125rem] font-medium text-ink-secondary mb-[0.375rem]">Descrição</label>
+            <input
+              value={novaDescricao}
+              onChange={(e) => setNovaDescricao(e.target.value)}
+              placeholder="Quando este email é usado…"
+              className="w-full bg-surface-base border border-surface-border rounded-[0.5rem] px-[0.75rem] py-[0.5rem] text-[0.875rem] text-ink-primary focus-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-[0.8125rem] font-medium text-ink-secondary mb-[0.375rem]">Assunto *</label>
+            <input
+              value={novoSubject}
+              onChange={(e) => setNovoSubject(e.target.value)}
+              placeholder="Ex.: Proposta para {{nome_cliente}}"
+              className="w-full bg-surface-base border border-surface-border rounded-[0.5rem] px-[0.75rem] py-[0.5rem] text-[0.875rem] text-ink-primary focus-ring"
+            />
+          </div>
+          <div>
+            <label className="block text-[0.8125rem] font-medium text-ink-secondary mb-[0.375rem]">HTML do email *</label>
+            <textarea
+              value={novoHtml}
+              onChange={(e) => setNovoHtml(e.target.value)}
+              spellCheck={false}
+              placeholder="<p>Olá {{nome_cliente}}, …</p>"
+              className="w-full h-[20rem] bg-surface-base border border-surface-border rounded-[0.5rem] px-[0.75rem] py-[0.5rem] text-[0.75rem] font-mono text-ink-primary focus-ring resize-none"
+            />
+          </div>
+        </div>
       </DrawerEditor>
 
       {preview && (

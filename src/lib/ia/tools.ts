@@ -10,6 +10,7 @@ import { FunctionDeclarationSchemaType as T } from '@google-cloud/vertexai'
 import { estagioInadimplencia } from '@/lib/cobranca'
 import { SYSTEM_MAP } from '@/lib/ia/system-map'
 import { computarSetupChecklist } from '@/lib/setup-checklist'
+import { enviarEmailManual } from '@/lib/email-automation'
 
 export interface ToolCtx {
   db:     SupabaseClient
@@ -933,6 +934,62 @@ export const TOOLS: Record<string, Tool> = {
       return { ok: true }
     },
     resumo: () => 'Memória do cliente atualizada',
+  },
+
+  // ════ EMAIL ═══════════════════════════════════════════════════════════════
+
+  listar_templates_email: {
+    declaration: {
+      name: 'listar_templates_email',
+      description: 'Lista os templates de email disponíveis (fixos e personalizados) com id, nome e assunto. Use antes de enviar_email para escolher o template certo.',
+      parameters: { type: T.OBJECT, properties: {} },
+    },
+    execute: async (_args, ctx) => {
+      const { data, error } = await ctx.db
+        .from('email_templates')
+        .select('id, nome, descricao, custom')
+        .order('nome')
+      if (error) throw new Error(error.message)
+      return { total: (data ?? []).length, templates: data ?? [] }
+    },
+    resumo: () => 'Consultou templates de email',
+  },
+
+  enviar_email: {
+    declaration: {
+      name: 'enviar_email',
+      description: 'Envia um email REAL a um cliente usando um template (via Resend, registrado em email_logs). AÇÃO EXTERNA E IRREVERSÍVEL: só chame depois que o usuário confirmar explicitamente o envio nesta conversa (template + destinatário). Nunca envie por iniciativa própria.',
+      parameters: {
+        type: T.OBJECT,
+        properties: {
+          cliente_id:  { type: T.STRING, description: 'Cliente destinatário (usa o email do cadastro)' },
+          template_id: { type: T.STRING, description: 'ID do template (veja listar_templates_email; aceita personalizados custom-*)' },
+          observacao:  { type: T.STRING, description: 'Texto extra disponível como {{observacao}} no template (opcional)' },
+        },
+        required: ['cliente_id', 'template_id'],
+      },
+    },
+    execute: async (args, ctx) => {
+      const cid = str(args.cliente_id)
+      const templateId = str(args.template_id)
+      if (!cid || !templateId) throw new Error('cliente_id e template_id são obrigatórios.')
+      const cliente = await ownCliente(ctx, cid, 'id, nome, email')
+      const email = (cliente.email as string | null)?.trim()
+      if (!email) throw new Error(`Cliente ${cliente.nome} não tem email cadastrado.`)
+
+      const { assunto } = await enviarEmailManual(ctx.db, {
+        templateId,
+        destinatario: email,
+        clienteId:    cid,
+        variables: {
+          nome_cliente: cliente.nome as string,
+          nome:         cliente.nome as string,
+          observacao:   str(args.observacao) ?? '',
+        },
+      })
+      return { ok: true, destinatario: email, assunto }
+    },
+    resumo: (args) => `Email enviado (template ${str(args.template_id)})`,
   },
 
   // ════ SISTEMA ═════════════════════════════════════════════════════════════

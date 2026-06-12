@@ -16,8 +16,9 @@ export async function POST(request: NextRequest) {
   const htmlOverrideBody = body.html_override as string | undefined
   const subjectOverrideBody = body.subject_override as string | undefined
 
-  const template = EMAIL_TEMPLATES[template_id]
-  if (!template) return NextResponse.json({ error: 'Template não encontrado' }, { status: 404 })
+  // Templates customizados (custom-*) não têm base no código — o conteúdo
+  // integral vem dos overrides (body ou banco).
+  const template = EMAIL_TEMPLATES[template_id] as { subject: string; buildHtml: (v: Record<string, string>) => string } | undefined
 
   const enrichedVars = {
     dashboard_url: process.env.NEXT_PUBLIC_APP_URL ?? 'https://adsgator.com.br',
@@ -33,12 +34,17 @@ export async function POST(request: NextRequest) {
       .select('subject_override, html_override')
       .eq('id', template_id)
       .maybeSingle()
-    htmlBase = htmlBase ?? saved?.html_override ?? template.buildHtml(enrichedVars)
-    subjectBase = subjectBase ?? saved?.subject_override ?? template.subject
+    if (!template && !saved) return NextResponse.json({ error: 'Template não encontrado' }, { status: 404 })
+    htmlBase = htmlBase ?? saved?.html_override ?? template?.buildHtml(enrichedVars)
+    subjectBase = subjectBase ?? saved?.subject_override ?? template?.subject
   }
 
-  const html = renderTemplate(htmlBase ?? template.buildHtml(enrichedVars), enrichedVars)
-  const subject = renderTemplate(subjectBase ?? template.subject, enrichedVars)
+  if (htmlBase === undefined || htmlBase === null) {
+    return NextResponse.json({ error: 'Template sem conteúdo HTML' }, { status: 404 })
+  }
+
+  const html = renderTemplate(htmlBase, enrichedVars)
+  const subject = renderTemplate(subjectBase ?? '', enrichedVars)
 
   return NextResponse.json({ html, subject })
 }
