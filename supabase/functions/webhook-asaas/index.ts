@@ -35,10 +35,15 @@ async function buscarOwnerUserId(): Promise<string | null> {
     .from('clientes')
     .select('user_id')
     .not('user_id', 'is', null)
-    .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
-  return data?.user_id ?? null;
+  if (data?.user_id) return data.user_id;
+
+  // Banco sem clientes (ex: após limpeza): cai para o primeiro usuário do
+  // auth — agência single-operator. Sem isso, clientes nasceriam órfãos
+  // (user_id null) e o RLS os esconderia da interface.
+  const { data: lista } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+  return lista?.users?.[0]?.id ?? null;
 }
 
 interface AsaasCustomerData {
@@ -757,14 +762,12 @@ serve(async (req) => {
     // TRANSFER_DONE → registrar saída no financeiro
     // ============================================================
     if (evento === 'TRANSFER_DONE') {
-      const transfer = payload.transfer ?? {}
+      // deno-lint-ignore no-explicit-any
+      const transfer = (payload.transfer ?? {}) as any
       const valor    = (transfer.value ?? 0) as number
-      const { data: ownerRow } = await supabase
-        .from('clientes').select('user_id').not('user_id', 'is', null)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle()
       if (valor > 0) {
         await supabase.from('financeiro_lancamentos').insert({
-          user_id:   ownerRow?.user_id,
+          user_id:   await buscarOwnerUserId(),
           tipo:      'custo_variavel',
           categoria: 'transferencia',
           descricao: `Transferência realizada via Asaas — R$ ${valor.toFixed(2)}`,
@@ -780,13 +783,11 @@ serve(async (req) => {
     // RECEIVABLE_ANTICIPATION_CREDITED → antecipação aprovada e creditada
     // ============================================================
     if (evento === 'RECEIVABLE_ANTICIPATION_CREDITED') {
-      const anticipation = payload.anticipation ?? {}
+      // deno-lint-ignore no-explicit-any
+      const anticipation = (payload.anticipation ?? {}) as any
       const valor = ((anticipation.netValue ?? anticipation.value ?? 0)) as number
-      const { data: ownerRow } = await supabase
-        .from('clientes').select('user_id').not('user_id', 'is', null)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle()
       await supabase.from('notificacoes').insert({
-        user_id:    ownerRow?.user_id,
+        user_id:    await buscarOwnerUserId(),
         tipo:       'sucesso',
         titulo:     '💰 Antecipação creditada',
         mensagem:   `R$ ${valor.toFixed(2)} disponíveis na conta via antecipação de recebíveis.`,
@@ -799,11 +800,8 @@ serve(async (req) => {
     // RECEIVABLE_ANTICIPATION_DENIED → solicitação de antecipação negada
     // ============================================================
     if (evento === 'RECEIVABLE_ANTICIPATION_DENIED') {
-      const { data: ownerRow } = await supabase
-        .from('clientes').select('user_id').not('user_id', 'is', null)
-        .order('created_at', { ascending: true }).limit(1).maybeSingle()
       await supabase.from('notificacoes').insert({
-        user_id:    ownerRow?.user_id,
+        user_id:    await buscarOwnerUserId(),
         tipo:       'atencao',
         titulo:     '⚠️ Antecipação de recebíveis negada',
         mensagem:   'Sua solicitação de antecipação foi negada pelo Asaas. Verifique os critérios.',

@@ -74,23 +74,70 @@ interface AvulsoItem {
   ultimo_pagamento:  string | null
 }
 
+/** Importação manual (modal): sessão obrigatória, seleção explícita. */
 export async function POST(req: NextRequest) {
   const session = await createSessionClient()
   const { data: { user } } = await session.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-
-  if (!process.env.ASAAS_API_KEY) {
-    return NextResponse.json({ error: 'ASAAS_API_KEY não configurada' }, { status: 500 })
-  }
 
   const body = await req.json().catch(() => ({})) as {
     confirmar?:    boolean
     ids?:          string[]   // asaas_subscription_id (assinaturas)
     customer_ids?: string[]   // asaas customer id (compras únicas)
   }
-  const confirmar = body.confirmar === true
-  const idsSelecionados      = Array.isArray(body.ids) ? new Set(body.ids) : null
-  const customersSelecionados = Array.isArray(body.customer_ids) ? new Set(body.customer_ids) : null
+
+  return executarImportacao({
+    userId:                user.id,
+    confirmar:             body.confirmar === true,
+    idsSelecionados:       Array.isArray(body.ids) ? new Set(body.ids) : null,
+    customersSelecionados: Array.isArray(body.customer_ids) ? new Set(body.customer_ids) : null,
+    importarTudo:          false,
+  })
+}
+
+/**
+ * Sync automático (Vercel Cron, diário): importa TUDO que for novo no Asaas
+ * (assinaturas ativas e compras únicas), mantendo o Hub sempre espelhado.
+ * Idempotente — o que já existe é pulado. Auth: Bearer CRON_SECRET.
+ */
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  }
+
+  // Sem sessão no cron: dono = primeiro usuário do auth (single-operator)
+  const { data: lista } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 })
+  const ownerId = lista?.users?.[0]?.id
+  if (!ownerId) {
+    return NextResponse.json({ error: 'Nenhum usuário no auth para atribuir como dono' }, { status: 500 })
+  }
+
+  return executarImportacao({
+    userId:                ownerId,
+    confirmar:             true,
+    idsSelecionados:       null,
+    customersSelecionados: null,
+    importarTudo:          true,
+  })
+}
+
+interface OpcoesImportacao {
+  userId:                string
+  confirmar:             boolean
+  idsSelecionados:       Set<string> | null
+  customersSelecionados: Set<string> | null
+  /** true (cron): importa todas as assinaturas E compras únicas novas */
+  importarTudo:          boolean
+}
+
+async function executarImportacao(opts: OpcoesImportacao) {
+  const { userId, confirmar, idsSelecionados, customersSelecionados, importarTudo } = opts
+
+  if (!process.env.ASAAS_API_KEY) {
+    return NextResponse.json({ error: 'ASAAS_API_KEY não configurada' }, { status: 500 })
+  }
 
   // ── 1. Buscar tudo do Asaas ────────────────────────────────────────────────
   let customers: AsaasCustomer[]
@@ -228,7 +275,7 @@ export async function POST(req: NextRequest) {
             nicho:    'a_definir',
             status:   'ativo',
             mrr:      item.valor_mensal,
-            user_id:  user.id,
+            user_id:  userId,
           })
           .select('id')
           .single()
@@ -264,7 +311,7 @@ export async function POST(req: NextRequest) {
   // ── 5b. Compras únicas selecionadas ───────────────────────────────────────
   const aImportarAvulsos = customersSelecionados
     ? criarAvulsos.filter((i) => customersSelecionados.has(i.asaas_customer_id))
-    : []
+    : importarTudo ? criarAvulsos : []
 
   const noventaDiasAtras = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
 
@@ -286,7 +333,7 @@ export async function POST(req: NextRequest) {
           nicho:    'a_definir',
           status:   recente ? 'ativo' : 'inativo',
           mrr:      0,
-          user_id:  user.id,
+          user_id:  userId,
         })
         .select('id')
         .single()
