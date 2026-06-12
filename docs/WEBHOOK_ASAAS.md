@@ -70,10 +70,17 @@ Idempotente por `asaas_subscription_id` — importar pelo modal antes não dupli
 | `RECEIVABLE_ANTICIPATION_DENIED` | Notificação de antecipação negada |
 
 ### Pix Automático
-Os 5 eventos de autorização (`PIX_AUTOMATIC_RECURRING_AUTHORIZATION_*`) estão
-marcados no painel mas **não têm handler** — a função responde 200 e ignora.
+Marcados no painel mas **sem handler** — a função responde 200 e ignora.
 Inofensivo; tratáveis no futuro se o Pix Automático virar meio de cobrança
 relevante.
+
+| Evento (sem handler) |
+|----------------------|
+| `PIX_AUTOMATIC_RECURRING_AUTHORIZATION_CREATED` |
+| `PIX_AUTOMATIC_RECURRING_AUTHORIZATION_ACTIVATED` |
+| `PIX_AUTOMATIC_RECURRING_AUTHORIZATION_CANCELLED` |
+| `PIX_AUTOMATIC_RECURRING_AUTHORIZATION_EXPIRED` |
+| `PIX_AUTOMATIC_RECURRING_AUTHORIZATION_REFUSED` |
 
 ## Pendências relacionadas
 
