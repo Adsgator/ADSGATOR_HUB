@@ -29,7 +29,7 @@ INTEGRAÇÕES:
 - Vertex AI Gemini: agente Gator (Flash), relatórios executivos (Pro), insights, copy, hashtags.
 - WhatsApp: manual via links wa.me com biblioteca de 13 mensagens prontas — SEM automação (decisão de escopo).
 
-CRONS (vercel.json): sync analytics 06:00, alertas 08:00, cobrança 09:00.
+CRONS (vercel.json): sync analytics 06:00, briefing matinal 06:30 (gera e salva na tabela briefings, dashboard lê do banco), import Asaas 07:00, alertas 08:00, cobrança 09:00.
 
 LACUNAS CONHECIDAS (pendências reais — sugestões nessas áreas são bem-vindas):
 - Credenciais Google Ads/GA4 não configuradas nas env vars → analytics sem dados reais ainda.

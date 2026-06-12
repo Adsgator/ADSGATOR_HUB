@@ -1,53 +1,16 @@
-import { NextResponse }         from 'next/server'
-import { createClient }         from '@supabase/supabase-js'
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
-import { MODELO_PRO, criarVertexAI } from '@/lib/vertex-ai'
+import { briefingDoDia, gerarBriefing, salvarBriefing, type FiltroModo } from '@/lib/briefing'
+
+// DB-first: sem ?refresh=1 devolve o briefing do dia salvo (instantâneo — o
+// cron das 06:30 já gerou). Com refresh, ou sem briefing salvo, gera + upsert.
+// Lógica em lib/briefing.ts (compartilhada com /api/v1/briefing/run).
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
-
-type FiltroModo = 'completo' | 'urgencias' | 'resumido'
-
-function buildPrompt(
-  hoje: string,
-  clientes: { nome: string; status: string; dias_atraso?: number; mrr?: number; nicho?: string }[],
-  alertas: { tipo: string; mensagem: string }[],
-  filtro: FiltroModo,
-): string {
-  const mrrTotal     = clientes.reduce((s, c) => s + (c.mrr ?? 0), 0)
-  const inadimplentes = clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
-
-  const contexto = `Dados de hoje (${hoje}):
-- Clientes ativos: ${clientes.length}
-- MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}
-- Inadimplentes: ${inadimplentes.length} (${inadimplentes.map((c) => c.nome).join(', ') || 'nenhum'})
-- Alertas abertos: ${alertas.length}`
-
-  if (filtro === 'urgencias') {
-    return `Você é o assistente operacional da Adsgator. Gere um briefing APENAS sobre urgências (máx 4 linhas, sem markdown, sem listas).
-
-${contexto}
-
-Liste SOMENTE o que precisa de ação IMEDIATA hoje. Se não houver urgências críticas, diga brevemente que está tudo sob controle.`
-  }
-
-  if (filtro === 'resumido') {
-    return `Você é o assistente operacional da Adsgator. Gere um resumo em ATÉ 2 LINHAS, sem markdown.
-
-${contexto}
-
-Seja extremamente conciso: 1 linha com o status geral, 1 linha com a ação mais importante.`
-  }
-
-  // completo (padrão)
-  return `Você é o assistente operacional da Adsgator. Gere um briefing matinal CONCISO (máx 5 linhas, sem markdown, sem listas).
-
-${contexto}
-
-Foque em: o que está bem, o que precisa de atenção hoje, 1 sugestão de ação prioritária.`
-}
 
 export async function GET(req: Request) {
   const session = await createSessionClient()
@@ -55,48 +18,19 @@ export async function GET(req: Request) {
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)
-  const filtro = (searchParams.get('filtro') ?? 'completo') as FiltroModo
-  const hoje = new Date().toISOString().slice(0, 10)
+  const filtro  = (searchParams.get('filtro') ?? 'completo') as FiltroModo
+  const refresh = searchParams.get('refresh') === '1'
 
-  const { data: clientesData } = await supabase
-    .from('clientes')
-    .select('id, nome, status, dias_atraso, mrr, nicho')
-    .eq('user_id', user.id)
-    .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido'])
-
-  const clienteIds = (clientesData ?? []).map((c) => c.id)
-
-  const { data: alertasData } = clienteIds.length > 0
-    ? await supabase
-        .from('alertas')
-        .select('tipo, mensagem')
-        .in('cliente_id', clienteIds)
-        .eq('resolvido', false)
-        .order('created_at', { ascending: false })
-        .limit(5)
-    : { data: [] }
-
-  const clientes = clientesData
-  const alertas  = alertasData
-
-  const clientesTyped = (clientes ?? []) as { nome: string; status: string; dias_atraso?: number; mrr?: number; nicho?: string }[]
-  const alertasTyped  = (alertas ?? []) as { tipo: string; mensagem: string }[]
-  const mrrTotal      = clientesTyped.reduce((s, c) => s + (c.mrr ?? 0), 0)
-  const inadimplentes = clientesTyped.filter((c) => (c.dias_atraso ?? 0) > 0)
-
-  const prompt = buildPrompt(hoje, clientesTyped, alertasTyped, filtro)
-
-  try {
-    const vertex = criarVertexAI()
-    const model  = vertex.preview.getGenerativeModel({ model: MODELO_PRO })
-    const result = await model.generateContent(prompt)
-    const texto  = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
-    return NextResponse.json({ texto, fonte: 'ia', gerado_em: new Date().toISOString() })
-  } catch {
-    // Fallback sem IA (Vertex ausente/indisponível) — o card mostra o aviso via `fonte`
-    const texto = inadimplentes.length > 0
-      ? `${inadimplentes.length} cliente(s) inadimplente(s) requerem atenção hoje. MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}.`
-      : `Bom dia! ${clientesTyped.length} clientes ativos. MRR: R$ ${mrrTotal.toLocaleString('pt-BR')}. Sem alertas críticos.`
-    return NextResponse.json({ texto, fonte: 'fallback', gerado_em: new Date().toISOString() })
+  if (!refresh) {
+    const salvo = await briefingDoDia(supabase, user.id, filtro)
+    if (salvo) return NextResponse.json(salvo)
   }
+
+  const briefing = await gerarBriefing(supabase, user.id, filtro)
+  try {
+    await salvarBriefing(supabase, user.id, filtro, briefing)
+  } catch {
+    // tabela briefings ainda sem migration — o briefing volta mesmo assim
+  }
+  return NextResponse.json(briefing)
 }

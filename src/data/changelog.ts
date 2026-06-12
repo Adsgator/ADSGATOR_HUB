@@ -21,6 +21,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Retroativo: botão na aba Setup cria as tarefas de setup para clientes existentes sem IDs Google (idempotente)',
       'Empty states que guiam: widgets vazios por falta de configuração (Monitoramento, Saldo Google Ads, Timelines) agora explicam o motivo e linkam para o Setup',
       'Morning Briefing transparente: aviso discreto quando o texto vem do fallback por Vertex AI não configurado',
+      'Briefing proativo: cron diário às 06:30 gera e salva o briefing antes de você acordar — o dashboard carrega instantâneo, com notificação "☀️ Briefing do dia pronto"',
+      'Briefing mais rico: agora considera tarefas com prazo hoje e clientes com saldo Google baixo',
     ],
   },
   {

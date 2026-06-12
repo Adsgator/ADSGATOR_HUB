@@ -9,6 +9,10 @@
       "schedule": "0 6 * * *"
     },
     {
+      "path": "/api/v1/briefing/run",
+      "schedule": "30 6 * * *"
+    },
+    {
       "path": "/api/v1/cobranca/run",
       "schedule": "0 9 * * *"
     },

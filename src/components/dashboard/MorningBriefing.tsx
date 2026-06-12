@@ -20,14 +20,7 @@ interface BriefingData {
   gerado_em:  string
 }
 
-const CACHE_KEY     = 'adsgator_briefing'
-const CACHE_MAX_AGE = 6 * 60 * 60 * 1000
 const MAX_LINHAS_PREVIEW = 5
-
-function cacheValido(item: { gerado_em: string } | null): boolean {
-  if (!item) return false
-  return Date.now() - new Date(item.gerado_em).getTime() < CACHE_MAX_AGE
-}
 
 export function MorningBriefing() {
   const [briefing,    setBriefing]    = useState<BriefingData | null>(null)
@@ -35,22 +28,16 @@ export function MorningBriefing() {
   const [modalAberto, setModalAberto] = useState(false)
   const [filtro,      setFiltro]      = useState<FiltroModo>('completo')
 
+  // DB-first: a rota devolve o briefing do dia salvo (cron 06:30) na hora;
+  // `forcar` regenera com refresh=1. Sem cache localStorage — o banco resolve.
   const carregar = useCallback(async (forcar = false, modo?: FiltroModo) => {
     const modoAtual = modo ?? filtro
-    const cacheKey  = `${CACHE_KEY}_${modoAtual}`
-    if (!forcar) {
-      try {
-        const cached = JSON.parse(localStorage.getItem(cacheKey) ?? 'null') as BriefingData | null
-        if (cacheValido(cached)) { setBriefing(cached); return }
-      } catch { /* localStorage indisponível */ }
-    }
     setLoading(true)
     try {
-      const res  = await fetch(`/api/ia/morning-briefing?filtro=${modoAtual}`)
+      const res  = await fetch(`/api/ia/morning-briefing?filtro=${modoAtual}${forcar ? '&refresh=1' : ''}`)
       const data = await res.json() as BriefingData
       setBriefing(data)
-      try { localStorage.setItem(cacheKey, JSON.stringify(data)) } catch { }
-      toast.success('Briefing atualizado!')
+      if (forcar) toast.success('Briefing atualizado!')
     } catch {
       toast.error('Erro ao atualizar briefing')
     } finally {
