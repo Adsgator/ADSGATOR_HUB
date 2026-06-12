@@ -35,15 +35,30 @@ o que chegar primeiro), com:
 
 Idempotente por `asaas_subscription_id` — importar pelo modal antes não duplica.
 
+## Compra única (ex: landing page)
+
+O Hub espelha o Asaas por completo: pagamento **sem assinatura** também cria
+cliente. No `PAYMENT_CREATED` avulso (cobrança gerada), o cliente nasce em
+`recebido` com **MRR 0**, checklist de entrega (boas-vindas, coletar infos,
+entregar projeto, **oferecer plano de manutenção**) e lançamento financeiro
+`pendente` na categoria `projeto`. No `PAYMENT_RECEIVED` o lançamento vira
+`confirmado`. Se o cliente depois assinar a manutenção, o fluxo de assinatura
+reaproveita o mesmo cliente (dedupe por email) e o MRR passa a contar.
+
+No **importador** (Configurações → Integrações), as compras únicas aparecem em
+seção própria (cards azuis): cliente entra como `ativo` se o último pagamento
+foi nos últimos 90 dias (entrega provavelmente em andamento) ou `inativo` se
+for antigo (histórico).
+
 ## Eventos marcados no painel (e o que cada um faz no Hub)
 
 ### Cobranças
 | Evento | Ação no Hub |
 |--------|-------------|
-| `PAYMENT_CREATED` | Garante cliente/assinatura (checkout) + lançamento financeiro `pendente` |
+| `PAYMENT_CREATED` | Garante cliente/assinatura (checkout) ou cliente de compra única + lançamento financeiro `pendente` |
 | `PAYMENT_UPDATED` | Atualiza valor/vencimento do lançamento |
 | `PAYMENT_CONFIRMED` | Lançamento → `confirmado` + notificação de pagamento confirmado |
-| `PAYMENT_RECEIVED` | Zera atraso da assinatura, reativa cliente cancelado por débito; cria cliente se ainda não existir (fallback) |
+| `PAYMENT_RECEIVED` | Zera atraso da assinatura, reativa cliente cancelado por débito; cria cliente se ainda não existir (assinatura ou compra única); confirma lançamento financeiro |
 | `PAYMENT_OVERDUE` | Régua de inadimplência D+7/D+15/D+30 (status da assinatura, histórico, estágio de alerta) |
 | `PAYMENT_DELETED` | Remove lançamento `pendente` |
 | `PAYMENT_ANTICIPATED` | Histórico + notificação de antecipação da cobrança |

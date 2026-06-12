@@ -41,6 +41,18 @@ interface AsaasSubscription {
   deleted:     boolean
 }
 
+interface AsaasPayment {
+  id:           string
+  customer:     string
+  subscription: string | null
+  value:        number
+  status:       string
+  dueDate:      string | null
+  paymentDate:  string | null
+  description:  string | null
+  deleted:      boolean
+}
+
 interface PlanoItem {
   nome:                  string
   email:                 string
@@ -49,6 +61,16 @@ interface PlanoItem {
   plano_nome:            string
   asaas_subscription_id: string
   data_proxima_cobranca: string | null
+}
+
+interface AvulsoItem {
+  nome:              string
+  email:             string
+  whatsapp:          string
+  valor:             number
+  descricao:         string
+  asaas_customer_id: string
+  ultimo_pagamento:  string | null
 }
 
 function asaasBaseUrl(): string {
@@ -83,17 +105,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'ASAAS_API_KEY não configurada' }, { status: 500 })
   }
 
-  const body = await req.json().catch(() => ({})) as { confirmar?: boolean; ids?: string[] }
+  const body = await req.json().catch(() => ({})) as {
+    confirmar?:    boolean
+    ids?:          string[]   // asaas_subscription_id (assinaturas)
+    customer_ids?: string[]   // asaas customer id (compras únicas)
+  }
   const confirmar = body.confirmar === true
-  const idsSelecionados = Array.isArray(body.ids) ? new Set(body.ids) : null
+  const idsSelecionados      = Array.isArray(body.ids) ? new Set(body.ids) : null
+  const customersSelecionados = Array.isArray(body.customer_ids) ? new Set(body.customer_ids) : null
 
   // ── 1. Buscar tudo do Asaas ────────────────────────────────────────────────
   let customers: AsaasCustomer[]
   let subscriptions: AsaasSubscription[]
+  let payments: AsaasPayment[]
   try {
-    ;[customers, subscriptions] = await Promise.all([
+    ;[customers, subscriptions, payments] = await Promise.all([
       asaasGetAll<AsaasCustomer>('/v3/customers'),
       asaasGetAll<AsaasSubscription>('/v3/subscriptions'),
+      asaasGetAll<AsaasPayment>('/v3/payments'),
     ])
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -102,6 +131,7 @@ export async function POST(req: NextRequest) {
 
   customers     = customers.filter((c) => !c.deleted)
   subscriptions = subscriptions.filter((s) => !s.deleted)
+  payments      = payments.filter((p) => !p.deleted)
 
   const customerPorId = new Map(customers.map((c) => [c.id, c]))
   const ativas        = subscriptions.filter((s) => s.status === 'ACTIVE')
@@ -143,6 +173,39 @@ export async function POST(req: NextRequest) {
     })
   }
 
+  // ── 3b. Compras únicas: customers com pagamento mas sem assinatura ───────
+  // O Hub é o espelho completo do Asaas — cliente de compra única (ex: landing
+  // page) também entra, sem assinatura e com MRR 0.
+  const customersComAssinatura = new Set(subscriptions.map((s) => s.customer))
+  const avulsosPorCustomer = new Map<string, AsaasPayment>()
+  for (const p of payments) {
+    if (p.subscription || customersComAssinatura.has(p.customer)) continue
+    const atual = avulsosPorCustomer.get(p.customer)
+    const dataP = p.paymentDate ?? p.dueDate ?? ''
+    const dataA = atual ? (atual.paymentDate ?? atual.dueDate ?? '') : ''
+    if (!atual || dataP > dataA) avulsosPorCustomer.set(p.customer, p)
+  }
+
+  const criarAvulsos: AvulsoItem[] = []
+  for (const [customerId, ultimoPag] of avulsosPorCustomer) {
+    const customer = customerPorId.get(customerId)
+    if (!customer) continue
+    const email = (customer.email ?? '').toLowerCase()
+    if (email && clientePorEmail.has(email)) {
+      pular.push({ motivo: 'cliente_ja_existe', nome: customer.name, detalhe: customerId })
+      continue
+    }
+    criarAvulsos.push({
+      nome:              customer.name,
+      email:             customer.email ?? `${customerId}@sem-email.com`,
+      whatsapp:          customer.mobilePhone ?? customer.phone ?? '',
+      valor:             ultimoPag.value,
+      descricao:         ultimoPag.description || 'Compra única',
+      asaas_customer_id: customerId,
+      ultimo_pagamento:  ultimoPag.paymentDate ?? ultimoPag.dueDate,
+    })
+  }
+
   const inativas = subscriptions.length - ativas.length
 
   const resumo = {
@@ -150,12 +213,14 @@ export async function POST(req: NextRequest) {
       customers:             customers.length,
       assinaturas_ativas:    ativas.length,
       assinaturas_inativas:  inativas,
+      pagamentos:            payments.length,
     },
     plano: {
-      criar:  criar.length,
-      pular:  pular.length,
+      criar:         criar.length,
+      criar_avulsos: criarAvulsos.length,
+      pular:         pular.length,
     },
-    detalhes: { criar, pular },
+    detalhes: { criar, criar_avulsos: criarAvulsos, pular },
   }
 
   // ── 4. Dry-run: devolve o plano sem tocar no banco ────────────────────────
@@ -210,6 +275,52 @@ export async function POST(req: NextRequest) {
         tipo_acao:  'importacao_asaas',
         descricao:  `Cliente importado do Asaas (assinatura ${item.asaas_subscription_id}, R$ ${item.valor_mensal}/mês).`,
         metadata:   { asaas_subscription_id: item.asaas_subscription_id },
+      })
+
+      resultados.push({ nome: item.nome, ok: true })
+    } catch (err) {
+      resultados.push({ nome: item.nome, ok: false, erro: err instanceof Error ? err.message : String(err) })
+    }
+  }
+
+  // ── 5b. Compras únicas selecionadas ───────────────────────────────────────
+  const aImportarAvulsos = customersSelecionados
+    ? criarAvulsos.filter((i) => customersSelecionados.has(i.asaas_customer_id))
+    : []
+
+  const noventaDiasAtras = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+
+  for (const item of aImportarAvulsos) {
+    try {
+      if (clientePorEmail.has(item.email.toLowerCase())) {
+        resultados.push({ nome: item.nome, ok: true })
+        continue
+      }
+      // Compra recente (90d) = entrega provavelmente em andamento → ativo;
+      // antiga = cliente passado sem recorrência → inativo
+      const recente = (item.ultimo_pagamento ?? '') >= noventaDiasAtras
+      const { data: novo, error: errCliente } = await supabaseAdmin
+        .from('clientes')
+        .insert({
+          nome:     item.nome,
+          email:    item.email,
+          whatsapp: item.whatsapp,
+          nicho:    'a_definir',
+          status:   recente ? 'ativo' : 'inativo',
+          mrr:      0,
+          user_id:  user.id,
+        })
+        .select('id')
+        .single()
+      if (errCliente) throw new Error(errCliente.message)
+      clientePorEmail.set(item.email.toLowerCase(), novo.id as string)
+
+      await supabaseAdmin.from('historico_acoes').insert({
+        cliente_id:      novo.id,
+        tipo_acao:       'importacao_asaas',
+        descricao:       `Cliente de compra única importado do Asaas (${item.descricao}, R$ ${item.valor}${item.ultimo_pagamento ? `, último pagamento ${item.ultimo_pagamento}` : ''}).`,
+        valor_impactado: item.valor,
+        metadata:        { asaas_customer_id: item.asaas_customer_id, compra_unica: true },
       })
 
       resultados.push({ nome: item.nome, ok: true })

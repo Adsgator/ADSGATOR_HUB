@@ -41,10 +41,92 @@ async function buscarOwnerUserId(): Promise<string | null> {
   return data?.user_id ?? null;
 }
 
+interface AsaasCustomerData {
+  name?:        string
+  email?:       string
+  mobilePhone?: string
+  phone?:       string
+}
+
+/**
+ * Busca cliente por email ou cria um novo em 'recebido' com estágio de
+ * onboarding e notificação. Núcleo comum de assinatura e compra única.
+ */
+async function obterOuCriarCliente(
+  customer: AsaasCustomerData,
+  opts: { mrr: number; valorContrato: number; origem: 'assinatura' | 'compra_unica'; fallbackEmailId: string },
+): Promise<{ clienteId: string; criado: boolean }> {
+  const owner = await buscarOwnerUserId();
+
+  if (customer.email) {
+    const { data: porEmail } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('email', customer.email)
+      .maybeSingle();
+    if (porEmail) return { clienteId: porEmail.id, criado: false };
+  }
+
+  const whatsapp = (customer.mobilePhone ?? customer.phone ?? '') as string;
+  const { data: novo, error: errCliente } = await supabase
+    .from('clientes')
+    .insert({
+      nome:     customer.name ?? 'Cliente sem nome',
+      email:    customer.email ?? `${opts.fallbackEmailId}@sem-email.com`,
+      whatsapp,
+      nicho:    'a_definir',
+      status:   'recebido',
+      mrr:      opts.mrr,
+      user_id:  owner,
+    })
+    .select('id, nome')
+    .single();
+  if (errCliente) throw new Error(`Erro ao criar cliente (${opts.origem}): ${errCliente.message}`);
+  const clienteId = novo.id as string;
+
+  const ehAssinatura = opts.origem === 'assinatura';
+  await supabase.from('estagios').insert({
+    cliente_id:  clienteId,
+    nome:        'recebido',
+    descricao:   ehAssinatura
+      ? 'Novo cliente via checkout — iniciar onboarding antes do 1º pagamento (vence em D+3)'
+      : 'Nova compra única (ex: landing page) — iniciar onboarding e entrega',
+    acao_label:  '#BOASVINDAS',
+    acao_url:    `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉 Vou entrar em contato em breve para iniciar seu onboarding.')}`,
+    checklist: JSON.stringify(ehAssinatura
+      ? [
+          { item: 'Enviar mensagem #BOASVINDAS no WhatsApp', done: false },
+          { item: 'Coletar informações de onboarding', done: false },
+          { item: 'Agendar call de onboarding', done: false },
+          { item: 'Confirmar 1º pagamento (D+3)', done: false },
+        ]
+      : [
+          { item: 'Enviar mensagem #BOASVINDAS no WhatsApp', done: false },
+          { item: 'Coletar informações para a entrega', done: false },
+          { item: 'Entregar o projeto', done: false },
+          { item: 'Oferecer plano de manutenção', done: false },
+        ]),
+    ativo: true,
+  });
+
+  await supabase.from('notificacoes').insert({
+    user_id:    owner,
+    cliente_id: clienteId,
+    tipo:       'urgente',
+    titulo:     ehAssinatura ? '🛒 Novo cliente do checkout!' : '🛒 Nova compra única!',
+    mensagem:   ehAssinatura
+      ? `${novo.nome} contratou (R$ ${opts.valorContrato.toFixed(2)}/mês). Iniciar onboarding — 1º pagamento vence em D+3.`
+      : `${novo.nome} comprou (R$ ${opts.valorContrato.toFixed(2)}, pagamento único). Iniciar onboarding e entrega.`,
+    acao_label: '#BOASVINDAS',
+    acao_url:   `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`,
+  });
+
+  return { clienteId, criado: true };
+}
+
 /**
  * Garante que cliente + assinatura existem para uma subscription do Asaas.
- * Se não existem, busca os dados na API do Asaas e cria tudo (cliente em
- * 'recebido', estágio de onboarding, notificação). Idempotente.
+ * Se não existem, busca os dados na API do Asaas e cria tudo. Idempotente.
  */
 async function garantirClienteDaAssinatura(
   subscriptionId: string,
@@ -63,63 +145,11 @@ async function garantirClienteDaAssinatura(
 
   const sub      = await asaasGet(`/v3/subscriptions/${subscriptionId}`);
   const customer = await asaasGet(`/v3/customers/${sub.customer}`);
-  const owner    = await buscarOwnerUserId();
   const valor    = (sub.value ?? 0) as number;
 
-  // Reusa cliente com mesmo email (ex: recontratação)
-  let clienteId: string | null = null;
-  if (customer.email) {
-    const { data: porEmail } = await supabase
-      .from('clientes')
-      .select('id')
-      .eq('email', customer.email)
-      .maybeSingle();
-    if (porEmail) clienteId = porEmail.id;
-  }
-
-  if (!clienteId) {
-    const whatsapp = (customer.mobilePhone ?? customer.phone ?? '') as string;
-    const { data: novo, error: errCliente } = await supabase
-      .from('clientes')
-      .insert({
-        nome:     customer.name ?? 'Cliente sem nome',
-        email:    customer.email ?? `${subscriptionId}@sem-email.com`,
-        whatsapp,
-        nicho:    'a_definir',
-        status:   'recebido',
-        mrr:      valor,
-        user_id:  owner,
-      })
-      .select('id, nome')
-      .single();
-    if (errCliente) throw new Error(`Erro ao criar cliente do checkout: ${errCliente.message}`);
-    clienteId = novo.id as string;
-
-    await supabase.from('estagios').insert({
-      cliente_id:  clienteId,
-      nome:        'recebido',
-      descricao:   'Novo cliente via checkout — iniciar onboarding antes do 1º pagamento (vence em D+3)',
-      acao_label:  '#BOASVINDAS',
-      acao_url:    `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉 Vou entrar em contato em breve para iniciar seu onboarding.')}`,
-      checklist: JSON.stringify([
-        { item: 'Enviar mensagem #BOASVINDAS no WhatsApp', done: false },
-        { item: 'Coletar informações de onboarding', done: false },
-        { item: 'Agendar call de onboarding', done: false },
-        { item: 'Confirmar 1º pagamento (D+3)', done: false },
-      ]),
-      ativo: true,
-    });
-
-    await supabase.from('notificacoes').insert({
-      user_id:    owner,
-      cliente_id: clienteId,
-      tipo:       'urgente',
-      titulo:     '🛒 Novo cliente do checkout!',
-      mensagem:   `${novo.nome} contratou (R$ ${valor.toFixed(2)}/mês). Iniciar onboarding — 1º pagamento vence em D+3.`,
-      acao_label: '#BOASVINDAS',
-      acao_url:   `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`,
-    });
-  }
+  const { clienteId, criado } = await obterOuCriarCliente(customer, {
+    mrr: valor, valorContrato: valor, origem: 'assinatura', fallbackEmailId: subscriptionId,
+  });
 
   await supabase.from('assinaturas').insert({
     cliente_id:            clienteId,
@@ -140,7 +170,37 @@ async function garantirClienteDaAssinatura(
   });
 
   console.log(`[CHECKOUT] Cliente ${clienteId} criado/vinculado para assinatura ${subscriptionId}`);
-  return { clienteId, criado: true };
+  return { clienteId, criado };
+}
+
+/**
+ * Compra única (pagamento sem assinatura, ex: landing page): garante que o
+ * cliente existe a partir do customer do pagamento. MRR fica 0 — não é
+ * receita recorrente. Idempotente por email.
+ */
+async function garantirClienteDoPagamentoAvulso(
+  customerId: string,
+  valor: number,
+): Promise<{ clienteId: string; criado: boolean } | null> {
+  if (!ASAAS_API_KEY) {
+    console.error('[COMPRA ÚNICA] ASAAS_API_KEY ausente — impossível criar cliente do pagamento');
+    return null;
+  }
+  const customer = await asaasGet(`/v3/customers/${customerId}`);
+  const resultado = await obterOuCriarCliente(customer, {
+    mrr: 0, valorContrato: valor, origem: 'compra_unica', fallbackEmailId: customerId,
+  });
+  if (resultado.criado) {
+    await supabase.from('historico_acoes').insert({
+      cliente_id:      resultado.clienteId,
+      tipo_acao:       'cliente_criado_compra_unica',
+      descricao:       `🛒 Compra única no Asaas (R$ ${valor.toFixed(2)}) — cliente criado para onboarding e entrega.`,
+      valor_impactado: valor,
+      metadata:        { asaas_customer_id: customerId },
+    });
+    console.log(`[COMPRA ÚNICA] Cliente ${resultado.clienteId} criado para customer ${customerId}`);
+  }
+  return resultado;
 }
 
 serve(async (req) => {
@@ -178,55 +238,57 @@ serve(async (req) => {
       const valorPago      = (pagamento?.value ?? 0) as number;
       const paymentId      = pagamento?.id as string | undefined;
 
-      // Pagamento avulso (sem assinatura): fora do ciclo de clientes.
-      // Tentar criar cliente aqui gerava registros 'sem nome' e 500 em loop.
-      if (!subscriptionId) {
-        console.log(`[PAYMENT_RECEIVED] Pagamento avulso ${paymentId ?? 'sem id'} ignorado`);
-        return new Response(JSON.stringify({ ignored: true, motivo: 'pagamento_avulso' }), {
-          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      // Compra única (sem assinatura, ex: landing page): cria o cliente a
+      // partir do customer do pagamento e registra a receita. MRR não muda.
+      const garantia = subscriptionId
+        ? await garantirClienteDaAssinatura(subscriptionId)
+        : pagamento?.customer
+          ? await garantirClienteDoPagamentoAvulso(pagamento.customer as string, valorPago)
+          : null;
 
-      // Garante cliente + assinatura (cria com dados reais da API se necessário)
-      const garantia = await garantirClienteDaAssinatura(subscriptionId);
       if (!garantia) {
-        return new Response(JSON.stringify({ ignored: true, motivo: 'sem_api_key' }), {
+        console.log(`[PAYMENT_RECEIVED] Pagamento ${paymentId ?? 'sem id'} sem subscription/customer — ignorado`);
+        return new Response(JSON.stringify({ ignored: true, motivo: 'sem_vinculo' }), {
           status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // Zerar atraso e reativar assinatura
-      await supabase
-        .from('assinaturas')
-        .update({
-          status:                'ativa',
-          dias_atraso:           0,
-          data_proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          updated_at:            new Date().toISOString(),
-        })
-        .eq('asaas_subscription_id', subscriptionId);
+      if (subscriptionId) {
+        // Zerar atraso e reativar assinatura
+        await supabase
+          .from('assinaturas')
+          .update({
+            status:                'ativa',
+            dias_atraso:           0,
+            data_proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            updated_at:            new Date().toISOString(),
+          })
+          .eq('asaas_subscription_id', subscriptionId);
 
-      // Reativar cliente cancelado e zerar atraso
-      const { data: cliente } = await supabase
-        .from('clientes')
-        .select('id, status, dias_atraso')
-        .eq('id', garantia.clienteId)
-        .single();
-      if (cliente) {
-        const updates: Record<string, unknown> = {};
-        if (['cancelado', 'cancelado_debito'].includes(cliente.status)) updates.status = 'ativo';
-        if ((cliente.dias_atraso ?? 0) > 0) updates.dias_atraso = 0;
-        if (Object.keys(updates).length > 0) {
-          await supabase.from('clientes').update(updates).eq('id', cliente.id);
+        // Reativar cliente cancelado e zerar atraso
+        const { data: cliente } = await supabase
+          .from('clientes')
+          .select('id, status, dias_atraso')
+          .eq('id', garantia.clienteId)
+          .single();
+        if (cliente) {
+          const updates: Record<string, unknown> = {};
+          if (['cancelado', 'cancelado_debito'].includes(cliente.status)) updates.status = 'ativo';
+          if ((cliente.dias_atraso ?? 0) > 0) updates.dias_atraso = 0;
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('clientes').update(updates).eq('id', cliente.id);
+          }
         }
       }
 
       await supabase.from('historico_acoes').insert({
         cliente_id:      garantia.clienteId,
         tipo_acao:       'pagamento_recebido',
-        descricao:       `Pagamento de R$ ${valorPago.toFixed(2)} recebido via Asaas.`,
+        descricao:       subscriptionId
+          ? `Pagamento de R$ ${valorPago.toFixed(2)} recebido via Asaas.`
+          : `Pagamento único de R$ ${valorPago.toFixed(2)} recebido via Asaas (compra avulsa).`,
         valor_impactado: valorPago,
-        metadata:        { asaas_subscription_id: subscriptionId, asaas_payment_id: paymentId, event: evento },
+        metadata:        { asaas_subscription_id: subscriptionId ?? null, asaas_payment_id: paymentId, event: evento },
       });
 
       // Lançamento financeiro: confirma o pendente (criado no PAYMENT_CREATED) ou cria
@@ -325,6 +387,26 @@ serve(async (req) => {
       const subId      = pagamento.subscription as string | undefined
       if (subId) {
         await garantirClienteDaAssinatura(subId)
+      } else if (pagamento.customer) {
+        // Compra única: cliente nasce quando a cobrança é gerada — onboarding
+        // e entrega podem começar antes do pagamento
+        const garantia = await garantirClienteDoPagamentoAvulso(pagamento.customer as string, valor)
+        if (garantia) {
+          const { data: existing } = await supabase.from('financeiro_lancamentos').select('id').eq('asaas_payment_id', pagamento.id as string).maybeSingle()
+          if (!existing) {
+            await supabase.from('financeiro_lancamentos').insert({
+              user_id:          await buscarOwnerUserId(),
+              cliente_id:       garantia.clienteId,
+              tipo:             'receita',
+              categoria:        'projeto',
+              descricao:        `Cobrança única gerada — ${pagamento.description ?? 'compra avulsa'}`,
+              valor,
+              data:             vencimento,
+              asaas_payment_id: pagamento.id as string,
+              status:           'pendente',
+            })
+          }
+        }
       }
       const { data: ass } = subId
         ? await supabase.from('assinaturas').select('id, cliente_id, clientes(nome, user_id)').eq('asaas_subscription_id', subId).maybeSingle()

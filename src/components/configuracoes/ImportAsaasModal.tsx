@@ -17,6 +17,16 @@ interface ClienteImportavel {
   data_proxima_cobranca: string | null
 }
 
+interface AvulsoImportavel {
+  nome:              string
+  email:             string
+  whatsapp:          string
+  valor:             number
+  descricao:         string
+  asaas_customer_id: string
+  ultimo_pagamento:  string | null
+}
+
 interface ItemPulado {
   motivo:   string
   nome:     string
@@ -25,8 +35,8 @@ interface ItemPulado {
 
 interface PreviewResponse {
   error?:    string
-  plano?:    { criar: number; pular: number }
-  detalhes?: { criar: ClienteImportavel[]; pular: ItemPulado[] }
+  plano?:    { criar: number; criar_avulsos: number; pular: number }
+  detalhes?: { criar: ClienteImportavel[]; criar_avulsos: AvulsoImportavel[]; pular: ItemPulado[] }
 }
 
 interface Props {
@@ -37,6 +47,7 @@ interface Props {
 const MOTIVO_LABEL: Record<string, string> = {
   assinatura_ja_importada:  'Já importado',
   customer_nao_encontrado:  'Cadastro não encontrado no Asaas',
+  cliente_ja_existe:        'Cliente já existe no Hub',
 }
 
 function fmtBRL(v: number) {
@@ -53,8 +64,10 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
   const [carregando, setCarregando]   = useState(true)
   const [erro,       setErro]         = useState('')
   const [clientes,   setClientes]     = useState<ClienteImportavel[]>([])
+  const [avulsos,    setAvulsos]      = useState<AvulsoImportavel[]>([])
   const [pulados,    setPulados]      = useState<ItemPulado[]>([])
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
+  const [selecionadosAvulsos, setSelecionadosAvulsos] = useState<Set<string>>(new Set())
   const [importando, setImportando]   = useState(false)
   const [mostrarPulados, setMostrarPulados] = useState(false)
 
@@ -67,11 +80,14 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
       .then((r) => r.json() as Promise<PreviewResponse>)
       .then((data) => {
         if (data.error) { setErro(data.error); return }
-        const criar = data.detalhes?.criar ?? []
+        const criar        = data.detalhes?.criar ?? []
+        const criarAvulsos = data.detalhes?.criar_avulsos ?? []
         setClientes(criar)
+        setAvulsos(criarAvulsos)
         setPulados(data.detalhes?.pular ?? [])
         // Todos selecionados por padrão
         setSelecionados(new Set(criar.map((c) => c.asaas_subscription_id)))
+        setSelecionadosAvulsos(new Set(criarAvulsos.map((c) => c.asaas_customer_id)))
       })
       .catch(() => setErro('Falha ao consultar o Asaas.'))
       .finally(() => setCarregando(false))
@@ -86,20 +102,29 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
     })
   }
 
+  function toggleAvulso(id: string) {
+    setSelecionadosAvulsos((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   function toggleTodos() {
-    setSelecionados((prev) =>
-      prev.size === clientes.length ? new Set() : new Set(clientes.map((c) => c.asaas_subscription_id))
-    )
+    const tudoMarcado = selecionados.size === clientes.length && selecionadosAvulsos.size === avulsos.length
+    setSelecionados(tudoMarcado ? new Set() : new Set(clientes.map((c) => c.asaas_subscription_id)))
+    setSelecionadosAvulsos(tudoMarcado ? new Set() : new Set(avulsos.map((c) => c.asaas_customer_id)))
   }
 
   async function importar() {
-    if (selecionados.size === 0) return
+    if (selecionados.size + selecionadosAvulsos.size === 0) return
     setImportando(true)
     try {
       const res = await fetch('/api/v1/asaas/import', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ confirmar: true, ids: [...selecionados] }),
+        body: JSON.stringify({ confirmar: true, ids: [...selecionados], customer_ids: [...selecionadosAvulsos] }),
       }).then((r) => r.json())
 
       if (res.error) {
@@ -124,7 +149,9 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
     .filter((c) => selecionados.has(c.asaas_subscription_id))
     .reduce((s, c) => s + c.valor_mensal, 0)
 
-  const todosMarcados = clientes.length > 0 && selecionados.size === clientes.length
+  const totalItens       = clientes.length + avulsos.length
+  const totalSelecionado = selecionados.size + selecionadosAvulsos.size
+  const todosMarcados    = totalItens > 0 && totalSelecionado === totalItens
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-[1rem]">
@@ -162,18 +189,18 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
             </div>
           )}
 
-          {!carregando && !erro && clientes.length === 0 && (
+          {!carregando && !erro && totalItens === 0 && (
             <div className="flex flex-col items-center justify-center py-[3rem] gap-[0.5rem] text-center">
               <p className="text-ink-primary text-[0.875rem] font-medium">Nada novo para importar</p>
               <p className="text-ink-muted text-[0.8125rem]">
                 {pulados.length > 0
-                  ? `${pulados.length} assinatura(s) ativas já existem no Hub.`
-                  : 'Nenhuma assinatura ativa encontrada no Asaas.'}
+                  ? `${pulados.length} cliente(s) já existem no Hub.`
+                  : 'Nenhuma assinatura ou compra encontrada no Asaas.'}
               </p>
             </div>
           )}
 
-          {!carregando && !erro && clientes.length > 0 && (
+          {!carregando && !erro && totalItens > 0 && (
             <>
               {/* Barra de seleção */}
               <button
@@ -184,10 +211,15 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
                   ? <CheckSquare className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={1.75} />
                   : <Square className="w-[1rem] h-[1rem]" strokeWidth={1.75} />}
                 {todosMarcados ? 'Desmarcar todos' : 'Selecionar todos'}
-                <span className="text-ink-muted">· {selecionados.size} de {clientes.length}</span>
+                <span className="text-ink-muted">· {totalSelecionado} de {totalItens}</span>
               </button>
 
-              {/* Cards */}
+              {/* Assinaturas ativas */}
+              {clientes.length > 0 && (
+                <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold">
+                  Assinaturas ativas · {clientes.length}
+                </p>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-[0.625rem] stagger">
                 {clientes.map((c) => {
                   const marcado = selecionados.has(c.asaas_subscription_id)
@@ -240,6 +272,66 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
                 })}
               </div>
 
+              {/* Compras únicas */}
+              {avulsos.length > 0 && (
+                <>
+                  <p className="text-ink-muted text-[0.75rem] uppercase tracking-wide font-semibold mt-[0.5rem]">
+                    Compras únicas · {avulsos.length}
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-[0.625rem] stagger">
+                    {avulsos.map((c) => {
+                      const marcado = selecionadosAvulsos.has(c.asaas_customer_id)
+                      const dataPag = fmtData(c.ultimo_pagamento)
+                      return (
+                        <button
+                          key={c.asaas_customer_id}
+                          onClick={() => toggleAvulso(c.asaas_customer_id)}
+                          className={`text-left rounded-xl border p-[0.875rem] transition-all flex flex-col gap-[0.5rem] ${
+                            marcado
+                              ? 'border-status-blue/60 bg-status-blue/5 ring-1 ring-status-blue/20'
+                              : 'border-surface-border bg-surface-hover/40 opacity-60 hover:opacity-90'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-[0.5rem]">
+                            <p className="text-ink-primary text-[0.875rem] font-semibold leading-snug">{c.nome}</p>
+                            {marcado
+                              ? <CheckSquare className="w-[1rem] h-[1rem] text-status-blue shrink-0" strokeWidth={1.75} />
+                              : <Square className="w-[1rem] h-[1rem] text-ink-muted shrink-0" strokeWidth={1.75} />}
+                          </div>
+
+                          <div className="flex flex-col gap-[0.25rem] text-[0.75rem] text-ink-secondary">
+                            <span className="flex items-center gap-[0.375rem] min-w-0">
+                              <Mail className="w-[0.75rem] h-[0.75rem] text-ink-muted shrink-0" strokeWidth={1.75} />
+                              <span className="truncate">{c.email}</span>
+                            </span>
+                            {c.whatsapp && (
+                              <span className="flex items-center gap-[0.375rem]">
+                                <Phone className="w-[0.75rem] h-[0.75rem] text-ink-muted shrink-0" strokeWidth={1.75} />
+                                {c.whatsapp}
+                              </span>
+                            )}
+                            <span className="flex items-center gap-[0.375rem] min-w-0">
+                              <Package className="w-[0.75rem] h-[0.75rem] text-ink-muted shrink-0" strokeWidth={1.75} />
+                              <span className="truncate">{c.descricao}</span>
+                            </span>
+                            {dataPag && (
+                              <span className="flex items-center gap-[0.375rem]">
+                                <CalendarClock className="w-[0.75rem] h-[0.75rem] text-ink-muted shrink-0" strokeWidth={1.75} />
+                                Último pagamento {dataPag}
+                              </span>
+                            )}
+                          </div>
+
+                          <span className="text-[0.875rem] font-semibold text-status-blue mt-auto">
+                            {fmtBRL(c.valor)}<span className="text-[0.6875rem] text-ink-muted font-normal"> único</span>
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+
               {/* Pulados */}
               {pulados.length > 0 && (
                 <div className="mt-[0.25rem]">
@@ -265,16 +357,19 @@ export function ImportAsaasModal({ onClose, onImported }: Props) {
         </div>
 
         {/* ── Footer ── */}
-        {!carregando && !erro && clientes.length > 0 && (
+        {!carregando && !erro && totalItens > 0 && (
           <div className="flex items-center justify-between px-[1.5rem] py-[1rem] border-t border-surface-border shrink-0 gap-[1rem]">
             <div className="text-[0.8125rem] text-ink-secondary">
               MRR selecionado: <strong className="text-ink-primary">{fmtBRL(mrrSelecionado)}</strong>
+              {selecionadosAvulsos.size > 0 && (
+                <span className="text-ink-muted"> · {selecionadosAvulsos.size} compra(s) única(s)</span>
+              )}
               <span className="text-ink-muted text-[0.75rem] block">Nenhum email ou cobrança será disparado.</span>
             </div>
             <div className="flex items-center gap-[0.5rem] shrink-0">
               <Button variant="secondary" size="sm" onClick={onClose}>Cancelar</Button>
-              <Button variant="primary" size="sm" onClick={importar} disabled={selecionados.size === 0 || importando}>
-                {importando ? 'Importando…' : `Importar ${selecionados.size} cliente(s)`}
+              <Button variant="primary" size="sm" onClick={importar} disabled={totalSelecionado === 0 || importando}>
+                {importando ? 'Importando…' : `Importar ${totalSelecionado} cliente(s)`}
               </Button>
             </div>
           </div>
