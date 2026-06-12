@@ -106,6 +106,22 @@ export async function avancarEstagio(clienteId: string, novoEstagio: string, aca
 // ESTAGIOS
 // ============================================================
 
+// Checklist é JSONB, mas já houve gravação dupla-encodada (string JSON) pelo
+// webhook-asaas. Normaliza na leitura para nenhum consumidor quebrar com .filter/.map.
+export function normalizarChecklistEstagio(estagio: Estagio | null): Estagio | null {
+  if (!estagio || estagio.checklist == null) return estagio;
+  if (Array.isArray(estagio.checklist)) return estagio;
+  if (typeof estagio.checklist === 'string') {
+    try {
+      const parsed = JSON.parse(estagio.checklist);
+      return { ...estagio, checklist: Array.isArray(parsed) ? parsed : undefined };
+    } catch {
+      return { ...estagio, checklist: undefined };
+    }
+  }
+  return { ...estagio, checklist: undefined };
+}
+
 export async function criarEstagio(dados: {
   cliente_id:  string;
   nome:        string;
@@ -135,7 +151,7 @@ export async function obterEstagioAtivo(clienteId: string): Promise<Estagio | nu
     .maybeSingle();
 
   if (error) throw new Error(`Erro ao obter estágio: ${error.message}`);
-  return data as Estagio | null;
+  return normalizarChecklistEstagio(data as Estagio | null);
 }
 
 export async function congelarCliente(clienteId: string) {

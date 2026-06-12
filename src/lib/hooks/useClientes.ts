@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { isInadimplente } from '@/lib/cobranca'
+import { normalizarChecklistEstagio } from '@/lib/database'
 import type { Cliente, Estagio } from '@/lib/types'
 
 export type ClienteComEstagio = {
@@ -44,7 +45,7 @@ export function useClientes() {
       const estagiosPorCliente = new Map<string, Estagio>()
       for (const e of (estagios ?? []) as Estagio[]) {
         if (!estagiosPorCliente.has(e.cliente_id)) {
-          estagiosPorCliente.set(e.cliente_id, e)
+          estagiosPorCliente.set(e.cliente_id, normalizarChecklistEstagio(e) as Estagio)
         }
       }
 

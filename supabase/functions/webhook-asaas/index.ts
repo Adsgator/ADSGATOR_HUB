@@ -152,7 +152,9 @@ async function obterOuCriarCliente(
       : 'Nova compra única (ex: landing page) — iniciar onboarding e entrega',
     acao_label:  '#BOASVINDAS',
     acao_url:    `https://wa.me/${whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉 Vou entrar em contato em breve para iniciar seu onboarding.')}`,
-    checklist: JSON.stringify(ehAssinatura
+    // ⚠️ Sem JSON.stringify — coluna é JSONB; string dupla-encodada quebra
+    // todo consumidor que faz checklist.filter/map (ex.: health-score).
+    checklist: (ehAssinatura
       ? [
           { item: 'Enviar mensagem #BOASVINDAS no WhatsApp', done: false },
           { item: 'Coletar informações de onboarding', done: false },

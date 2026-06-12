@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.11.1',
+    data:   '2026-06-12',
+    novidades: [
+      'Correção: página Clientes quebrava ("checklist.filter is not a function") com clientes vindos do checkout Asaas — o webhook gravava o checklist do estágio como texto em vez de lista; corrigido o webhook, os registros existentes e a leitura agora tolera dados malformados',
+    ],
+  },
+  {
     versao: '0.11.0',
     data:   '2026-06-12',
     novidades: [
