@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { TEST_MODE, TEST_CONFIG, logTest, maskSensitive } from '../_shared/test-mode.ts';
+import { TEST_MODE, logTest } from '../_shared/test-mode.ts';
 import { LIMIARES_ATRASO } from '../_shared/cobranca.ts';
 
 const corsHeaders = {
@@ -171,143 +171,86 @@ serve(async (req) => {
     console.log(`[ASAAS WEBHOOK] Evento: ${evento}`);
 
     // ============================================================
-    // PAGAMENTO RECEBIDO → criar/ativar cliente
+    // PAGAMENTO RECEBIDO → zerar atraso/reativar (cria cliente se preciso)
     // ============================================================
     if (evento === 'PAYMENT_RECEIVED') {
-      const subscriptionId = pagamento.subscription;
-      const valorPago      = pagamento.value as number;
+      const subscriptionId = pagamento?.subscription as string | undefined;
+      const valorPago      = (pagamento?.value ?? 0) as number;
+      const paymentId      = pagamento?.id as string | undefined;
 
-      // Verificar se já existe assinatura com este subscription_id
-      const { data: assinaturaExistente } = await supabase
+      // Pagamento avulso (sem assinatura): fora do ciclo de clientes.
+      // Tentar criar cliente aqui gerava registros 'sem nome' e 500 em loop.
+      if (!subscriptionId) {
+        console.log(`[PAYMENT_RECEIVED] Pagamento avulso ${paymentId ?? 'sem id'} ignorado`);
+        return new Response(JSON.stringify({ ignored: true, motivo: 'pagamento_avulso' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Garante cliente + assinatura (cria com dados reais da API se necessário)
+      const garantia = await garantirClienteDaAssinatura(subscriptionId);
+      if (!garantia) {
+        return new Response(JSON.stringify({ ignored: true, motivo: 'sem_api_key' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Zerar atraso e reativar assinatura
+      await supabase
         .from('assinaturas')
-        .select('id, cliente_id, dias_atraso')
-        .eq('asaas_subscription_id', subscriptionId)
-        .maybeSingle();
+        .update({
+          status:                'ativa',
+          dias_atraso:           0,
+          data_proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          updated_at:            new Date().toISOString(),
+        })
+        .eq('asaas_subscription_id', subscriptionId);
 
-      if (assinaturaExistente) {
-        // Pagamento de assinatura existente — zerar atraso
-        await supabase
-          .from('assinaturas')
-          .update({
-            status:                'ativa',
-            dias_atraso:           0,
-            data_proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            updated_at:            new Date().toISOString(),
-          })
-          .eq('id', assinaturaExistente.id);
-
-        // Se cliente estava cancelado por débito, reativar
-        const { data: cliente } = await supabase
-          .from('clientes')
-          .select('id, status')
-          .eq('id', assinaturaExistente.cliente_id)
-          .single();
-
-        if (cliente?.status === 'cancelado') {
-          await supabase
-            .from('clientes')
-            .update({ status: 'ativo' })
-            .eq('id', cliente.id);
+      // Reativar cliente cancelado e zerar atraso
+      const { data: cliente } = await supabase
+        .from('clientes')
+        .select('id, status, dias_atraso')
+        .eq('id', garantia.clienteId)
+        .single();
+      if (cliente) {
+        const updates: Record<string, unknown> = {};
+        if (['cancelado', 'cancelado_debito'].includes(cliente.status)) updates.status = 'ativo';
+        if ((cliente.dias_atraso ?? 0) > 0) updates.dias_atraso = 0;
+        if (Object.keys(updates).length > 0) {
+          await supabase.from('clientes').update(updates).eq('id', cliente.id);
         }
+      }
 
-        await supabase.from('historico_acoes').insert({
-          cliente_id:      assinaturaExistente.cliente_id,
-          tipo_acao:       'pagamento_recebido',
-          descricao:       `Pagamento de R$ ${valorPago.toFixed(2)} recebido via Asaas.`,
-          valor_impactado: valorPago,
-          metadata:        { asaas_subscription_id: subscriptionId, event: evento },
-        });
+      await supabase.from('historico_acoes').insert({
+        cliente_id:      garantia.clienteId,
+        tipo_acao:       'pagamento_recebido',
+        descricao:       `Pagamento de R$ ${valorPago.toFixed(2)} recebido via Asaas.`,
+        valor_impactado: valorPago,
+        metadata:        { asaas_subscription_id: subscriptionId, asaas_payment_id: paymentId, event: evento },
+      });
 
-      } else {
-        // Primeira vez: criar cliente e assinatura
-        const customer = payload.customer ?? {};
-
-        const { data: novoCliente, error: errCliente } = await supabase
-          .from('clientes')
-          .insert({
-            nome:     customer.name       ?? 'Cliente sem nome',
-            email:    customer.email      ?? `${subscriptionId}@sem-email.com`,
-            whatsapp: customer.mobilePhone ?? '',
-            nicho:    'a_definir',
-            status:   'recebido',
-          })
-          .select()
-          .single();
-
-        if (errCliente) throw new Error(`Erro ao criar cliente: ${errCliente.message}`);
-
-        // Criar assinatura
-        const dataProxima = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        await supabase.from('assinaturas').insert({
-          cliente_id:              novoCliente.id,
-          plano_nome:              'Plano Adsgator',
-          valor_mensal:            valorPago,
-          status:                  'ativa',
-          dias_atraso:             0,
-          asaas_subscription_id:   subscriptionId,
-          data_proxima_cobranca:   dataProxima.toISOString(),
-        });
-
-        // Criar estágio inicial no novo schema
-        await supabase.from('estagios').insert({
-          cliente_id:  novoCliente.id,
-          nome:        'recebido',
-          descricao:   'Novo cliente — enviar #BOASVINDAS agora',
-          acao_label:  '#BOASVINDAS',
-          acao_url:    `https://wa.me/${novoCliente.whatsapp?.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉 Vou entrar em contato em breve para iniciar seu onboarding.')}`,
-          checklist: JSON.stringify([
-            { item: 'Enviar mensagem #BOASVINDAS no WhatsApp', done: false },
-            { item: 'Criar ficha do cliente no sistema', done: false },
-            { item: 'Agendar call de onboarding', done: false },
-          ]),
-          ativo: true,
-        });
-
-        // Buscar user_id do proprietário buscando o primeiro cliente com user_id (18.3 fix)
-        const { data: ownerRow } = await supabase
-          .from('clientes')
-          .select('user_id')
-          .not('user_id', 'is', null)
-          .order('created_at', { ascending: true })
-          .limit(1)
+      // Lançamento financeiro: confirma o pendente (criado no PAYMENT_CREATED) ou cria
+      if (paymentId) {
+        const { data: lancamento } = await supabase
+          .from('financeiro_lancamentos')
+          .select('id')
+          .eq('asaas_payment_id', paymentId)
           .maybeSingle();
-        const ownerUserId = ownerRow?.user_id ?? null;
-
-        // Atualizar cliente com user_id do proprietário
-        if (ownerUserId) {
-          await supabase.from('clientes').update({ user_id: ownerUserId }).eq('id', novoCliente.id);
+        if (lancamento) {
+          await supabase.from('financeiro_lancamentos').update({ status: 'confirmado' }).eq('id', lancamento.id);
+        } else {
+          await supabase.from('financeiro_lancamentos').insert({
+            user_id:          await buscarOwnerUserId(),
+            cliente_id:       garantia.clienteId,
+            tipo:             'receita',
+            categoria:        'mensalidade',
+            descricao:        `Pagamento recebido via Asaas — R$ ${valorPago.toFixed(2)}`,
+            valor:            valorPago,
+            data:             new Date().toISOString().split('T')[0],
+            asaas_payment_id: paymentId,
+            status:           'confirmado',
+          });
         }
-
-        // Registrar lançamento financeiro inicial
-        await supabase.from('financeiro_lancamentos').insert({
-          user_id:          ownerUserId,
-          cliente_id:       novoCliente.id,
-          tipo:             'receita',
-          categoria:        'mensalidade',
-          descricao:        `Primeiro pagamento — ${novoCliente.nome}`,
-          valor:            valorPago,
-          data:             new Date().toISOString().split('T')[0],
-          asaas_payment_id: subscriptionId,
-          status:           'confirmado',
-        });
-
-        // Criar notificação de ação imediata
-        // 🧪 Em modo de teste, usa dados de teste
-        const notifWhatsApp = TEST_MODE 
-          ? TEST_CONFIG.testWhatsApp 
-          : novoCliente.whatsapp?.replace(/\D/g, '');
-        
-        await supabase.from('notificacoes').insert({
-          user_id:    ownerUserId,
-          cliente_id: novoCliente.id,
-          tipo:       'urgente',
-          titulo:     TEST_MODE ? `${TEST_CONFIG.testPrefixo} Novo cliente recebido!` : 'Novo cliente recebido!',
-          mensagem:   TEST_MODE 
-            ? `[TESTE] ${novoCliente.nome} seria notificado. WhatsApp real: ${maskSensitive(novoCliente.whatsapp || 'N/A')}`
-            : `${novoCliente.nome} aguarda #BOASVINDAS agora.`,
-          acao_label: '#BOASVINDAS',
-          acao_url:   `https://wa.me/${notifWhatsApp}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator! 🎉')}`,
-        });
       }
     }
 
