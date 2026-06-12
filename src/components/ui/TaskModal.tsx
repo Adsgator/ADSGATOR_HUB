@@ -18,6 +18,16 @@ interface Props {
 
 interface ClienteOpcao { id: string; nome: string }
 
+interface TemplateOpcao {
+  id:         string
+  nome:       string
+  titulo:     string
+  descricao:  string | null
+  prioridade: TarefaPrioridade
+  prazo_dias: number | null
+  checklist:  string[]
+}
+
 const PRIORIDADES: { value: TarefaPrioridade; label: string }[] = [
   { value: 'baixo',   label: 'Baixo'  },
   { value: 'normal',  label: 'Normal' },
@@ -45,6 +55,7 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
   const [novaSubtask,   setNovaSubtask]   = useState('')
   const [clientes,      setClientes]      = useState<ClienteOpcao[]>([])
   const [membros,       setMembros]       = useState<{ id: string; nome: string }[]>([])
+  const [templates,     setTemplates]     = useState<TemplateOpcao[]>([])
   const [salvando,      setSalvando]      = useState(false)
   const [erro,          setErro]          = useState('')
 
@@ -57,7 +68,33 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
       .then(({ data }) => {
         if (data?.length) setMembros(data as { id: string; nome: string }[])
       })
-  }, [])
+
+    // Templates de tarefa — só para criação (editar tarefa não aplica template)
+    if (!tarefa?.id) {
+      fetch('/api/v1/tarefa-templates')
+        .then((r) => (r.ok ? r.json() : { data: [] }))
+        .then((body) => setTemplates((body.data ?? []) as TemplateOpcao[]))
+        .catch(() => { /* dropdown só não aparece */ })
+    }
+  }, [tarefa?.id])
+
+  function aplicarTemplate(templateId: string) {
+    const tpl = templates.find((t) => t.id === templateId)
+    if (!tpl) return
+    const nomeCliente = clientes.find((c) => c.id === clienteId)?.nome
+    setTitulo(nomeCliente ? tpl.titulo.replace('{cliente}', nomeCliente) : tpl.titulo)
+    setDescricao(tpl.descricao ?? '')
+    setPrioridade(tpl.prioridade)
+    setSubtasks(tpl.checklist.map((texto) => ({ id: crypto.randomUUID(), texto, concluido: false })))
+    if (tpl.prazo_dias != null) {
+      const prazo = new Date()
+      prazo.setDate(prazo.getDate() + tpl.prazo_dias)
+      prazo.setHours(18, 0, 0, 0)
+      // formato datetime-local (YYYY-MM-DDTHH:mm) em hora local
+      const pad = (n: number) => String(n).padStart(2, '0')
+      setDataPrazo(`${prazo.getFullYear()}-${pad(prazo.getMonth() + 1)}-${pad(prazo.getDate())}T${pad(prazo.getHours())}:${pad(prazo.getMinutes())}`)
+    }
+  }
 
   function adicionarSubtask() {
     const texto = novaSubtask.trim()
@@ -117,6 +154,21 @@ export function TaskModal({ tarefa, onClose, onSaved }: Props) {
         </div>
 
         <form onSubmit={salvar} className="p-[1.5rem] flex flex-col gap-[1rem] overflow-y-auto flex-1">
+          {/* Criar a partir de template (só em tarefa nova) */}
+          {!tarefa?.id && templates.length > 0 && (
+            <div>
+              <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">Criar a partir de template</label>
+              <select
+                defaultValue=""
+                onChange={(e) => { if (e.target.value) aplicarTemplate(e.target.value) }}
+                className="w-full h-[2.5rem] px-[0.625rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30"
+              >
+                <option value="">Sem template — começar do zero</option>
+                {templates.map((t) => <option key={t.id} value={t.id}>{t.nome}</option>)}
+              </select>
+            </div>
+          )}
+
           {/* Título */}
           <div>
             <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">Título *</label>

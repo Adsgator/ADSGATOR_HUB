@@ -296,6 +296,75 @@ export const TOOLS: Record<string, Tool> = {
     resumo: (args) => `Tarefa criada: "${str(args.titulo)}"`,
   },
 
+  listar_templates_tarefa: {
+    declaration: {
+      name: 'listar_templates_tarefa',
+      description: 'Lista os templates de tarefa/processo disponíveis (ex.: setup-cliente, onboarding-cliente) com checklist, prioridade e prazo. Use antes de criar_tarefa_de_template.',
+      parameters: { type: T.OBJECT, properties: {} },
+    },
+    execute: async (_args, ctx) => {
+      const { data, error } = await ctx.db
+        .from('tarefa_templates')
+        .select('id, slug, nome, titulo, descricao, prioridade, prazo_dias, checklist')
+        .order('created_at', { ascending: true })
+      if (error) throw new Error(error.message)
+      return { total: (data ?? []).length, templates: data ?? [] }
+    },
+    resumo: () => 'Consultou templates de tarefa',
+  },
+
+  criar_tarefa_de_template: {
+    declaration: {
+      name: 'criar_tarefa_de_template',
+      description: 'Cria uma tarefa a partir de um template de processo (preenche título, checklist, prioridade e prazo automaticamente). Identifique o template por id ou slug (ex.: "setup-cliente").',
+      parameters: {
+        type: T.OBJECT,
+        properties: {
+          template:   { type: T.STRING, description: 'ID ou slug do template (veja listar_templates_tarefa)' },
+          cliente_id: { type: T.STRING, description: 'Cliente para substituir {cliente} no título (opcional)' },
+        },
+        required: ['template'],
+      },
+    },
+    execute: async (args, ctx) => {
+      const ref = str(args.template)
+      if (!ref) throw new Error('template é obrigatório.')
+      const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ref)
+      const { data: tpl, error: tplErr } = await ctx.db
+        .from('tarefa_templates')
+        .select('nome, titulo, descricao, prioridade, prazo_dias, checklist')
+        .eq(uuidLike ? 'id' : 'slug', ref)
+        .maybeSingle()
+      if (tplErr) throw new Error(tplErr.message)
+      if (!tpl) throw new Error(`Template "${ref}" não encontrado.`)
+
+      const cid = str(args.cliente_id)
+      let nomeCliente: string | undefined
+      if (cid) {
+        const cliente = await ownCliente(ctx, cid)
+        nomeCliente = cliente.nome as string
+      }
+
+      const prazo = tpl.prazo_dias != null ? new Date() : null
+      if (prazo) prazo.setDate(prazo.getDate() + (tpl.prazo_dias as number))
+
+      const checklist = (Array.isArray(tpl.checklist) ? tpl.checklist : []) as string[]
+      const { data, error } = await ctx.db.from('tarefas').insert({
+        user_id:    ctx.userId,
+        titulo:     nomeCliente ? tpl.titulo.replace('{cliente}', nomeCliente) : tpl.titulo,
+        descricao:  tpl.descricao ?? '',
+        prioridade: tpl.prioridade ?? 'normal',
+        status:     'pendente',
+        data_prazo: prazo ? prazo.toISOString().slice(0, 10) : null,
+        cliente_id: cid,
+        checklist:  checklist.map((texto) => ({ id: crypto.randomUUID(), texto, concluido: false })),
+      }).select('id, titulo').single()
+      if (error) throw new Error(error.message)
+      return data
+    },
+    resumo: (args) => `Tarefa criada do template "${str(args.template)}"`,
+  },
+
   atualizar_tarefa: {
     declaration: {
       name: 'atualizar_tarefa',
