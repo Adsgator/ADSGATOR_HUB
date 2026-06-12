@@ -19,6 +19,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Gator cria tarefas de processo: ferramentas listar_templates_tarefa e criar_tarefa_de_template',
       'Provisionamento automático: cliente novo gera tarefa "Setup do cliente" com checklist de integrações nos 3 caminhos (formulário, importador e checkout Asaas)',
       'Retroativo: botão na aba Setup cria as tarefas de setup para clientes existentes sem IDs Google (idempotente)',
+      'Empty states que guiam: widgets vazios por falta de configuração (Monitoramento, Saldo Google Ads, Timelines) agora explicam o motivo e linkam para o Setup',
+      'Morning Briefing transparente: aviso discreto quando o texto vem do fallback por Vertex AI não configurado',
     ],
   },
   {

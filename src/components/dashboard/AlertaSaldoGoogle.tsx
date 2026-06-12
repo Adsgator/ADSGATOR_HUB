@@ -5,6 +5,7 @@ import { CreditCard, AlertTriangle, TrendingDown, Loader2, RefreshCw } from 'luc
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import { EmptyStateConfig } from './EmptyStateConfig'
 
 interface SaldoAlert {
   cliente_id: string
@@ -25,6 +26,7 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
   const [alertas, setAlertas] = useState<SaldoAlert[]>([])
   const [loading, setLoading] = useState(true)
   const [atualizando, setAtualizando] = useState(false)
+  const [temClientesAds, setTemClientesAds] = useState(true)
 
   const carregarSaldos = async () => {
     try {
@@ -37,6 +39,7 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
 
       if (error) throw error
 
+      setTemClientesAds((clientes ?? []).length > 0)
       if (!clientes || clientes.length === 0) {
         setAlertas([])
         setLoading(false)
@@ -127,6 +130,20 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
         <div className="space-y-2">
           <div className="h-8 bg-surface-hover rounded" />
         </div>
+      </div>
+    )
+  }
+
+  // Sem nenhum cliente com Google Ads conectado = falta de config, não "tudo ok"
+  if (!temClientesAds) {
+    return (
+      <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow h-full">
+        <EmptyStateConfig
+          icon={CreditCard}
+          titulo="Saldo Google Ads"
+          motivo="Nenhum cliente com Google Ads conectado — preencha o customer ID e habilite a integração nos clientes para monitorar o saldo."
+          compacto
+        />
       </div>
     )
   }

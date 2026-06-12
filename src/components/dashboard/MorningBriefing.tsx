@@ -16,6 +16,7 @@ const FILTROS: { value: FiltroModo; label: string }[] = [
 
 interface BriefingData {
   texto:      string
+  fonte?:     'ia' | 'fallback'
   gerado_em:  string
 }
 
@@ -128,10 +129,18 @@ export function MorningBriefing() {
               </Button>
             )}
             {briefing.gerado_em && (
-              <div className="mt-[0.75rem]">
+              <div className="mt-[0.75rem] flex items-center gap-[0.5rem] flex-wrap">
                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-surface-hover text-ink-muted text-xs">
                   Gerado hoje às {formatarHora(briefing.gerado_em)}
                 </span>
+                {briefing.fonte === 'fallback' && (
+                  <a
+                    href="/configuracoes?tab=setup"
+                    className="text-xs text-ink-muted hover:text-ads-500 transition-colors underline decoration-dotted underline-offset-2"
+                  >
+                    Vertex AI não configurado — ver Setup
+                  </a>
+                )}
               </div>
             )}
           </div>

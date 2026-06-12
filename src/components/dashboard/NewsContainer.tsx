@@ -1,8 +1,9 @@
 'use client'
 
 import { useRef, useEffect, useState, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RefreshCw, BarChart3 } from 'lucide-react'
 import { NewsClienteCard } from './NewsClienteCard'
+import { EmptyStateConfig } from './EmptyStateConfig'
 import { cn } from '@/lib/utils'
 import type { NewsClienteData } from '@/lib/types/news'
 
@@ -83,8 +84,19 @@ export function NewsContainer() {
     el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' })
   }
 
-  // Ocultar apenas se tiver carregado e não há clientes
-  if (!loading && clientes.length === 0) return null
+  // Vazio = falta de config (snapshots ainda não sincronizam): explica em vez de sumir
+  if (!loading && clientes.length === 0) {
+    return (
+      <div className="mb-[1rem] bg-surface-card border border-surface-border rounded-xl card-shadow animate-fade-up">
+        <EmptyStateConfig
+          icon={BarChart3}
+          titulo="Monitoramento sem dados"
+          motivo="Sem snapshots de analytics para exibir — configure as credenciais Google (Ads/GA4) e a sincronização para acompanhar os clientes aqui."
+          compacto
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="relative mb-[1rem] animate-fade-up">

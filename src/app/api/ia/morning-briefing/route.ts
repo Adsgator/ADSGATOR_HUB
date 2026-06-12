@@ -91,11 +91,12 @@ export async function GET(req: Request) {
     const model  = vertex.preview.getGenerativeModel({ model: MODELO_PRO })
     const result = await model.generateContent(prompt)
     const texto  = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
-    return NextResponse.json({ texto, gerado_em: new Date().toISOString() })
+    return NextResponse.json({ texto, fonte: 'ia', gerado_em: new Date().toISOString() })
   } catch {
+    // Fallback sem IA (Vertex ausente/indisponível) — o card mostra o aviso via `fonte`
     const texto = inadimplentes.length > 0
       ? `${inadimplentes.length} cliente(s) inadimplente(s) requerem atenção hoje. MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}.`
       : `Bom dia! ${clientesTyped.length} clientes ativos. MRR: R$ ${mrrTotal.toLocaleString('pt-BR')}. Sem alertas críticos.`
-    return NextResponse.json({ texto, gerado_em: new Date().toISOString() })
+    return NextResponse.json({ texto, fonte: 'fallback', gerado_em: new Date().toISOString() })
   }
 }

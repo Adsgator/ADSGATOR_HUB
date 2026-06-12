@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { ChevronDown, CheckSquare, Clock, AlertTriangle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { TimelineContent } from './TimelineContent'
+import { EmptyStateConfig } from './EmptyStateConfig'
 import type { TimelineInstance, TimelineType } from '@/lib/types/timeline'
 
 interface TimelineCardProps {
@@ -17,18 +18,21 @@ const TYPE_CONFIG = {
     title: 'Onboarding',
     color: 'text-ads-500',
     bg: 'bg-ads-500/10',
+    motivoVazio: 'Nenhum onboarding em andamento. Timelines nascem de um template — crie ou aplique um em Configurações → Templates.',
   },
   recurring_task: {
     icon: Clock,
     title: 'Tarefas Recorrentes',
     color: 'text-status-blue',
     bg: 'bg-status-blue/10',
+    motivoVazio: 'Nenhuma rotina recorrente ativa. Configure um template de tarefa recorrente e instancie para um cliente.',
   },
   alert: {
     icon: AlertTriangle,
     title: 'Alertas',
     color: 'text-status-red',
     bg: 'bg-status-red/10',
+    motivoVazio: 'Nenhuma timeline de alerta ativa. Alertas guiados são instanciados a partir de templates do tipo Alerta.',
   },
 }
 
@@ -133,13 +137,14 @@ export function TimelineCard({ type, clienteId }: TimelineCardProps) {
               <Loader2 className="w-[1.25rem] h-[1.25rem] animate-spin text-ads-500" />
             </div>
           ) : activeInstances.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-[1.5rem] gap-[0.5rem] text-ink-muted">
-              <Icon className="w-[1.75rem] h-[1.75rem]" strokeWidth={1} />
-              <p className="text-[0.8125rem]">Nenhuma instância ativa</p>
-              <a href="/configuracoes/templates" className="text-[0.75rem] text-ads-500 hover:underline">
-                Gerenciar templates →
-              </a>
-            </div>
+            <EmptyStateConfig
+              icon={Icon}
+              titulo="Nenhuma instância ativa"
+              motivo={config.motivoVazio}
+              ctaLabel="Gerenciar templates"
+              ctaHref="/configuracoes/templates"
+              compacto
+            />
           ) : (
             <>
               {/* Instance selector if multiple */}
