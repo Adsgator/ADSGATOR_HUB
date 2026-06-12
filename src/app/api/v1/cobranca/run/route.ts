@@ -3,26 +3,115 @@ import { createClient } from '@/lib/supabase/server'
 import { criarClienteServiceRole } from '@/lib/supabase'
 import { dispararEmailAutomatico, automacaoAtiva } from '@/lib/email-automation'
 import { estagioInadimplencia } from '@/lib/cobranca'
+import { asaasGetAll } from '@/lib/asaas'
 import type { EmailTemplateId } from '@/lib/types/email'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 /**
- * Régua de cobrança por email.
+ * Régua de cobrança — roda diariamente (Vercel Cron 09:00).
  *
- * Percorre clientes inadimplentes e dispara o email correspondente ao estágio
- * de atraso (lib/cobranca.ts). Só envia se a automação 'email_cobranca_vencida'
- * estiver ativa — caso contrário, não faz nada.
+ * ETAPA 1 (sempre roda): sincroniza dias_atraso com o Asaas.
+ *   O PAYMENT_OVERDUE do webhook dispara UMA vez (no vencimento), então a
+ *   progressão diária do atraso é responsabilidade deste cron: busca os
+ *   pagamentos OVERDUE no Asaas, calcula dias desde o vencimento mais antigo
+ *   por assinatura e atualiza assinaturas.dias_atraso/status e
+ *   clientes.dias_atraso (a UI e os alertas leem do cliente). Também zera
+ *   quem não tem mais cobrança vencida.
  *
- * Mapa estágio → template:
- *  - suspensao (D+7)  → payment-reminder
- *  - grave (D+15)     → payment-followup
- *  - critico (D+30)   → payment-followup
- *  (atencao D+1..6 não dispara email — muito cedo)
+ * ETAPA 2 (só com toggle 'email_cobranca_vencida' ativo): dispara o email
+ * do estágio (lib/cobranca.ts): suspensao→reminder, grave/critico→followup.
  *
  * Auth: sessão (botão) ou Bearer CRON_SECRET (agendado, GET).
  */
+
+interface AsaasOverduePayment {
+  subscription: string | null
+  dueDate:      string | null
+  deleted:      boolean
+}
+
+const STATUS_ASSINATURA_POR_ESTAGIO: Record<string, string> = {
+  em_dia:    'ativa',
+  atencao:   'ativa',
+  suspensao: 'atraso_7_dias',
+  grave:     'atraso_15_dias',
+  critico:   'cancelado_debito',
+}
+
+async function sincronizarAtrasos(supabase: Parameters<typeof dispararEmailAutomatico>[0]) {
+  if (!process.env.ASAAS_API_KEY) {
+    return { ok: false, motivo: 'ASAAS_API_KEY ausente' }
+  }
+
+  let vencidos: AsaasOverduePayment[]
+  try {
+    vencidos = await asaasGetAll<AsaasOverduePayment>('/v3/payments?status=OVERDUE')
+  } catch (err) {
+    return { ok: false, motivo: err instanceof Error ? err.message : String(err) }
+  }
+
+  // Dias de atraso por assinatura = vencimento mais antigo em aberto
+  const hoje = Date.now()
+  const atrasoPorSub = new Map<string, number>()
+  for (const p of vencidos) {
+    if (!p.subscription || p.deleted || !p.dueDate) continue
+    const dias = Math.max(0, Math.floor((hoje - new Date(`${p.dueDate}T12:00:00`).getTime()) / 86_400_000))
+    if (dias > (atrasoPorSub.get(p.subscription) ?? -1)) atrasoPorSub.set(p.subscription, dias)
+  }
+
+  const { data: assinaturas } = await supabase
+    .from('assinaturas')
+    .select('id, cliente_id, dias_atraso, status, asaas_subscription_id')
+    .not('asaas_subscription_id', 'is', null)
+
+  const atrasoPorCliente = new Map<string, number>()
+  let atualizadas = 0
+
+  for (const a of assinaturas ?? []) {
+    // Assinaturas encerradas não voltam para a régua
+    if (['cancelada', 'deletada'].includes(a.status)) continue
+
+    const novoAtraso = atrasoPorSub.get(a.asaas_subscription_id) ?? 0
+    const novoStatus = STATUS_ASSINATURA_POR_ESTAGIO[estagioInadimplencia(novoAtraso)]
+
+    if (novoAtraso !== (a.dias_atraso ?? 0) || novoStatus !== a.status) {
+      await supabase
+        .from('assinaturas')
+        .update({ dias_atraso: novoAtraso, status: novoStatus, updated_at: new Date().toISOString() })
+        .eq('id', a.id)
+      atualizadas++
+    }
+    atrasoPorCliente.set(
+      a.cliente_id,
+      Math.max(atrasoPorCliente.get(a.cliente_id) ?? 0, novoAtraso),
+    )
+  }
+
+  // Reflete no cliente (UI, alertas e esta régua leem clientes.dias_atraso)
+  let clientesAtualizados = 0
+  for (const [clienteId, dias] of atrasoPorCliente) {
+    const { data: cliente } = await supabase
+      .from('clientes')
+      .select('id, dias_atraso, status')
+      .eq('id', clienteId)
+      .maybeSingle()
+    if (!cliente) continue
+
+    const updates: Record<string, unknown> = {}
+    if ((cliente.dias_atraso ?? 0) !== dias) updates.dias_atraso = dias
+    if (estagioInadimplencia(dias) === 'critico' && cliente.status === 'ativo') {
+      updates.status = 'cancelado_debito'
+    }
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('clientes').update(updates).eq('id', clienteId)
+      clientesAtualizados++
+    }
+  }
+
+  return { ok: true, assinaturas_atualizadas: atualizadas, clientes_atualizados: clientesAtualizados, vencidos_no_asaas: vencidos.length }
+}
 
 const TEMPLATE_POR_ESTAGIO: Record<string, EmailTemplateId | null> = {
   em_dia: null,
@@ -41,9 +130,13 @@ interface ClienteCobranca {
 }
 
 async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0]) {
-  // Curto-circuito: se a automação está desligada, nem busca clientes.
+  // Etapa 1: sincroniza dias_atraso com o Asaas — roda SEMPRE, mesmo com
+  // email desligado, senão a inadimplência congela.
+  const sync = await sincronizarAtrasos(supabase)
+
+  // Etapa 2: emails — curto-circuito se a automação está desligada.
   if (!(await automacaoAtiva(supabase, 'email_cobranca_vencida'))) {
-    return { ativa: false, enviados: 0, resultados: [] }
+    return { ativa: false, enviados: 0, resultados: [], sync_atrasos: sync }
   }
 
   const { data: clientes } = await supabase
@@ -74,7 +167,7 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
     resultados.push({ cliente: c.nome, estagio, enviado: r.enviado, motivo: r.motivo })
   }
 
-  return { ativa: true, enviados, resultados }
+  return { ativa: true, enviados, resultados, sync_atrasos: sync }
 }
 
 export async function GET(req: NextRequest) {

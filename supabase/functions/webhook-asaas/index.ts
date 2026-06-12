@@ -219,11 +219,40 @@ serve(async (req) => {
     });
   }
 
+  // Parse fora do try principal: payload/eventId precisam estar visíveis no catch
+  let payload: Record<string, unknown>;
   try {
-    const payload = await req.json();
-    const evento  = payload.event as string;
-    const pagamento = payload.payment;
+    payload = await req.json();
+  } catch {
+    return new Response(JSON.stringify({ error: 'JSON inválido' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
+  const evento    = payload.event as string;
+  // deno-lint-ignore no-explicit-any
+  const pagamento = payload.payment as any;
+  const eventId   = payload.id as string | undefined;
+
+  // Dedupe: o Asaas reenvia eventos (retry/Reenviar). Se já processamos este
+  // id, responde 200 sem reprocessar. Falha no insert por outro motivo
+  // (ex: tabela ausente) não bloqueia — só loga.
+  if (eventId) {
+    const { error: dupErr } = await supabase
+      .from('asaas_webhook_events')
+      .insert({ id: eventId, event: evento });
+    if (dupErr) {
+      if (dupErr.code === '23505') {
+        console.log(`[DEDUPE] Evento ${eventId} já processado — ignorando`);
+        return new Response(JSON.stringify({ ignored: true, motivo: 'evento_duplicado' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      console.error(`[DEDUPE] Falha ao registrar evento ${eventId}: ${dupErr.message}`);
+    }
+  }
+
+  try {
     logTest(`Webhook recebido - Evento: ${evento}`);
     if (TEST_MODE) {
       console.log('[🧪 TEST_MODE] Processando em modo de teste - nenhum cliente real será afetado');
@@ -477,6 +506,41 @@ serve(async (req) => {
     if (evento === 'PAYMENT_DELETED') {
       await supabase.from('financeiro_lancamentos').delete().eq('asaas_payment_id', pagamento.id as string).eq('status', 'pendente')
       console.log(`[PAYMENT_DELETED] Lançamento pendente ${pagamento.id} removido`)
+    }
+
+    // ============================================================
+    // PAYMENT_REFUNDED → estorno: cancela lançamento e avisa o operador
+    // ============================================================
+    if (evento === 'PAYMENT_REFUNDED') {
+      const paymentId = pagamento?.id as string | undefined
+      const valor     = (pagamento?.value ?? 0) as number
+      if (paymentId) {
+        const { data: lancamento } = await supabase
+          .from('financeiro_lancamentos')
+          .select('id, cliente_id')
+          .eq('asaas_payment_id', paymentId)
+          .maybeSingle()
+        await supabase.from('financeiro_lancamentos').update({ status: 'cancelado' }).eq('asaas_payment_id', paymentId)
+        if (lancamento?.cliente_id) {
+          const { data: cli } = await supabase.from('clientes').select('nome, user_id').eq('id', lancamento.cliente_id).maybeSingle()
+          await supabase.from('historico_acoes').insert({
+            cliente_id:      lancamento.cliente_id,
+            tipo_acao:       'pagamento_estornado',
+            descricao:       `↩️ Pagamento de R$ ${valor.toFixed(2)} estornado no Asaas.`,
+            valor_impactado: valor,
+            metadata:        { event: evento, asaas_payment_id: paymentId },
+          })
+          await supabase.from('notificacoes').insert({
+            user_id:    cli?.user_id,
+            cliente_id: lancamento.cliente_id,
+            tipo:       'urgente',
+            titulo:     `${cli?.nome ?? 'Cliente'} — Pagamento estornado`,
+            mensagem:   `Estorno de R$ ${valor.toFixed(2)} processado no Asaas. Verifique a situação do cliente.`,
+            acao_url:   `/clientes/${lancamento.cliente_id}`,
+            acao_label: 'Ver cliente',
+          })
+        }
+      }
     }
 
     // ============================================================
@@ -755,10 +819,29 @@ serve(async (req) => {
 
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[WEBHOOK ERRO]', msg);
+    console.error(`[WEBHOOK ERRO] evento=${evento} id=${eventId ?? 'sem id'}: ${msg}`);
+
+    // Responde 200 para não entrar em espiral de retry → penalização do Asaas.
+    // O evento fica registrado no histórico do Asaas (Reenviar manual) e o
+    // operador é notificado in-app. Remove o dedupe para permitir reprocesso.
+    if (eventId) {
+      await supabase.from('asaas_webhook_events').delete().eq('id', eventId);
+    }
+    try {
+      const owner = await buscarOwnerUserId();
+      await supabase.from('notificacoes').insert({
+        user_id:    owner,
+        tipo:       'urgente',
+        titulo:     '⚠️ Webhook Asaas falhou ao processar evento',
+        mensagem:   `Evento ${evento} (${eventId ?? 'sem id'}) falhou: ${msg}. Use "Reenviar" no painel do Asaas após corrigir.`,
+        acao_url:   '/configuracoes',
+        acao_label: 'Ver integrações',
+      });
+    } catch { /* notificação é best-effort */ }
+
     return new Response(
-      JSON.stringify({ error: msg, test_mode: TEST_MODE }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      JSON.stringify({ success: false, error_logged: true, error: msg }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }
 });

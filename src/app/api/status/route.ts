@@ -10,15 +10,67 @@ export async function GET() {
     checkAsaas(),
     checkVertexAI(),
     checkGA4(),
+    checkResend(),
   ])
 
-  const [googleAds, asaas, vertexAI, ga4] = results.map((r) =>
+  const [googleAds, asaas, vertexAI, ga4, resend] = results.map((r) =>
     r.status === 'fulfilled'
       ? r.value
       : { status: 'error', message: String((r as PromiseRejectedResult).reason) }
   )
 
-  return NextResponse.json({ googleAds, asaas, vertexAI, ga4 })
+  return NextResponse.json({ googleAds, asaas, vertexAI, ga4, resend })
+}
+
+// ── Resend (email) ────────────────────────────────────────────────────────────
+// Valida a chave e se o domínio do EMAIL_FROM está verificado — sem isso os
+// envios falham na hora que os toggles de automação forem ligados.
+async function checkResend(): Promise<StatusResult> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    return { status: 'not_configured', message: 'Variável RESEND_API_KEY ausente' }
+  }
+
+  try {
+    const res = await fetch('https://api.resend.com/domains', {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(8000),
+    })
+
+    if (res.status === 401) {
+      return { status: 'warn', message: 'Chave Resend inválida' }
+    }
+    if (!res.ok) {
+      return { status: 'warn', message: `Resend respondeu HTTP ${res.status}` }
+    }
+
+    const body = await res.json() as { data?: { name?: string; status?: string }[] }
+    const dominios = body.data ?? []
+
+    // Extrai o domínio do EMAIL_FROM (ex: "Adsgator <noreply@adsgator.com.br>")
+    const emailFrom = process.env.EMAIL_FROM ?? ''
+    const dominioFrom = emailFrom.match(/@([\w.-]+)/)?.[1]?.replace(/>$/, '')
+
+    if (!dominioFrom) {
+      return { status: 'warn', message: 'Chave ok, mas EMAIL_FROM não configurado ou sem domínio' }
+    }
+
+    const dominio = dominios.find((d) => d.name === dominioFrom)
+    if (!dominio) {
+      return { status: 'warn', message: `Domínio ${dominioFrom} não cadastrado na Resend — adicione em Domains` }
+    }
+    if (dominio.status !== 'verified') {
+      return { status: 'warn', message: `Domínio ${dominioFrom} na Resend com status "${dominio.status}" — verifique os registros DNS` }
+    }
+
+    return { status: 'ok', message: `Resend ok — ${dominioFrom} verificado, pronto para enviar` }
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg.includes('timeout') || msg.includes('abort')) {
+      return { status: 'error', message: 'Timeout ao contatar a Resend' }
+    }
+    return { status: 'error', message: `Sem conexão com a Resend: ${msg}` }
+  }
 }
 
 // ── Google Ads ────────────────────────────────────────────────────────────────
@@ -161,6 +213,28 @@ async function checkAsaas(): Promise<{ status: 'ok' | 'warn' | 'error' | 'not_co
     })
 
     if (res.ok) {
+      // API ok — verifica também a saúde do webhook (se ficar interrompido
+      // por falhas, eventos param de chegar ao Hub silenciosamente)
+      try {
+        const whRes = await fetch(`${baseUrl}/v3/webhooks`, {
+          headers: { access_token: apiKey },
+          signal: AbortSignal.timeout(8000),
+        })
+        if (whRes.ok) {
+          const whBody = await whRes.json() as { data?: { url?: string; enabled?: boolean; interrupted?: boolean }[] }
+          const hub = (whBody.data ?? []).find((w) => w.url?.includes('/functions/v1/webhook-asaas'))
+          if (!hub) {
+            return { status: 'warn', message: `API ok, mas o webhook do Hub não está configurado no Asaas` }
+          }
+          if (!hub.enabled || hub.interrupted) {
+            return {
+              status: 'warn',
+              message: `API ok, mas o webhook está ${hub.interrupted ? 'INTERROMPIDO (fila pausada por falhas — reative no painel)' : 'desabilitado'}`,
+            }
+          }
+          return { status: 'ok', message: `API Asaas (${env}) ok · webhook ativo` }
+        }
+      } catch { /* falha no check do webhook não derruba o status da API */ }
       return { status: 'ok', message: `API Asaas (${env}) respondendo normalmente` }
     }
 

@@ -283,6 +283,7 @@ function AbaIntegracoes() {
     { nome: 'Asaas',      status: 'loading', mensagem: '', variaveis: ['ASAAS_API_KEY', 'ASAAS_WEBHOOK_KEY'] },
     { nome: 'Vertex AI',  status: 'loading', mensagem: '', variaveis: ['VERTEX_AI_PROJECT_ID', 'VERTEX_AI_LOCATION', 'VERTEX_AI_CREDENTIALS'] },
     { nome: 'GA4',        status: 'loading', mensagem: '', variaveis: ['GOOGLE_APPLICATION_CREDENTIALS'] },
+    { nome: 'Resend',     status: 'loading', mensagem: '', variaveis: ['RESEND_API_KEY', 'EMAIL_FROM', 'ALERT_EMAIL'] },
   ])
 
   useEffect(() => {
@@ -294,6 +295,7 @@ function AbaIntegracoes() {
           if (i.nome === 'Asaas')      return { ...i, status: data.asaas?.status    ?? 'error', mensagem: data.asaas?.message    ?? '' }
           if (i.nome === 'Vertex AI')  return { ...i, status: data.vertexAI?.status ?? 'error', mensagem: data.vertexAI?.message  ?? '' }
           if (i.nome === 'GA4')        return { ...i, status: data.ga4?.status      ?? 'error', mensagem: data.ga4?.message       ?? '' }
+          if (i.nome === 'Resend')     return { ...i, status: data.resend?.status   ?? 'error', mensagem: data.resend?.message    ?? '' }
           return i
         }))
       })

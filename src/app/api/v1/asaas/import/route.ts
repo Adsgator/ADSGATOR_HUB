@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
+import { asaasGetAll } from '@/lib/asaas'
 
 /**
  * POST /api/v1/asaas/import
@@ -71,29 +72,6 @@ interface AvulsoItem {
   descricao:         string
   asaas_customer_id: string
   ultimo_pagamento:  string | null
-}
-
-function asaasBaseUrl(): string {
-  const key = process.env.ASAAS_API_KEY ?? ''
-  return key.startsWith('$aact_prod_') ? 'https://api.asaas.com' : 'https://sandbox.asaas.com'
-}
-
-async function asaasGetAll<T>(path: string): Promise<T[]> {
-  const base = asaasBaseUrl()
-  const out: T[] = []
-  let offset = 0
-  for (;;) {
-    const res = await fetch(`${base}${path}${path.includes('?') ? '&' : '?'}limit=100&offset=${offset}`, {
-      headers: { access_token: process.env.ASAAS_API_KEY! },
-      signal: AbortSignal.timeout(15000),
-    })
-    if (!res.ok) throw new Error(`Asaas ${path} respondeu HTTP ${res.status}`)
-    const body = await res.json() as { data: T[]; hasMore: boolean }
-    out.push(...(body.data ?? []))
-    if (!body.hasMore) break
-    offset += 100
-  }
-  return out
 }
 
 export async function POST(req: NextRequest) {

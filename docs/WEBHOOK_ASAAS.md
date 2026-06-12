@@ -97,6 +97,29 @@ relevante.
 | `PIX_AUTOMATIC_RECURRING_AUTHORIZATION_EXPIRED` |
 | `PIX_AUTOMATIC_RECURRING_AUTHORIZATION_REFUSED` |
 
+## Resiliência (12/06/2026)
+
+- **Dedupe de eventos**: cada evento (`evt_...`) é registrado em
+  `asaas_webhook_events`; reenvios/retries respondem 200 sem reprocessar.
+  Migration: `20260612_webhook_events_dedupe.sql`.
+- **Erro não derruba mais**: falha ao processar um evento responde **200**
+  (evita espiral de retry → penalização), loga, remove o dedupe (permite
+  "Reenviar" manual) e cria notificação urgente in-app para o operador.
+- **Saúde do webhook monitorada**: o check do Asaas em `/api/status` também
+  consulta `/v3/webhooks` — avisa se o webhook do Hub estiver ausente,
+  desabilitado ou **interrompido** (fila pausada por falhas).
+- **Estornos**: `PAYMENT_REFUNDED` cancela o lançamento financeiro e notifica.
+  ⚠️ Marcar o evento `PAYMENT_REFUNDED` no painel do Asaas.
+
+## Progressão de inadimplência (corrigida em 12/06/2026)
+
+O `PAYMENT_OVERDUE` dispara **uma vez** (no vencimento) — sozinho ele nunca
+levaria um cliente a D+7/D+15/D+30. A progressão diária é feita pelo cron de
+cobrança (`GET /api/v1/cobranca/run`, 09:00): busca pagamentos `OVERDUE` no
+Asaas, calcula dias desde o vencimento mais antigo por assinatura e atualiza
+`assinaturas.dias_atraso/status` e `clientes.dias_atraso` (a UI lê do cliente).
+Essa etapa roda **sempre**, mesmo com o email de cobrança desligado.
+
 ## Pendências relacionadas
 
 - Migration `20260611_assinaturas_status_webhook.sql` precisa rodar no banco
