@@ -13,7 +13,7 @@ MÓDULOS (rota → o que faz):
 - /financeiro — DRE, lançamentos (receita/custo fixo/variável), inadimplentes (política D+7 suspensão, D+15 grave, D+30 crítico — centralizada em lib/cobranca.ts).
 - /analytics — Google Ads + GA4: snapshots históricos (sync diário 06:00 via cron) + dados ao vivo por cliente.
 - /relatorios — relatórios executivos gerados com Gemini Pro, envio por email ao cliente.
-- /tarefas — lista + kanban, prioridades, prazos, checklist, drag-drop persistente.
+- /tarefas — lista + kanban, prioridades, prazos, checklist, drag-drop persistente. Templates de processo (tarefa_templates, editáveis em Configurações → Templates) geram tarefas com checklist pronto — os de sistema (setup-cliente, onboarding-cliente) alimentam o provisionamento automático.
 - /marketing — calendário social 4 semanas (rascunho/agendado/publicado), gerador de hashtags IA.
 - /prospectar — CRM de prospecção (funil com estágios, valor de proposta).
 - /operacional — planos operacionais e fluxos por cliente.

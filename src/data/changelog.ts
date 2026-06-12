@@ -14,6 +14,9 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Central de Prontidão: aba Setup em Configurações mostra o que falta configurar (credenciais, crons, automações) com passo a passo e % de completude',
       'Banner "Sistema pronto: X%" no dashboard com atalho para completar o setup',
       'Gator sabe o que falta: nova ferramenta prontidao_sistema responde "o que falta configurar?" com o checklist ao vivo',
+      'Templates de Tarefas e Processos: crie checklists reutilizáveis com prioridade e prazo em Configurações → Templates (setup-cliente e onboarding-cliente já vêm prontos e editáveis)',
+      'Nova Tarefa a partir de template: dropdown no modal preenche título, checklist e prazo ({cliente} vira o nome do cliente)',
+      'Gator cria tarefas de processo: ferramentas listar_templates_tarefa e criar_tarefa_de_template',
     ],
   },
   {
