@@ -38,7 +38,22 @@ async function checkResend(): Promise<StatusResult> {
     })
 
     if (res.status === 401) {
-      return { status: 'warn', message: 'Chave Resend inválida' }
+      // Pode ser chave inválida OU chave restrita a envio (sem acesso a
+      // /domains). Distingue com um POST vazio em /emails: chave válida
+      // responde 422 (validação), inválida responde 401. Nada é enviado.
+      const probe = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        body: '{}',
+        signal: AbortSignal.timeout(8000),
+      })
+      if (probe.status === 401) {
+        return { status: 'warn', message: 'Chave Resend inválida' }
+      }
+      return {
+        status: 'ok',
+        message: 'Chave Resend válida (restrita a envio). O domínio não é verificável pela API — confirme na Resend que o domínio do EMAIL_FROM está verificado.',
+      }
     }
     if (!res.ok) {
       return { status: 'warn', message: `Resend respondeu HTTP ${res.status}` }
