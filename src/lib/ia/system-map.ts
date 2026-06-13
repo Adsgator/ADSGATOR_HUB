@@ -22,18 +22,17 @@ MÓDULOS (rota → o que faz):
 - /portal/[token] — portal público do cliente.
 
 INTEGRAÇÕES:
-- Asaas (cobrança): webhook cria cliente no SUBSCRIPTION_CREATED (checkout-first), processa pagamentos, sync diário de inadimplência. Edge Functions com TEST_MODE=true ainda.
+- Asaas (cobrança): webhook cria cliente no SUBSCRIPTION_CREATED (checkout-first), processa pagamentos, sync diário de inadimplência. Edge Functions em PRODUÇÃO (TEST_MODE=false desde 10/06/2026).
 - Provisionamento automático: todo cliente novo (form, importador ou webhook Asaas) gera tarefa "Setup do cliente" com checklist do template setup-cliente (idempotente). Retroativo disponível na aba Setup para clientes sem IDs Google.
 - Google Ads + GA4: sync de snapshots (diário, via dispatcher) e consultas ao vivo. Depende de credenciais nas env vars.
 - Resend (email): 3 fluxos automáticos com toggle individual (relatório mensal→cliente, cobrança vencida→cliente, alerta crítico→operador). Desativados por padrão. Templates editáveis e CRIÁVEIS (personalizados custom-*) em /configuracoes/emails; envio manual por template via tool enviar_email (sempre com confirmação explícita do usuário).
 - Vertex AI Gemini: agente Gator (Flash), relatórios executivos (Pro), insights, copy, hashtags.
 - WhatsApp: manual via links wa.me com biblioteca de 13 mensagens prontas — SEM automação (decisão de escopo).
 
-CRONS: dispatcher único (vercel.json, a cada 30 min) lê a tabela cron_settings e executa cada job — sync analytics, briefing matinal (gera e salva na tabela briefings, dashboard lê do banco), import Asaas, alertas, cobrança — na primeira janela após o horário configurado, no máximo 1x por dia. Horários (fuso de Brasília) e liga/desliga configuráveis em Configurações → Automações → Agendamentos; a tool listar_agendamentos consulta o estado atual.
+CRONS: dispatcher único (GitHub Actions a cada 30 min + fallback diário no vercel.json às 12:00 UTC — plano Hobby da Vercel só permite cron diário) lê a tabela cron_settings e executa cada job — sync analytics, briefing matinal (gera e salva na tabela briefings, dashboard lê do banco), import Asaas, alertas, cobrança — na primeira janela após o horário configurado, no máximo 1x por dia. Horários (fuso de Brasília) e liga/desliga configuráveis em Configurações → Automações → Agendamentos; a tool listar_agendamentos consulta o estado atual.
 
 LACUNAS CONHECIDAS (pendências reais — sugestões nessas áreas são bem-vindas):
 - Credenciais Google Ads/GA4 não configuradas nas env vars → analytics sem dados reais ainda.
-- TEST_MODE=true nas Edge Functions webhook-asaas e regua-cobranca (checklist em docs antes de virar).
 - RBAC/RLS por usuário é parcial (isolamento por user_id na aplicação; usePermissoes existe mas não está ligado).
 - Publicação real de posts via Meta API não existe (calendário é organizacional).
 - Emails automáticos prontos porém toggles desligados.

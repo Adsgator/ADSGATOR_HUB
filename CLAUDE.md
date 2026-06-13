@@ -332,12 +332,13 @@ planos_operacionais   — planos operacionais por cliente
 supabase/functions/
 ├── gerar-insight-ia/       — análise de campanha com Gemini Flash
 ├── gerar-relatorio-executivo/ — relatório semanal/mensal com Gemini Pro
-├── webhook-asaas/          — processa pagamentos (TEST_MODE = true)
-├── regua-cobranca/         — cobranças automáticas (TEST_MODE = true)
-└── _shared/                — utils compartilhados
+├── webhook-asaas/          — processa pagamentos
+├── regua-cobranca/         — cobranças automáticas
+└── _shared/                — utils compartilhados (inclui test-mode.ts)
 ```
 
-⚠️ **MODO DE TESTE ATIVO** — `TEST_MODE = true` nas Edge Functions webhook-asaas e regua-cobranca.
+✅ **MODO PRODUÇÃO** — `TEST_MODE = false` em `_shared/test-mode.ts` desde 10/06/2026
+(commit "virada para produção"). Para voltar ao modo de teste, ver docs/Arquivo/MODO_TESTE.md.
 
 ### Sync de Analytics
 
@@ -349,7 +350,7 @@ que **não funcionam em Deno** — por isso o sync é uma rota Next.js, não Edg
   (1 linha por fonte/período; constraint única via migration `20260606_*`).
 - **Rota:** `POST /api/v1/analytics/sync` (botão "Sincronizar" na UI, sessão) e
   `GET` (Vercel Cron, header `Authorization: Bearer $CRON_SECRET`).
-- **Agendamento:** `vercel.json` → diário às 06:00. Requer env `CRON_SECRET`.
+- **Agendamento:** dispatcher `/api/v1/cron/dispatch` (GitHub Actions a cada 30 min + fallback diário no `vercel.json`), horário configurável em Configurações → Automações. Requer env `CRON_SECRET`.
 
 ### Automação de Email
 
@@ -366,7 +367,7 @@ toggle correspondente estar ativo.
   - `email_relatorio_mensal` → ao gerar relatório (`POST /api/analytics/[id]`), email ao cliente.
   - `email_cobranca_vencida` → `GET/POST /api/v1/cobranca/run`, por estágio de [lib/cobranca.ts] (D+7 reminder, D+15/D+30 follow-up).
   - `email_alerta_critico` → `GET/POST /api/v1/alertas/notificar`, resumo ao operador (env `ALERT_EMAIL`).
-- **Crons:** `vercel.json` — cobrança 09:00, alertas 08:00. Requerem `CRON_SECRET`.
+- **Crons:** dispatcher de agendamentos (cobrança e alertas com horários configuráveis em Configurações → Automações). Requerem `CRON_SECRET`.
 - **Env necessárias:** `RESEND_API_KEY`, `EMAIL_FROM`, `ALERT_EMAIL`.
 
 ### Agente IA "Gator" (chat global com acesso total)
@@ -475,12 +476,12 @@ O `ConfirmDialog` é renderizado globalmente no `MainLayout` — não precisa im
 - [x] ~~`/api/ia/hashtags`~~ — **existe e está conectada** ao botão "Gerar Hashtags" em Marketing.
 - [x] ~~Drag/drop persistente em Tarefas~~ — API `/api/v1/tarefas/reorder` existe e **persiste** (destravada com o fix de auth).
 - [x] ~~Analytics — integração real~~ — dados ao vivo (`/api/analytics/[id]/live`) e sync histórico prontos. Falta apenas **configurar as credenciais** Google Ads/GA4 nas env vars e marcar `google_ads_enabled`/`ga4_enabled` no cliente.
-- [x] ~~analytics_snapshots vazio~~ — sync implementado: `lib/analytics-sync.ts` + `POST/GET /api/v1/analytics/sync`. Roda pelo botão "Sincronizar" na página Analytics (manual) e por Vercel Cron diário (06:00, ver `vercel.json`). Requer env `CRON_SECRET`.
+- [x] ~~analytics_snapshots vazio~~ — sync implementado: `lib/analytics-sync.ts` + `POST/GET /api/v1/analytics/sync`. Roda pelo botão "Sincronizar" na página Analytics (manual) e pelo dispatcher de agendamentos (GitHub Actions a cada 30 min + fallback diário no `vercel.json`; horário configurável em Configurações → Automações). Requer env `CRON_SECRET`.
 - [ ] Notificações WhatsApp — hoje o envio é via `wa.me` (link manual). Automação de envio fora de escopo por ora.
 - [x] ~~Notificações Email automáticas~~ — implementadas e **desativadas por padrão** (toggles em Configurações → automação). Templates editáveis em Configurações → Templates de Email. 3 fluxos: relatório pronto→cliente, régua de cobrança→cliente, alertas→operador. Falta só `RESEND_API_KEY` + ligar os toggles. Ver seção "Automação de Email" abaixo.
 - [ ] RBAC/RLS por usuário no Supabase (isolamento hoje é por `user_id` na aplicação)
 - [ ] Publicação real de posts via Meta API
-- [ ] TEST_MODE=false para webhook-asaas e regua-cobranca (requer checklist em docs/Arquivo/MODO_TESTE.md)
+- [x] ~~TEST_MODE=false para webhook-asaas e regua-cobranca~~ — em produção desde 10/06/2026 (`_shared/test-mode.ts`)
 
 ### Correções da auditoria (30/05/2026)
 
