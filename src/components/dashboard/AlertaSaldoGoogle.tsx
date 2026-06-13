@@ -1,6 +1,7 @@
 ﻿'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { CreditCard, AlertTriangle, TrendingDown, Loader2, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
@@ -239,12 +240,12 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
       </div>
 
       <div className="p-3 bg-surface-hover/50 text-center">
-        <a
+        <Link
           href="/clientes?filtro=saldo_baixo"
           className="text-xs text-ads-500 hover:text-ads-600 font-medium"
         >
           Ver todos os clientes →
-        </a>
+        </Link>
       </div>
     </div>
   )

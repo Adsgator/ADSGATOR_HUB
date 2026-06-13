@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { pageTransition, fadeScale } from '@/lib/motion'
 // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any
@@ -691,7 +692,7 @@ export default function DashboardPage() {
               onSizeChange={makeCardResizer('clientes-progresso')}
               title="Clientes em Progresso"
               subtitle={`${progresso.length} de ${metricas.total} clientes`}
-              actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
+              actions={<Link href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</Link>}
               description={CARD_DESCRIPTIONS['clientes-progresso']}
               onEnterEdit={enterEdit}
             >
@@ -791,7 +792,7 @@ export default function DashboardPage() {
                   onSizeChange={makeCardResizer('clientes-foco')}
                   title="Clientes em Foco"
                   subtitle={emFoco.length > 0 ? `${emFoco.length} cliente${emFoco.length > 1 ? 's' : ''} precisam de atenção` : 'Tudo em dia'}
-                  actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>}
+                  actions={<Link href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</Link>}
                   description={CARD_DESCRIPTIONS['clientes-foco']}
                   onEnterEdit={enterEdit}
                 >
@@ -895,14 +896,14 @@ export default function DashboardPage() {
 
           {/* ── PRÓXIMAS COBRANÇAS ───────────────────── */}
           <div key="proximas-cobrancas">
-            <BentoCard editMode={editMode} cardId="proximas-cobrancas" onSizeChange={makeCardResizer('proximas-cobrancas')} title="Cobranças em Atraso" subtitle="Clientes inadimplentes" actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>} description={CARD_DESCRIPTIONS['proximas-cobrancas']} onEnterEdit={enterEdit}>
+            <BentoCard editMode={editMode} cardId="proximas-cobrancas" onSizeChange={makeCardResizer('proximas-cobrancas')} title="Cobranças em Atraso" subtitle="Clientes inadimplentes" actions={<Link href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</Link>} description={CARD_DESCRIPTIONS['proximas-cobrancas']} onEnterEdit={enterEdit}>
               <ProximasCobrancas />
             </BentoCard>
           </div>
 
           {/* ── CHURN RISK ───────────────────────────── */}
           <div key="churn-risk">
-            <BentoCard editMode={editMode} cardId="churn-risk" onSizeChange={makeCardResizer('churn-risk')} title="Risco de Churn" subtitle="Clientes em risco" actions={<a href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</a>} description={CARD_DESCRIPTIONS['churn-risk']} onEnterEdit={enterEdit}>
+            <BentoCard editMode={editMode} cardId="churn-risk" onSizeChange={makeCardResizer('churn-risk')} title="Risco de Churn" subtitle="Clientes em risco" actions={<Link href="/clientes" className="text-ads-500 text-[0.75rem] hover:underline">Ver todos</Link>} description={CARD_DESCRIPTIONS['churn-risk']} onEnterEdit={enterEdit}>
               <ChurnRisk />
             </BentoCard>
           </div>

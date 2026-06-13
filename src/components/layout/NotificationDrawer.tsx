@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { X, MessageCircle, CheckCircle, Bell, ExternalLink, CreditCard, Clock, PauseCircle, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
@@ -310,12 +311,12 @@ export function NotificationDrawer({ open, onClose }: NotificationDrawerProps) {
 
         {/* Footer */}
         <div className="shrink-0 p-[0.75rem] border-t border-surface-border">
-          <a
+          <Link
             href="/clientes"
             className="flex items-center justify-center w-full h-[2rem] rounded-[0.375rem] bg-surface-hover border border-surface-border text-ink-secondary text-[0.8125rem] hover:text-ink-primary hover:border-ads-500/30 transition-colors"
           >
             Ver todos os clientes
-          </a>
+          </Link>
         </div>
       </aside>
     </>

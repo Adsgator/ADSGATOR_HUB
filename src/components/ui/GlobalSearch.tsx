@@ -133,7 +133,7 @@ export function GlobalSearch({ onClose }: Props) {
 
           {query.length >= 2 && !loading && !temResultados && (
             <p className="text-ink-muted text-[0.8125rem] text-center py-[2.5rem]">
-              Nenhum resultado para <strong className="text-ink-secondary">"{query}"</strong>
+              Nenhum resultado para <strong className="text-ink-secondary">&ldquo;{query}&rdquo;</strong>
             </p>
           )}
 

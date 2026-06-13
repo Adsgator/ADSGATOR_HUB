@@ -36,12 +36,26 @@ export function TimelineContent({ instance, onStepComplete, onStepWait }: Timeli
   const [submitting, setSubmitting] = useState(false)
 
   const template = instance.template
-  if (!template) return null
-
-  const steps: TimelineStep[] = template.steps
+  const steps: TimelineStep[] = template?.steps ?? []
   const currentStep = steps.find(s => s.id === instance.current_step_id)
   const completedCount = instance.completed_steps.length
   const totalCount = steps.length
+
+  const handleComplete = useCallback(async () => {
+    if (!currentStep) return
+    setSubmitting(true)
+    try {
+      await onStepComplete(currentStep.id, fieldValues)
+      toast.success(`Step "${currentStep.title}" concluído!`, { icon: '✅' })
+      setFieldValues({})
+    } catch {
+      toast.error('Erro ao completar step')
+    } finally {
+      setSubmitting(false)
+    }
+  }, [currentStep, fieldValues, onStepComplete])
+
+  if (!template) return null
 
   if (instance.status === 'completed') {
     return (
@@ -60,19 +74,6 @@ export function TimelineContent({ instance, onStepComplete, onStepWait }: Timeli
       </div>
     )
   }
-
-  const handleComplete = useCallback(async () => {
-    setSubmitting(true)
-    try {
-      await onStepComplete(currentStep.id, fieldValues)
-      toast.success(`Step "${currentStep.title}" concluído!`, { icon: '✅' })
-      setFieldValues({})
-    } catch {
-      toast.error('Erro ao completar step')
-    } finally {
-      setSubmitting(false)
-    }
-  }, [currentStep, fieldValues, onStepComplete])
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
