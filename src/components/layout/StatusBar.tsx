@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { User, Users, DollarSign, AlertTriangle, Wifi, WifiOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 import { ApiStatusIndicator } from './ApiStatusIndicator'
 
 interface StatusMetrics {
@@ -36,8 +37,8 @@ export function StatusBar() {
           .gt('dias_atraso', 0),
         supabase
           .from('assinaturas')
-          .select('valor_mensal')
-          .eq('status', 'ativa'),
+          .select('valor_mensal, status')
+          .in('status', STATUS_ASSINATURA_ATIVA),
       ])
 
       const nome =
@@ -45,10 +46,7 @@ export function StatusBar() {
         userRes.data.user?.email?.split('@')[0] ??
         'Admin'
 
-      const mrrTotal = (mrrRes.data ?? []).reduce(
-        (sum, a) => sum + (a.valor_mensal ?? 0),
-        0,
-      )
+      const mrrTotal = calcularMRR(mrrRes.data ?? [])
 
       setMetrics({
         userName: nome,

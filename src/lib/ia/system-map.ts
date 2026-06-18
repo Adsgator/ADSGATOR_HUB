@@ -9,8 +9,8 @@ ADSGATOR HUB — sistema operacional da agência (Next.js 15 + Supabase + Vertex
 
 MÓDULOS (rota → o que faz):
 - /dashboard — Bento grid customizável: Morning Briefing, KPIs, ações do dia, DRE sparkline, alertas, chat Gator, feed, notícias, churn risk, top performers, metas.
-- /clientes — lista, cadastro, detalhe com projetos, estágios/checklist (pré-vendas→onboarding→ativo), timeline de auditoria, memória .md por cliente, health score 0-100.
-- /financeiro — DRE, lançamentos (receita/custo fixo/variável), inadimplentes (política D+7 suspensão, D+15 grave, D+30 crítico — centralizada em lib/cobranca.ts).
+- /clientes — lista, cadastro, detalhe com projetos, estágios/checklist (pré-vendas→onboarding→ativo), timeline de auditoria, memória .md por cliente, health score 0-100. Ciclo de vida: operação = recebido/onboarding/setup_trafego/ativo/congelado; saída = status único 'inativo' + motivo_inativacao (debito | cancelado | congelamento_expirado), centralizado em lib/cliente-status.ts. Inativos somem das telas de gestão. Congelado há mais de N dias (config em Automações, default 60) vira inativo automaticamente.
+- /financeiro — DRE, lançamentos (receita/custo fixo/variável), inadimplentes (política D+7 suspensão, D+15 grave, D+30 crítico — centralizada em lib/cobranca.ts). Distinção: "Receita do Mês" = entradas confirmadas no caixa (financeiro_lancamentos); "MRR" = receita recorrente das assinaturas com cobrança viva (ativa/atraso), fonte única em lib/mrr.ts — todas as telas usam o mesmo cálculo.
 - /analytics — Google Ads + GA4: snapshots históricos (sync diário via dispatcher de agendamentos) + dados ao vivo por cliente.
 - /relatorios — relatórios executivos gerados com Gemini Pro, envio por email ao cliente.
 - /tarefas — lista + kanban, prioridades, prazos, checklist, drag-drop persistente. Templates de processo (tarefa_templates, editáveis em Configurações → Templates) geram tarefas com checklist pronto — os de sistema (setup-cliente, onboarding-cliente) alimentam o provisionamento automático.
@@ -29,7 +29,7 @@ INTEGRAÇÕES:
 - Vertex AI Gemini: agente Gator (Flash), relatórios executivos (Pro), insights, copy, hashtags.
 - WhatsApp: manual via links wa.me com biblioteca de 13 mensagens prontas — SEM automação (decisão de escopo).
 
-CRONS: dispatcher único (GitHub Actions a cada 30 min + fallback diário no vercel.json às 12:00 UTC — plano Hobby da Vercel só permite cron diário) lê a tabela cron_settings e executa cada job — sync analytics, briefing matinal (gera e salva na tabela briefings, dashboard lê do banco), import Asaas, alertas, cobrança — na primeira janela após o horário configurado, no máximo 1x por dia. Horários (fuso de Brasília) e liga/desliga configuráveis em Configurações → Automações → Agendamentos; a tool listar_agendamentos consulta o estado atual.
+CRONS: dispatcher único (GitHub Actions a cada 30 min + fallback diário no vercel.json às 12:00 UTC — plano Hobby da Vercel só permite cron diário) lê a tabela cron_settings e executa cada job — sync analytics, briefing matinal (gera e salva na tabela briefings, dashboard lê do banco), import Asaas, alertas, cobrança, arquivar congelados (move congelado há +N dias para inativo) — na primeira janela após o horário configurado, no máximo 1x por dia. Horários (fuso de Brasília) e liga/desliga configuráveis em Configurações → Automações → Agendamentos; a tool listar_agendamentos consulta o estado atual.
 
 LACUNAS CONHECIDAS (pendências reais — sugestões nessas áreas são bem-vindas):
 - Credenciais Google Ads/GA4 não configuradas nas env vars → analytics sem dados reais ainda.

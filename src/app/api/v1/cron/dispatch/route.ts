@@ -4,6 +4,7 @@ import { criarClienteServiceRole } from '@/lib/supabase'
 import { CRON_TIPOS, deveRodarAgora, marcarExecucao, type CronTipo } from '@/lib/cron-settings'
 import { sincronizarTodos, mesAtual } from '@/lib/analytics-sync'
 import { gerarBriefing, salvarBriefing } from '@/lib/briefing'
+import { arquivarCongelados, DIAS_CONGELAMENTO_PADRAO } from '@/lib/arquivar-congelados'
 
 export const dynamic = 'force-dynamic'
 // Pode encadear sync de analytics + Asaas + emails na mesma janela.
@@ -72,12 +73,23 @@ export async function GET(req: NextRequest) {
 
   const db = criarClienteServiceRole()
 
+  // dias de congelamento até arquivar — configurável (cron_settings.param_int)
+  async function diasArquivamento(): Promise<number> {
+    const { data } = await db
+      .from('cron_settings')
+      .select('param_int')
+      .eq('tipo', 'arquivar_congelados')
+      .maybeSingle()
+    return data?.param_int ?? DIAS_CONGELAMENTO_PADRAO
+  }
+
   const jobs: Record<CronTipo, () => Promise<unknown>> = {
-    analytics_sync: () => sincronizarTodos(db, mesAtual()),
-    briefing:       () => executarBriefing(ownerId),
-    asaas_import:   () => executarRotaInterna('/api/v1/asaas/import', cronSecret),
-    alertas:        () => executarRotaInterna('/api/v1/alertas/notificar', cronSecret),
-    cobranca:       () => executarRotaInterna('/api/v1/cobranca/run', cronSecret),
+    analytics_sync:      () => sincronizarTodos(db, mesAtual()),
+    briefing:            () => executarBriefing(ownerId),
+    asaas_import:        () => executarRotaInterna('/api/v1/asaas/import', cronSecret),
+    alertas:             () => executarRotaInterna('/api/v1/alertas/notificar', cronSecret),
+    cobranca:            () => executarRotaInterna('/api/v1/cobranca/run', cronSecret),
+    arquivar_congelados: async () => arquivarCongelados(db, await diasArquivamento()),
   }
 
   const executados: CronTipo[] = []

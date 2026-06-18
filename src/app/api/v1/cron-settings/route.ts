@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await req.json().catch(() => null) as
-    { tipo?: string; ativo?: boolean; horario?: string } | null
+    { tipo?: string; ativo?: boolean; horario?: string; param_int?: number } | null
 
   if (!body?.tipo || !CRON_TIPOS.includes(body.tipo as CronTipo)) {
     return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
@@ -42,13 +42,17 @@ export async function PATCH(req: NextRequest) {
   if (body.horario !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(body.horario)) {
     return NextResponse.json({ error: 'Horário inválido — use HH:mm' }, { status: 400 })
   }
-  if (body.ativo === undefined && body.horario === undefined) {
+  if (body.param_int !== undefined && (!Number.isInteger(body.param_int) || body.param_int < 1)) {
+    return NextResponse.json({ error: 'Parâmetro inválido — use um inteiro ≥ 1' }, { status: 400 })
+  }
+  if (body.ativo === undefined && body.horario === undefined && body.param_int === undefined) {
     return NextResponse.json({ error: 'Nada para atualizar' }, { status: 400 })
   }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (body.ativo !== undefined) updates.ativo = body.ativo
   if (body.horario !== undefined) updates.horario = body.horario
+  if (body.param_int !== undefined) updates.param_int = body.param_int
 
   const { data, error } = await supabase
     .from('cron_settings')

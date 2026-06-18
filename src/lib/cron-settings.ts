@@ -14,6 +14,7 @@ export const CRON_TIPOS = [
   'asaas_import',
   'alertas',
   'cobranca',
+  'arquivar_congelados',
 ] as const
 
 export type CronTipo = (typeof CRON_TIPOS)[number]
@@ -24,6 +25,7 @@ export interface CronSetting {
   descricao:  string | null
   ativo:      boolean
   horario:    string          // 'HH:mm:ss' (time do Postgres), fuso SP
+  param_int:  number | null   // parâmetro do job (ex.: dias p/ arquivar congelado)
   ultimo_run: string | null
   updated_at: string | null
 }

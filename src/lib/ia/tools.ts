@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FunctionDeclaration } from '@google-cloud/vertexai'
 import { FunctionDeclarationSchemaType as T } from '@google-cloud/vertexai'
 import { estagioInadimplencia } from '@/lib/cobranca'
+import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 import { SYSTEM_MAP } from '@/lib/ia/system-map'
 import { computarSetupChecklist } from '@/lib/setup-checklist'
 import { enviarEmailManual } from '@/lib/email-automation'
@@ -83,7 +84,7 @@ export const TOOLS: Record<string, Tool> = {
       parameters: {
         type: T.OBJECT,
         properties: {
-          status: { type: T.STRING, description: 'Filtrar por status: recebido, onboarding, setup_trafego, ativo, congelado, cancelado_debito, cancelado, inativo' },
+          status: { type: T.STRING, description: 'Filtrar por status: recebido, onboarding, setup_trafego, ativo, congelado, inativo (saída — use sempre inativo para cliente que saiu; o motivo vai em outro campo)' },
           busca:  { type: T.STRING, description: 'Busca por nome ou nicho (parcial)' },
         },
       },
@@ -189,7 +190,7 @@ export const TOOLS: Record<string, Tool> = {
         properties: {
           cliente_id:   { type: T.STRING },
           nome:         { type: T.STRING },
-          status:       { type: T.STRING, description: 'recebido, onboarding, setup_trafego, ativo, congelado, cancelado_debito, cancelado, inativo' },
+          status:       { type: T.STRING, description: 'recebido, onboarding, setup_trafego, ativo, congelado, inativo (saída — use sempre inativo para cliente que saiu; o motivo vai em outro campo)' },
           mrr:          { type: T.NUMBER },
           nicho:        { type: T.STRING },
           email:        { type: T.STRING },
@@ -424,7 +425,7 @@ export const TOOLS: Record<string, Tool> = {
   financeiro_resumo: {
     declaration: {
       name: 'financeiro_resumo',
-      description: 'DRE resumida de um mês: receitas, custos, lucro, MRR ativo e lista de inadimplentes com estágio (D+7/D+15/D+30).',
+      description: 'DRE resumida de um mês: receitas, custos, lucro, MRR ativo (soma do valor_mensal das assinaturas com cobrança viva — ativa ou em atraso) e lista de inadimplentes com estágio (D+7/D+15/D+30).',
       parameters: {
         type: T.OBJECT,
         properties: {
@@ -434,7 +435,7 @@ export const TOOLS: Record<string, Tool> = {
     },
     execute: async (args, ctx) => {
       const { inicio, fim, label } = mesRange(str(args.mes))
-      const [lanc, cli] = await Promise.all([
+      const [lanc, cli, assin] = await Promise.all([
         ctx.db.from('financeiro_lancamentos')
           .select('tipo, valor, status')
           .eq('user_id', ctx.userId)
@@ -443,18 +444,24 @@ export const TOOLS: Record<string, Tool> = {
         ctx.db.from('clientes')
           .select('nome, mrr, dias_atraso, status')
           .eq('user_id', ctx.userId),
+        // MRR vem das assinaturas (fonte de verdade) — ver lib/mrr.ts.
+        // assinaturas não tem user_id: isolamento via cliente_id.
+        ctx.db.from('assinaturas')
+          .select('valor_mensal, status, clientes!inner(user_id)')
+          .eq('clientes.user_id', ctx.userId)
+          .in('status', STATUS_ASSINATURA_ATIVA),
       ])
       if (lanc.error) throw new Error(lanc.error.message)
       const receitas = (lanc.data ?? []).filter((l) => l.tipo === 'receita').reduce((s, l) => s + (l.valor ?? 0), 0)
       const custos   = (lanc.data ?? []).filter((l) => l.tipo !== 'receita').reduce((s, l) => s + (l.valor ?? 0), 0)
       const clientes = cli.data ?? []
       const inadimplentes = clientes
-        .filter((c) => (c.dias_atraso ?? 0) > 0)
+        .filter((c) => (c.dias_atraso ?? 0) > 0 && c.status !== 'inativo')
         .map((c) => ({ nome: c.nome, dias_atraso: c.dias_atraso, mrr: c.mrr, estagio: estagioInadimplencia(c.dias_atraso) }))
       return {
         mes: label,
         receitas, custos, lucro: receitas - custos,
-        mrr_ativo: clientes.filter((c) => c.status === 'ativo').reduce((s, c) => s + (c.mrr ?? 0), 0),
+        mrr_ativo: calcularMRR(assin.data ?? []),
         inadimplentes,
       }
     },
@@ -1045,13 +1052,13 @@ export const TOOLS: Record<string, Tool> = {
   listar_agendamentos: {
     declaration: {
       name: 'listar_agendamentos',
-      description: 'Lista os agendamentos automáticos do Hub (cron_settings): sync de analytics, briefing, import Asaas, alertas e cobrança — com horário configurado (fuso de Brasília), ativo/inativo e último run. Use quando perguntarem quando ou se um job automático roda. Configuração: Configurações → Automações → Agendamentos.',
+      description: 'Lista os agendamentos automáticos do Hub (cron_settings): sync de analytics, briefing, import Asaas, alertas, cobrança e arquivar congelados — com horário configurado (fuso de Brasília), ativo/inativo, último run e parâmetro (param_int, ex.: dias de congelamento até arquivar). Use quando perguntarem quando ou se um job automático roda. Configuração: Configurações → Automações → Agendamentos.',
       parameters: { type: T.OBJECT, properties: {} },
     },
     execute: async (_args, ctx) => {
       const { data, error } = await ctx.db
         .from('cron_settings')
-        .select('tipo, nome, descricao, ativo, horario, ultimo_run')
+        .select('tipo, nome, descricao, ativo, horario, param_int, ultimo_run')
         .order('horario')
       if (error) {
         return { agendamentos: [], aviso: 'Tabela cron_settings ainda não migrada — jobs rodam nos horários padrão.' }

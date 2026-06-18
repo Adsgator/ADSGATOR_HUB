@@ -11,7 +11,13 @@ interface CronSetting {
   descricao:  string | null
   ativo:      boolean
   horario:    string          // 'HH:mm:ss' (time do Postgres)
+  param_int:  number | null   // parâmetro do job (ex.: dias p/ arquivar congelado)
   ultimo_run: string | null
+}
+
+// Jobs com parâmetro inteiro editável: tipo → rótulo do campo.
+const PARAM_LABEL: Record<string, string> = {
+  arquivar_congelados: 'Dias congelado até arquivar',
 }
 
 export function Agendamentos() {
@@ -38,7 +44,7 @@ export function Agendamentos() {
     }
   }
 
-  async function salvar(tipo: string, patch: { ativo?: boolean; horario?: string }) {
+  async function salvar(tipo: string, patch: { ativo?: boolean; horario?: string; param_int?: number }) {
     setAtualizando(tipo)
     try {
       const res = await fetch('/api/v1/cron-settings', {
@@ -112,6 +118,24 @@ export function Agendamentos() {
               </div>
 
               <div className="flex items-center gap-[0.75rem] flex-shrink-0">
+                {PARAM_LABEL[s.tipo] && (
+                  <label className="flex flex-col items-end gap-[0.25rem]">
+                    <span className="text-ink-muted text-[0.625rem]">{PARAM_LABEL[s.tipo]}</span>
+                    <input
+                      type="number"
+                      min={1}
+                      defaultValue={s.param_int ?? undefined}
+                      disabled={atualizando === s.tipo}
+                      onBlur={(e) => {
+                        const novo = parseInt(e.target.value, 10)
+                        if (Number.isInteger(novo) && novo >= 1 && novo !== s.param_int) {
+                          salvar(s.tipo, { param_int: novo })
+                        }
+                      }}
+                      className="w-[4rem] bg-surface-elevated border border-surface-border rounded-md px-[0.5rem] py-[0.25rem] text-[0.875rem] text-ink-primary focus-ring"
+                    />
+                  </label>
+                )}
                 <label className="flex flex-col items-end gap-[0.25rem]">
                   <span className="text-ink-muted text-[0.625rem]">Horário de Brasília</span>
                   <input

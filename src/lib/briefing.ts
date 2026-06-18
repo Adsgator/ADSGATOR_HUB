@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { MODELO_PRO, criarVertexAI } from '@/lib/vertex-ai'
+import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 
 export type FiltroModo = 'completo' | 'urgencias' | 'resumido'
 
@@ -65,7 +66,7 @@ export async function gerarBriefing(
   const clientes   = clientesData ?? []
   const clienteIds = clientes.map((c) => c.id)
 
-  const [alertasRes, tarefasRes, configRes] = await Promise.all([
+  const [alertasRes, tarefasRes, configRes, assinaturasRes] = await Promise.all([
     clienteIds.length > 0
       ? db.from('alertas')
           .select('tipo, mensagem')
@@ -85,13 +86,18 @@ export async function gerarBriefing(
       .select('saldo_google_ads_limite_alerta')
       .eq('agencia_id', 'adsgator-main')
       .maybeSingle(),
+    // assinaturas não tem user_id — isolamento é via cliente_id (ver RLS owner_assinaturas)
+    db.from('assinaturas')
+      .select('valor_mensal, status, clientes!inner(user_id)')
+      .eq('clientes.user_id', userId)
+      .in('status', STATUS_ASSINATURA_ATIVA),
   ])
 
   const alertas     = (alertasRes.data ?? []) as { tipo: string; mensagem: string }[]
   const tarefasHoje = (tarefasRes.data ?? []) as { titulo: string; prioridade: string }[]
   const limiteSaldo = configRes.data?.saldo_google_ads_limite_alerta ?? 50
 
-  const mrrTotal      = clientes.reduce((s, c) => s + (c.mrr ?? 0), 0)
+  const mrrTotal      = calcularMRR(assinaturasRes.data ?? [])
   const inadimplentes = clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
   const saldoBaixo    = clientes.filter(
     (c) => c.google_ads_enabled && (c.saldo_google ?? 0) > 0 && (c.saldo_google ?? 0) <= limiteSaldo,

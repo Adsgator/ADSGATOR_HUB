@@ -18,6 +18,7 @@ import { supabase }    from '@/lib/supabase'
 import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { estagioInadimplencia } from '@/lib/cobranca'
+import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 import type { FinanceiroLancamento, Cliente } from '@/lib/types'
 
 const fmt = (v: number) =>
@@ -92,6 +93,9 @@ export default function FinanceiroPage() {
   const hoje = new Date().toISOString().slice(0, 7)
 
   const [dre,          setDre]          = useState<DRE | null>(null)
+  // MRR recorrente contratado (assinaturas, fonte única — lib/mrr.ts). Distinto
+  // da receita realizada do mês (dre.mrr, que soma lançamentos confirmados).
+  const [mrrRecorrente, setMrrRecorrente] = useState(0)
   const [saude,        setSaude]        = useState<SaudeSaaS | null>(null)
   const [lancamentos,  setLancamentos]  = useState<FinanceiroLancamento[]>([])
   const [todosLancs,   setTodosLancs]   = useState<FinanceiroLancamento[]>([])
@@ -123,15 +127,17 @@ export default function FinanceiroPage() {
       doze.setMonth(doze.getMonth() - 12)
       const dozeStr = doze.toISOString().split('T')[0]
 
-      const [{ data: lancs }, { data: todosL }, { data: atr }, { data: config }, { data: historico }, { data: clientesData }] = await Promise.all([
+      const [{ data: lancs }, { data: todosL }, { data: atr }, { data: config }, { data: historico }, { data: clientesData }, { data: assinaturasData }] = await Promise.all([
         supabase.from('financeiro_lancamentos').select('*').gte('data', mesInicioStr).order('data', { ascending: false }),
         supabase.from('financeiro_lancamentos').select('*').gte('data', dozeStr).order('data', { ascending: true }),
-        supabase.from('clientes').select('*').gt('dias_atraso', 0).neq('status', 'cancelado'),
+        supabase.from('clientes').select('*').gt('dias_atraso', 0).neq('status', 'inativo'),
         supabase.from('configuracoes_financeiras').select('custos_fixos_mensais,custos_variaveis_percentual,tipo_tributacao,imposto_percentual').eq('agencia_id', 'adsgator-main').single(),
         supabase.from('historico_acoes').select('tipo:tipo_acao, created_at').in('tipo_acao', ['cliente_criado', 'cancelado']).order('created_at', { ascending: true }),
         supabase.from('clientes').select('id, nome').in('status', ['ativo', 'onboarding', 'setup_trafego']).order('nome'),
+        supabase.from('assinaturas').select('valor_mensal, status').in('status', STATUS_ASSINATURA_ATIVA),
       ])
       setClientesLista((clientesData ?? []) as { id: string; nome: string }[])
+      setMrrRecorrente(calcularMRR(assinaturasData ?? []))
 
       const lista = (lancs ?? []) as FinanceiroLancamento[]
       const todos = (todosL ?? []) as FinanceiroLancamento[]
@@ -334,7 +340,7 @@ export default function FinanceiroPage() {
   }
 
   const kpis = [
-    { label: 'MRR',          valor: fmt(dre.mrr),          sub: 'Receita do mês',  icon: TrendingUp,   cor: 'text-ads-500'     },
+    { label: 'Receita do Mês', valor: fmt(dre.mrr),        sub: 'Entradas confirmadas', icon: TrendingUp, cor: 'text-ads-500'   },
     { label: 'Lucro Bruto',  valor: fmt(dre.lucro_bruto),  sub: `${pct(dre.lucro_bruto, dre.mrr)}% da receita`, icon: DollarSign, cor: 'text-status-green' },
     { label: 'Custos',       valor: fmt(dre.custos_fixos + dre.custos_variaveis), sub: 'Fixos + Variáveis', icon: AlertCircle, cor: 'text-status-orange' },
     { label: 'Lucro Líquido', valor: fmt(dre.lucro_liquido), sub: `Margem: ${dre.margem.toFixed(1)}%`, icon: TrendingUp, cor: dre.lucro_liquido >= 0 ? 'text-status-green' : 'text-status-red' },
@@ -383,14 +389,18 @@ export default function FinanceiroPage() {
       <div className="page-enter">
       {/* ══ KPIs BENTO GRID ═══════════════════════════════════════ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1rem] mb-[2rem]">
-        {/* Card principal — MRR */}
+        {/* Card principal — Receita realizada no mês (caixa) */}
         <div className="col-span-2 bg-gradient-to-br from-ads-500/20 to-ads-600/10 border border-ads-500/30 rounded-xl p-[1.25rem]">
           <div className="flex items-start justify-between mb-[0.5rem]">
-            <p className="text-ads-400 text-[0.6875rem] uppercase tracking-wide font-semibold">MRR Mensal</p>
+            <p className="text-ads-400 text-[0.6875rem] uppercase tracking-wide font-semibold">Receita do Mês</p>
             <TrendingUp className="w-[1.25rem] h-[1.25rem] text-ads-500" strokeWidth={2} />
           </div>
           <p className="text-[2.5rem] font-bold leading-none text-ads-400 mb-[0.5rem]">{fmt(dre.mrr)}</p>
-          <p className="text-ads-500/70 text-[0.8125rem]">Receita Recorrente Mensal</p>
+          <p className="text-ads-500/70 text-[0.8125rem]">Entradas confirmadas no período</p>
+          <p className="text-ink-muted text-[0.75rem] mt-[0.5rem]">
+            MRR recorrente: <strong className="text-ink-secondary">{fmt(mrrRecorrente)}</strong>
+            <span className="text-ink-muted"> · assinaturas ativas</span>
+          </p>
         </div>
         
         {/* Lucro Bruto */}
@@ -466,7 +476,7 @@ export default function FinanceiroPage() {
               <div className="w-[0.1875rem] h-[2rem] rounded-full bg-ads-400" />
               <div>
                 <p className="text-ink-primary font-semibold text-[0.9375rem]">Receita Operacional</p>
-                <p className="text-ink-muted text-[0.6875rem]">MRR confirmado do período</p>
+                <p className="text-ink-muted text-[0.6875rem]">Entradas confirmadas do período</p>
               </div>
             </div>
             <p className="text-ads-400 font-black text-[1.25rem] font-mono">{fmt(dre.mrr)}</p>

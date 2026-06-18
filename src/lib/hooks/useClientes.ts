@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { isInadimplente } from '@/lib/cobranca'
+import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
+import { STATUS_OCULTOS } from '@/lib/cliente-status'
 import { normalizarChecklistEstagio } from '@/lib/database'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -15,6 +17,8 @@ export function useClientes() {
   const [dados,   setDados]   = useState<ClienteComEstagio[]>([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState<string | null>(null)
+  // MRR vem das assinaturas (fonte de verdade), não de clientes.mrr — ver lib/mrr.ts
+  const [mrr,     setMrr]     = useState(0)
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -23,7 +27,8 @@ export function useClientes() {
       const { data: clientes, error: errClientes } = await supabase
         .from('clientes')
         .select('*')
-        .neq('status', 'cancelado')
+        // esconde arquivados (inativo) — clientes da operação só (lib/cliente-status.ts)
+        .not('status', 'in', `(${STATUS_OCULTOS.join(',')})`)
         .order('data_criacao', { ascending: false })
 
       if (errClientes) throw new Error(errClientes.message)
@@ -32,15 +37,24 @@ export function useClientes() {
 
       if (lista.length === 0) {
         setDados([])
+        setMrr(0)
         return
       }
 
       const ids = lista.map((c) => c.id)
-      const { data: estagios } = await supabase
-        .from('estagios')
-        .select('*')
-        .in('cliente_id', ids)
-        .eq('ativo', true)
+      const [{ data: estagios }, { data: assinaturas }] = await Promise.all([
+        supabase
+          .from('estagios')
+          .select('*')
+          .in('cliente_id', ids)
+          .eq('ativo', true),
+        supabase
+          .from('assinaturas')
+          .select('valor_mensal, status')
+          .in('status', STATUS_ASSINATURA_ATIVA),
+      ])
+
+      setMrr(calcularMRR(assinaturas ?? []))
 
       const estagiosPorCliente = new Map<string, Estagio>()
       for (const e of (estagios ?? []) as Estagio[]) {
@@ -71,6 +85,7 @@ export function useClientes() {
       .channel('clientes-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clientes' }, () => carregar())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'estagios' }, () => carregar())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assinaturas' }, () => carregar())
       .subscribe()
 
     return () => {
@@ -86,7 +101,7 @@ export function useClientes() {
     recebidos:    dados.filter((d) => d.cliente.status === 'recebido').length,
     onboarding:   dados.filter((d) => d.cliente.status === 'onboarding').length,
     inadimplentes: dados.filter((d) => isInadimplente(d.cliente)).length,
-    mrr:          dados.reduce((s, d) => s + (d.cliente.mrr ?? 0), 0),
+    mrr,
     taxaRetencao: dados.length > 0
       ? Math.round((dados.filter((d) => d.cliente.status === 'ativo').length / dados.length) * 100)
       : 0,

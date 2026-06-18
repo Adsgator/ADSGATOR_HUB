@@ -9,6 +9,7 @@ import {
   FileText, Send, ChevronDown, ChevronUp, LogOut, Layout, Plus, Trash2, ExternalLink, Copy,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { labelMotivoInativacao } from '@/lib/cliente-status'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/Button'
@@ -298,8 +299,9 @@ export default function ClienteDetalhePage() {
       async () => {
         setAgindo(true)
         try {
-          await atualizarCliente(cliente.id, { status: 'cancelado' as Cliente['status'] })
-          setCliente((prev) => prev ? { ...prev, status: 'cancelado' } : prev)
+          // saída a pedido → arquiva como inativo + motivo (lib/cliente-status.ts)
+          await atualizarCliente(cliente.id, { status: 'inativo' as Cliente['status'], motivo_inativacao: 'cancelado', inativado_em: new Date().toISOString() })
+          setCliente((prev) => prev ? { ...prev, status: 'inativo', motivo_inativacao: 'cancelado' } : prev)
           toast.success('Fluxo de cancelamento iniciado')
         } catch {
           toast.error('Erro ao iniciar cancelamento')
@@ -447,7 +449,9 @@ export default function ClienteDetalhePage() {
                 </h2>
                 <div className="flex items-center gap-[0.75rem] mt-[0.25rem] flex-wrap">
                   <span className={cn('px-[0.5rem] py-[0.125rem] rounded-full text-xs font-medium', STATUS_COLORS[cliente.status] ?? 'bg-ink-muted/10 text-ink-muted')}>
-                    {STATUS_LABELS[cliente.status] ?? cliente.status}
+                    {cliente.status === 'inativo'
+                      ? labelMotivoInativacao(cliente.motivo_inativacao)
+                      : (STATUS_LABELS[cliente.status] ?? cliente.status)}
                   </span>
                   {cliente.nicho && (
                     <span className="text-ink-muted text-[0.8125rem]">{cliente.nicho}</span>

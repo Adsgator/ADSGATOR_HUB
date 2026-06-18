@@ -8,6 +8,24 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.12.0',
+    data:   '2026-06-18',
+    novidades: [
+      'Ciclo de vida do cliente unificado: quem sai vira "inativo" (arquivo) com o motivo registrado — por inadimplência, a pedido ou por congelamento expirado. Antes "cancelado", "cancelado (débito)" e "inativo" eram status soltos que poluíam métricas e listas',
+      'Arquivamento automático: cliente congelado há mais de N dias (padrão 60, configurável em Configurações → Automações) vai para inativo sozinho, mantendo o histórico',
+      'Inativos somem das telas de gestão (dashboard, churn, cobrança, métricas) e ficam só no histórico — o sistema mostra só quem está na operação',
+      'Detalhe do cliente mostra o motivo da inativação no lugar do status genérico',
+    ],
+  },
+  {
+    versao: '0.11.4',
+    data:   '2026-06-18',
+    novidades: [
+      'Correção: o MRR aparecia com valores diferentes em cada tela (Morning Briefing, StatusBar, Financeiro e a Gator divergiam) — agora há uma fonte única (lib/mrr.ts): MRR = soma das assinaturas com cobrança viva (ativa ou em atraso D+7/D+15)',
+      'Financeiro: o card "MRR Mensal" passou a se chamar "Receita do Mês" (entradas confirmadas no caixa) e ganhou o MRR recorrente real das assinaturas ao lado — duas métricas distintas, sem ambiguidade',
+    ],
+  },
+  {
     versao: '0.11.3',
     data:   '2026-06-12',
     novidades: [

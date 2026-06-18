@@ -102,7 +102,10 @@ async function sincronizarAtrasos(supabase: Parameters<typeof dispararEmailAutom
     const updates: Record<string, unknown> = {}
     if ((cliente.dias_atraso ?? 0) !== dias) updates.dias_atraso = dias
     if (estagioInadimplencia(dias) === 'critico' && cliente.status === 'ativo') {
-      updates.status = 'cancelado_debito'
+      // perdido por inadimplência → arquiva como inativo + motivo (lib/cliente-status.ts)
+      updates.status = 'inativo'
+      updates.motivo_inativacao = 'debito'
+      updates.inativado_em = new Date().toISOString()
     }
     if (Object.keys(updates).length > 0) {
       await supabase.from('clientes').update(updates).eq('id', clienteId)

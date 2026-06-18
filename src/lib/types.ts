@@ -1,5 +1,8 @@
 // ─── STATUS TYPES ─────────────────────────────────────────────────────────────
 
+// Saída de cliente é estado único: 'inativo' + motivo_inativacao (lib/cliente-status.ts).
+// 'cancelado'/'cancelado_debito' ficam só por compat com registros pré-migration —
+// não escrever mais nesses status; usar 'inativo'.
 export type ClienteStatus =
   | 'recebido'
   | 'onboarding'
@@ -54,6 +57,9 @@ export interface Cliente {
   looker_url?:      string
   saldo_google?:    number
   congelado_em?:    string
+  // Inativação (ver lib/cliente-status.ts): motivo da saída + quando arquivou
+  motivo_inativacao?: 'debito' | 'cancelado' | 'congelamento_expirado' | null
+  inativado_em?:    string | null
   data_criacao?:    string
   data_atualizacao?: string
   // Portal do cliente

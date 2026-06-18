@@ -46,7 +46,7 @@ export function ChurnRisk() {
       .from('clientes')
       .select('id, nome, nicho, status, dias_atraso, mrr')
       .or('dias_atraso.gt.0,status.eq.congelado')
-      .neq('status', 'cancelado')
+      .neq('status', 'inativo')
       .order('dias_atraso', { ascending: false })
       .limit(6)
       .then(({ data }) => {

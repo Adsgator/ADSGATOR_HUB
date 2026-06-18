@@ -463,7 +463,8 @@ serve(async (req) => {
 
       if (diasAtraso >= LIMIARES_ATRASO.critico && assinatura.dias_atraso < LIMIARES_ATRASO.critico) {
         await supabase.from('assinaturas').update({ dias_atraso: LIMIARES_ATRASO.critico, status: 'cancelado_debito' }).eq('id', assinatura.id);
-        await supabase.from('clientes').update({ status: 'cancelado_debito' }).eq('id', assinatura.cliente_id);
+        // cliente perdido por inadimplência → arquiva como inativo + motivo (lib/cliente-status.ts)
+        await supabase.from('clientes').update({ status: 'inativo', motivo_inativacao: 'debito', inativado_em: new Date().toISOString() }).eq('id', assinatura.cliente_id);
         await supabase.from('historico_acoes').insert({
           cliente_id:      assinatura.cliente_id,
           tipo_acao:       'cancelamento_automatico_30_dias',
