@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.14.0',
+    data:   '2026-06-22',
+    novidades: [
+      'Onboarding guiado por timeline: a aba Timeline do cliente agora conduz o processo de verdade — mostra a mensagem pronta de cada etapa, já com o nome do cliente preenchido, botão para abrir direto no WhatsApp e campos para anotar os dados que o cliente envia (ex.: ID do Google Ads). O avanço de cada etapa passou a ser salvo (antes só mostrava o progresso)',
+      'Três modelos de onboarding prontos, um por tipo de contratação: Combo (LP + Tráfego), Só Tráfego (cliente que já tem site) e Só Landing Page — cada um com apenas as etapas que fazem sentido. As mensagens seguem o padrão de comunicação da agência',
+      'As mensagens avisam quando falta preencher uma informação (ex.: o link da pasta do Drive do cliente) antes de enviar',
+    ],
+  },
+  {
     versao: '0.13.0',
     data:   '2026-06-22',
     novidades: [
