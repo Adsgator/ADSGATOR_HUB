@@ -13,11 +13,10 @@ import { labelMotivoInativacao } from '@/lib/cliente-status'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/Button'
-import { TimelineContent } from '@/components/dashboard/TimelineContent'
+import { OnboardingTimeline } from '@/components/clientes/OnboardingTimeline'
 import { EmailComposer } from '@/components/relatorios/EmailComposer'
 import { ChecklistCard } from '@/components/clientes/ChecklistCard'
 import { ClienteCompletude } from '@/components/clientes/ClienteCompletude'
-import { montarVars } from '@/lib/timeline-vars'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
@@ -863,11 +862,10 @@ export default function ClienteDetalhePage() {
                         </div>
                       </button>
                       {isExpanded && (
-                        <div className="border-t border-surface-border">
-                          <TimelineContent
+                        <div className="border-t border-surface-border p-[1.25rem]">
+                          <OnboardingTimeline
                             instance={inst as import('@/lib/types/timeline').TimelineInstance}
-                            vars={montarVars(cliente, inst.data as Record<string, unknown> | undefined)}
-                            whatsapp={cliente.whatsapp}
+                            cliente={cliente}
                             onStepComplete={(stepId, data) => completarStep(inst.id, stepId, data)}
                             onStepWait={(stepId) => aguardarStep(inst.id, stepId)}
                           />

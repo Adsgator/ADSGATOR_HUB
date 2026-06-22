@@ -11,9 +11,10 @@ export const CHANGELOG: ChangelogEntry[] = [
     versao: '0.14.0',
     data:   '2026-06-22',
     novidades: [
-      'Onboarding guiado por timeline: a aba Timeline do cliente agora conduz o processo de verdade — mostra a mensagem pronta de cada etapa, já com o nome do cliente preenchido, botão para abrir direto no WhatsApp e campos para anotar os dados que o cliente envia (ex.: ID do Google Ads). O avanço de cada etapa passou a ser salvo (antes só mostrava o progresso)',
-      'Três modelos de onboarding prontos, um por tipo de contratação: Combo (LP + Tráfego), Só Tráfego (cliente que já tem site) e Só Landing Page — cada um com apenas as etapas que fazem sentido. As mensagens seguem o padrão de comunicação da agência',
-      'As mensagens avisam quando falta preencher uma informação (ex.: o link da pasta do Drive do cliente) antes de enviar',
+      'Onboarding guiado por timeline: a aba Timeline do cliente vira uma tela de condução passo-a-passo — todas as etapas visíveis numa linha do tempo vertical (concluídas marcadas, a atual em destaque com as mensagens, campos e ações). Cada etapa indica de quem é a vez: "Com o cliente" (esperando ele) ou "Comigo" (tarefa interna), para você saber quem cobrar',
+      'Mensagens prontas em cada etapa, já com o nome do cliente preenchido, botão para abrir direto no WhatsApp e campos para anotar dados (ex.: ID do Google Ads). O avanço de cada etapa é salvo',
+      'Lembretes prontos: quando a bola está com o cliente e ele trava, a etapa oferece uma mensagem de lembrete pronta (com a régua 24h/72h) para você enviar — sem precisar escrever na hora',
+      'Três modelos de onboarding, um por tipo de contratação: Combo (LP + Tráfego), Só Tráfego (já tem site) e Só Landing Page. Inclui confirmação de recebimento do briefing e o caminho de "cliente sem Google Meu Negócio" (você cria e devolve o acesso). Mensagens no padrão de comunicação da agência',
     ],
   },
   {

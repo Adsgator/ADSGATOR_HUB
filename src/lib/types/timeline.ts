@@ -31,6 +31,19 @@ export interface TimelineStep {
   content?: string
   messages: TimelineMessage[]
   input_fields?: TimelineInputField[]
+  /**
+   * De quem é a vez nesta etapa: 'cliente' = esperando algo do cliente (cobrar
+   * ele), 'agencia' = tarefa interna do Lucas (cobrar a si mesmo). Define os
+   * lembretes e o "no escuro". Default 'agencia' quando ausente.
+   */
+  responsavel?: 'cliente' | 'agencia'
+  /**
+   * Lembretes (em horas desde a entrada na etapa) quando a bola está com o
+   * cliente e ele não se move. Ex.: [24, 72]. Vazio/ausente = sem lembrete.
+   */
+  lembrete_horas?: number[]
+  /** Texto de lembrete pronto (padrão de voz) para Lucas enviar quando travar. */
+  lembrete_mensagem?: string
 }
 
 export interface TimelineTemplate {
