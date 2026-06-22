@@ -47,16 +47,17 @@ export async function POST(request: NextRequest) {
   const body = await request.json()
   const { template_id, client_id, type } = body
 
-  // Fetch template to get first step
+  // Fetch template to get first step + type (instance.type é NOT NULL e segue o
+  // do template; não depende do chamador enviar)
   const { data: template, error: tError } = await supabase
     .from('timeline_templates')
-    .select('steps')
+    .select('steps, type')
     .eq('id', template_id)
     .single()
 
   if (tError || !template) return NextResponse.json({ error: 'Template não encontrado' }, { status: 404 })
 
-  const steps = template.steps as Array<{ id: string; order: number }>
+  const steps = (template.steps ?? []) as Array<{ id: string; order: number }>
   const sorted = [...steps].sort((a, b) => a.order - b.order)
   const firstStep = sorted[0]
 
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
     .insert([{
       template_id,
       client_id: client_id ?? null,
-      type,
+      type: type ?? template.type,
       current_step_id: firstStep?.id ?? null,
       status: 'active',
     }])
