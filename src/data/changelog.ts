@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.13.0',
+    data:   '2026-06-22',
+    novidades: [
+      'Completude do cliente: o detalhe de cada cliente agora mostra, de forma proativa, o quão completo está o cadastro e exatamente o que falta preencher — organizado em Marca/negócio, Integrações Google, Financeiro/contrato e Contexto. Resolve o "ficar no escuro" com clientes importados do Asaas, que entram só com nome/e-mail/valor',
+      'Lista de clientes: cada card sinaliza com um selo laranja (%) quando o cadastro está incompleto, para identificar de relance quem precisa de atenção sem abrir um por um',
+      'Novo campo "link do perfil Google Ads" no cliente, parte da régua de completude',
+    ],
+  },
+  {
     versao: '0.12.0',
     data:   '2026-06-18',
     novidades: [

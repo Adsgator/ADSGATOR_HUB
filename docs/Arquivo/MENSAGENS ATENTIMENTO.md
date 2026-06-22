@@ -124,7 +124,7 @@ Esse é o nosso plano de Landing Page, que consiste em um site de apenas uma pá
 
 # **FUNCIONASIM03 (como funciona o serviço LP Pro)**
 
-Se você assinar hoje, sua página estará pronta e funcionando até quinta-feira dia 06\. O que acha de começarmos?  
+Se você assinar hoje, sua página estará pronta e funcionando até quinta-feira dia 06\. O que acha de começarmos?
 —--------------------------------------------------------------------
 
 # **CADASTRO01 (explicação cadastro)**
@@ -135,7 +135,7 @@ Para darmos início, vou te enviar o link para realizar o cadastro e o pagamento
 
 Assim que for confirmado, já seguimos para os próximos passos, onde explicarei como funciona todo o processo e o que você precisa me enviar para começarmos.
 
-➡  \*LINK CADASTRO E PAGAMENTO:\* https://cliente.adsgator.com.br/step/finalizar-contratacao/?add-to-cart=189
+➡ \*LINK CADASTRO E PAGAMENTO:\* https://cliente.adsgator.com.br/step/finalizar-contratacao/?add-to-cart=189
 
 —--------------------------------------------------------------------
 
@@ -268,10 +268,9 @@ Sempre que o saldo estiver próximo de acabar, vamos te avisar por e-mail
 # **SITEPRONTO**
 
 Segue o link para você acessar:  
-🌐 
+🌐
 
 Vou deixar também o link da árvore de links para usar nas suas redes sociais:  
-🔗 
+🔗
 
 Se precisar de algum ajuste, é só me avisar por aqui. Espero que goste\!
-

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button'
 import { TimelineContent } from '@/components/dashboard/TimelineContent'
 import { EmailComposer } from '@/components/relatorios/EmailComposer'
 import { ChecklistCard } from '@/components/clientes/ChecklistCard'
+import { ClienteCompletude } from '@/components/clientes/ClienteCompletude'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
@@ -556,6 +557,9 @@ export default function ClienteDetalhePage() {
         {abaAtiva === 'visao_geral' && (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_20rem] gap-[1.5rem]">
             <div className="space-y-[1.5rem]">
+              {/* Completude do cadastro — mostra o que falta preencher */}
+              <ClienteCompletude cliente={cliente} />
+
               {/* Portal do Cliente */}
               {cliente.portal_token && (
                 <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">

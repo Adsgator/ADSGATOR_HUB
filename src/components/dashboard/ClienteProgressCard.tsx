@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { calcularHealthScore } from '@/lib/health-score'
+import { calcularCompletude } from '@/lib/cliente-completude'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -70,6 +71,7 @@ export function ClienteProgressCard({
   const diasAtraso = cliente.dias_atraso ?? 0
   const ultimaInteracao = diasDesde(cliente.updated_at)
   const health = calcularHealthScore(cliente, estagio)
+  const completude = calcularCompletude(cliente)
 
   const handleWhatsApp = () => {
     if (!cliente.whatsapp) {
@@ -142,6 +144,16 @@ export function ClienteProgressCard({
           <span className={cn('w-1.5 h-1.5 rounded-full', health.dot)} />
           {health.score}
         </span>
+        {/* Completude — só aparece quando há pendências, para chamar atenção */}
+        {!completude.completo && (
+          <span
+            title={`Cadastro ${completude.percent}% completo — ${completude.faltando.length} pendência(s)`}
+            className="inline-flex items-center gap-[0.25rem] px-2 py-0.5 rounded-full bg-status-orange/10 text-status-orange text-xs font-bold"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-status-orange" />
+            {completude.percent}%
+          </span>
+        )}
       </div>
 
       {/* ── PRÓXIMA AÇÃO ──────────────────────────────────── */}

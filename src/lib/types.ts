@@ -55,6 +55,7 @@ export interface Cliente {
   // Outras integrações
   gmb_id?:          string
   looker_url?:      string
+  google_ads_perfil_url?: string | null  // link do perfil/conta Google Ads do cliente
   saldo_google?:    number
   congelado_em?:    string
   // Inativação (ver lib/cliente-status.ts): motivo da saída + quando arquivou
