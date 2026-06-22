@@ -25,9 +25,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params
   const body = await request.json()
 
+  // Apenas campos seguros podem ser atualizados via PATCH (evita sobrescrever
+  // template_id, completed_steps etc. por engano). data = variáveis da timeline
+  // (drive_url…); current_step_id = reabrir/navegar etapa; status = pausar/ativar.
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  if (body.data && typeof body.data === 'object') patch.data = body.data
+  if (typeof body.current_step_id === 'string' || body.current_step_id === null) patch.current_step_id = body.current_step_id
+  if (typeof body.status === 'string') patch.status = body.status
+
   const { data, error } = await supabase
     .from('timeline_instances')
-    .update(body)
+    .update(patch)
     .eq('id', id)
     .select('*, template:timeline_templates(*)')
     .single()

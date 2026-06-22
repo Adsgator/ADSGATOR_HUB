@@ -15,6 +15,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Mensagens prontas em cada etapa, já com o nome do cliente preenchido, botão para abrir direto no WhatsApp e campos para anotar dados (ex.: ID do Google Ads). O avanço de cada etapa é salvo',
       'Lembretes prontos: quando a bola está com o cliente e ele trava, a etapa oferece uma mensagem de lembrete pronta (com a régua 24h/72h) para você enviar — sem precisar escrever na hora',
       'Três modelos de onboarding, um por tipo de contratação: Combo (LP + Tráfego), Só Tráfego (já tem site) e Só Landing Page. Inclui confirmação de recebimento do briefing e o caminho de "cliente sem Google Meu Negócio" (você cria e devolve o acesso). Mensagens no padrão de comunicação da agência',
+      'Informações da timeline editáveis a qualquer momento: preencha o link do Drive ou o ID do Google Ads num bloco no topo e as mensagens já refletem o valor na hora. Qualquer etapa pode ser aberta para consultar/reenviar mensagens, e etapas concluídas podem ser reabertas',
     ],
   },
   {

@@ -240,6 +240,35 @@ export default function ClienteDetalhePage() {
     setTimelineInstances((prev) => prev.map((i) => (i.id === instanceId ? { ...i, ...atualizada } : i)))
   }
 
+  // Salvar variáveis da timeline (ex.: drive_url) sem concluir step — reflete na
+  // mensagem na hora. Faz merge com o data atual da instância.
+  async function salvarVarsTimeline(instanceId: string, vars: Record<string, string>) {
+    const inst = timelineInstances.find((i) => i.id === instanceId)
+    const merged = { ...(inst?.data ?? {}), ...vars }
+    const res = await fetch(`/api/v1/timelines/${instanceId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: merged }),
+    })
+    if (!res.ok) throw new Error('Falha ao salvar')
+    const json = await res.json()
+    const atualizada = json.data ?? json
+    setTimelineInstances((prev) => prev.map((i) => (i.id === instanceId ? { ...i, ...atualizada } : i)))
+  }
+
+  // Reabrir uma etapa anterior (volta o current_step_id pra ela)
+  async function reabrirStep(instanceId: string, stepId: string) {
+    const res = await fetch(`/api/v1/timelines/${instanceId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_step_id: stepId }),
+    })
+    if (!res.ok) throw new Error('Falha ao reabrir etapa')
+    const json = await res.json()
+    const atualizada = json.data ?? json
+    setTimelineInstances((prev) => prev.map((i) => (i.id === instanceId ? { ...i, ...atualizada } : i)))
+  }
+
   // Marcar step como "aguardando" (bola com o cliente)
   async function aguardarStep(instanceId: string, stepId: string) {
     const res = await fetch(`/api/v1/timelines/${instanceId}/step/${stepId}/wait`, {
@@ -868,6 +897,8 @@ export default function ClienteDetalhePage() {
                             cliente={cliente}
                             onStepComplete={(stepId, data) => completarStep(inst.id, stepId, data)}
                             onStepWait={(stepId) => aguardarStep(inst.id, stepId)}
+                            onSaveVars={(vars) => salvarVarsTimeline(inst.id, vars)}
+                            onReopenStep={(stepId) => reabrirStep(inst.id, stepId)}
                           />
                         </div>
                       )}
