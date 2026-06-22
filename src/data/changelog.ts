@@ -17,6 +17,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Três modelos de onboarding, um por tipo de contratação: Combo (LP + Tráfego), Só Tráfego (já tem site) e Só Landing Page. Inclui confirmação de recebimento do briefing e o caminho de "cliente sem Google Meu Negócio" (você cria e devolve o acesso). Mensagens no padrão de comunicação da agência',
       'Informações da timeline editáveis a qualquer momento: preencha o link do Drive ou o ID do Google Ads num bloco no topo e as mensagens já refletem o valor na hora. Qualquer etapa pode ser aberta para consultar/reenviar mensagens, e etapas concluídas podem ser reabertas',
       'O onboarding alimenta o cadastro: ao concluir uma etapa, o que você anotou (ex.: ID do Google Ads) é salvo no cliente e reflete na completude. O status do cliente acompanha o fluxo sozinho — vira "onboarding" ao iniciar e "ativo" ao concluir',
+      'Iniciar onboarding em 1 clique: a aba sugere o modelo certo conforme o tipo de contratação do cliente (Combo, Só Tráfego ou Só Landing Page). Novo campo "tipo de contratação" — definível na hora e pronto para ser preenchido automaticamente pelo checkout próprio no futuro',
     ],
   },
   {

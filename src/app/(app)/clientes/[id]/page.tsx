@@ -202,14 +202,35 @@ export default function ClienteDetalhePage() {
     }
   }
 
-  async function criarTimeline() {
-    if (!selectedTemplate || !id) return
+  // Define o tipo de contratação do cliente (solução manual enquanto o checkout
+  // próprio não envia automaticamente). Salva e atualiza o estado local.
+  async function definirTipoContratacao(tipo: 'combo' | 'trafego' | 'lp') {
+    if (!cliente) return
+    try {
+      await atualizarCliente(cliente.id, { tipo_contratacao: tipo } as Partial<Cliente>)
+      setCliente((prev) => prev ? { ...prev, tipo_contratacao: tipo } : prev)
+      toast.success('Tipo de contratação definido')
+    } catch {
+      toast.error('Erro ao salvar tipo')
+    }
+  }
+
+  // Tipo de contratação → nome do template de onboarding correspondente
+  const TEMPLATE_POR_TIPO: Record<string, string> = {
+    combo:   'Onboarding — Combo (LP + Tráfego)',
+    trafego: 'Onboarding — Só Tráfego',
+    lp:      'Onboarding — Só Landing Page',
+  }
+
+  async function criarTimeline(templateIdArg?: string) {
+    const templateId = templateIdArg ?? selectedTemplate
+    if (!templateId || !id) return
     setCreatingTimeline(true)
     try {
       const res = await fetch('/api/v1/timelines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template_id: selectedTemplate, client_id: id }),
+        body: JSON.stringify({ template_id: templateId, client_id: id }),
       })
       if (!res.ok) throw new Error('Falha ao criar timeline')
       const json = await res.json()
@@ -809,8 +830,58 @@ export default function ClienteDetalhePage() {
           )
         })()}
 
-        {abaAtiva === 'timeline' && (
+        {abaAtiva === 'timeline' && (() => {
+          const temOnboardingAtivo = timelineInstances.some(
+            (i) => i.template?.type === 'onboarding' && i.status !== 'completed' && i.status !== 'archived',
+          )
+          const tipo = cliente.tipo_contratacao
+          const tplSugerido = tipo
+            ? timelineTemplates.find((t) => t.name === TEMPLATE_POR_TIPO[tipo])
+            : undefined
+          return (
           <div className="space-y-[1rem]">
+            {/* Atalho proativo: iniciar o onboarding do tipo certo em 1 clique */}
+            {!temOnboardingAtivo && !timelineLoading && (
+              <div className="bg-ads-500/5 border border-ads-500/30 rounded-xl p-[1.25rem]">
+                {tplSugerido ? (
+                  <div className="flex items-center gap-[0.875rem] flex-wrap">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-ink-primary text-[0.9375rem] font-semibold">Iniciar onboarding</p>
+                      <p className="text-ink-muted text-[0.8125rem] mt-[0.125rem]">
+                        Contratação <span className="text-ink-secondary font-medium">{tipo === 'combo' ? 'Combo (LP + Tráfego)' : tipo === 'trafego' ? 'Só Tráfego' : 'Só Landing Page'}</span> — usar o modelo correspondente.
+                      </p>
+                    </div>
+                    <Button variant="primary" size="sm" loading={creatingTimeline}
+                      onClick={() => criarTimeline(tplSugerido.id)}>
+                      Iniciar “{tplSugerido.name.replace('Onboarding — ', '')}”
+                    </Button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-ink-primary text-[0.9375rem] font-semibold">Iniciar onboarding</p>
+                    <p className="text-ink-muted text-[0.8125rem] mt-[0.125rem] mb-[0.75rem]">
+                      Qual o tipo de contratação deste cliente? (define o modelo de onboarding)
+                    </p>
+                    <div className="flex items-center gap-[0.5rem] flex-wrap">
+                      {([
+                        { v: 'combo',   l: 'Combo (LP + Tráfego)' },
+                        { v: 'trafego', l: 'Só Tráfego' },
+                        { v: 'lp',      l: 'Só Landing Page' },
+                      ] as const).map(({ v, l }) => (
+                        <button
+                          key={v}
+                          onClick={() => definirTipoContratacao(v)}
+                          className="h-[2rem] px-[0.75rem] rounded-lg text-[0.8125rem] font-medium bg-surface-hover border border-surface-border text-ink-secondary hover:text-ink-primary hover:border-ads-500/50 transition-colors"
+                        >
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Create new timeline */}
             <div className="bg-surface-card border border-surface-border rounded-xl p-[1.25rem] card-shadow">
               <h3 className="text-ink-primary text-[0.9375rem] font-semibold mb-[0.75rem]">Nova Timeline</h3>
@@ -826,7 +897,7 @@ export default function ClienteDetalhePage() {
                   ))}
                 </select>
                 <button
-                  onClick={criarTimeline}
+                  onClick={() => criarTimeline()}
                   disabled={!selectedTemplate || creatingTimeline}
                   className="h-[2.25rem] px-[1rem] rounded-lg bg-ads-500 hover:bg-ads-600 disabled:opacity-50 text-white text-[0.875rem] font-medium transition-colors"
                 >
@@ -912,7 +983,8 @@ export default function ClienteDetalhePage() {
               </div>
             )}
           </div>
-        )}
+          )
+        })()}
 
         {abaAtiva === 'sites' && (
           <div className="flex flex-col gap-[1rem]">

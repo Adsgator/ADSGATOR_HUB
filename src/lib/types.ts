@@ -40,6 +40,8 @@ export interface Cliente {
   dominio?:        string
   website?:        string
   status:          ClienteStatus
+  /** Tipo de contratação — seleciona o template de onboarding (origem futura: checkout) */
+  tipo_contratacao?: 'combo' | 'trafego' | 'lp' | null
   mrr?:            number
   plano?:          string
   asaas_id?:       string

@@ -112,7 +112,7 @@ export function calcularCompletude(
         { id: 'plano', label: 'Plano cadastrado', ok: preenchido(cliente.plano), campo: 'plano' },
         { id: 'mrr',   label: 'MRR cadastrado',   ok: preenchido(cliente.mrr),   campo: 'mrr' },
         { id: 'assinatura', label: 'Assinatura Asaas vinculada', ok: extra?.temAssinaturaVinculada ?? preenchido(cliente.asaas_id) },
-        { id: 'tipo_contratacao', label: 'Tipo de contratação definido', ok: preenchido(extra?.tipoContratacao) },
+        { id: 'tipo_contratacao', label: 'Tipo de contratação definido', ok: preenchido(extra?.tipoContratacao ?? cliente.tipo_contratacao) },
       ],
     },
     {
