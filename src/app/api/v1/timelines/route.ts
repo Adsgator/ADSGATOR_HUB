@@ -74,5 +74,16 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Iniciar onboarding move o cliente para o status 'onboarding' (se ainda está
+  // em 'recebido') — o status do cliente acompanha o fluxo sem ação manual.
+  if (client_id && (template.type ?? type) === 'onboarding') {
+    await supabase
+      .from('clientes')
+      .update({ status: 'onboarding' })
+      .eq('id', client_id)
+      .eq('status', 'recebido')
+  }
+
   return NextResponse.json({ data }, { status: 201 })
 }

@@ -63,6 +63,31 @@ export async function POST(
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
 
+  // Integração com o cliente: campos do onboarding que correspondem a colunas de
+  // `clientes` são gravados no cadastro (alimenta a completude). O onboarding não
+  // fica isolado — o que você anota numa etapa atualiza o cliente.
+  if (instance.client_id) {
+    const CAMPO_PARA_CLIENTE: Record<string, string> = {
+      google_ads_customer_id: 'google_ads_customer_id',
+      ga4_property_id:        'ga4_property_id',
+      google_ads_perfil_url:  'google_ads_perfil_url',
+      dominio:                'dominio',
+      website:                'website',
+    }
+    const patchCliente: Record<string, unknown> = {}
+    for (const [campoForm, valor] of Object.entries(formData)) {
+      const col = CAMPO_PARA_CLIENTE[campoForm]
+      if (col && typeof valor === 'string' && valor.trim()) patchCliente[col] = valor.trim()
+    }
+    // Onboarding concluído → cliente entra na operação (ativo)
+    if (isFinished && instance.type === 'onboarding') {
+      patchCliente.status = 'ativo'
+    }
+    if (Object.keys(patchCliente).length > 0) {
+      await supabase.from('clientes').update(patchCliente).eq('id', instance.client_id)
+    }
+  }
+
   // Audit log
   await supabase.from('timeline_audit_log').insert([{
     instance_id: id,

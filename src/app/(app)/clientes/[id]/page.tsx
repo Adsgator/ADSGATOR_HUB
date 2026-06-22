@@ -217,6 +217,8 @@ export default function ClienteDetalhePage() {
       setTimelineInstances((prev) => [nova, ...prev])
       setSelectedTemplate('')
       toast.success('Timeline criada')
+      // Criar onboarding pode ter movido o cliente para 'onboarding'
+      obterCliente(id).then((c) => { if (c) setCliente(c) }).catch(() => {})
     } catch {
       toast.error('Erro ao criar timeline')
     } finally {
@@ -238,6 +240,8 @@ export default function ClienteDetalhePage() {
     const json = await res.json()
     const atualizada = json.data ?? json
     setTimelineInstances((prev) => prev.map((i) => (i.id === instanceId ? { ...i, ...atualizada } : i)))
+    // O complete pode ter atualizado o cliente (IDs, status) — recarrega para refletir
+    obterCliente(id).then((c) => { if (c) setCliente(c) }).catch(() => {})
   }
 
   // Salvar variáveis da timeline (ex.: drive_url) sem concluir step — reflete na
