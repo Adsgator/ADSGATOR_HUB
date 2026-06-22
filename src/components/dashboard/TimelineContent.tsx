@@ -11,6 +11,10 @@ interface TimelineContentProps {
   instance: TimelineInstance
   onStepComplete: (stepId: string, data: Record<string, string>) => Promise<void>
   onStepWait: (stepId: string) => Promise<void>
+  /** Variáveis para interpolar nas mensagens ({{primeiro_nome}}, {{drive_url}}…) */
+  vars?: Record<string, string>
+  /** WhatsApp do cliente — habilita o botão "abrir no WhatsApp" nas mensagens */
+  whatsapp?: string | null
 }
 
 function ProgressBar({ completed, total }: { completed: number; total: number }) {
@@ -31,7 +35,7 @@ function ProgressBar({ completed, total }: { completed: number; total: number })
   )
 }
 
-export function TimelineContent({ instance, onStepComplete, onStepWait }: TimelineContentProps) {
+export function TimelineContent({ instance, onStepComplete, onStepWait, vars, whatsapp }: TimelineContentProps) {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
@@ -101,7 +105,7 @@ export function TimelineContent({ instance, onStepComplete, onStepWait }: Timeli
       {currentStep.messages && currentStep.messages.length > 0 && (
         <div className="flex flex-col gap-[0.375rem]">
           {currentStep.messages.map(msg => (
-            <TimelineMessage key={msg.id} message={msg} />
+            <TimelineMessage key={msg.id} message={msg} vars={vars} whatsapp={whatsapp} />
           ))}
         </div>
       )}

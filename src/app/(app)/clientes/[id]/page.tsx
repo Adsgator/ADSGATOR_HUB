@@ -17,6 +17,7 @@ import { TimelineContent } from '@/components/dashboard/TimelineContent'
 import { EmailComposer } from '@/components/relatorios/EmailComposer'
 import { ChecklistCard } from '@/components/clientes/ChecklistCard'
 import { ClienteCompletude } from '@/components/clientes/ClienteCompletude'
+import { montarVars } from '@/lib/timeline-vars'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
@@ -40,6 +41,7 @@ interface TimelineInstanceSummary {
   completed_steps: string[]
   template?: { name: string; type: string; steps: { id: string; title: string }[] }
   current_step_id?: string
+  data?: Record<string, unknown>
 }
 
 // ── Componente de edição inline ───────────────────────────────────────────────
@@ -211,7 +213,8 @@ export default function ClienteDetalhePage() {
         body: JSON.stringify({ template_id: selectedTemplate, client_id: id }),
       })
       if (!res.ok) throw new Error('Falha ao criar timeline')
-      const nova = await res.json()
+      const json = await res.json()
+      const nova = json.data ?? json
       setTimelineInstances((prev) => [nova, ...prev])
       setSelectedTemplate('')
       toast.success('Timeline criada')
@@ -219,6 +222,36 @@ export default function ClienteDetalhePage() {
       toast.error('Erro ao criar timeline')
     } finally {
       setCreatingTimeline(false)
+    }
+  }
+
+  // Concluir um step: persiste na API e atualiza a instância no estado local
+  async function completarStep(instanceId: string, stepId: string, data: Record<string, string>) {
+    const res = await fetch(`/api/v1/timelines/${instanceId}/step/${stepId}/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error ?? 'Falha ao concluir step')
+    }
+    const json = await res.json()
+    const atualizada = json.data ?? json
+    setTimelineInstances((prev) => prev.map((i) => (i.id === instanceId ? { ...i, ...atualizada } : i)))
+  }
+
+  // Marcar step como "aguardando" (bola com o cliente)
+  async function aguardarStep(instanceId: string, stepId: string) {
+    const res = await fetch(`/api/v1/timelines/${instanceId}/step/${stepId}/wait`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    if (!res.ok) throw new Error('Falha ao marcar como aguardando')
+    const json = await res.json().catch(() => ({}))
+    const atualizada = json.data ?? json
+    if (atualizada && atualizada.id) {
+      setTimelineInstances((prev) => prev.map((i) => (i.id === instanceId ? { ...i, ...atualizada } : i)))
     }
   }
 
@@ -833,8 +866,10 @@ export default function ClienteDetalhePage() {
                         <div className="border-t border-surface-border">
                           <TimelineContent
                             instance={inst as import('@/lib/types/timeline').TimelineInstance}
-                            onStepComplete={async () => {}}
-                            onStepWait={async () => {}}
+                            vars={montarVars(cliente, inst.data as Record<string, unknown> | undefined)}
+                            whatsapp={cliente.whatsapp}
+                            onStepComplete={(stepId, data) => completarStep(inst.id, stepId, data)}
+                            onStepWait={(stepId) => aguardarStep(inst.id, stepId)}
                           />
                         </div>
                       )}
