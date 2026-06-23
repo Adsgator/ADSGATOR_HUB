@@ -15,6 +15,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       'Templates de Email agora moram dentro de Configurações → Comunicação (ao lado das Automações de email), em vez de uma página solta — toggles e modelos de email no mesmo lugar',
       'Emails no visual real da Adsgator: todos os modelos de email passaram a usar o layout dos emails atuais da agência — banner no topo, faixa amarela com o título, corpo claro e rodapé com Termos/Privacidade/Ajuda. O que sai para o cliente fica igual ao que você já manda hoje',
       'Textos dos emails reescritos no padrão de voz da agência (caloroso e objetivo): assuntos personalizados com o nome do cliente, frases curtas, subtítulos para escanear e uma ação clara por email. Cobre Boas-vindas, Suspensão, Reativação, Cancelamento, Relatórios (Google Ads e Analytics) e os alertas de saldo. Cobrança com tom firme, mas humano',
+      'Design dos emails repaginado: tipografia e espaçamentos mais respiráveis, subtítulos de seção com destaque, KPIs em cards mais elegantes, botões de ação com mais presença e rodapé refinado. Mantém o banner e a identidade Adsgator, e segue compatível com Gmail/Outlook',
+      'Tela de gestão de emails melhorada: templates agrupados por categoria (Ciclo de vida, Cobrança, Alertas, Relatórios, Personalizados), busca no topo e, no editor, atalhos das variáveis disponíveis (clique para inserir {{nome_cliente}}, {{pagamento_url}} etc. no lugar do cursor)',
       'Novo email "Saldo do Google Ads acabou" (saldo zerado), separado do alerta de saldo baixo, deixando claro que os anúncios foram pausados',
       'Os emails de suspensão e cancelamento já trazem o lugar do link de pagamento ({{pagamento_url}}); o preenchimento automático do link do Asaas vem na próxima etapa',
     ],

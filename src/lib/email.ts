@@ -54,62 +54,74 @@ interface WrapOptions {
   theme?: 'light' | 'dark'
   /** Rodapé enviado automaticamente (vs. somente notificação). */
   envioAutomatico?: boolean
+  /** Texto de preview na caixa de entrada (preheader oculto). */
+  preheader?: string
 }
 
+const FONT_STACK = "'Helvetica Neue', Helvetica, Arial, sans-serif"
+
 /**
- * Wrapper email-safe no visual real da Adsgator (Titan): banner no topo, faixa
- * amarela #FFB100 com o título e corpo claro. Layout table-based + estilos
- * inline para máxima compatibilidade entre clientes de email.
+ * Wrapper email-safe no visual da Adsgator: banner no topo, faixa amarela
+ * #FFB100 com o título e corpo claro. Layout table-based + estilos inline para
+ * máxima compatibilidade entre clientes de email (Gmail, Outlook, Apple Mail).
  *
- * `theme: 'dark'` mantém o mesmo esqueleto mas com corpo escuro, para emails
- * que pedem visual dark.
+ * `theme: 'dark'` mantém o mesmo esqueleto com corpo escuro.
  */
 export function wrapEmailHtml(title: string, content: string, opts: WrapOptions = {}): string {
   const theme = opts.theme ?? 'light'
   const dark = theme === 'dark'
 
-  const pageBg    = dark ? '#0a0a0b' : '#f9f9f9'
+  const pageBg    = dark ? '#0a0a0b' : '#eef0f4'
   const cardBg    = dark ? '#141416' : '#ffffff'
-  const bodyBg    = dark ? '#1c1c1f' : '#F1F1F1'
-  const bodyText  = dark ? '#a1a1aa' : '#333333'
-  const headText  = dark ? '#231f20' : '#231f20' // faixa amarela em ambos
-  const footText  = dark ? '#71717a' : '#888888'
+  const bodyBg    = dark ? '#16161a' : '#ffffff'
+  const bodyText  = dark ? '#c4c4c8' : '#3a3a3a'
+  const headText  = '#231f20' // faixa amarela em ambos os temas
+  const footBg    = dark ? '#0f0f10' : '#fafafa'
+  const footText  = dark ? '#71717a' : '#9a9a9a'
+  const footBorder = dark ? '#2a2a2e' : '#ededed'
 
   const rodapeNota = opts.envioAutomatico
     ? 'Este e-mail é enviado automaticamente.'
     : 'Este e-mail é somente para notificação.'
+
+  const preheader = opts.preheader
+    ? `<div style="display:none; max-height:0; overflow:hidden; opacity:0; mso-hide:all;">${opts.preheader}</div>`
+    : ''
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="light dark" />
 <title>${title}</title>
 </head>
-<body style="margin:0; padding:0; background-color:${pageBg}; font-family: Arial, Helvetica, sans-serif;">
-<table width="100%" cellspacing="0" cellpadding="0" style="background-color:${pageBg}; width:100%;" bgcolor="${pageBg}">
+<body style="margin:0; padding:0; background-color:${pageBg}; font-family:${FONT_STACK}; -webkit-font-smoothing:antialiased;">
+${preheader}
+<table width="100%" cellspacing="0" cellpadding="0" role="presentation" style="background-color:${pageBg}; width:100%;" bgcolor="${pageBg}">
   <tbody>
     <tr>
-      <td align="center">
-        <table width="100%" cellspacing="0" cellpadding="0" style="max-width:600px; width:100%; border-radius:12px; overflow:hidden; box-shadow:rgba(0,0,0,0.05) 0px 2px 8px; background-color:${cardBg}; margin:40px 0;" bgcolor="${cardBg}">
+      <td align="center" style="padding:32px 12px;">
+        <table width="600" cellspacing="0" cellpadding="0" role="presentation" style="max-width:600px; width:100%; border-radius:14px; overflow:hidden; box-shadow:0 4px 24px rgba(17,17,17,0.08); background-color:${cardBg};" bgcolor="${cardBg}">
           <tbody>
             <tr>
               <td style="padding:0; background-color:${cardBg};" bgcolor="${cardBg}" align="center"><img src="${BANNER_URL}" alt="Adsgator" width="600" height="130" style="display:block; width:100%; max-width:600px; height:auto; border:0;"></td>
             </tr>
             <tr>
-              <td style="background-color:#FFB100; padding:30px 20px; color:#111111;" bgcolor="#FFB100" align="left">
-                <h1 style="margin:0; font-size:22px; color:${headText};">${title}</h1>
+              <td style="background-color:#FFB100; padding:28px 36px;" bgcolor="#FFB100" align="left">
+                <h1 style="margin:0; font-size:24px; line-height:1.3; font-weight:bold; color:${headText};">${title}</h1>
               </td>
             </tr>
             <tr>
-              <td style="background-color:${bodyBg}; padding:24px 20px 30px 20px; color:${bodyText}; font-size:16px; line-height:1.5;" bgcolor="${bodyBg}" align="left">
+              <td style="background-color:${bodyBg}; padding:32px 36px; color:${bodyText}; font-size:16px; line-height:1.65;" bgcolor="${bodyBg}" align="left">
                 ${content}
               </td>
             </tr>
             <tr>
-              <td style="background-color:${cardBg}; padding:20px; font-size:12px; color:${footText};" bgcolor="${cardBg}" align="left">
-                <p style="margin:0;"><a href="https://adsgator.com.br/termos-de-servico/" style="color:${footText};">Termos de Serviço</a> | <a href="https://adsgator.com.br/privacidade" style="color:${footText};">Política de Privacidade</a> | <a href="https://adsgator.com.br/ajuda" style="color:${footText};">Central de Ajuda</a></p>
-                <p style="margin-top:10px;">${rodapeNota} Para entrar em contato, envie um e-mail para <a href="mailto:contato@adsgator.com.br" style="color:${footText};">contato@adsgator.com.br</a>.</p>
+              <td style="background-color:${footBg}; padding:24px 36px; font-size:12px; line-height:1.6; color:${footText}; border-top:1px solid ${footBorder};" bgcolor="${footBg}" align="center">
+                <p style="margin:0 0 10px 0; font-weight:bold; color:${dark ? '#a1a1aa' : '#6b6b6b'}; letter-spacing:0.04em;">ADSGATOR</p>
+                <p style="margin:0 0 8px 0;"><a href="https://adsgator.com.br/termos-de-servico/" style="color:${footText}; text-decoration:none;">Termos de Serviço</a> &nbsp;·&nbsp; <a href="https://adsgator.com.br/privacidade" style="color:${footText}; text-decoration:none;">Privacidade</a> &nbsp;·&nbsp; <a href="https://adsgator.com.br/ajuda" style="color:${footText}; text-decoration:none;">Central de Ajuda</a></p>
+                <p style="margin:0;">${rodapeNota} Fale com a gente em <a href="mailto:contato@adsgator.com.br" style="color:${footText};">contato@adsgator.com.br</a>.</p>
               </td>
             </tr>
           </tbody>
@@ -126,45 +138,50 @@ export function wrapEmailHtml(title: string, content: string, opts: WrapOptions 
 
 /** Parágrafo padrão do corpo. */
 function p(text: string): string {
-  return `<p style="font-size:16px; margin:0 0 15px 0;">${text}</p>`
+  return `<p style="margin:0 0 16px 0;">${text}</p>`
 }
 
-/** Subtítulo de seção (escaneável), com filete amarelo embaixo. */
+/** Subtítulo de seção (escaneável), com filete amarelo curto embaixo. */
 function sectionTitle(text: string): string {
-  return `<p style="font-size:15px; font-weight:bold; color:#111111; margin:24px 0 10px 0; padding-bottom:6px; border-bottom:2px solid #FFB100;">${text}</p>`
+  return `<p style="font-size:13px; font-weight:bold; color:#111111; text-transform:uppercase; letter-spacing:0.06em; margin:28px 0 4px 0;">${text}</p>
+  <div style="width:36px; height:3px; background-color:#FFB100; border-radius:2px; margin:0 0 14px 0;"></div>`
 }
 
-/** Botão/CTA amarelo. */
-function btn(href: string, label: string): string {
-  return `<p style="margin:20px 0;"><a href="${href}" style="display:inline-block; background-color:#FFB100; color:#111111; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold; font-size:14px;">${label}</a></p>`
+/** Botão/CTA amarelo com presença. `center` o centraliza. */
+function btn(href: string, label: string, center = false): string {
+  const wrapStyle = center ? 'text-align:center; margin:24px 0;' : 'margin:24px 0;'
+  return `<div style="${wrapStyle}"><a href="${href}" target="_blank" style="display:inline-block; background-color:#FFB100; color:#111111; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:15px; box-shadow:0 2px 8px rgba(255,177,0,0.35);">${label}</a></div>`
 }
 
-/** Grade de KPIs (rótulo + valor) em tabela, para os relatórios. */
+/** Grade de KPIs (rótulo + valor) para os relatórios — cards com respiro entre si. */
 function kpiGrid(items: Array<{ label: string; value: string }>): string {
-  const cells = items.map(
-    (k) => `<td width="33%" style="background-color:#ffffff; border-radius:8px; padding:12px; text-align:center; border:4px solid ${'#F1F1F1'};">
-      <div style="font-size:18px; font-weight:bold; color:#111111;">${k.value}</div>
-      <div style="font-size:11px; color:#888888; margin-top:2px;">${k.label}</div>
-    </td>`,
-  )
+  const cell = (k: { label: string; value: string }) =>
+    `<td width="33%" valign="top" style="padding:6px;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#fafafa; border:1px solid #eee; border-radius:10px;"><tbody><tr><td style="padding:16px 10px; text-align:center;">
+        <div style="font-size:20px; font-weight:bold; color:#111111; line-height:1.2;">${k.value}</div>
+        <div style="font-size:11px; color:#9a9a9a; margin-top:4px; text-transform:uppercase; letter-spacing:0.04em;">${k.label}</div>
+      </td></tr></tbody></table>
+    </td>`
   const rows: string[] = []
-  for (let i = 0; i < cells.length; i += 3) {
-    rows.push(`<tr>${cells.slice(i, i + 3).join('')}</tr>`)
+  for (let i = 0; i < items.length; i += 3) {
+    const group = items.slice(i, i + 3)
+    while (group.length < 3 && items.length > 3) group.push({ label: '', value: '' })
+    rows.push(`<tr>${group.map((k) => (k.label || k.value ? cell(k) : '<td width="33%"></td>')).join('')}</tr>`)
   }
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="width:100%; margin:16px 0; border-collapse:separate;"><tbody>${rows.join('')}</tbody></table>`
+  return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="width:100%; margin:8px 0 4px 0;"><tbody>${rows.join('')}</tbody></table>`
 }
 
 /** Card de saldo (fundos disponíveis + botão recarregar), usado nos alertas de saldo. */
 function saldoCard(saldo: string, statusLabel: string, statusColor: string): string {
-  return `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border-radius:10px; width:100%;" bgcolor="#ffffff"><tbody>
-    <tr><td style="padding:30px 25px; text-align:left;" align="left">
-      <p style="margin:0 0 5px 0; font-size:14px; color:#333;"><strong>Fundos disponíveis</strong></p>
-      <p style="margin:0 0 15px 0; font-size:28px; font-weight:bold; color:#007C00;">${saldo}</p>
+  return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#fafafa; border:1px solid #eee; border-radius:12px; width:100%; margin:8px 0;" bgcolor="#fafafa"><tbody>
+    <tr><td style="padding:28px 28px; text-align:left;" align="left">
+      <p style="margin:0 0 6px 0; font-size:12px; color:#9a9a9a; text-transform:uppercase; letter-spacing:0.05em;">Fundos disponíveis</p>
+      <p style="margin:0 0 4px 0; font-size:32px; font-weight:bold; color:#111111; line-height:1;">${saldo}</p>
       <p style="margin:0 0 20px 0; font-size:14px; color:${statusColor};"><strong>${statusLabel}</strong></p>
-      <a href="https://ads.google.com/aw/billing/summary" target="_blank" style="display:inline-block; background-color:#d90000; color:#ffffff; padding:12px 20px; border-radius:6px; text-decoration:none; font-size:14px;">&nbsp;Adicionar fundos&nbsp;</a>
+      <a href="https://ads.google.com/aw/billing/summary" target="_blank" style="display:inline-block; background-color:#d90000; color:#ffffff; padding:12px 24px; border-radius:8px; text-decoration:none; font-size:14px; font-weight:bold;">Adicionar fundos</a>
     </td></tr>
   </tbody></table>
-  <p style="font-size:16px; margin-top:25px;">📘 <strong>Veja o passo a passo para adicionar saldo:</strong><br><a href="https://ajuda.adsgator.com.br/ajuda/como-adicionar-saldo-no-google-ads/" target="_blank" style="color:#2969b0;">&nbsp;https://ajuda.adsgator.com.br/ajuda/como-adicionar-saldo-no-google-ads/&nbsp;</a></p>`
+  <p style="margin:18px 0 0 0;">📘 <strong>Passo a passo para adicionar saldo:</strong> <a href="https://ajuda.adsgator.com.br/ajuda/como-adicionar-saldo-no-google-ads/" target="_blank" style="color:#2969b0;">ver tutorial</a></p>`
 }
 
 // ── Pre-built templates ───────────────────────────────────────────────────────
@@ -184,7 +201,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
          { label: 'Investimento',  value: v.investimento ?? '—' },
        ])}
        ${p('Quer entender o que está por trás desses números ou ajustar a estratégia? É só responder este e-mail — vamos adorar conversar. 😊')}
-       ${btn(`{{dashboard_url}}/clientes/${v.cliente_id}`, 'Ver no painel')}`,
+       ${btn(`{{dashboard_url}}/clientes/${v.cliente_id}`, 'Ver no painel', true)}`,
     ),
   },
   'report-ga4': {
@@ -297,7 +314,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
        ${p(`Depois dessa data, o site e o e-mail saem da nossa hospedagem — e dados não migrados não poderão ser recuperados.`)}
        ${sectionTitle('Ainda dá tempo de reverter')}
        ${p('Se quiser manter tudo no ar, basta quitar o valor em atraso pelo link abaixo:')}
-       ${btn('{{pagamento_url}}', 'Regularizar e manter meu plano')}
+       ${btn('{{pagamento_url}}', 'Regularizar e manter meu plano', true)}
        ${p('Já pagou? Responda este e-mail com o comprovante que normalizamos sua conta o quanto antes. Qualquer dúvida, estamos à disposição.')}`,
     ),
   },
@@ -315,7 +332,7 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
        </ul>
        ${sectionTitle('Como reativar tudo')}
        ${p('É simples: basta regularizar o pagamento pelo link abaixo. Assim que ele for identificado, reativamos seus serviços em até <strong>24 horas úteis</strong>.')}
-       ${btn('{{pagamento_url}}', 'Regularizar pagamento')}
+       ${btn('{{pagamento_url}}', 'Regularizar pagamento', true)}
        ${p('Só um aviso importante: se o atraso chegar a <strong>15 dias</strong>, o plano é cancelado por inadimplência e a estrutura sai dos nossos servidores. Resolvendo agora, você evita a interrupção das suas vendas e a perda de dados.')}
        ${p('Se já pagou ou quiser conversar, é só responder este e-mail — estamos por aqui.')}`,
     ),
@@ -352,4 +369,35 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
        ${p('Que bom seguir com você nessa parceria! Precisando de qualquer coisa, é só chamar. 🤝')}`,
     ),
   },
+}
+
+// ── Metadados para a UI de gestão ─────────────────────────────────────────────
+// Categoria (para agrupar a lista) e variáveis aceitas por cada template (para
+// os "chips" de inserção no editor). Fonte única consumida pela tela de Emails.
+
+export type EmailTemplateCategoria = 'relatorios' | 'ciclo-vida' | 'cobranca' | 'alertas' | 'outros'
+
+export const CATEGORIA_LABEL: Record<EmailTemplateCategoria, string> = {
+  'relatorios':  'Relatórios',
+  'ciclo-vida':  'Ciclo de vida do cliente',
+  'cobranca':    'Cobrança',
+  'alertas':     'Alertas',
+  'outros':      'Outros',
+}
+
+/** Variáveis comuns + as específicas de cada template (sem {{ }}). */
+export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, { categoria: EmailTemplateCategoria; variaveis: string[] }> = {
+  'report-google-ads':       { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'impressoes', 'cliques', 'ctr', 'conversoes', 'cpa', 'investimento'] },
+  'report-ga4':              { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'sessoes', 'usuarios', 'visualizacoes', 'engajamento', 'duracao', 'rejeicao'] },
+  'report-executive':        { categoria: 'relatorios', variaveis: ['mes_ano', 'total_clientes', 'mrr', 'total_conversoes', 'resumo'] },
+  'welcome':                 { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
+  'reativacao':              { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
+  'encerramento':            { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
+  'aviso-indisponibilidade': { categoria: 'cobranca',   variaveis: ['nome_cliente', 'data_vencimento', 'pagamento_url'] },
+  'cancelamento-notice':     { categoria: 'cobranca',   variaveis: ['nome_cliente', 'data_vencimento', 'data_desativacao', 'pagamento_url'] },
+  'payment-reminder':        { categoria: 'cobranca',   variaveis: ['nome_cliente', 'dias_atraso', 'valor', 'pagamento_url'] },
+  'payment-followup':        { categoria: 'cobranca',   variaveis: ['nome_cliente', 'dias_atraso', 'valor', 'pagamento_url'] },
+  'alert-saldo-baixo':       { categoria: 'alertas',    variaveis: ['nome_cliente', 'saldo_atual'] },
+  'alert-saldo-zerado':      { categoria: 'alertas',    variaveis: ['nome_cliente', 'saldo_atual'] },
+  'alert-performance':       { categoria: 'alertas',    variaveis: ['nome_cliente', 'metrica', 'valor_atual', 'valor_referencia'] },
 }

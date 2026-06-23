@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { EMAIL_TEMPLATES } from '@/lib/email'
+import { EMAIL_TEMPLATES, EMAIL_TEMPLATE_META } from '@/lib/email'
 import type { EmailTemplateId } from '@/lib/types/email'
 
 /**
@@ -27,6 +27,7 @@ export async function GET() {
 
   const templates = (rows ?? []).map((row) => {
     const base = EMAIL_TEMPLATES[row.id as EmailTemplateId]
+    const meta = EMAIL_TEMPLATE_META[row.id as EmailTemplateId]
     return {
       id: row.id,
       nome: row.nome,
@@ -35,6 +36,8 @@ export async function GET() {
       html_efetivo: row.html_override ?? base?.buildHtml(placeholderProxy) ?? '',
       editado: row.subject_override != null || row.html_override != null,
       custom: row.custom === true,
+      categoria: meta?.categoria ?? 'outros',
+      variaveis: meta?.variaveis ?? [],
       atualizado_em: row.atualizado_em,
     }
   })
