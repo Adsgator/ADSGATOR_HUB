@@ -5,6 +5,7 @@ import {
   Save, User, Bell, Plug, DollarSign,
   Palette, Users, Check, History, Download, Upload,
   Layers, Tag, Plus, Trash2, Pencil, Mail, Zap,
+  Settings, MessageSquare, Briefcase, ShieldCheck, Server,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
@@ -16,22 +17,37 @@ import { AutomacaoEmail } from '@/components/configuracoes/AutomacaoEmail'
 import { Agendamentos } from '@/components/configuracoes/Agendamentos'
 import { ImportAsaasModal } from '@/components/configuracoes/ImportAsaasModal'
 import { SetupChecklist } from '@/components/configuracoes/SetupChecklist'
+import { TemplatesEmail } from '@/components/configuracoes/TemplatesEmail'
 
-type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'planos' | 'automacoes' | 'backup' | 'auditoria'
+type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'planos' | 'automacoes' | 'emails' | 'backup' | 'auditoria'
 
-const ABAS: { id: AbaId; label: string; icon: React.ElementType }[] = [
-  { id: 'setup',         label: 'Setup',          icon: Zap        },
-  { id: 'perfil',        label: 'Perfil',         icon: User       },
-  { id: 'notificacoes',  label: 'Notificações',    icon: Bell       },
-  { id: 'integracoes',   label: 'Integrações',     icon: Plug       },
-  { id: 'financeiro',    label: 'Financeiro',      icon: DollarSign },
-  { id: 'aparencia',     label: 'Aparência',       icon: Palette    },
-  { id: 'equipe',        label: 'Equipe',          icon: Users      },
-  { id: 'operacional',   label: 'Operacional',     icon: Layers     },
-  { id: 'planos',        label: 'Planos',          icon: Tag        },
-  { id: 'automacoes',    label: 'Automações',      icon: Mail       },
-  { id: 'backup',        label: 'Backup',          icon: Download   },
-  { id: 'auditoria',     label: 'Auditoria',       icon: History    },
+const ABAS: Record<AbaId, { label: string; icon: React.ElementType }> = {
+  setup:        { label: 'Setup',          icon: Zap        },
+  perfil:       { label: 'Perfil',         icon: User       },
+  notificacoes: { label: 'Notificações',    icon: Bell       },
+  integracoes:  { label: 'Integrações',     icon: Plug       },
+  financeiro:   { label: 'Financeiro',      icon: DollarSign },
+  aparencia:    { label: 'Aparência',       icon: Palette    },
+  equipe:       { label: 'Equipe',          icon: Users      },
+  operacional:  { label: 'Operacional',     icon: Layers     },
+  planos:       { label: 'Planos',          icon: Tag        },
+  automacoes:   { label: 'Automações',      icon: Settings   },
+  emails:       { label: 'Emails',          icon: Mail       },
+  backup:       { label: 'Backup',          icon: Download   },
+  auditoria:    { label: 'Auditoria',       icon: History    },
+}
+
+// Categorias do menu lateral. Cada uma agrupa abas relacionadas; quando a
+// categoria tem mais de uma aba, elas viram sub-abas no topo do conteúdo.
+type CategoriaId = 'geral' | 'comunicacao' | 'cobranca' | 'operacao' | 'conta' | 'sistema'
+
+const CATEGORIAS: { id: CategoriaId; label: string; icon: React.ElementType; abas: AbaId[] }[] = [
+  { id: 'geral',       label: 'Geral',        icon: Settings,     abas: ['setup', 'perfil', 'aparencia'] },
+  { id: 'comunicacao', label: 'Comunicação',  icon: MessageSquare, abas: ['emails', 'automacoes', 'notificacoes'] },
+  { id: 'cobranca',    label: 'Cobrança',     icon: DollarSign,    abas: ['financeiro', 'planos'] },
+  { id: 'operacao',    label: 'Operação',     icon: Briefcase,     abas: ['operacional', 'integracoes'] },
+  { id: 'conta',       label: 'Conta',        icon: ShieldCheck,   abas: ['equipe', 'auditoria'] },
+  { id: 'sistema',     label: 'Sistema',      icon: Server,        abas: ['backup'] },
 ]
 
 interface ConfigFinanceira {
@@ -674,7 +690,7 @@ function AbaBackup() {
       URL.revokeObjectURL(url)
 
       setFeedback('✓ Backup exportado com sucesso!')
-    } catch (err) {
+    } catch {
       setFeedback('✗ Erro ao exportar backup. Tente novamente.')
     } finally {
       setExportando(false)
@@ -985,18 +1001,38 @@ function PlanoForm({ plano, onSave, onCancel }: { plano: PlanoServico; onSave: (
 }
 
 // ── PÁGINA PRINCIPAL ────────────────────────────────────────────────────────
+function categoriaDaAba(aba: AbaId): CategoriaId {
+  return CATEGORIAS.find((c) => c.abas.includes(aba))?.id ?? 'geral'
+}
+
 export default function ConfiguracoesPage() {
-  const [aba, setAba] = useState<AbaId>('perfil')
+  const [aba, setAba] = useState<AbaId>('setup')
+  const [categoria, setCategoria] = useState<CategoriaId>('geral')
 
   // Deep-link ?tab=<aba> lido via window.location (useSearchParams exigiria
   // Suspense boundary no Next 15 — desnecessário para um parâmetro estático).
   useEffect(() => {
     const tab = new URLSearchParams(window.location.search).get('tab')
-    if (tab && ABAS.some((a) => a.id === tab)) setAba(tab as AbaId)
+    if (tab && tab in ABAS) {
+      setAba(tab as AbaId)
+      setCategoria(categoriaDaAba(tab as AbaId))
+    }
   }, [])
 
+  function abrirAba(a: AbaId) {
+    setAba(a)
+    setCategoria(categoriaDaAba(a))
+  }
+
+  function selecionarCategoria(c: CategoriaId) {
+    setCategoria(c)
+    // Ao trocar de categoria, ativa a primeira aba dela (se a atual não pertence).
+    const cat = CATEGORIAS.find((x) => x.id === c)
+    if (cat && !cat.abas.includes(aba)) setAba(cat.abas[0])
+  }
+
   const ABA_CONTENT: Record<AbaId, React.ReactNode> = {
-    setup:         <SetupChecklist onAbrirAba={(a) => { if (ABAS.some((x) => x.id === a)) setAba(a as AbaId) }} />,
+    setup:         <SetupChecklist onAbrirAba={(a) => { if (a in ABAS) abrirAba(a as AbaId) }} />,
     perfil:        <AbaPerfil />,
     notificacoes:  <AbaNotificacoes />,
     integracoes:   <AbaIntegracoes />,
@@ -1011,33 +1047,62 @@ export default function ConfiguracoesPage() {
         <Agendamentos />
       </div>
     ),
+    emails:        <TemplatesEmail />,
     backup:        <AbaBackup />,
     auditoria:     <AuditLogViewer />,
   }
 
+  const catAtual = CATEGORIAS.find((c) => c.id === categoria) ?? CATEGORIAS[0]
+  const subAbas  = catAtual.abas
+
   return (
     <MainLayout title="Configurações" subtitle="Personalize a Adsgator conforme sua operação">
-      <div className="flex flex-col gap-[2rem]">
-        {/* Tabs */}
-        <div className="flex gap-[0.25rem] flex-wrap border-b border-surface-border pb-[0.25rem]">
-          {ABAS.map(({ id, label, icon: Icon }) => (
+      <div className="flex gap-[1.5rem] items-start">
+        {/* Menu lateral — categorias */}
+        <nav className="w-[12rem] shrink-0 flex flex-col gap-[0.25rem] sticky top-[1rem]">
+          {CATEGORIAS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setAba(id)}
-              className={`flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-t-lg text-[0.875rem] font-medium transition-colors ${
-                aba === id
-                  ? 'text-ads-500 border-b-2 border-ads-500 -mb-[0.3125rem]'
-                  : 'text-ink-muted hover:text-ink-secondary'
+              onClick={() => selecionarCategoria(id)}
+              className={`flex items-center gap-[0.625rem] h-[2.375rem] px-[0.75rem] rounded-lg text-[0.875rem] font-medium transition-colors text-left ${
+                categoria === id
+                  ? 'bg-ads-500/10 text-ads-600'
+                  : 'text-ink-muted hover:text-ink-secondary hover:bg-surface-hover'
               }`}
             >
-              <Icon className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+              <Icon className="w-[1rem] h-[1rem] shrink-0" strokeWidth={1.75} />
               {label}
             </button>
           ))}
-        </div>
+        </nav>
 
-        {/* Conteúdo da aba ativa */}
-        <div>{ABA_CONTENT[aba]}</div>
+        {/* Conteúdo */}
+        <div className="flex-1 min-w-0 flex flex-col gap-[1.5rem]">
+          {/* Sub-abas (só quando a categoria tem mais de uma) */}
+          {subAbas.length > 1 && (
+            <div className="flex gap-[0.25rem] flex-wrap border-b border-surface-border pb-[0.25rem]">
+              {subAbas.map((id) => {
+                const { label, icon: Icon } = ABAS[id]
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setAba(id)}
+                    className={`flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-t-lg text-[0.875rem] font-medium transition-colors ${
+                      aba === id
+                        ? 'text-ads-500 border-b-2 border-ads-500 -mb-[0.3125rem]'
+                        : 'text-ink-muted hover:text-ink-secondary'
+                    }`}
+                  >
+                    <Icon className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
+          <div>{ABA_CONTENT[aba]}</div>
+        </div>
       </div>
     </MainLayout>
   )

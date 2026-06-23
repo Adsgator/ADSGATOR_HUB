@@ -18,7 +18,7 @@ MÓDULOS (rota → o que faz):
 - /prospectar — CRM de prospecção (funil com estágios, valor de proposta).
 - /operacional — planos operacionais e fluxos por cliente.
 - /base-conhecimento, /portfolio, /biblioteca (componentes Astro p/ landing pages).
-- /configuracoes — abas: Setup (central de prontidão — checklist vivo do que falta configurar, com % e passos; deep-link ?tab=setup), perfil, notificações, integrações, financeiro, aparência, equipe, auditoria; toggles de automação de email; templates de email editáveis. Dashboard mostra banner "Sistema pronto: X%" enquanto o setup não está completo (use prontidao_sistema para o detalhe).
+- /configuracoes — navegação por categorias no menu lateral, cada uma com sub-abas: Geral (Setup, Perfil, Aparência), Comunicação (Emails — templates editáveis —, Automações — toggles de email + agendamentos —, Notificações), Cobrança (Financeiro, Planos), Operação (Operacional, Integrações), Conta (Equipe, Auditoria), Sistema (Backup). Setup é a central de prontidão (checklist vivo do que falta configurar, com % e passos; deep-link ?tab=setup; demais deep-links ?tab= continuam válidos). Dashboard mostra banner "Sistema pronto: X%" enquanto o setup não está completo (use prontidao_sistema para o detalhe).
 - /portal/[token] — portal público do cliente.
 
 INTEGRAÇÕES:

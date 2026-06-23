@@ -11,6 +11,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     versao: '0.16.0',
     data:   '2026-06-23',
     novidades: [
+      'Configurações reorganizadas: a barra de abas (que já estava enorme) virou um menu lateral por categorias — Geral, Comunicação, Cobrança, Operação, Conta e Sistema. Cada categoria abre suas sub-abas, escala bem e fica fácil achar as coisas',
+      'Templates de Email agora moram dentro de Configurações → Comunicação (ao lado das Automações de email), em vez de uma página solta — toggles e modelos de email no mesmo lugar',
       'Emails no visual real da Adsgator: todos os modelos de email passaram a usar o layout dos emails atuais da agência — banner no topo, faixa amarela com o título, corpo claro e rodapé com Termos/Privacidade/Ajuda. O que sai para o cliente fica igual ao que você já manda hoje',
       'Conteúdo dos 7 emails principais atualizado com os textos reais: Boas-vindas, Suspensão temporária, Plano reativado, Cancelamento por atraso, Relatório Google Ads, Relatório Google Analytics e Saldo acabando — tudo editável em Configurações → Templates de Email',
       'Novo email "Saldo do Google Ads acabou" (saldo zerado), separado do alerta de saldo baixo, com texto próprio',
