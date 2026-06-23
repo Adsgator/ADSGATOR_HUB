@@ -587,6 +587,56 @@ export const TOOLS: Record<string, Tool> = {
     resumo: (args) => `Notificação criada: "${str(args.titulo)}"`,
   },
 
+  panorama_onboarding: {
+    declaration: {
+      name: 'panorama_onboarding',
+      description: 'Panorama dos onboardings em andamento: para cada cliente, a etapa atual, há quanto tempo está nela, e de quem é a vez (cliente ou agência). Use para o usuário saber onde cada cliente parou e qual a próxima ação.',
+      parameters: { type: T.OBJECT, properties: {} },
+    },
+    execute: async (_args, ctx) => {
+      // Clientes do usuário (para escopar as instâncias)
+      const { data: clientes } = await ctx.db
+        .from('clientes')
+        .select('id, nome')
+        .eq('user_id', ctx.userId)
+      const nomePorId = new Map((clientes ?? []).map((c: { id: string; nome: string }) => [c.id, c.nome]))
+      const ids = Array.from(nomePorId.keys())
+      if (ids.length === 0) return { onboardings: [] }
+
+      const { data: instancias } = await ctx.db
+        .from('timeline_instances')
+        .select('current_step_id, updated_at, client_id, template:timeline_templates(name, steps)')
+        .eq('type', 'onboarding')
+        .eq('status', 'active')
+        .in('client_id', ids)
+
+      const HORAS_MS = 60 * 60 * 1000
+      type TplJoin = { name?: string; steps?: Array<{ id: string; title: string; responsavel?: string }> }
+      const onboardings = ((instancias ?? []) as Array<{
+        current_step_id: string | null
+        updated_at: string | null
+        client_id: string | null
+        template: TplJoin | TplJoin[] | null
+      }>).map((inst) => {
+        const tpl = Array.isArray(inst.template) ? inst.template[0] : inst.template
+        const steps = tpl?.steps ?? []
+        const step = steps.find((s) => s.id === inst.current_step_id)
+        const horasParado = inst.updated_at
+          ? Math.floor((Date.now() - new Date(inst.updated_at).getTime()) / HORAS_MS)
+          : null
+        return {
+          cliente:       inst.client_id ? nomePorId.get(inst.client_id) ?? '—' : '—',
+          modelo:        tpl?.name ?? '—',
+          etapa_atual:   step?.title ?? '—',
+          responsavel:   step?.responsavel === 'cliente' ? 'cliente' : 'agência',
+          horas_parado:  horasParado,
+        }
+      })
+      return { onboardings }
+    },
+    resumo: () => 'Consultou o panorama de onboardings.',
+  },
+
   // ════ MARKETING ═══════════════════════════════════════════════════════════
 
   listar_posts_marketing: {

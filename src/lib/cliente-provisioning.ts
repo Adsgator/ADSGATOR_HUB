@@ -84,5 +84,26 @@ export async function provisionarClienteNovo(
   }).select('id').single()
 
   if (error) throw new Error(`Falha ao criar tarefa de setup: ${error.message}`)
+
+  // Aviso de cliente novo — Lucas não descobre cliente novo por acaso. Sai junto
+  // com a criação da tarefa (só chega aqui quando o cliente é realmente novo, pelo
+  // guard de idempotência acima). Falha aqui não derruba o provisionamento.
+  const ORIGEM_LABEL: Record<OrigemProvisionamento, string> = {
+    form:       'cadastro manual',
+    import:     'importação do Asaas',
+    retroativo: 'provisionamento retroativo',
+  }
+  try {
+    await db.from('notificacoes').insert({
+      user_id:  userId,
+      tipo:     'info',
+      titulo:   `🎉 Novo cliente: ${cliente.nome}`,
+      mensagem: `Entrou via ${ORIGEM_LABEL[origem]}. Confira o cadastro e inicie o onboarding na página do cliente.`,
+      lida:     false,
+    })
+  } catch (notifErr) {
+    console.error('Falha ao notificar cliente novo:', notifErr)
+  }
+
   return { criada: true, tarefa_id: data.id }
 }

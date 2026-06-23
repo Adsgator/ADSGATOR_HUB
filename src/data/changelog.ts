@@ -12,6 +12,8 @@ export const CHANGELOG: ChangelogEntry[] = [
     data:   '2026-06-23',
     novidades: [
       'Lembretes de onboarding automáticos: quando um cliente trava numa etapa que depende dele (24h/72h, conforme o modelo), o Hub avisa sozinho com uma notificação que já traz a mensagem de lembrete pronta para você enviar. Roda 1x/dia pelo agendador (liga/desliga e horário em Configurações → Automações). Cada limite avisa só uma vez',
+      'Aviso de cliente novo: ao entrar um cliente (cadastro, importação do Asaas ou checkout), você recebe uma notificação no sino para conferir o cadastro e iniciar o onboarding — não descobre cliente novo por acaso',
+      'A Gator passa a enxergar os onboardings: pergunte "como estão os onboardings?" e ela responde onde cada cliente parou, há quanto tempo e de quem é a vez (cliente ou agência)',
     ],
   },
   {
