@@ -1,4 +1,3 @@
-import type { Cliente } from './types'
 
 /**
  * Interpolação de variáveis nas mensagens de timeline.
@@ -23,7 +22,13 @@ const PLACEHOLDER_RE = /\{\{\s*([\w.]+)\s*\}\}/g
 
 /** Monta o dicionário de variáveis a partir do cliente + dados da instância. */
 export function montarVars(
-  cliente: Pick<Cliente, 'nome' | 'email' | 'whatsapp' | 'nicho' | 'dominio'>,
+  cliente: {
+    nome?: string | null
+    email?: string | null
+    whatsapp?: string | null
+    nicho?: string | null
+    dominio?: string | null
+  },
   instanceData?: Record<string, unknown>,
   extra?: Record<string, string>,
 ): Record<string, string> {

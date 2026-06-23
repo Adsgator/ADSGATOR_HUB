@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.15.0',
+    data:   '2026-06-23',
+    novidades: [
+      'Lembretes de onboarding automáticos: quando um cliente trava numa etapa que depende dele (24h/72h, conforme o modelo), o Hub avisa sozinho com uma notificação que já traz a mensagem de lembrete pronta para você enviar. Roda 1x/dia pelo agendador (liga/desliga e horário em Configurações → Automações). Cada limite avisa só uma vez',
+    ],
+  },
+  {
     versao: '0.14.0',
     data:   '2026-06-22',
     novidades: [
