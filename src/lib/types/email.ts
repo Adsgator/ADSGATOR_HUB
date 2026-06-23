@@ -7,6 +7,7 @@ export type EmailTemplateId =
   | 'welcome'
   | 'payment-reminder'
   | 'alert-saldo-baixo'
+  | 'alert-saldo-zerado'
   | 'alert-performance'
   | 'payment-followup'
   | 'cancelamento-notice'
