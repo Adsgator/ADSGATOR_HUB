@@ -153,13 +153,35 @@ function btn(href: string, label: string, center = false): string {
   return `<div style="${wrapStyle}"><a href="${href}" target="_blank" style="display:inline-block; background-color:#FFB100; color:#111111; padding:14px 32px; border-radius:10px; text-decoration:none; font-weight:bold; font-size:15px; box-shadow:0 2px 8px rgba(255,177,0,0.35);">${label}</a></div>`
 }
 
-/** Grade de KPIs (rótulo + valor) para os relatórios — cards com respiro entre si. */
-function kpiGrid(items: Array<{ label: string; value: string }>): string {
-  const cell = (k: { label: string; value: string }) =>
+interface KpiItem {
+  label: string
+  value: string
+  /** Variação vs período anterior, ex.: '+18%' ou '-5%'. Vazio = sem comparação. */
+  variacao?: string
+  /** true quando subir é bom (cliques, conversões); false quando subir é ruim (CPA, rejeição). */
+  positivoSeSobe?: boolean
+}
+
+/** Renderiza a linha de variação (▲/▼ colorido) abaixo do valor, se houver. */
+function variacaoTag(v?: string, positivoSeSobe = true): string {
+  if (!v || !v.trim()) return ''
+  const sobe = v.trim().startsWith('+')
+  const desce = v.trim().startsWith('-')
+  // Sem sinal claro: mostra neutro.
+  const bom = sobe ? positivoSeSobe : desce ? !positivoSeSobe : null
+  const cor = bom === null ? '#9a9a9a' : bom ? '#1a8f3c' : '#c0392b'
+  const seta = sobe ? '▲' : desce ? '▼' : ''
+  return `<div style="font-size:11px; color:${cor}; margin-top:3px; font-weight:bold;">${seta} ${v.trim().replace(/^[+-]/, '')}</div>`
+}
+
+/** Grade de KPIs (rótulo + valor + variação) para os relatórios. */
+function kpiGrid(items: KpiItem[]): string {
+  const cell = (k: KpiItem) =>
     `<td width="33%" valign="top" style="padding:6px;">
       <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#fafafa; border:1px solid #eee; border-radius:10px;"><tbody><tr><td style="padding:16px 10px; text-align:center;">
         <div style="font-size:20px; font-weight:bold; color:#111111; line-height:1.2;">${k.value}</div>
         <div style="font-size:11px; color:#9a9a9a; margin-top:4px; text-transform:uppercase; letter-spacing:0.04em;">${k.label}</div>
+        ${variacaoTag(k.variacao, k.positivoSeSobe ?? true)}
       </td></tr></tbody></table>
     </td>`
   const rows: string[] = []
@@ -191,40 +213,40 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
     subject: 'Seu relatório do Google Ads de {{mes_ano}} chegou 📊',
     buildHtml: (v) => wrapEmailHtml(
       `Relatório Google Ads<br>${v.mes_ano}`,
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>! Aqui está como suas campanhas no Google Ads se saíram em <strong>${v.mes_ano}</strong>. Um resumo dos números que mais importam:`)}
+      `${p(`Olá, ${v.nome_cliente}! Continuamos cuidando das suas campanhas e este é o resultado de ${v.mes_ano}. Os números abaixo já mostram a comparação com o mês anterior, então você acompanha a evolução de perto.`)}
        ${kpiGrid([
-         { label: 'Impressões',    value: v.impressoes ?? '—' },
-         { label: 'Cliques',       value: v.cliques ?? '—' },
-         { label: 'CTR',           value: v.ctr ?? '—' },
-         { label: 'Conversões',    value: v.conversoes ?? '—' },
-         { label: 'CPA Médio',     value: v.cpa ?? '—' },
-         { label: 'Investimento',  value: v.investimento ?? '—' },
+         { label: 'Impressões',   value: v.impressoes ?? '—',   variacao: v.impressoes_var,  positivoSeSobe: true  },
+         { label: 'Cliques',      value: v.cliques ?? '—',      variacao: v.cliques_var,     positivoSeSobe: true  },
+         { label: 'CTR',          value: v.ctr ?? '—',          variacao: v.ctr_var,         positivoSeSobe: true  },
+         { label: 'Conversões',   value: v.conversoes ?? '—',   variacao: v.conversoes_var,  positivoSeSobe: true  },
+         { label: 'CPA Médio',    value: v.cpa ?? '—',          variacao: v.cpa_var,         positivoSeSobe: false },
+         { label: 'Investimento', value: v.investimento ?? '—', variacao: v.investimento_var, positivoSeSobe: true  },
        ])}
-       ${p('Quer entender o que está por trás desses números ou ajustar a estratégia? É só responder este e-mail — vamos adorar conversar. 😊')}
-       ${btn(`{{dashboard_url}}/clientes/${v.cliente_id}`, 'Ver no painel', true)}`,
+       ${v.destaque ? `${sectionTitle('Destaque do mês')}${p(v.destaque)}` : ''}
+       ${p('Seguimos otimizando tudo nos bastidores para que cada real investido renda mais. No próximo mês trazemos a evolução.')}`,
     ),
   },
   'report-ga4': {
-    subject: 'Como anda seu site — relatório de {{mes_ano}} 📈',
+    subject: 'Como anda seu site em {{mes_ano}} 📈',
     buildHtml: (v) => wrapEmailHtml(
       `Relatório do seu site<br>${v.mes_ano}`,
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>! Veja como anda a presença digital do seu negócio em <strong>${v.mes_ano}</strong> — acessos, comportamento dos visitantes e os principais indicadores do site:`)}
+      `${p(`Olá, ${v.nome_cliente}! Veja como anda a presença digital do seu negócio em ${v.mes_ano}. Comparamos com o mês anterior para você enxergar a evolução de acessos e do comportamento dos visitantes.`)}
        ${kpiGrid([
-         { label: 'Sessões',       value: v.sessoes ?? '—' },
-         { label: 'Usuários',      value: v.usuarios ?? '—' },
-         { label: 'Visualizações', value: v.visualizacoes ?? '—' },
-         { label: 'Engajamento',   value: v.engajamento ?? '—' },
-         { label: 'Duração Média', value: v.duracao ?? '—' },
-         { label: 'Taxa Rejeição', value: v.rejeicao ?? '—' },
+         { label: 'Sessões',       value: v.sessoes ?? '—',       variacao: v.sessoes_var,       positivoSeSobe: true  },
+         { label: 'Usuários',      value: v.usuarios ?? '—',      variacao: v.usuarios_var,      positivoSeSobe: true  },
+         { label: 'Visualizações', value: v.visualizacoes ?? '—', variacao: v.visualizacoes_var, positivoSeSobe: true  },
+         { label: 'Engajamento',   value: v.engajamento ?? '—',   variacao: v.engajamento_var,   positivoSeSobe: true  },
+         { label: 'Duração Média', value: v.duracao ?? '—',       variacao: v.duracao_var,       positivoSeSobe: true  },
+         { label: 'Taxa Rejeição', value: v.rejeicao ?? '—',      variacao: v.rejeicao_var,      positivoSeSobe: false },
        ])}
-       ${p('Tem alguma dúvida sobre os dados ou quer ideias para crescer ainda mais? Responda este e-mail que a gente te ajuda. 😊')}
-       ${btn('{{dashboard_url}}/analytics', 'Ver no painel')}`,
+       ${v.destaque ? `${sectionTitle('Destaque do mês')}${p(v.destaque)}` : ''}
+       ${p('Tudo isso é fruto do trabalho contínuo na sua presença digital. Seguimos acompanhando para o seu site atrair cada vez mais gente certa.')}`,
     ),
   },
   'report-executive': {
-    subject: 'Relatório Executivo — {{mes_ano}} | AdsGator',
+    subject: 'Relatório Executivo da Adsgator | {{mes_ano}}',
     buildHtml: (v) => wrapEmailHtml(
-      `Relatório Executivo — ${v.mes_ano}`,
+      `Relatório Executivo<br>${v.mes_ano}`,
       `${p(`Relatório consolidado da agência para <strong>${v.mes_ano}</strong>.`)}
        ${kpiGrid([
          { label: 'Clientes Ativos', value: v.total_clientes ?? '—' },
@@ -238,135 +260,126 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
     subject: 'Bem-vindo à Adsgator, {{nome_cliente}}! 🎉',
     buildHtml: (v) => wrapEmailHtml(
       'Bem-vindo à Adsgator! 🎉',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>! Que bom ter você com a gente.`)}
+      `${p(`Olá, ${v.nome_cliente}! Que bom ter você com a gente.`)}
        ${p('Sua assinatura está confirmada e já começamos a preparar tudo para o seu projeto sair do papel. A partir de agora, somos parceiros no crescimento do seu negócio.')}
        ${sectionTitle('O que acontece agora')}
-       ${p('Em até <strong>1 dia útil</strong>, nossa equipe entra em contato pelo WhatsApp para coletar as primeiras informações e dar o pontapé inicial.')}
-       ${p('Enquanto isso, vale guardar nossos <a href="https://adsgator.com.br/termos-de-servico/" target="_blank" style="color:#2969b0;">Termos de Serviço</a> (que você aceitou na contratação) — lá estão os prazos de entrega, as regras de suporte e as políticas de cancelamento e reativação.')}
-       ${p('Qualquer dúvida, é só responder este e-mail ou chamar no WhatsApp. Vamos juntos! 🤝')}`,
+       ${p('Já estamos organizando tudo internamente. Em breve nossa equipe entra em contato pelo WhatsApp para coletar as primeiras informações e dar o pontapé inicial. Você não precisa fazer nada por enquanto, é só aguardar nosso retorno.')}
+       ${p('Para sua referência, deixamos aqui nossos <a href="https://adsgator.com.br/termos-de-servico/" target="_blank" style="color:#2969b0;">Termos de Serviço</a>, que você aceitou na contratação. Neles estão os prazos de entrega, as regras de suporte e as políticas de cancelamento e reativação.')}
+       ${p('Estamos felizes em começar essa jornada com você.')}`,
     ),
   },
   'payment-reminder': {
     subject: '{{nome_cliente}}, um lembrete sobre seu pagamento',
     buildHtml: (v) => wrapEmailHtml(
-      'Lembrete de Pagamento',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>!`)}
-       ${p(`Identificamos que sua mensalidade está pendente há <strong>${v.dias_atraso} dias</strong>.`)}
-       ${p('Para manter seus serviços ativos, regularize o pagamento o quanto antes.')}
-       ${p(`<strong>Valor:</strong> ${v.valor ?? '—'}`)}
-       ${btn('{{pagamento_url}}', 'Realizar Pagamento')}`
+      'Um lembrete sobre seu pagamento',
+      `${p(`Olá, ${v.nome_cliente}! Passando para lembrar que sua mensalidade está pendente há ${v.dias_atraso} dias.`)}
+       ${p(`Para manter seus serviços rodando normalmente, é só regularizar pelo link abaixo. O valor é ${v.valor ?? '[informar valor]'}.`)}
+       ${btn('{{pagamento_url}}', 'Regularizar agora', true)}
+       ${p('Se já realizou o pagamento, pode desconsiderar este lembrete.')}`
     ),
   },
   'alert-saldo-baixo': {
     subject: '⚠️ {{nome_cliente}}, seu saldo do Google Ads está acabando',
     buildHtml: (v) => wrapEmailHtml(
       '⚠️ Seu saldo do Google Ads está acabando',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>! O saldo da sua conta do Google Ads está baixo. Quando ele zera, o Google pausa seus anúncios automaticamente — e suas campanhas saem do ar.`)}
-       ${p('Para não correr esse risco, recomendamos adicionar créditos o quanto antes. Assim tudo segue rodando sem interrupção.')}
-       ${saldoCard(v.saldo_atual ?? 'R$ 00', 'Os fundos estão acabando', '#a80000')}
-       ${p('Qualquer dúvida no processo, é só responder este e-mail. 😊')}`,
+      `${p(`Olá, ${v.nome_cliente}! Estamos de olho na sua conta e percebemos que o saldo do Google Ads está ficando baixo. Quando ele chega a zero, o Google pausa os anúncios automaticamente e suas campanhas saem do ar.`)}
+       ${p('Para que tudo continue rodando sem interrupção, é só adicionar créditos quando puder. Deixamos o passo a passo abaixo para facilitar.')}
+       ${saldoCard(v.saldo_atual ?? 'R$ 00', 'Os fundos estão acabando', '#a80000')}`,
       { envioAutomatico: true },
     ),
   },
   'alert-saldo-zerado': {
     subject: '🔴 {{nome_cliente}}, seus anúncios foram pausados (saldo zerado)',
     buildHtml: (v) => wrapEmailHtml(
-      '🔴 Seu saldo do Google Ads acabou — anúncios pausados',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>! O saldo da sua conta do Google Ads chegou a zero e, com isso, o Google <strong>pausou seus anúncios</strong>. Eles voltam ao ar assim que você recarregar.`)}
-       ${p('Quanto antes adicionar saldo, antes suas campanhas voltam a gerar resultado:')}
-       ${saldoCard(v.saldo_atual ?? 'R$ 00', 'Os fundos acabaram', '#a80000')}
-       ${p('Precisa de ajuda para recarregar? Responda este e-mail que a gente orienta. 😊')}`,
+      '🔴 Seu saldo do Google Ads acabou e os anúncios pausaram',
+      `${p(`Olá, ${v.nome_cliente}! O saldo da sua conta do Google Ads chegou a zero e, por isso, o Google pausou seus anúncios. A boa notícia é que eles voltam ao ar assim que a conta for recarregada.`)}
+       ${p('Quanto antes o saldo for reposto, antes suas campanhas voltam a gerar resultado. O passo a passo está logo abaixo.')}
+       ${saldoCard(v.saldo_atual ?? 'R$ 00', 'Os fundos acabaram', '#a80000')}`,
       { envioAutomatico: true },
     ),
   },
   'alert-performance': {
-    subject: '⚠️ Alerta de Performance — {{nome_cliente}}',
+    subject: '{{nome_cliente}}, já estamos ajustando suas campanhas',
     buildHtml: (v) => wrapEmailHtml(
-      'Alerta de Performance',
-      `${p(`Detectamos uma variação de performance nas campanhas de <strong>${v.nome_cliente}</strong>.`)}
-       ${p(`<strong>Métrica:</strong> ${v.metrica ?? '—'}`)}
-       ${p(`<strong>Valor atual:</strong> <span style="color:#d90000">${v.valor_atual ?? '—'}</span>`)}
-       ${p(`<strong>Referência:</strong> ${v.valor_referencia ?? '—'}`)}
-       ${btn('{{dashboard_url}}/analytics', 'Ver Analytics')}`
+      'Estamos otimizando suas campanhas',
+      `${p(`Olá, ${v.nome_cliente}! Nosso acompanhamento identificou uma variação que merece atenção nas suas campanhas, e já estamos cuidando disso.`)}
+       ${p(`A métrica <strong>${v.metrica ?? '[métrica]'}</strong> está em ${v.valor_atual ?? '[valor]'}, contra a referência de ${v.valor_referencia ?? '[valor]'}.`)}
+       ${p('Você não precisa fazer nada. Nossa equipe já está trabalhando nos ajustes para recolocar tudo no rumo certo, e isso vai se refletir no próximo relatório.')}`
     ),
   },
 
   'payment-followup': {
     subject: '{{nome_cliente}}, seu pagamento ainda está pendente',
     buildHtml: (v) => wrapEmailHtml(
-      'Pagamento Pendente',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>!`)}
-       ${p(`Identificamos que seu pagamento está pendente há <strong>${v.dias_atraso ?? '—'} dias</strong>.`)}
-       ${p('Para evitar a interrupção dos seus serviços, regularize o pagamento o quanto antes.')}
-       ${p(`<strong>Valor:</strong> ${v.valor ?? '—'}`)}
-       ${p('Se já realizou o pagamento, desconsidere este aviso.')}
-       ${btn('{{pagamento_url}}', 'Regularizar Agora')}`
+      'Seu pagamento ainda está pendente',
+      `${p(`Olá, ${v.nome_cliente}! Seu pagamento segue pendente há ${v.dias_atraso ?? 'alguns'} dias e queremos evitar que seus serviços sejam interrompidos.`)}
+       ${p(`Para deixar tudo em dia, é só regularizar pelo link abaixo. O valor é ${v.valor ?? '[informar valor]'}.`)}
+       ${btn('{{pagamento_url}}', 'Regularizar agora', true)}
+       ${p('Se já realizou o pagamento, pode desconsiderar este aviso.')}`
     ),
   },
 
   'cancelamento-notice': {
-    subject: '{{nome_cliente}}, seu plano foi cancelado — veja como reverter',
+    subject: '{{nome_cliente}}, seu plano foi cancelado (veja como reverter)',
     buildHtml: (v) => wrapEmailHtml(
       'Seu plano foi cancelado por inadimplência',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>. A mensalidade com vencimento em <strong>${v.data_vencimento ?? '[informar data de vencimento]'}</strong> seguiu em aberto mesmo após os avisos enviados por e-mail e WhatsApp. Como o pagamento não foi identificado, o seu plano foi <strong>cancelado</strong>, conforme nossos <a href="https://adsgator.com.br/termos-de-servico/" target="_blank" style="color:#2969b0;">Termos de Serviço</a>.`)}
+      `${p(`Olá, ${v.nome_cliente}. A mensalidade com vencimento em ${v.data_vencimento ?? '[informar data de vencimento]'} seguiu em aberto mesmo após os avisos enviados por e-mail e WhatsApp. Como o pagamento não foi identificado, o seu plano foi cancelado, conforme nossos <a href="https://adsgator.com.br/termos-de-servico/" target="_blank" style="color:#2969b0;">Termos de Serviço</a>.`)}
        ${sectionTitle('Prazo para migrar seus dados')}
-       ${p(`Seu e-mail profissional (caso utilize) continua ativo até <strong>${v.data_desativacao ?? '[informar data]'}</strong>, para você migrar as mensagens ou configurar outro serviço com calma.`)}
-       ${p(`Depois dessa data, o site e o e-mail saem da nossa hospedagem — e dados não migrados não poderão ser recuperados.`)}
+       ${p(`Seu e-mail profissional (caso utilize) continua ativo até ${v.data_desativacao ?? '[informar data]'}, para você migrar as mensagens ou configurar outro serviço com calma.`)}
+       ${p('Depois dessa data, o site e o e-mail saem da nossa hospedagem, e dados que não forem migrados não poderão ser recuperados.')}
        ${sectionTitle('Ainda dá tempo de reverter')}
-       ${p('Se quiser manter tudo no ar, basta quitar o valor em atraso pelo link abaixo:')}
+       ${p('Se quiser manter tudo no ar, basta quitar o valor em atraso pelo link abaixo.')}
        ${btn('{{pagamento_url}}', 'Regularizar e manter meu plano', true)}
-       ${p('Já pagou? Responda este e-mail com o comprovante que normalizamos sua conta o quanto antes. Qualquer dúvida, estamos à disposição.')}`,
+       ${p('Se já realizou o pagamento, responda este e-mail com o comprovante que normalizamos sua conta o quanto antes.')}`,
     ),
   },
 
   'aviso-indisponibilidade': {
-    subject: '{{nome_cliente}}, seus serviços foram pausados — veja como reativar',
+    subject: '{{nome_cliente}}, seus serviços foram pausados (veja como reativar)',
     buildHtml: (v) => wrapEmailHtml(
       'Seus serviços foram pausados temporariamente',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>! Como a mensalidade com vencimento em <strong>${v.data_vencimento ?? '[informar data de vencimento]'}</strong> ainda consta em aberto, seu plano foi <strong>pausado temporariamente</strong> a partir de hoje — conforme nossos <a href="https://adsgator.com.br/termos-de-servico/" target="_blank" style="color:#2969b0;">Termos de Serviço</a> (atraso acima de 7 dias).`)}
+      `${p(`Olá, ${v.nome_cliente}! Como a mensalidade com vencimento em ${v.data_vencimento ?? '[informar data de vencimento]'} ainda consta em aberto, seu plano foi pausado temporariamente a partir de hoje, conforme nossos <a href="https://adsgator.com.br/termos-de-servico/" target="_blank" style="color:#2969b0;">Termos de Serviço</a> (atraso acima de 7 dias).`)}
        ${sectionTitle('O que está pausado agora')}
-       <ul style="font-size:16px; margin:0 0 15px 0; padding-left:20px;">
-         <li style="margin-bottom:8px;"><strong>Site / Landing Page:</strong> fora do ar enquanto a pendência não é resolvida.</li>
+       <ul style="margin:0 0 16px 0; padding-left:20px;">
+         <li style="margin-bottom:8px;"><strong>Site e Landing Page:</strong> fora do ar enquanto a pendência não é resolvida.</li>
          <li style="margin-bottom:8px;"><strong>Google Ads:</strong> campanhas interrompidas, para não gastar verba sem retorno.</li>
          <li style="margin-bottom:8px;"><strong>E-mail profissional:</strong> o acesso pode ficar instável.</li>
        </ul>
        ${sectionTitle('Como reativar tudo')}
-       ${p('É simples: basta regularizar o pagamento pelo link abaixo. Assim que ele for identificado, reativamos seus serviços em até <strong>24 horas úteis</strong>.')}
+       ${p('É simples. Basta regularizar o pagamento pelo link abaixo. Assim que ele for identificado, reativamos seus serviços em até 24 horas úteis.')}
        ${btn('{{pagamento_url}}', 'Regularizar pagamento', true)}
-       ${p('Só um aviso importante: se o atraso chegar a <strong>15 dias</strong>, o plano é cancelado por inadimplência e a estrutura sai dos nossos servidores. Resolvendo agora, você evita a interrupção das suas vendas e a perda de dados.')}
-       ${p('Se já pagou ou quiser conversar, é só responder este e-mail — estamos por aqui.')}`,
+       ${p('Vale um aviso importante. Se o atraso chegar a 15 dias, o plano é cancelado por inadimplência e a estrutura sai dos nossos servidores. Resolvendo agora, você evita a interrupção das suas vendas e a perda de dados.')}
+       ${p('Se já realizou o pagamento, pode desconsiderar este aviso.')}`,
     ),
   },
 
   'encerramento': {
-    subject: 'Encerrando parceria — AdsGator',
+    subject: 'Obrigado por confiar na Adsgator, {{nome_cliente}}',
     buildHtml: (v) => wrapEmailHtml(
-      'Encerramento de Parceria',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>!`)}
-       ${p('Chegou o momento de encerrar nossa parceria. Foi uma honra trabalhar com você!')}
-       ${p('Todas as suas campanhas foram desativadas e os acessos revogados.')}
-       ${p('<strong>O que foi feito:</strong>')}
-       <ul style="font-size:16px; margin:0 0 15px 0; padding-left:20px;">
+      'Encerramento de parceria',
+      `${p(`Olá, ${v.nome_cliente}! Chegou o momento de encerrar nossa parceria, e foi uma honra trabalhar com você.`)}
+       ${p('Deixamos tudo organizado do nosso lado. Veja o que já foi finalizado:')}
+       <ul style="margin:0 0 16px 0; padding-left:20px;">
          <li style="margin-bottom:8px;">Campanhas Google Ads encerradas</li>
          <li style="margin-bottom:8px;">Landing pages removidas</li>
          <li style="margin-bottom:8px;">Acessos à conta revogados</li>
        </ul>
-       ${p('Se precisar de nós no futuro, as portas estão sempre abertas. Muito obrigado! 🙏')}`
+       ${p('Se um dia precisar da gente de novo, as portas estarão sempre abertas. Obrigado por ter confiado no nosso trabalho.')}`
     ),
   },
 
   'reativacao': {
-    subject: 'Tudo certo, {{nome_cliente}} — seu plano está reativado! 🎉',
+    subject: 'Tudo certo, {{nome_cliente}}! Seu plano está reativado 🎉',
     buildHtml: (v) => wrapEmailHtml(
-      'Tudo certo, seu plano foi reativado! 🎉',
-      `${p(`Olá, <strong>${v.nome_cliente}</strong>! Recebemos seu pagamento — obrigado por regularizar. Seu plano já está <strong>reativado</strong> e nossa equipe técnica já está colocando tudo de volta no ar.`)}
+      'Seu plano foi reativado! 🎉',
+      `${p(`Olá, ${v.nome_cliente}! Recebemos seu pagamento e seu plano já está reativado. Nossa equipe técnica já está colocando tudo de volta no ar.`)}
        ${sectionTitle('O que esperar agora')}
-       <ul style="font-size:16px; margin:0 0 15px 0; padding-left:20px;">
-         <li style="margin-bottom:8px;"><strong>Prazo:</strong> o restabelecimento completo acontece em até <strong>24 horas úteis</strong>.</li>
+       <ul style="margin:0 0 16px 0; padding-left:20px;">
+         <li style="margin-bottom:8px;"><strong>Prazo:</strong> o restabelecimento completo acontece em até 24 horas úteis.</li>
          <li style="margin-bottom:8px;"><strong>Google Ads:</strong> se você tem gestão de tráfego conosco, as campanhas voltam assim que o site estiver online.</li>
          <li style="margin-bottom:8px;"><strong>E-mail profissional:</strong> qualquer instabilidade se normaliza junto com a hospedagem.</li>
        </ul>
-       ${p('Que bom seguir com você nessa parceria! Precisando de qualquer coisa, é só chamar. 🤝')}`,
+       ${p('Ficamos felizes em continuar essa parceria com você. Seguimos cuidando de tudo por aqui.')}`,
     ),
   },
 }
@@ -387,8 +400,8 @@ export const CATEGORIA_LABEL: Record<EmailTemplateCategoria, string> = {
 
 /** Variáveis comuns + as específicas de cada template (sem {{ }}). */
 export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, { categoria: EmailTemplateCategoria; variaveis: string[] }> = {
-  'report-google-ads':       { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'impressoes', 'cliques', 'ctr', 'conversoes', 'cpa', 'investimento'] },
-  'report-ga4':              { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'sessoes', 'usuarios', 'visualizacoes', 'engajamento', 'duracao', 'rejeicao'] },
+  'report-google-ads':       { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'impressoes', 'impressoes_var', 'cliques', 'cliques_var', 'ctr', 'ctr_var', 'conversoes', 'conversoes_var', 'cpa', 'cpa_var', 'investimento', 'investimento_var', 'destaque'] },
+  'report-ga4':              { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'sessoes', 'sessoes_var', 'usuarios', 'usuarios_var', 'visualizacoes', 'visualizacoes_var', 'engajamento', 'engajamento_var', 'duracao', 'duracao_var', 'rejeicao', 'rejeicao_var', 'destaque'] },
   'report-executive':        { categoria: 'relatorios', variaveis: ['mes_ano', 'total_clientes', 'mrr', 'total_conversoes', 'resumo'] },
   'welcome':                 { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
   'reativacao':              { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
