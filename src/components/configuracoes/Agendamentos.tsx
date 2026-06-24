@@ -6,19 +6,22 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface CronSetting {
-  tipo:       string
-  nome:       string
-  descricao:  string | null
-  ativo:      boolean
-  horario:    string          // 'HH:mm:ss' (time do Postgres)
-  param_int:  number | null   // parâmetro do job (ex.: dias p/ arquivar congelado)
-  ultimo_run: string | null
+  tipo:        string
+  nome:        string
+  descricao:   string | null
+  ativo:       boolean
+  horario:     string          // 'HH:mm:ss' (time do Postgres)
+  param_int:   number | null   // parâmetro do job (ex.: dias p/ arquivar congelado)
+  dia_semana:  number | null   // 0=dom..6=sáb — preenchido = job semanal
+  ultimo_run:  string | null
 }
 
 // Jobs com parâmetro inteiro editável: tipo → rótulo do campo.
 const PARAM_LABEL: Record<string, string> = {
   arquivar_congelados: 'Dias congelado até arquivar',
 }
+
+const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
 export function Agendamentos() {
   const [settings, setSettings] = useState<CronSetting[]>([])
@@ -44,7 +47,7 @@ export function Agendamentos() {
     }
   }
 
-  async function salvar(tipo: string, patch: { ativo?: boolean; horario?: string; param_int?: number }) {
+  async function salvar(tipo: string, patch: { ativo?: boolean; horario?: string; param_int?: number; dia_semana?: number }) {
     setAtualizando(tipo)
     try {
       const res = await fetch('/api/v1/cron-settings', {
@@ -134,6 +137,22 @@ export function Agendamentos() {
                       }}
                       className="w-[4rem] bg-surface-elevated border border-surface-border rounded-md px-[0.5rem] py-[0.25rem] text-[0.875rem] text-ink-primary focus-ring"
                     />
+                  </label>
+                )}
+                {s.dia_semana !== null && s.dia_semana !== undefined && (
+                  <label className="flex flex-col items-end gap-[0.25rem]">
+                    <span className="text-ink-muted text-[0.625rem]">Dia da semana</span>
+                    <select
+                      defaultValue={s.dia_semana}
+                      disabled={atualizando === s.tipo}
+                      onChange={(e) => {
+                        const novo = parseInt(e.target.value, 10)
+                        if (novo !== s.dia_semana) salvar(s.tipo, { dia_semana: novo })
+                      }}
+                      className="bg-surface-elevated border border-surface-border rounded-md px-[0.5rem] py-[0.25rem] text-[0.875rem] text-ink-primary focus-ring"
+                    >
+                      {DIAS_SEMANA.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                    </select>
                   </label>
                 )}
                 <label className="flex flex-col items-end gap-[0.25rem]">

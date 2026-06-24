@@ -16,6 +16,7 @@ export const CRON_TIPOS = [
   'cobranca',
   'arquivar_congelados',
   'onboarding_lembretes',
+  'relatorio_semanal',
 ] as const
 
 export type CronTipo = (typeof CRON_TIPOS)[number]
@@ -37,13 +38,19 @@ function agoraSP(): { hora: number; minuto: number } {
   return { hora: sp.getHours(), minuto: sp.getMinutes() }
 }
 
+/** Dia da semana em SP (0=domingo … 6=sábado). */
+function diaSemanaSP(): number {
+  const sp = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  return sp.getDay()
+}
+
 export async function deveRodarAgora(
   db: SupabaseClient,
   tipo: CronTipo,
 ): Promise<{ rodar: boolean; motivo?: string }> {
   const { data, error } = await db
     .from('cron_settings')
-    .select('ativo, horario, ultimo_run')
+    .select('ativo, horario, ultimo_run, dia_semana')
     .eq('tipo', tipo)
     .maybeSingle()
 
@@ -59,8 +66,19 @@ export async function deveRodarAgora(
     return { rodar: false, motivo: 'antes_do_horario' }
   }
 
-  // Idempotência diária: já rodou hoje (data SP)? Crítico para jobs com
-  // efeito externo (emails de cobrança, notificação do briefing).
+  // Job SEMANAL: dia_semana preenchido (0-6). Só roda no dia certo e a
+  // idempotência é semanal (não rodou nos últimos 6 dias).
+  const diaSemana = (data as { dia_semana?: number | null }).dia_semana
+  if (diaSemana !== null && diaSemana !== undefined) {
+    if (diaSemanaSP() !== diaSemana) return { rodar: false, motivo: 'outro_dia_da_semana' }
+    if (data.ultimo_run) {
+      const diasDesde = (Date.now() - new Date(data.ultimo_run).getTime()) / 86_400_000
+      if (diasDesde < 6) return { rodar: false, motivo: 'ja_rodou_esta_semana' }
+    }
+    return { rodar: true }
+  }
+
+  // Job DIÁRIO: idempotência diária — já rodou hoje (data SP)?
   if (data.ultimo_run) {
     const ultimoDiaSP = new Date(data.ultimo_run)
       .toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })

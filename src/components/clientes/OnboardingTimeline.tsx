@@ -1,15 +1,24 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Check, Clock, User, Building2, MessageCircle, Copy,
-  ChevronRight, ChevronDown, Loader2, Bell, Pencil, RotateCcw,
+  ChevronRight, ChevronDown, Loader2, Bell, Pencil, RotateCcw, Mail,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
 import { interpolar, montarVars } from '@/lib/timeline-vars'
 import type { Cliente } from '@/lib/types'
 import type { TimelineInstance, TimelineStep, TimelineMessage, TimelineInputField } from '@/lib/types/timeline'
+
+// Etapas que têm email correspondente (espelha STEP_PARA_EMAIL do backend).
+const STEP_EMAIL_TEMPLATE: Record<string, string> = {
+  confirma_briefing: 'onboarding-briefing-recebido',
+  aprovacao:         'onboarding-pagina-pronta',
+  entrega:           'onboarding-pagina-pronta',
+  acessos_google:    'onboarding-acessos-google',
+}
 
 interface Props {
   instance: TimelineInstance
@@ -53,6 +62,14 @@ export function OnboardingTimeline({ instance, cliente, onStepComplete, onStepWa
   const currentId = instance.current_step_id
   const [expandido, setExpandido] = useState<string | null>(currentId ?? null)
 
+  // Toggle de email automático de onboarding: quando ligado, o email sai sozinho
+  // ao concluir a etapa, então o botão manual fica desabilitado.
+  const [autoOnboarding, setAutoOnboarding] = useState(false)
+  useEffect(() => {
+    supabase.from('automation_settings').select('ativa').eq('tipo', 'email_onboarding').maybeSingle()
+      .then(({ data }) => setAutoOnboarding(data?.ativa === true))
+  }, [])
+
   if (steps.length === 0) {
     return <p className="text-ink-muted text-[0.875rem] py-[2rem] text-center">Template sem etapas.</p>
   }
@@ -85,6 +102,7 @@ export function OnboardingTimeline({ instance, cliente, onStepComplete, onStepWa
               isLast={idx === steps.length - 1}
               vars={vars}
               cliente={cliente}
+              autoOnboarding={autoOnboarding}
               onComplete={(data) => onStepComplete(step.id, data)}
               onWait={() => onStepWait(step.id)}
               onReopen={() => onReopenStep(step.id)}
@@ -159,7 +177,7 @@ function VariaveisEditor({
 }
 
 function StepRow({
-  step, estado, aberto, onToggle, isLast, vars, cliente, onComplete, onWait, onReopen,
+  step, estado, aberto, onToggle, isLast, vars, cliente, autoOnboarding, onComplete, onWait, onReopen,
 }: {
   step: TimelineStep
   estado: EstadoStep
@@ -168,14 +186,35 @@ function StepRow({
   isLast: boolean
   vars: Record<string, string>
   cliente: Cliente
+  autoOnboarding: boolean
   onComplete: (data: Record<string, string>) => Promise<void>
   onWait: () => Promise<void>
   onReopen: () => Promise<void>
 }) {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [enviandoEmail, setEnviandoEmail] = useState(false)
 
   const responsavel = step.responsavel ?? 'agencia'
+  const emailTemplate = STEP_EMAIL_TEMPLATE[step.id]
+
+  async function enviarEmailManual() {
+    setEnviandoEmail(true)
+    try {
+      const res = await fetch(`/api/v1/clientes/${cliente.id}/enviar-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId: emailTemplate }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      toast.success('Email enviado ao cliente')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao enviar email')
+    } finally {
+      setEnviandoEmail(false)
+    }
+  }
 
   async function handleComplete() {
     setSubmitting(true)
@@ -305,6 +344,23 @@ function StepRow({
                 >
                   <Clock className="w-[0.8125rem] h-[0.8125rem]" strokeWidth={2} /> Aguardando
                 </button>
+                {emailTemplate && (
+                  <button
+                    onClick={enviarEmailManual}
+                    disabled={enviandoEmail || autoOnboarding || !cliente.email}
+                    title={
+                      autoOnboarding ? 'Envio automático está ligado — o email sai sozinho ao concluir a etapa'
+                      : !cliente.email ? 'Cliente sem email cadastrado'
+                      : 'Enviar este email ao cliente agora'
+                    }
+                    className="flex items-center gap-[0.375rem] h-[2.25rem] px-[0.875rem] rounded-lg text-[0.8125rem] text-ink-secondary bg-surface-hover hover:bg-surface-elevated border border-surface-border transition-all active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {enviandoEmail
+                      ? <Loader2 className="w-[0.8125rem] h-[0.8125rem] animate-spin" />
+                      : <Mail className="w-[0.8125rem] h-[0.8125rem]" strokeWidth={2} />}
+                    Enviar email
+                  </button>
+                )}
               </div>
             )}
           </div>

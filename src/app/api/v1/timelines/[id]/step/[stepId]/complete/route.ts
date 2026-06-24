@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { dispararEmailAutomatico } from '@/lib/email-automation'
+import type { EmailTemplateId } from '@/lib/types/email'
+
+// Etapas do onboarding que disparam email ao cliente (mesmos stepId nos 3
+// modelos: combo, só-tráfego, só-LP). Controlado pelo toggle email_onboarding.
+const STEP_PARA_EMAIL: Record<string, EmailTemplateId> = {
+  confirma_briefing: 'onboarding-briefing-recebido',
+  aprovacao:         'onboarding-pagina-pronta',
+  entrega:           'onboarding-pagina-pronta',
+  acessos_google:    'onboarding-acessos-google',
+}
 
 export async function POST(
   request: NextRequest,
@@ -107,9 +118,37 @@ export async function POST(
     status: 'completed',
   }])
 
+  // F2: email automático de onboarding ao concluir a etapa correspondente.
+  // Só dispara se o toggle email_onboarding estiver ativo (dispararEmailAutomatico
+  // checa) e o cliente tiver email. Não bloqueia a resposta em caso de falha.
+  let emailDisparado = false
+  const templateOnboarding = STEP_PARA_EMAIL[stepId]
+  if (templateOnboarding && instance.client_id) {
+    try {
+      const { data: cli } = await supabase
+        .from('clientes')
+        .select('nome, email')
+        .eq('id', instance.client_id)
+        .maybeSingle()
+      if (cli?.email) {
+        const r = await dispararEmailAutomatico(supabase, {
+          tipo: 'email_onboarding',
+          templateId: templateOnboarding,
+          destinatario: cli.email,
+          clienteId: instance.client_id,
+          variables: { nome_cliente: cli.nome ?? '' },
+        })
+        emailDisparado = r.enviado
+      }
+    } catch (err) {
+      console.error('[onboarding email] falha não crítica:', err)
+    }
+  }
+
   return NextResponse.json({
     data: updated,
     completed: isFinished,
     next_step_id: nextStepId,
+    email_disparado: emailDisparado,
   })
 }

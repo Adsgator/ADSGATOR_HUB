@@ -17,8 +17,10 @@ import type { EmailTemplateId } from '@/lib/types/email'
 
 export type TipoAutomacao =
   | 'email_relatorio_mensal'
+  | 'email_relatorio_semanal'
   | 'email_cobranca_vencida'
   | 'email_alerta_critico'
+  | 'email_onboarding'
 
 interface DispararParams {
   tipo: TipoAutomacao

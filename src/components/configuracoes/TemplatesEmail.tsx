@@ -21,13 +21,14 @@ interface TemplateInfo {
 }
 
 const CATEGORIA_LABEL: Record<string, string> = {
+  'onboarding': 'Onboarding',
   'relatorios': 'Relatórios',
   'ciclo-vida': 'Ciclo de vida do cliente',
   'cobranca':   'Cobrança',
   'alertas':    'Alertas',
   'outros':     'Personalizados',
 }
-const CATEGORIA_ORDEM = ['ciclo-vida', 'cobranca', 'alertas', 'relatorios', 'outros']
+const CATEGORIA_ORDEM = ['onboarding', 'ciclo-vida', 'cobranca', 'alertas', 'relatorios', 'outros']
 
 // ─── Preview modal ────────────────────────────────────────────────────────────
 

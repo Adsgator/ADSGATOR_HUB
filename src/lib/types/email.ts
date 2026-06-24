@@ -14,6 +14,10 @@ export type EmailTemplateId =
   | 'aviso-indisponibilidade'
   | 'encerramento'
   | 'reativacao'
+  | 'report-weekly-kpi'
+  | 'onboarding-briefing-recebido'
+  | 'onboarding-pagina-pronta'
+  | 'onboarding-acessos-google'
 
 export interface EmailHistory {
   id: string

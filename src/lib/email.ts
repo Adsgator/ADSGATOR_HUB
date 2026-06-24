@@ -382,16 +382,62 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
        ${p('Ficamos felizes em continuar essa parceria com você. Seguimos cuidando de tudo por aqui.')}`,
     ),
   },
+
+  'report-weekly-kpi': {
+    subject: 'Resumo da semana das suas campanhas 📊',
+    buildHtml: (v) => wrapEmailHtml(
+      'Resumo da semana',
+      `${p(`Olá, ${v.nome_cliente}! Um panorama rápido de como suas campanhas se saíram nos últimos 7 dias. Os números abaixo já trazem a comparação com a semana anterior.`)}
+       ${kpiGrid([
+         { label: 'Cliques',     value: v.cliques ?? '—',     variacao: v.cliques_var,     positivoSeSobe: true },
+         { label: 'Conversões',  value: v.conversoes ?? '—',  variacao: v.conversoes_var,  positivoSeSobe: true },
+         { label: 'Investimento', value: v.investimento ?? '—', variacao: v.investimento_var, positivoSeSobe: true },
+       ])}
+       ${v.destaque ? `${sectionTitle('Destaque da semana')}${p(v.destaque)}` : ''}
+       ${p('Seguimos otimizando tudo nos bastidores. No próximo resumo trazemos a evolução.')}`,
+    ),
+  },
+
+  'onboarding-briefing-recebido': {
+    subject: 'Recebemos seu briefing, {{nome_cliente}}! ✅',
+    buildHtml: (v) => wrapEmailHtml(
+      'Recebemos tudo, podemos começar! ✅',
+      `${p(`Olá, ${v.nome_cliente}! Confirmamos o recebimento do seu briefing e dos materiais. Muito obrigado!`)}
+       ${p('A partir de agora já começamos a criar a sua página com base em tudo que você nos enviou. Você não precisa fazer nada por enquanto, é só aguardar — assim que tivermos novidades, avisamos.')}
+       ${p('Estamos animados para construir algo com a cara do seu negócio.')}`,
+    ),
+  },
+
+  'onboarding-pagina-pronta': {
+    subject: 'Sua página está pronta para você ver, {{nome_cliente}}! 🎉',
+    buildHtml: (v) => wrapEmailHtml(
+      'Sua página está pronta! 🎉',
+      `${p(`Olá, ${v.nome_cliente}! Temos uma ótima notícia: a sua página já está pronta para você conhecer.`)}
+       ${p('Em breve enviamos pelo WhatsApp o link para você acessar e revisar com calma. Dá uma olhada em cada detalhe e, se quiser algum ajuste, é só nos dizer por lá.')}
+       ${p('Mal podemos esperar para você ver o resultado.')}`,
+    ),
+  },
+
+  'onboarding-acessos-google': {
+    subject: 'Próximo passo: configurar seu Google Ads 🚀',
+    buildHtml: (v) => wrapEmailHtml(
+      'Vamos preparar suas campanhas 🚀',
+      `${p(`Olá, ${v.nome_cliente}! Estamos quase lá. Para colocar suas campanhas no ar, precisamos configurar alguns acessos do Google.`)}
+       ${p('Enviamos pelo WhatsApp os guias passo a passo de como criar sua conta no Google Ads e como nos dar acesso ao seu Google Meu Negócio. É tranquilo e te acompanhamos em cada etapa.')}
+       ${p('Assim que esses acessos estiverem prontos, iniciamos a criação das suas campanhas.')}`,
+    ),
+  },
 }
 
 // ── Metadados para a UI de gestão ─────────────────────────────────────────────
 // Categoria (para agrupar a lista) e variáveis aceitas por cada template (para
 // os "chips" de inserção no editor). Fonte única consumida pela tela de Emails.
 
-export type EmailTemplateCategoria = 'relatorios' | 'ciclo-vida' | 'cobranca' | 'alertas' | 'outros'
+export type EmailTemplateCategoria = 'relatorios' | 'onboarding' | 'ciclo-vida' | 'cobranca' | 'alertas' | 'outros'
 
 export const CATEGORIA_LABEL: Record<EmailTemplateCategoria, string> = {
   'relatorios':  'Relatórios',
+  'onboarding':  'Onboarding',
   'ciclo-vida':  'Ciclo de vida do cliente',
   'cobranca':    'Cobrança',
   'alertas':     'Alertas',
@@ -403,6 +449,10 @@ export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, { categoria: EmailTemp
   'report-google-ads':       { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'impressoes', 'impressoes_var', 'cliques', 'cliques_var', 'ctr', 'ctr_var', 'conversoes', 'conversoes_var', 'cpa', 'cpa_var', 'investimento', 'investimento_var', 'destaque'] },
   'report-ga4':              { categoria: 'relatorios', variaveis: ['nome_cliente', 'mes_ano', 'sessoes', 'sessoes_var', 'usuarios', 'usuarios_var', 'visualizacoes', 'visualizacoes_var', 'engajamento', 'engajamento_var', 'duracao', 'duracao_var', 'rejeicao', 'rejeicao_var', 'destaque'] },
   'report-executive':        { categoria: 'relatorios', variaveis: ['mes_ano', 'total_clientes', 'mrr', 'total_conversoes', 'resumo'] },
+  'report-weekly-kpi':       { categoria: 'relatorios', variaveis: ['nome_cliente', 'cliques', 'cliques_var', 'conversoes', 'conversoes_var', 'investimento', 'investimento_var', 'destaque'] },
+  'onboarding-briefing-recebido': { categoria: 'onboarding', variaveis: ['nome_cliente'] },
+  'onboarding-pagina-pronta':     { categoria: 'onboarding', variaveis: ['nome_cliente'] },
+  'onboarding-acessos-google':    { categoria: 'onboarding', variaveis: ['nome_cliente'] },
   'welcome':                 { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
   'reativacao':              { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
   'encerramento':            { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },

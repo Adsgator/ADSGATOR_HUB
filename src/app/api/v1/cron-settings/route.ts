@@ -7,8 +7,9 @@ export const dynamic = 'force-dynamic'
 /**
  * Configuração dos agendamentos (Configurações → Automações → Agendamentos).
  *
- * GET  — lista os 5 jobs de `cron_settings`.
- * PATCH — body { tipo, ativo?, horario? } atualiza um job. Auth: sessão.
+ * GET  — lista os jobs de `cron_settings`.
+ * PATCH — body { tipo, ativo?, horario?, param_int?, dia_semana? } atualiza um
+ *         job. Auth: sessão.
  */
 
 export async function GET() {
@@ -34,7 +35,7 @@ export async function PATCH(req: NextRequest) {
   if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await req.json().catch(() => null) as
-    { tipo?: string; ativo?: boolean; horario?: string; param_int?: number } | null
+    { tipo?: string; ativo?: boolean; horario?: string; param_int?: number; dia_semana?: number } | null
 
   if (!body?.tipo || !CRON_TIPOS.includes(body.tipo as CronTipo)) {
     return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
@@ -45,7 +46,10 @@ export async function PATCH(req: NextRequest) {
   if (body.param_int !== undefined && (!Number.isInteger(body.param_int) || body.param_int < 1)) {
     return NextResponse.json({ error: 'Parâmetro inválido — use um inteiro ≥ 1' }, { status: 400 })
   }
-  if (body.ativo === undefined && body.horario === undefined && body.param_int === undefined) {
+  if (body.dia_semana !== undefined && (!Number.isInteger(body.dia_semana) || body.dia_semana < 0 || body.dia_semana > 6)) {
+    return NextResponse.json({ error: 'Dia da semana inválido — use 0 (domingo) a 6 (sábado)' }, { status: 400 })
+  }
+  if (body.ativo === undefined && body.horario === undefined && body.param_int === undefined && body.dia_semana === undefined) {
     return NextResponse.json({ error: 'Nada para atualizar' }, { status: 400 })
   }
 
@@ -53,6 +57,7 @@ export async function PATCH(req: NextRequest) {
   if (body.ativo !== undefined) updates.ativo = body.ativo
   if (body.horario !== undefined) updates.horario = body.horario
   if (body.param_int !== undefined) updates.param_int = body.param_int
+  if (body.dia_semana !== undefined) updates.dia_semana = body.dia_semana
 
   const { data, error } = await supabase
     .from('cron_settings')

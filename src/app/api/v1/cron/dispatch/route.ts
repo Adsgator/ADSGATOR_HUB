@@ -6,6 +6,7 @@ import { sincronizarTodos, mesAtual } from '@/lib/analytics-sync'
 import { gerarBriefing, salvarBriefing } from '@/lib/briefing'
 import { arquivarCongelados, DIAS_CONGELAMENTO_PADRAO } from '@/lib/arquivar-congelados'
 import { processarLembretesOnboarding } from '@/lib/onboarding-lembretes'
+import { enviarRelatoriosSemanais } from '@/lib/relatorio-semanal'
 
 export const dynamic = 'force-dynamic'
 // Pode encadear sync de analytics + Asaas + emails na mesma janela.
@@ -92,6 +93,7 @@ export async function GET(req: NextRequest) {
     cobranca:            () => executarRotaInterna('/api/v1/cobranca/run', cronSecret),
     arquivar_congelados: async () => arquivarCongelados(db, await diasArquivamento()),
     onboarding_lembretes: () => processarLembretesOnboarding(db),
+    relatorio_semanal:   () => enviarRelatoriosSemanais(db),
   }
 
   const executados: CronTipo[] = []

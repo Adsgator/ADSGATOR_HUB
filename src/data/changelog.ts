@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.18.0',
+    data:   '2026-06-24',
+    novidades: [
+      'Emails de onboarding automáticos: ao concluir as etapas "Confirmar recebimento" (briefing), "Aprovação/Entrega" (página pronta) e "Acessos Google", o cliente recebe um email no padrão da agência. Liga/desliga pelo toggle "email onboarding" em Configurações → Comunicação (começa desligado)',
+      'Botão "Enviar email" em cada etapa do onboarding para mandar na hora, manualmente. Ele fica desabilitado quando o envio automático está ligado (aí o email já sai sozinho ao concluir a etapa)',
+      'Relatório semanal: novo email curto com os KPIs essenciais da semana (cliques, conversões, investimento) e a comparação com a semana anterior. Roda automaticamente no dia e horário que você escolher em Configurações → Automações → Agendamentos (começa desligado). Clientes sem dados ainda são pulados, para não enviar email vazio',
+      'Agendamentos agora suportam jobs semanais: o relatório semanal tem um seletor de dia da semana, além do horário',
+    ],
+  },
+  {
     versao: '0.17.0',
     data:   '2026-06-24',
     novidades: [
