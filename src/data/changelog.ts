@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.17.0',
+    data:   '2026-06-24',
+    novidades: [
+      'Modo teste de email (rede de segurança): com ele ligado, nenhum email automático vai para o cliente. Tudo é redirecionado para o seu email de teste, com [TESTE] no assunto. Liga/desliga em Configurações → Comunicação → Automações, com selo bem visível quando ativo. Já começa ligado, e se faltar o email de teste o envio é bloqueado em vez de ir pro cliente por engano',
+      'Link de pagamento real nos emails de cobrança: o {{pagamento_url}} agora é preenchido com o link da cobrança do Asaas (a vencida, nos avisos de atraso; a pendente, em lembretes de vencimento). Os emails de suspensão e cobrança já saem com o botão de pagamento certo',
+      'Histórico de emails por cliente: nova aba "Emails" no detalhe do cliente mostrando tudo que ele recebeu (assunto, tipo, data, status e selo de teste). O log global em Configurações também ganhou o selo de teste e passou a mostrar envios ao operador',
+    ],
+  },
+  {
     versao: '0.16.0',
     data:   '2026-06-23',
     novidades: [

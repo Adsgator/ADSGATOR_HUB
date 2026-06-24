@@ -20,6 +20,7 @@ import { ClienteCompletude } from '@/components/clientes/ClienteCompletude'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
+import { EmailsCliente } from '@/components/clientes/EmailsCliente'
 import { AcessoRapido } from '@/components/clientes/AcessoRapido'
 import { WhatsAppTemplateModal } from '@/components/clientes/WhatsAppTemplateModal'
 import { ClienteMemoria }        from '@/components/clientes/ClienteMemoria'
@@ -109,7 +110,7 @@ function InlineEdit({
   )
 }
 
-type AbaId = 'visao_geral' | 'checklist' | 'campanhas' | 'historico' | 'timeline' | 'sites'
+type AbaId = 'visao_geral' | 'checklist' | 'campanhas' | 'historico' | 'timeline' | 'sites' | 'emails'
 
 const ABAS: { id: AbaId; label: string; icon: typeof User }[] = [
   { id: 'visao_geral', label: 'Visão Geral',  icon: User        },
@@ -118,6 +119,7 @@ const ABAS: { id: AbaId; label: string; icon: typeof User }[] = [
   { id: 'historico',   label: 'Histórico',    icon: History     },
   { id: 'timeline',    label: 'Timeline',     icon: GitBranch   },
   { id: 'sites',       label: 'Sites',        icon: Layout      },
+  { id: 'emails',      label: 'Emails',       icon: Mail        },
 ]
 
 const STATUS_LABELS: Record<string, string> = {
@@ -829,6 +831,8 @@ export default function ClienteDetalhePage() {
             </div>
           )
         })()}
+
+        {abaAtiva === 'emails' && <EmailsCliente clienteId={cliente.id} />}
 
         {abaAtiva === 'timeline' && (() => {
           const temOnboardingAtivo = timelineInstances.some(

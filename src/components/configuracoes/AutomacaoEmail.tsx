@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Check, Clock, AlertCircle, Mail } from 'lucide-react'
+import { Check, Clock, AlertCircle, Mail, FlaskConical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 interface AutomacaoItem {
   id: string
@@ -15,11 +16,12 @@ interface AutomacaoItem {
 
 interface EmailLog {
   id: string
-  cliente_id: string
+  cliente_id: string | null
   destinatario: string
   template_tipo: string
   assunto: string
   status: 'enviado' | 'falha' | 'pendente'
+  modo_teste?: boolean
   created_at: string
 }
 
@@ -35,6 +37,11 @@ export function AutomacaoEmail() {
   const [carregando, setCarregando] = useState(true)
   const [atualizando, setAtualizando] = useState<string | null>(null)
 
+  // Modo teste (rede de segurança)
+  const [modoTeste, setModoTeste]   = useState(true)
+  const [emailTeste, setEmailTeste] = useState('')
+  const [salvandoTeste, setSalvandoTeste] = useState(false)
+
   useEffect(() => {
     carregarDados()
   }, [])
@@ -42,10 +49,11 @@ export function AutomacaoEmail() {
   async function carregarDados() {
     setCarregando(true)
     try {
-      const [autRes, logRes, clientRes] = await Promise.all([
+      const [autRes, logRes, clientRes, cfgRes] = await Promise.all([
         supabase.from('automation_settings').select('*').order('created_at'),
         supabase.from('email_logs').select('*').order('created_at', { ascending: false }).limit(10),
         supabase.from('clientes').select('id, nome'),
+        supabase.from('email_config').select('modo_teste, email_teste').eq('id', true).maybeSingle(),
       ])
 
       if (autRes.data) setAutomacoes(autRes.data as AutomacaoItem[])
@@ -54,10 +62,34 @@ export function AutomacaoEmail() {
         const map = Object.fromEntries(clientRes.data.map((c) => [c.id, c]))
         setClienteMap(map)
       }
+      if (cfgRes.data) {
+        setModoTeste(cfgRes.data.modo_teste === true)
+        setEmailTeste(cfgRes.data.email_teste ?? '')
+      }
     } catch (err) {
       console.error('Erro ao carregar automações:', err)
     } finally {
       setCarregando(false)
+    }
+  }
+
+  async function salvarModoTeste(parcial: { modo_teste?: boolean; email_teste?: string }) {
+    setSalvandoTeste(true)
+    // Otimista: aplica já na UI.
+    if (parcial.modo_teste !== undefined) setModoTeste(parcial.modo_teste)
+    if (parcial.email_teste !== undefined) setEmailTeste(parcial.email_teste)
+    try {
+      const { error } = await supabase
+        .from('email_config')
+        .update({ ...parcial, atualizado_em: new Date().toISOString() })
+        .eq('id', true)
+      if (error) throw error
+    } catch (err) {
+      toast.error('Erro ao salvar o modo teste')
+      console.error(err)
+      await carregarDados() // reverte ao estado real
+    } finally {
+      setSalvandoTeste(false)
     }
   }
 
@@ -110,6 +142,72 @@ export function AutomacaoEmail() {
 
   return (
     <div className="flex flex-col gap-[2rem]">
+      {/* MODO TESTE — rede de segurança */}
+      <div
+        className={cn(
+          'rounded-xl border p-[1.25rem] transition-colors',
+          modoTeste
+            ? 'border-status-orange/40 bg-status-orange/5'
+            : 'border-surface-border bg-surface-card',
+        )}
+      >
+        <div className="flex items-start justify-between gap-[1rem]">
+          <div className="flex items-start gap-[0.75rem] min-w-0">
+            <div className={cn(
+              'w-[2.25rem] h-[2.25rem] rounded-[0.5rem] flex items-center justify-center shrink-0',
+              modoTeste ? 'bg-status-orange/15' : 'bg-surface-hover',
+            )}>
+              <FlaskConical className={cn('w-[1.125rem] h-[1.125rem]', modoTeste ? 'text-status-orange' : 'text-ink-muted')} strokeWidth={2} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-[0.5rem] flex-wrap">
+                <p className="text-ink-primary font-semibold text-[0.9375rem]">Modo teste de email</p>
+                {modoTeste && (
+                  <span className="px-[0.5rem] py-[0.0625rem] rounded-full text-[0.625rem] font-bold bg-status-orange/15 text-status-orange uppercase tracking-wide">
+                    Ativo
+                  </span>
+                )}
+              </div>
+              <p className="text-ink-secondary text-[0.8125rem] mt-[0.25rem] leading-snug">
+                {modoTeste
+                  ? 'Nenhum email vai para o cliente. Tudo é redirecionado para o seu email de teste, com [TESTE] no assunto.'
+                  : 'Os emails automáticos vão direto para os clientes reais. Ligue o modo teste antes de validar mudanças.'}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => salvarModoTeste({ modo_teste: !modoTeste })}
+            disabled={salvandoTeste}
+            className={cn(
+              'relative w-[2.75rem] h-[1.5rem] rounded-full transition-colors flex-shrink-0',
+              modoTeste ? 'bg-status-orange' : 'bg-surface-hover border border-surface-border',
+              salvandoTeste && 'opacity-50 cursor-not-allowed',
+            )}
+          >
+            <span className={cn(
+              'absolute top-[0.1875rem] left-[0.1875rem] w-[1.125rem] h-[1.125rem] rounded-full bg-white shadow transition-transform',
+              modoTeste && 'translate-x-[1.25rem]',
+            )} />
+          </button>
+        </div>
+
+        {modoTeste && (
+          <div className="mt-[1rem] pl-[3rem]">
+            <label className="block text-[0.75rem] font-medium text-ink-secondary mb-[0.375rem]">
+              Email de teste (recebe os envios)
+            </label>
+            <input
+              type="email"
+              value={emailTeste}
+              onChange={(e) => setEmailTeste(e.target.value)}
+              onBlur={() => salvarModoTeste({ email_teste: emailTeste.trim() })}
+              placeholder="Vazio = usa o ALERT_EMAIL do servidor"
+              className="w-full max-w-[24rem] h-[2.25rem] px-[0.75rem] rounded-[0.5rem] bg-surface-base border border-surface-border text-ink-primary text-[0.875rem] focus-ring"
+            />
+          </div>
+        )}
+      </div>
+
       {/* SEÇÃO 1: AUTOMAÇÕES */}
       <div>
         <h3 className="text-ink-primary text-[1rem] font-semibold mb-[1rem] flex items-center gap-[0.5rem]">
@@ -183,7 +281,14 @@ export function AutomacaoEmail() {
                 emailLogs.map((log) => (
                   <tr key={log.id} className="border-b border-surface-border hover:bg-surface-hover transition-colors">
                     <td className="px-[1rem] py-[0.75rem] text-ink-primary">
-                      {clienteMap[log.cliente_id]?.nome || 'N/A'}
+                      <span className="inline-flex items-center gap-[0.375rem]">
+                        {log.cliente_id ? (clienteMap[log.cliente_id]?.nome || 'N/A') : 'Operador'}
+                        {log.modo_teste && (
+                          <span className="px-[0.375rem] py-[0.0625rem] rounded-full text-[0.5625rem] font-bold bg-status-orange/15 text-status-orange uppercase">
+                            Teste
+                          </span>
+                        )}
+                      </span>
                     </td>
                     <td className="px-[1rem] py-[0.75rem] text-ink-secondary text-[0.75rem]">
                       {log.template_tipo}

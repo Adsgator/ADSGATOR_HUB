@@ -36,6 +36,84 @@ export interface ResultadoDisparo {
 }
 
 /**
+ * MODO TESTE — rede de segurança. Quando ligado (email_config.modo_teste),
+ * todo email é redirecionado para o operador (email_teste ou env ALERT_EMAIL)
+ * e o assunto ganha o prefixo [TESTE], para nada sair para o cliente real por
+ * engano. Começa ligado por padrão (ver migration).
+ */
+async function lerModoTeste(
+  supabase: SupabaseClient,
+): Promise<{ ativo: boolean; destino: string }> {
+  const { data, error } = await supabase
+    .from('email_config')
+    .select('modo_teste, email_teste')
+    .eq('id', true)
+    .maybeSingle()
+  const destino = data?.email_teste || process.env.ALERT_EMAIL || ''
+  // Fail-safe: se a config não existe ou houve erro de leitura, assume modo
+  // teste LIGADO — nunca arrisca enviar para o cliente real por engano.
+  if (error || !data) return { ativo: true, destino }
+  return { ativo: data.modo_teste === true, destino }
+}
+
+/**
+ * Envia (já com renderização feita) aplicando o modo teste e registra em
+ * email_logs. Centraliza o que era duplicado entre envio manual e automático.
+ * Lança em caso de erro de envio (após logar a falha) — o chamador decide.
+ */
+async function enviarComLog(
+  supabase: SupabaseClient,
+  params: { templateId: string; destinatario: string; clienteId?: string; subject: string; html: string },
+): Promise<{ assunto: string; modoTeste: boolean }> {
+  const { templateId, destinatario, clienteId, html } = params
+  const teste = await lerModoTeste(supabase)
+
+  // Modo teste sem destino configurado: NÃO envia para o cliente real. Registra
+  // a falha explicativa e aborta — o operador precisa definir o email de teste.
+  if (teste.ativo && !teste.destino) {
+    const msg = 'Modo teste ligado, mas sem email de teste configurado (defina em Configurações → Comunicação ou a env ALERT_EMAIL).'
+    try {
+      await supabase.from('email_logs').insert({
+        cliente_id: clienteId ?? null, destinatario, template_tipo: templateId,
+        assunto: `[TESTE] ${params.subject}`, status: 'falha', mensagem_erro: msg, modo_teste: true,
+      })
+    } catch { /* best-effort */ }
+    throw new Error(msg)
+  }
+
+  // No modo teste, redireciona o destino para o operador e marca o assunto.
+  const destinoFinal = teste.ativo ? teste.destino : destinatario
+  const subject = teste.ativo ? `[TESTE] ${params.subject}` : params.subject
+
+  try {
+    await sendEmail({ to: destinoFinal, subject, html })
+    await supabase.from('email_logs').insert({
+      cliente_id:    clienteId ?? null,
+      destinatario:  destinoFinal,
+      template_tipo: templateId,
+      assunto:       subject,
+      status:        'enviado',
+      modo_teste:    teste.ativo,
+    })
+    return { assunto: subject, modoTeste: teste.ativo }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    try {
+      await supabase.from('email_logs').insert({
+        cliente_id:    clienteId ?? null,
+        destinatario:  destinoFinal,
+        template_tipo: templateId,
+        assunto:       subject,
+        status:        'falha',
+        mensagem_erro: msg,
+        modo_teste:    teste.ativo,
+      })
+    } catch { /* log de falha é best-effort */ }
+    throw new Error(msg)
+  }
+}
+
+/**
  * Resolve o conteúdo efetivo de um template: override do banco > base do código.
  * Aceita ids customizados (custom-<slug>, criados pela UI): sem base no código,
  * o conteúdo integral vem de subject_override/html_override.
@@ -86,27 +164,10 @@ export async function enviarEmailManual(
   const html    = renderTemplate(resolved.html, enrichedVars)
 
   try {
-    await sendEmail({ to: destinatario, subject, html })
-    await supabase.from('email_logs').insert({
-      cliente_id:    clienteId ?? null,
-      destinatario,
-      template_tipo: templateId,
-      assunto:       subject,
-      status:        'enviado',
-    })
-    return { assunto: subject }
+    const { assunto } = await enviarComLog(supabase, { templateId, destinatario, clienteId, subject, html })
+    return { assunto }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    try {
-      await supabase.from('email_logs').insert({
-        cliente_id:    clienteId ?? null,
-        destinatario,
-        template_tipo: templateId,
-        assunto:       subject,
-        status:        'falha',
-        mensagem_erro: msg,
-      })
-    } catch { /* log de falha é best-effort */ }
     throw new Error(`Falha no envio: ${msg}`)
   }
 }
@@ -163,15 +224,7 @@ export async function dispararEmailAutomatico(
   const subject = renderTemplate(assuntoOverride ?? override?.subject_override ?? template.subject, enrichedVars)
 
   try {
-    await sendEmail({ to: destinatario, subject, html })
-
-    await supabase.from('email_logs').insert({
-      cliente_id: clienteId ?? null,
-      destinatario,
-      template_tipo: templateId,
-      assunto: subject,
-      status: 'enviado',
-    })
+    await enviarComLog(supabase, { templateId, destinatario, clienteId, subject, html })
 
     // Marca o último envio da automação.
     await supabase
@@ -182,16 +235,6 @@ export async function dispararEmailAutomatico(
     return { enviado: true }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
-    try {
-      await supabase.from('email_logs').insert({
-        cliente_id: clienteId ?? null,
-        destinatario,
-        template_tipo: templateId,
-        assunto: subject,
-        status: 'falha',
-        mensagem_erro: msg,
-      })
-    } catch { /* log de falha é best-effort */ }
     return { enviado: false, motivo: 'erro', erro: msg }
   }
 }

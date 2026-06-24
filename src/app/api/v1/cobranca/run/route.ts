@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { criarClienteServiceRole } from '@/lib/supabase'
 import { dispararEmailAutomatico, automacaoAtiva } from '@/lib/email-automation'
 import { estagioInadimplencia } from '@/lib/cobranca'
-import { asaasGetAll } from '@/lib/asaas'
+import { asaasGetAll, buscarLinkPagamento } from '@/lib/asaas'
 import type { EmailTemplateId } from '@/lib/types/email'
 
 export const dynamic = 'force-dynamic'
@@ -155,6 +155,9 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
     const templateId = TEMPLATE_POR_ESTAGIO[estagio]
     if (!templateId) continue
 
+    // Cobrança por atraso → link da cobrança VENCIDA (invoiceUrl do Asaas).
+    const pagamento_url = await buscarLinkPagamento(supabase, c.id, 'overdue')
+
     const r = await dispararEmailAutomatico(supabase, {
       tipo: 'email_cobranca_vencida',
       templateId,
@@ -164,6 +167,7 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
         nome_cliente: c.nome,
         dias_atraso: String(c.dias_atraso ?? 0),
         valor: c.mrr != null ? `R$ ${c.mrr.toLocaleString('pt-BR')}` : '—',
+        pagamento_url,
       },
     })
     if (r.enviado) enviados++
