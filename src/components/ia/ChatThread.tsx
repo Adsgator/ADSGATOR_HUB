@@ -113,15 +113,23 @@ export function ChatThread({ mensagens, enviando, vazio }: ChatThreadProps) {
               : <span className="whitespace-pre-wrap leading-relaxed">{m.content}</span>
             }
 
-            {/* Ações que o agente executou */}
-            {!!m.ferramentas?.length && (
-              <div className="flex flex-wrap gap-[0.25rem] mt-[0.5rem] pt-[0.375rem] border-t border-surface-border/30">
-                {m.ferramentas.map((f, i) => (
+            {/* Ações executadas + custo estimado da resposta */}
+            {(!!m.ferramentas?.length || (m.role === 'assistant' && !!m.custo_brl)) && (
+              <div className="flex flex-wrap items-center gap-[0.25rem] mt-[0.5rem] pt-[0.375rem] border-t border-surface-border/30">
+                {m.ferramentas?.map((f, i) => (
                   <span key={i} className="inline-flex items-center gap-[0.25rem] px-[0.375rem] py-[0.125rem] rounded-full bg-ads-500/10 text-ads-600 text-[0.625rem] font-medium">
                     <Wrench className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2.5} />
                     {f.resumo}
                   </span>
                 ))}
+                {m.role === 'assistant' && !!m.custo_brl && (
+                  <span
+                    title="Custo estimado desta resposta"
+                    className="ml-auto text-[0.625rem] font-mono text-ink-muted"
+                  >
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 4 }).format(m.custo_brl)}
+                  </span>
+                )}
               </div>
             )}
           </div>

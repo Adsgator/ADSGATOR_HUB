@@ -26,6 +26,7 @@ export interface MensagemIA {
   content:      string
   anexos?:      AnexoIA[] | null
   ferramentas?: FerramentaExecutada[] | null
+  custo_brl?:   number | null // custo estimado (R$) da resposta — só em mensagens do agente
   created_at:   string
 }
 
@@ -91,7 +92,6 @@ interface AssistantStore {
   clienteContextoId:   string
   erro:                string | null
   contextoTokens:      number // promptTokenCount real da última resposta do agente
-  custoUltima:         number // custo estimado (R$) da última resposta do agente
   custoConversa:       number // custo estimado (R$) acumulado da conversa ativa
 
   carregarConversas:  () => Promise<void>
@@ -116,7 +116,6 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   clienteContextoId: '',
   erro:              null,
   contextoTokens:    0,
-  custoUltima:       0,
   custoConversa:     0,
 
   carregarConversas: async () => {
@@ -148,10 +147,10 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
   abrirConversa: async (id) => {
     const custoConhecido = get().conversas.find((c) => c.id === id)?.custo_total ?? 0
-    set({ conversaId: id, mensagens: [], carregando: true, erro: null, contextoTokens: 0, custoUltima: 0, custoConversa: custoConhecido })
+    set({ conversaId: id, mensagens: [], carregando: true, erro: null, contextoTokens: 0, custoConversa: custoConhecido })
     const { data } = await supabase
       .from('ia_mensagens')
-      .select('id, role, content, anexos, ferramentas, created_at')
+      .select('id, role, content, anexos, ferramentas, custo_brl, created_at')
       .eq('conversa_id', id)
       .order('created_at', { ascending: true })
       .limit(200)
@@ -166,7 +165,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
 
   novaConversa: () => {
-    set({ conversaId: null, mensagens: [], anexos: [], erro: null, contextoTokens: 0, custoUltima: 0, custoConversa: 0 })
+    set({ conversaId: null, mensagens: [], anexos: [], erro: null, contextoTokens: 0, custoConversa: 0 })
   },
 
   renomearConversa: async (id, titulo) => {
@@ -245,7 +244,6 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         mensagens:      [...get().mensagens, json.mensagem],
         enviando:       false,
         contextoTokens: json.contexto_tokens ?? get().contextoTokens,
-        custoUltima:    custoResp,
         custoConversa:  get().custoConversa + custoResp,
       })
       void get().carregarConversas()

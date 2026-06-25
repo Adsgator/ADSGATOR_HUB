@@ -118,7 +118,6 @@ export function FloatingChat() {
   const anexos      = useAssistantStore((s) => s.anexos)
   const clienteCtx  = useAssistantStore((s) => s.clienteContextoId)
   const ctxTokens   = useAssistantStore((s) => s.contextoTokens)
-  const custoUltima = useAssistantStore((s) => s.custoUltima)
   const custoConversa = useAssistantStore((s) => s.custoConversa)
 
   const [minimized,    setMinimized]    = useState(false)
@@ -308,9 +307,6 @@ export function FloatingChat() {
     >
       {custoConversa > 0 && (
         <span>Conversa <strong className="text-ink-secondary font-semibold">{fmtBRL(custoConversa)}</strong></span>
-      )}
-      {custoUltima > 0 && (
-        <span>· última <strong className="text-ink-secondary font-semibold">{fmtBRL(custoUltima)}</strong></span>
       )}
       {gasto && (
         <span className="ml-auto">Hoje {fmtBRL(gasto.hoje)} · Mês <strong className="text-ink-secondary font-semibold">{fmtBRL(gasto.mes)}</strong></span>

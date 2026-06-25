@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.26.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Cada resposta da Gator agora mostra no próprio balão quanto custou (valorzinho discreto ao lado das ações), inclusive ao reabrir conversas antigas. Assim dá para comparar de relance o que pesou — um "oi" custa quase nada, uma análise custa um pouco mais',
+      'A barra de custo no topo do chat ficou mais enxuta: mostra o total da conversa atual e o gasto de hoje/mês (o custo da última resposta saiu de lá porque agora vive no balão dela)',
+    ],
+  },
+  {
     versao: '0.25.0',
     data:   '2026-06-25',
     novidades: [

@@ -340,14 +340,17 @@ export async function POST(req: NextRequest) {
         : 'Não consegui processar sua mensagem. Tente reformular.'
     }
 
-    // 5. Persiste a resposta e atualiza a conversa
+    const custoResposta = custoBRL(MODELO_FLASH, { tokensEntrada, tokensSaida, tokensCache })
+
+    // 5. Persiste a resposta (com o custo estimado) e atualiza a conversa
     const { data: msgIa } = await supabase.from('ia_mensagens').insert({
       conversa_id: conversaId,
       user_id:     user.id,
       role:        'assistant',
       content:     respostaFinal,
       ferramentas: executadas.length ? executadas : null,
-    }).select('id, role, content, ferramentas, created_at').single()
+      custo_brl:   custoResposta,
+    }).select('id, role, content, ferramentas, custo_brl, created_at').single()
 
     await supabase.from('ia_conversas')
       .update({ updated_at: new Date().toISOString() })
@@ -365,15 +368,14 @@ export async function POST(req: NextRequest) {
       ferramentas:   ferramentasUsadas,
     })
 
-    const custoResposta = custoBRL(MODELO_FLASH, { tokensEntrada, tokensSaida, tokensCache })
-
     return NextResponse.json({
       conversa_id: conversaId,
       contexto_tokens: contextoTokens,
       custo_resposta: custoResposta,
       mensagem: msgIa ?? {
         id: crypto.randomUUID(), role: 'assistant', content: respostaFinal,
-        ferramentas: executadas.length ? executadas : null, created_at: new Date().toISOString(),
+        ferramentas: executadas.length ? executadas : null, custo_brl: custoResposta,
+        created_at: new Date().toISOString(),
       },
     })
   } catch (err) {
