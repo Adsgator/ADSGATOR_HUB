@@ -9,7 +9,8 @@ import {
 } from 'lucide-react';
 import type { Cliente, Estagio } from '@/lib/types';
 import { isInadimplente } from '@/lib/cobranca';
-import { FLUXO_OPERACIONAL, gerarLinkWhatsApp } from '@/lib/fluxo-operacional';
+import { FLUXO_OPERACIONAL } from '@/lib/fluxo-operacional';
+import { gerarLinkWhatsApp } from '@/lib/whatsapp';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ContextMenu } from '@/components/ui/ContextMenu';
 import { cn } from '@/lib/utils';
@@ -151,7 +152,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
           {cliente.whatsapp && (
             <Tooltip content="WhatsApp" side="top">
               <a
-                href={gerarLinkWhatsApp('#CONTATO', cliente.whatsapp)}
+                href={gerarLinkWhatsApp('', cliente.whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-[2rem] h-[2rem] flex items-center justify-center rounded-[0.375rem] bg-status-green/10 text-status-green hover:bg-status-green/20 transition-colors"

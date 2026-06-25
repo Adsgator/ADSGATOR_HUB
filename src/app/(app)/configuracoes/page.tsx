@@ -5,7 +5,7 @@ import {
   Save, User, Bell, Plug, DollarSign,
   Palette, Users, Check, History, Download, Upload,
   Layers, Tag, Plus, Trash2, Pencil, Mail, Zap,
-  Settings, MessageSquare, Briefcase, ShieldCheck, Server, HeartPulse,
+  Settings, MessageSquare, MessageCircle, Briefcase, ShieldCheck, Server, HeartPulse,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
@@ -18,11 +18,12 @@ import { Agendamentos } from '@/components/configuracoes/Agendamentos'
 import { ImportAsaasModal } from '@/components/configuracoes/ImportAsaasModal'
 import { SetupChecklist } from '@/components/configuracoes/SetupChecklist'
 import { TemplatesEmail } from '@/components/configuracoes/TemplatesEmail'
+import { BibliotecaWhatsApp } from '@/components/configuracoes/BibliotecaWhatsApp'
 import type { LimiaresAtraso } from '@/lib/cobranca'
 import { HEALTH_REGRAS_PADRAO, type HealthRegras } from '@/lib/health-score'
 import { NICHOS_SUGERIDOS_PADRAO } from '@/lib/listas'
 
-type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'saude' | 'planos' | 'automacoes' | 'emails' | 'backup' | 'auditoria'
+type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'saude' | 'planos' | 'automacoes' | 'emails' | 'mensagens' | 'backup' | 'auditoria'
 
 const ABAS: Record<AbaId, { label: string; icon: React.ElementType }> = {
   setup:        { label: 'Setup',          icon: Zap        },
@@ -36,7 +37,8 @@ const ABAS: Record<AbaId, { label: string; icon: React.ElementType }> = {
   saude:        { label: 'Saúde & Listas',  icon: HeartPulse },
   planos:       { label: 'Planos',          icon: Tag        },
   automacoes:   { label: 'Automações',      icon: Settings   },
-  emails:       { label: 'Emails',          icon: Mail       },
+  emails:       { label: 'Emails',          icon: Mail          },
+  mensagens:    { label: 'Mensagens',       icon: MessageCircle },
   backup:       { label: 'Backup',          icon: Download   },
   auditoria:    { label: 'Auditoria',       icon: History    },
 }
@@ -47,7 +49,7 @@ type CategoriaId = 'geral' | 'comunicacao' | 'cobranca' | 'operacao' | 'conta' |
 
 const CATEGORIAS: { id: CategoriaId; label: string; icon: React.ElementType; abas: AbaId[] }[] = [
   { id: 'geral',       label: 'Geral',        icon: Settings,     abas: ['setup', 'perfil', 'aparencia'] },
-  { id: 'comunicacao', label: 'Comunicação',  icon: MessageSquare, abas: ['emails', 'automacoes', 'notificacoes'] },
+  { id: 'comunicacao', label: 'Comunicação',  icon: MessageSquare, abas: ['emails', 'mensagens', 'automacoes', 'notificacoes'] },
   { id: 'cobranca',    label: 'Cobrança',     icon: DollarSign,    abas: ['financeiro', 'planos'] },
   { id: 'operacao',    label: 'Operação',     icon: Briefcase,     abas: ['operacional', 'saude', 'integracoes'] },
   { id: 'conta',       label: 'Conta',        icon: ShieldCheck,   abas: ['equipe', 'auditoria'] },
@@ -1253,6 +1255,7 @@ export default function ConfiguracoesPage() {
       </div>
     ),
     emails:        <TemplatesEmail />,
+    mensagens:     <BibliotecaWhatsApp />,
     backup:        <AbaBackup />,
     auditoria:     <AuditLogViewer />,
   }

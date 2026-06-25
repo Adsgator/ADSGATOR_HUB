@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.20.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Biblioteca de mensagens de WhatsApp editável: as respostas rápidas que você envia aos clientes (boas-vindas, onboarding, acessos Google, cobrança, proposta, retenção e por aí) saíram do código e agora são gerenciáveis pela tela em Configurações → Comunicação → Mensagens. Dá para editar o texto, criar mensagens novas, organizar por categoria, excluir as suas e restaurar as padrão ao original',
+      'Personalização automática nas mensagens: use {{primeiro_nome}} ou {{nome}} no texto e o sistema preenche com o nome do cliente na hora de enviar. Os chips de variável estão ali no editor, é só clicar para inserir',
+      'No modal de "Enviar WhatsApp" do cliente, ao ajustar um texto na hora você pode salvá-lo direto na biblioteca para reaproveitar depois, sem ir até as Configurações',
+    ],
+  },
+  {
     versao: '0.19.0',
     data:   '2026-06-25',
     novidades: [
