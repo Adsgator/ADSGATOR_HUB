@@ -66,7 +66,7 @@ export async function gerarBriefing(
   const clientes   = clientesData ?? []
   const clienteIds = clientes.map((c) => c.id)
 
-  const [alertasRes, tarefasRes, configRes, assinaturasRes] = await Promise.all([
+  const [alertasRes, tarefasRes, configRes, assinaturasRes, memoriaRes, onboardingsRes] = await Promise.all([
     clienteIds.length > 0
       ? db.from('alertas')
           .select('tipo, mensagem')
@@ -91,6 +91,21 @@ export async function gerarBriefing(
       .select('valor_mensal, status, clientes!inner(user_id)')
       .eq('clientes.user_id', userId)
       .in('status', STATUS_ASSINATURA_ATIVA),
+    // Memória da Gator: fatos operacionais que ela registrou (o que o Lucas já fez/combinou)
+    db.from('ia_memoria')
+      .select('conteudo')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    // Onboardings ativos parados aguardando o cliente — estado real do funil de entrada
+    db.from('timeline_instances')
+      .select('updated_at, current_step_id, client_id, clientes!inner(nome, user_id)')
+      .eq('type', 'onboarding')
+      .eq('status', 'active')
+      .eq('clientes.user_id', userId)
+      .not('client_id', 'is', null)
+      .order('updated_at', { ascending: true })
+      .limit(20),
   ])
 
   const alertas     = (alertasRes.data ?? []) as { tipo: string; mensagem: string }[]
@@ -103,13 +118,35 @@ export async function gerarBriefing(
     (c) => c.google_ads_enabled && (c.saldo_google ?? 0) > 0 && (c.saldo_google ?? 0) <= limiteSaldo,
   )
 
+  const memorias = (memoriaRes.data ?? []) as { conteudo: string }[]
+
+  // Onboardings parados há mais tempo (aguardando o cliente avançar)
+  const agora = Date.now()
+  const onboardings = (onboardingsRes.data ?? []) as {
+    updated_at: string | null
+    clientes: { nome: string } | { nome: string }[] | null
+  }[]
+  const onboardingsParados = onboardings
+    .map((o) => {
+      const cli  = Array.isArray(o.clientes) ? o.clientes[0] : o.clientes
+      const dias = o.updated_at
+        ? Math.floor((agora - new Date(o.updated_at).getTime()) / (1000 * 60 * 60 * 24))
+        : 0
+      return { nome: cli?.nome ?? 'cliente', dias }
+    })
+    .filter((o) => o.dias >= 2)
+
   const contexto = `Dados de hoje (${hoje}):
 - Clientes ativos: ${clientes.length}
 - MRR total: R$ ${mrrTotal.toLocaleString('pt-BR')}
 - Inadimplentes: ${inadimplentes.length} (${inadimplentes.map((c) => c.nome).join(', ') || 'nenhum'})
 - Alertas abertos: ${alertas.length}
 - Tarefas com prazo HOJE: ${tarefasHoje.length}${tarefasHoje.length ? ` (${tarefasHoje.map((t) => t.titulo).slice(0, 5).join('; ')})` : ''}
-- Clientes com saldo Google baixo (≤ R$ ${limiteSaldo}): ${saldoBaixo.length}${saldoBaixo.length ? ` (${saldoBaixo.map((c) => c.nome).join(', ')})` : ''}`
+- Clientes com saldo Google baixo (≤ R$ ${limiteSaldo}): ${saldoBaixo.length}${saldoBaixo.length ? ` (${saldoBaixo.map((c) => c.nome).join(', ')})` : ''}
+- Onboardings parados aguardando o cliente: ${onboardingsParados.length}${onboardingsParados.length ? ` (${onboardingsParados.map((o) => `${o.nome} há ${o.dias}d`).join('; ')})` : ''}${memorias.length ? `
+
+O que você (assistente) já sabe/registrou — não repita como pendência o que já foi resolvido aqui:
+${memorias.map((m) => `- ${m.conteudo}`).join('\n')}` : ''}`
 
   const prompt = buildPrompt(hoje, contexto, filtro)
 

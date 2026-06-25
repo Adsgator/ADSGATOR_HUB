@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.21.0',
+    data:   '2026-06-25',
+    novidades: [
+      'A Gator passou a anotar sozinha o que você conta no chat: ao dizer coisas como "já cobrei o cliente X", "combinei a entrega da página pra sexta" ou "fulano pediu pra pausar", ela registra na memória dela na hora, sem você precisar pedir "salva isso". E quando algo deixa de valer (a cobrança foi paga, a entrega saiu), ela também esquece',
+      'O briefing matinal agora reflete o que você já fez: ele lê a memória da Gator e o estado real dos onboardings parados (quem está aguardando o cliente e há quantos dias), então para de cobrar de você o que já está resolvido e te lembra do que de fato está travado',
+    ],
+  },
+  {
     versao: '0.20.0',
     data:   '2026-06-25',
     novidades: [
