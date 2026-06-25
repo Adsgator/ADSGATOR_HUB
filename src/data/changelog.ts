@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.27.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Gator ficou de fato mais inteligente com o contexto: ela deixou de receber o estado da agência (clientes, inadimplência, MRR) empurrado em TODA conversa. Agora ela mesma decide buscar esse resumo só quando a conversa pede — exatamente como um bom assistente faz. Um "oi" não carrega mais a lista de inadimplentes junto; quando você pergunta algo operacional, ela puxa o panorama na hora. Resultado: conversas triviais ficam bem mais leves e baratas, sem a IA perder nada da capacidade de te dar o estado real quando importa',
+    ],
+  },
+  {
     versao: '0.26.0',
     data:   '2026-06-25',
     novidades: [

@@ -61,11 +61,11 @@ PERSONALIDADE:
 - Obsessão por resultado: pensa em MRR, CPA e prazo antes de pensar em estética.
 
 REGRAS DE OPERAÇÃO:
-0. CALIBRE O ESFORÇO. Nem toda mensagem precisa de ferramenta. Saudação, agradecimento, papo trivial, pergunta sobre algo que já está no panorama abaixo ou que você já respondeu nesta conversa → responda DIRETO, em 1 passo, sem chamar ferramenta nenhuma. Só acione ferramentas quando a resposta de fato depende de um dado que você não tem (estado atual de uma campanha, busca por um cliente, etc.) ou quando há uma ação concreta a executar. Um "oi" se responde com um "oi" — não com uma consulta ao sistema. Ferramenta à toa é desperdício e lentidão; bom agente sabe quando NÃO agir.
-1. NUNCA invente dados. Se a resposta depende do estado do sistema, consulte as ferramentas antes de responder ("as APIs estão funcionando?" → status_sistema; "como tá a campanha?" → ads_ao_vivo ou analytics_cliente). Mas se o dado já está no panorama abaixo, use-o direto — não re-consulte por consultar.
+0. CALIBRE O ESFORÇO. Nem toda mensagem precisa de ferramenta. Saudação, agradecimento, papo trivial, ajuda pontual de escrita, ou algo que você já respondeu nesta conversa → responda DIRETO, em 1 passo, sem chamar ferramenta nenhuma. Você NÃO recebe o estado da agência pré-carregado: quando a resposta depender dele (clientes, MRR, inadimplência, tarefas) chame panorama_agencia; quando depender de um dado específico (campanha, cliente) chame a ferramenta certa. Um "oi" se responde com um "oi" — sem consultar nada. Ferramenta à toa é desperdício; bom agente sabe quando NÃO agir e quando buscar.
+1. NUNCA invente dados. Se a resposta depende do estado do sistema, consulte a ferramenta antes de responder (estado geral → panorama_agencia; "as APIs estão funcionando?" → status_sistema; "como tá a campanha?" → ads_ao_vivo ou analytics_cliente). Se o dado já apareceu nesta conversa e não deve ter mudado, reuse — não re-consulte por consultar.
 2. Encadeie ferramentas livremente: busque o cliente pelo nome, pegue o ID, execute a ação. Não peça ao usuário um ID que você mesma pode descobrir.
 3. Execute o que for pedido sem pedir confirmação — exceto exclusões e mudanças financeiras grandes, que merecem um "confirma?" antes.
-4. Seja proativa com bom senso: quando o assunto da conversa abrir espaço, aponte algo relevante nos dados (inadimplência, saldo baixo, tarefa atrasada) e ofereça-se para agir. Não force — não despeje alertas num "oi" ou num papo que não pediu isso. Proatividade é no momento certo, não em toda mensagem.
+4. Seja proativa com bom senso: quando o assunto for operacional e você já tiver chamado panorama_agencia, aponte o que for relevante (inadimplência, saldo baixo, tarefa do dia) e ofereça-se para agir. Se a conversa é operacional mas você ainda não olhou o estado, vale chamar panorama_agencia para embasar. Não force em "oi"/papo trivial — proatividade é no momento certo, não em toda mensagem.
 5. MEMÓRIA DE MÃO DUPLA — não espere o "lembre que...". Quando o Lucas relatar no chat um fato operacional que muda o estado das coisas ("já cobrei o Alfa", "combinei a entrega da página com o Beta pra sexta", "o Gama pediu pra pausar", "fechei com fulano"), salve com salvar_memoria por conta própria, em uma frase autocontida e datada quando fizer sentido — sem pedir permissão e sem interromper a resposta. Salve também preferências e regras da agência. Não salve trivialidades nem o que já está na sua memória (listada abaixo) ou no panorama. Quando algo registrado deixar de valer (cobrança quitada, entrega feita), use esquecer_memoria. Esses fatos alimentam o briefing matinal — registrá-los é o que mantém o sistema ciente do que você já fez.
 6. Datas relativas ("amanhã", "sexta") — calcule a partir da data atual informada abaixo.
 7. Se receber imagens, analise-as de verdade (prints de campanhas, métricas, criativos) e conecte com os dados do Hub quando fizer sentido.
@@ -77,54 +77,6 @@ ECONOMIA — RESPOSTAS E FERRAMENTAS:
 - Não re-consulte uma ferramenta se o dado já apareceu nesta conversa e não deve ter mudado.
 - Markdown enxuto: negrito para valores e nomes, listas curtas, sem cabeçalhos desnecessários. Valores em R$.`
 
-// Resumo LEVE da agência injetado em toda chamada: contadores + só os itens que
-// pedem atenção imediata (inadimplentes, saldo baixo, tarefas com prazo). A lista
-// completa de clientes/tarefas NÃO entra aqui — a Gora puxa sob demanda com
-// listar_clientes / listar_tarefas. Isso mantém o contexto barato por mensagem.
-async function montarPanorama(userId: string): Promise<string> {
-  const hojeFim = `${new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })}T23:59:59`
-
-  const [clientesRes, tarefasHojeRes] = await Promise.all([
-    supabase
-      .from('clientes')
-      .select('id, nome, status, mrr, dias_atraso, saldo_google')
-      .eq('user_id', userId)
-      .order('mrr', { ascending: false })
-      .limit(200),
-    supabase
-      .from('tarefas')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .in('status', ['pendente', 'em_progresso'])
-      .lte('data_prazo', hojeFim),
-  ])
-
-  const clientes = clientesRes.data ?? []
-  const ativos   = clientes.filter((c) => c.status === 'ativo')
-  const mrrTotal = ativos.reduce((s, c) => s + (c.mrr ?? 0), 0)
-  const inadimplentes = clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
-  const saldoBaixo    = clientes.filter((c) => c.saldo_google != null && c.saldo_google <= 50)
-  const tarefasVencendo = tarefasHojeRes.count ?? 0
-
-  // Só os críticos viram linha (poucos); o resto se consulta com ferramenta.
-  const criticos: string[] = []
-  if (inadimplentes.length) {
-    criticos.push(`Inadimplentes (${inadimplentes.length}): ${inadimplentes.map((c) => `${c.nome} ${c.dias_atraso}d [${c.id}]`).join('; ')}`)
-  }
-  if (saldoBaixo.length) {
-    criticos.push(`Saldo Google baixo (${saldoBaixo.length}): ${saldoBaixo.map((c) => `${c.nome} R$ ${c.saldo_google} [${c.id}]`).join('; ')}`)
-  }
-  if (tarefasVencendo) {
-    criticos.push(`${tarefasVencendo} tarefa(s) com prazo até hoje (use listar_tarefas para ver).`)
-  }
-
-  return [
-    `══ PANORAMA (resumo — lista completa via listar_clientes / listar_tarefas) ══`,
-    `${clientes.length} clientes (${ativos.length} ativos), MRR R$ ${mrrTotal}.`,
-    criticos.length ? `ATENÇÃO:\n${criticos.join('\n')}` : 'Nada crítico no momento.',
-  ].join('\n')
-}
-
 async function montarSystemPrompt(
   userId: string,
   pagina?: string,
@@ -134,12 +86,10 @@ async function montarSystemPrompt(
     timeZone: 'America/Sao_Paulo', dateStyle: 'full', timeStyle: 'short',
   })
 
-  const [panorama, memoriaRes] = await Promise.all([
-    montarPanorama(userId),
-    supabase.from('ia_memoria').select('id, conteudo').eq('user_id', userId).order('created_at').limit(100),
-  ])
+  const { data: memoriaData } = await supabase
+    .from('ia_memoria').select('id, conteudo').eq('user_id', userId).order('created_at').limit(100)
 
-  const memorias = memoriaRes.data ?? []
+  const memorias = memoriaData ?? []
   const blocoMemoria = memorias.length
     ? `══ SUA MEMÓRIA DE LONGO PRAZO (id entre colchetes — use esquecer_memoria para remover) ══\n${memorias.map((m) => `- [${m.id}] ${m.conteudo}`).join('\n')}`
     : '══ SUA MEMÓRIA DE LONGO PRAZO ══\n(vazia — salve fatos relevantes com salvar_memoria)'
@@ -169,7 +119,7 @@ async function montarSystemPrompt(
     IDENTIDADE,
     `Data e hora atual (America/Sao_Paulo): ${agora}.`,
     pagina ? `O usuário está agora na página ${pagina} do Hub.` : '',
-    panorama,
+    `ESTADO DA AGÊNCIA: você NÃO recebe o estado pré-carregado. Quando a conversa tocar em operação/clientes/finanças — ou quando quiser ser proativa — chame panorama_agencia para o resumo (clientes, MRR, inadimplência, saldo baixo). Não chame em saudações/papo trivial. Para listas completas, listar_clientes/listar_tarefas.`,
     blocoMemoria,
     blocoCliente,
   ].filter(Boolean).join('\n\n')

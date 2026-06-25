@@ -587,6 +587,43 @@ export const TOOLS: Record<string, Tool> = {
     resumo: (args) => `Notificação criada: "${str(args.titulo)}"`,
   },
 
+  panorama_agencia: {
+    declaration: {
+      name: 'panorama_agencia',
+      description: 'Resumo do estado atual da agência: total de clientes e ativos, MRR, e o que pede atenção agora (inadimplentes, saldo Google baixo, tarefas com prazo até hoje). Chame quando a conversa tocar em operação/clientes/finanças, ou quando você quiser ser proativa com base no estado real. NÃO chame para saudações ou papo trivial. Para a lista completa de clientes/tarefas, use listar_clientes/listar_tarefas.',
+      parameters: { type: T.OBJECT, properties: {} },
+    },
+    execute: async (_args, ctx) => {
+      const hojeFim = `${new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })}T23:59:59`
+      const [clientesRes, tarefasHojeRes] = await Promise.all([
+        ctx.db.from('clientes')
+          .select('id, nome, status, mrr, dias_atraso, saldo_google')
+          .eq('user_id', ctx.userId)
+          .order('mrr', { ascending: false })
+          .limit(200),
+        ctx.db.from('tarefas')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', ctx.userId)
+          .in('status', ['pendente', 'em_progresso'])
+          .lte('data_prazo', hojeFim),
+      ])
+      const clientes = (clientesRes.data ?? []) as Array<{ id: string; nome: string; status: string; mrr: number | null; dias_atraso: number | null; saldo_google: number | null }>
+      const ativos = clientes.filter((c) => c.status === 'ativo')
+      const mrrTotal = ativos.reduce((s, c) => s + (c.mrr ?? 0), 0)
+      return {
+        total_clientes: clientes.length,
+        ativos:         ativos.length,
+        mrr_total:      mrrTotal,
+        inadimplentes:  clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
+          .map((c) => ({ id: c.id, nome: c.nome, dias_atraso: c.dias_atraso })),
+        saldo_google_baixo: clientes.filter((c) => c.saldo_google != null && c.saldo_google <= 50)
+          .map((c) => ({ id: c.id, nome: c.nome, saldo_google: c.saldo_google })),
+        tarefas_ate_hoje: tarefasHojeRes.count ?? 0,
+      }
+    },
+    resumo: () => 'Consultou o panorama da agência.',
+  },
+
   panorama_onboarding: {
     declaration: {
       name: 'panorama_onboarding',
