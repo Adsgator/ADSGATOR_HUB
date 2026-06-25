@@ -16,7 +16,7 @@ import {
   type ToolExecutada,
 } from '@/lib/ia/tools'
 import type { Content, Part } from '@google-cloud/vertexai'
-import { extrairUso, registrarUso } from '@/lib/ia/uso'
+import { extrairUso, registrarUso, custoBRL } from '@/lib/ia/uso'
 
 // O loop pode encadear várias chamadas ao modelo + ferramentas
 export const maxDuration = 120
@@ -365,9 +365,12 @@ export async function POST(req: NextRequest) {
       ferramentas:   ferramentasUsadas,
     })
 
+    const custoResposta = custoBRL(MODELO_FLASH, { tokensEntrada, tokensSaida, tokensCache })
+
     return NextResponse.json({
       conversa_id: conversaId,
       contexto_tokens: contextoTokens,
+      custo_resposta: custoResposta,
       mensagem: msgIa ?? {
         id: crypto.randomUUID(), role: 'assistant', content: respostaFinal,
         ferramentas: executadas.length ? executadas : null, created_at: new Date().toISOString(),

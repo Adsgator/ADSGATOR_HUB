@@ -91,6 +91,8 @@ interface AssistantStore {
   clienteContextoId:   string
   erro:                string | null
   contextoTokens:      number // promptTokenCount real da última resposta do agente
+  custoUltima:         number // custo estimado (R$) da última resposta do agente
+  custoConversa:       number // custo estimado (R$) acumulado da conversa ativa
 
   carregarConversas:  () => Promise<void>
   abrirConversa:      (id: string) => Promise<void>
@@ -114,6 +116,8 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   clienteContextoId: '',
   erro:              null,
   contextoTokens:    0,
+  custoUltima:       0,
+  custoConversa:     0,
 
   carregarConversas: async () => {
     const { data } = await supabase
@@ -143,7 +147,8 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
 
   abrirConversa: async (id) => {
-    set({ conversaId: id, mensagens: [], carregando: true, erro: null, contextoTokens: 0 })
+    const custoConhecido = get().conversas.find((c) => c.id === id)?.custo_total ?? 0
+    set({ conversaId: id, mensagens: [], carregando: true, erro: null, contextoTokens: 0, custoUltima: 0, custoConversa: custoConhecido })
     const { data } = await supabase
       .from('ia_mensagens')
       .select('id, role, content, anexos, ferramentas, created_at')
@@ -161,7 +166,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
 
   novaConversa: () => {
-    set({ conversaId: null, mensagens: [], anexos: [], erro: null, contextoTokens: 0 })
+    set({ conversaId: null, mensagens: [], anexos: [], erro: null, contextoTokens: 0, custoUltima: 0, custoConversa: 0 })
   },
 
   renomearConversa: async (id, titulo) => {
@@ -228,17 +233,20 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           cliente_contexto_id: clienteContextoId || undefined,
         }),
       })
-      const json = await res.json() as { conversa_id?: string; mensagem?: MensagemIA; contexto_tokens?: number; error?: string }
+      const json = await res.json() as { conversa_id?: string; mensagem?: MensagemIA; contexto_tokens?: number; custo_resposta?: number; error?: string }
 
       if (!res.ok || !json.mensagem) {
         throw new Error(json.error ?? `Erro HTTP ${res.status}`)
       }
 
+      const custoResp = json.custo_resposta ?? 0
       set({
         conversaId:     json.conversa_id ?? conversaId,
         mensagens:      [...get().mensagens, json.mensagem],
         enviando:       false,
         contextoTokens: json.contexto_tokens ?? get().contextoTokens,
+        custoUltima:    custoResp,
+        custoConversa:  get().custoConversa + custoResp,
       })
       void get().carregarConversas()
     } catch (err) {

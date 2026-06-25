@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.25.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Custo da IA agora aparece dentro do chat da Gator (Ctrl+I): uma barra discreta mostra quanto a conversa atual já gastou, quanto custou a última resposta e o gasto estimado de hoje e do mês — sem precisar abrir o painel de Uso da IA. Tudo estimado, na mesma base do painel',
+    ],
+  },
+  {
     versao: '0.24.0',
     data:   '2026-06-25',
     novidades: [

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import {
   Bot, Check, Download, History, Maximize2, Minimize2, Minus,
@@ -118,12 +118,15 @@ export function FloatingChat() {
   const anexos      = useAssistantStore((s) => s.anexos)
   const clienteCtx  = useAssistantStore((s) => s.clienteContextoId)
   const ctxTokens   = useAssistantStore((s) => s.contextoTokens)
+  const custoUltima = useAssistantStore((s) => s.custoUltima)
+  const custoConversa = useAssistantStore((s) => s.custoConversa)
 
   const [minimized,    setMinimized]    = useState(false)
   const [expandido,    setExpandido]    = useState(false)
   const [mostrarLista, setMostrarLista] = useState(false)
   const [clientes,     setClientes]     = useState<ClienteOpcao[]>([])
   const [size,         setSize]         = useState({ w: 384, h: 540 })
+  const [gasto,        setGasto]        = useState<{ hoje: number; mes: number } | null>(null)
 
   // Ctrl+I — abre/fecha o agente em qualquer página
   useEffect(() => {
@@ -144,6 +147,17 @@ export function FloatingChat() {
     supabase.from('clientes').select('id, nome').order('nome').limit(100)
       .then(({ data }) => setClientes((data ?? []) as ClienteOpcao[]))
   }, [aberto])
+
+  // Gasto do dia/mês — recarrega ao abrir e a cada nova resposta (custoConversa muda)
+  useEffect(() => {
+    if (!aberto) return
+    fetch('/api/v1/ia/uso/resumo')
+      .then((r) => r.json())
+      .then((d: { custo_hoje?: number; custo_mes?: number }) => {
+        if (typeof d.custo_hoje === 'number') setGasto({ hoje: d.custo_hoje, mes: d.custo_mes ?? 0 })
+      })
+      .catch(() => { /* silencioso — custo é secundário ao chat */ })
+  }, [aberto, custoConversa])
 
   // Restaura o tamanho salvo (só no cliente, para não divergir do SSR)
   useEffect(() => {
@@ -282,6 +296,28 @@ export function FloatingChat() {
     </div>
   )
 
+  // Barra de custo da IA — conversa atual · última resposta · gasto hoje/mês.
+  // Custo ESTIMADO (mesma base do painel de Uso da IA).
+  const fmtBRL = (v: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: v < 0.1 ? 4 : 2 }).format(v)
+
+  const barraCusto = (custoConversa > 0 || gasto) ? (
+    <div
+      title="Custo estimado da IA (pode divergir da fatura real)"
+      className="px-[0.875rem] py-[0.375rem] border-b border-surface-border/30 shrink-0 flex items-center gap-x-[0.75rem] gap-y-[0.125rem] flex-wrap text-[0.625rem] text-ink-muted font-mono"
+    >
+      {custoConversa > 0 && (
+        <span>Conversa <strong className="text-ink-secondary font-semibold">{fmtBRL(custoConversa)}</strong></span>
+      )}
+      {custoUltima > 0 && (
+        <span>· última <strong className="text-ink-secondary font-semibold">{fmtBRL(custoUltima)}</strong></span>
+      )}
+      {gasto && (
+        <span className="ml-auto">Hoje {fmtBRL(gasto.hoje)} · Mês <strong className="text-ink-secondary font-semibold">{fmtBRL(gasto.mes)}</strong></span>
+      )}
+    </div>
+  ) : null
+
   const corpo = (
     <>
       <ChatThread mensagens={mensagens} enviando={enviando} />
@@ -309,6 +345,7 @@ export function FloatingChat() {
             </aside>
             <div className="flex flex-col flex-1 min-w-0">
               {seletorCliente}
+              {barraCusto}
               {corpo}
             </div>
           </div>
@@ -341,6 +378,7 @@ export function FloatingChat() {
         ) : (
           <>
             {seletorCliente}
+            {barraCusto}
             {corpo}
           </>
         )
