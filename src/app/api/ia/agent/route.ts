@@ -8,14 +8,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
-import { MODELO_FLASH, criarVertexAI } from '@/lib/vertex-ai'
+import { MODELO_FLASH, MODELO_PRO, criarVertexAI } from '@/lib/vertex-ai'
 import {
   FUNCTION_DECLARATIONS,
   executarFerramenta,
   type ToolCtx,
   type ToolExecutada,
 } from '@/lib/ia/tools'
-import type { Content, Part } from '@google-cloud/vertexai'
+import type { Content, Part, GenerationConfig } from '@google-cloud/vertexai'
 import { extrairUso, registrarUso, custoBRL } from '@/lib/ia/uso'
 
 // O loop pode encadear várias chamadas ao modelo + ferramentas
@@ -30,6 +30,20 @@ const MAX_ITERACOES      = 10
 const MAX_ANEXO_BASE64   = 4 * 1024 * 1024 // ~3MB de imagem real
 const MAX_ARQUIVO_CHARS  = 30_000
 const HISTORICO_MENSAGENS = 40
+
+const MODELOS_VALIDOS = new Set([MODELO_FLASH, MODELO_PRO])
+
+/** Cérebro da Gator escolhido pelo Lucas em Configurações → Uso da IA. */
+async function resolverModelo(userId: string): Promise<{ modelo: string; thinking: boolean }> {
+  const { data } = await supabase
+    .from('configuracoes_ia')
+    .select('modelo, thinking')
+    .eq('user_id', userId)
+    .maybeSingle()
+  const modelo = typeof data?.modelo === 'string' && MODELOS_VALIDOS.has(data.modelo) ? data.modelo : MODELO_FLASH
+  const thinking = data?.thinking ?? true
+  return { modelo, thinking }
+}
 const MENSAGENS_COM_IMAGEM = 8 // só as N últimas mensagens reenviam imagens ao modelo
 
 export interface AnexoIA {
@@ -229,12 +243,22 @@ export async function POST(req: NextRequest) {
 
   // 4. Loop agêntico
   try {
+    const { modelo, thinking } = await resolverModelo(user.id)
+
+    // thinkingConfig não é tipado no SDK 1.12, mas o Vertex aceita via generationConfig.
+    // Flash: thinkingBudget 0 desliga; -1 = dinâmico. Pro: sempre pensa (ignora 0).
+    const generationConfig = {
+      maxOutputTokens: 8192,
+      temperature: 0.7,
+      thinkingConfig: { thinkingBudget: thinking ? -1 : 0 },
+    } as unknown as GenerationConfig
+
     const vertex = criarVertexAI()
     const model  = vertex.preview.getGenerativeModel({
-      model:             MODELO_FLASH,
+      model:             modelo,
       systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
       tools:             [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-      generationConfig:  { maxOutputTokens: 8192, temperature: 0.7 },
+      generationConfig,
     })
 
     const executadas: ToolExecutada[] = []
@@ -291,7 +315,7 @@ export async function POST(req: NextRequest) {
         : 'Não consegui processar sua mensagem. Tente reformular.'
     }
 
-    const custoResposta = custoBRL(MODELO_FLASH, { tokensEntrada, tokensSaida, tokensCache })
+    const custoResposta = custoBRL(modelo, { tokensEntrada, tokensSaida, tokensCache })
 
     // 5. Persiste a resposta (com o custo estimado) e atualiza a conversa
     const { data: msgIa } = await supabase.from('ia_mensagens').insert({
@@ -310,7 +334,7 @@ export async function POST(req: NextRequest) {
     // 6. Telemetria de uso — 1 linha por mensagem, somando todas as iterações
     await registrarUso(supabase, {
       userId:        user.id,
-      modelo:        MODELO_FLASH,
+      modelo,
       contexto:      'agente',
       conversaId,
       tokensEntrada, tokensSaida, tokensCache,

@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recha
 import { Info } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { UsoAnalytics } from '@/components/configuracoes/UsoAnalytics'
+import { CerebroIA } from '@/components/configuracoes/CerebroIA'
 import { brl, rotuloContexto } from '@/components/configuracoes/uso-ia-format'
 
 // ─── PAINEL DE USO DA IA ──────────────────────────────────────────────────────
@@ -16,7 +17,8 @@ export function UsoIA() {
   const [secao, setSecao] = useState<'custo' | 'analytics'>('custo')
 
   return (
-    <div className="flex flex-col gap-[1.5rem]">
+    <div className="flex flex-col gap-[1.5rem] max-w-[48rem]">
+      <CerebroIA />
       <div className="flex gap-[0.25rem] bg-surface-hover/60 border border-surface-border rounded-lg p-[0.25rem] w-fit">
         {([['custo', 'Custo'], ['analytics', 'Analytics']] as const).map(([id, label]) => (
           <button

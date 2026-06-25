@@ -75,7 +75,7 @@ export async function GET() {
 
   const { data: cfg } = await supabase
     .from('configuracoes_ia')
-    .select('limite_mensal_brl, limite_ativo')
+    .select('limite_mensal_brl, limite_ativo, modelo, thinking')
     .eq('user_id', user.id)
     .maybeSingle()
 
@@ -93,6 +93,10 @@ export async function GET() {
     limite: {
       valor: cfg?.limite_mensal_brl != null ? Number(cfg.limite_mensal_brl) : null,
       ativo: cfg?.limite_ativo ?? false,
+    },
+    cerebro: {
+      modelo:   (cfg?.modelo as string) ?? 'gemini-2.5-flash',
+      thinking: cfg?.thinking ?? true,
     },
   })
 }

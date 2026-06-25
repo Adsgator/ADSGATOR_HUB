@@ -30,10 +30,14 @@ export interface Uso {
 
 /** Lê usageMetadata da resposta do SDK, à prova de resposta sem metadata. */
 export function extrairUso(result: GenerateContentResult): Uso {
-  const m = result?.response?.usageMetadata
+  // thoughtsTokenCount (tokens de raciocínio do thinking) não é tipado no SDK
+  // 1.12, mas vem em runtime no Gemini 2.5 e é cobrado como SAÍDA — somamos.
+  const m = result?.response?.usageMetadata as
+    | (typeof result.response.usageMetadata & { thoughtsTokenCount?: number })
+    | undefined
   return {
-    tokensEntrada: m?.promptTokenCount     ?? 0,
-    tokensSaida:   m?.candidatesTokenCount  ?? 0,
+    tokensEntrada: m?.promptTokenCount       ?? 0,
+    tokensSaida:   (m?.candidatesTokenCount ?? 0) + (m?.thoughtsTokenCount ?? 0),
     tokensCache:   m?.cachedContentTokenCount ?? 0,
   }
 }

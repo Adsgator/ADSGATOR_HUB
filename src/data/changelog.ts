@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.28.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Você agora escolhe o cérebro da Gator (Configurações → Sistema → Uso da IA): Flash (rápido e econômico, ótimo pro dia a dia) ou Pro (mais inteligente, raciocina melhor e confabula menos, pra análises e decisões finas). É só clicar no modelo — vale na próxima mensagem',
+      'Toggle de Raciocínio: liga/desliga o "pensar antes de responder" do modelo. Ligado, ela acerta mais em coisas complexas (um pouco mais lento e caro); desligado, fica mais rápida e barata. O Pro sempre raciocina. O custo de cada escolha aparece no mesmo painel, em tempo real',
+      'O cálculo de custo passou a contar os tokens de raciocínio (thinking), pra estimativa não te enganar quando o "pensar" está ligado',
+    ],
+  },
+  {
     versao: '0.27.0',
     data:   '2026-06-25',
     novidades: [
