@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.23.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Aba Analytics no painel de Uso da IA (Configurações → Sistema → Uso da IA): além do custo, agora dá para ver COMO a Gator é usada. Um gráfico de pizza mostra a distribuição das chamadas por tipo de uso (assistente, briefing, relatórios, hashtags, copy)',
+      'Ranking de ferramentas da Gator: a tabela lista as ferramentas que ela mais aciona (criar tarefa, buscar cliente, consultar analytics etc.) com a quantidade de chamadas e a taxa de falha de cada uma — útil para enxergar o que está quebrando',
+      'Tendência e horários de pico: um gráfico de linha com as chamadas por dia nos últimos 30 dias e um mapa de calor por hora do dia, para você ver quando usa mais a IA',
+      'Conversas destaque: lista das conversas mais caras, mais longas e com mais ações, com link direto para reabrir cada uma no painel da Gator',
+    ],
+  },
+  {
     versao: '0.22.0',
     data:   '2026-06-25',
     novidades: [

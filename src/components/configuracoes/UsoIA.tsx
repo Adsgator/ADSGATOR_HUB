@@ -4,11 +4,40 @@ import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { Info } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { UsoAnalytics } from '@/components/configuracoes/UsoAnalytics'
+import { brl, rotuloContexto } from '@/components/configuracoes/uso-ia-format'
 
-// ─── PAINEL DE USO DA IA — bloco de CUSTO ─────────────────────────────────────
+// ─── PAINEL DE USO DA IA ──────────────────────────────────────────────────────
+// Duas seções: CUSTO (quanto a IA gasta) e ANALYTICS (como ela é usada). Os
+// dados vêm de ia_uso, capturado em toda chamada ao Vertex. Custo é ESTIMADO.
+
+// ── Container com sub-seções Custo | Analytics ────────────────────────────────
+export function UsoIA() {
+  const [secao, setSecao] = useState<'custo' | 'analytics'>('custo')
+
+  return (
+    <div className="flex flex-col gap-[1.5rem]">
+      <div className="flex gap-[0.25rem] bg-surface-hover/60 border border-surface-border rounded-lg p-[0.25rem] w-fit">
+        {([['custo', 'Custo'], ['analytics', 'Analytics']] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setSecao(id)}
+            className={`h-[2rem] px-[1rem] rounded-md text-[0.8125rem] font-medium transition-colors ${
+              secao === id ? 'bg-surface-card text-ink-primary card-shadow' : 'text-ink-muted hover:text-ink-secondary'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      {secao === 'custo' ? <UsoCusto /> : <UsoAnalytics />}
+    </div>
+  )
+}
+
+// ─── SEÇÃO CUSTO ──────────────────────────────────────────────────────────────
 // Custo estimado hoje / mês / total + série de 30 dias + quebra por tipo de uso
-// e por modelo + limite mensal de alerta. Os dados vêm de /api/v1/ia/uso/resumo
-// (agrega ia_uso, capturado em toda chamada ao Vertex). Custo é ESTIMADO.
+// + limite mensal de alerta. Dados de /api/v1/ia/uso/resumo.
 
 interface Resumo {
   custo_hoje:   number
@@ -20,17 +49,6 @@ interface Resumo {
   limite:       { valor: number | null; ativo: boolean }
 }
 
-const CONTEXTO_LABEL: Record<string, string> = {
-  agente:    'Assistente (chat)',
-  chat:      'Completion (analytics/memória)',
-  hashtags:  'Hashtags',
-  briefing:  'Briefing matinal',
-  copy:      'Copy de landing',
-  relatorio: 'Análise de relatório',
-}
-
-const brl = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
-
 function Card({ titulo, valor, destaque }: { titulo: string; valor: string; destaque?: boolean }) {
   return (
     <div className={`bg-surface-card border rounded-xl p-[1.25rem] card-shadow ${destaque ? 'border-ads-500/40' : 'border-surface-border'}`}>
@@ -40,7 +58,7 @@ function Card({ titulo, valor, destaque }: { titulo: string; valor: string; dest
   )
 }
 
-export function UsoIA() {
+function UsoCusto() {
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
@@ -145,7 +163,7 @@ export function UsoIA() {
               <tbody>
                 {resumo.por_contexto.map((c) => (
                   <tr key={c.contexto} className="border-b border-surface-border/50 last:border-0">
-                    <td className="px-[1rem] py-[0.625rem] text-ink-primary">{CONTEXTO_LABEL[c.contexto] ?? c.contexto}</td>
+                    <td className="px-[1rem] py-[0.625rem] text-ink-primary">{rotuloContexto(c.contexto)}</td>
                     <td className="px-[1rem] py-[0.625rem] text-right text-ink-secondary font-mono">{c.chamadas}</td>
                     <td className="px-[1rem] py-[0.625rem] text-right text-ink-primary font-mono">{brl(c.custo)}</td>
                   </tr>
