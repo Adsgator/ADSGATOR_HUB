@@ -30,10 +30,11 @@ export interface MensagemIA {
 }
 
 export interface ConversaIA {
-  id:         string
-  titulo:     string
-  cliente_id: string | null
-  updated_at: string
+  id:          string
+  titulo:      string
+  cliente_id:  string | null
+  updated_at:  string
+  custo_total?: number // soma de ia_uso por conversa (estimado, R$)
 }
 
 const MAX_LADO_IMAGEM = 1280
@@ -89,6 +90,7 @@ interface AssistantStore {
   anexos:              AnexoIA[]
   clienteContextoId:   string
   erro:                string | null
+  contextoTokens:      number // promptTokenCount real da última resposta do agente
 
   carregarConversas:  () => Promise<void>
   abrirConversa:      (id: string) => Promise<void>
@@ -111,6 +113,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   anexos:            [],
   clienteContextoId: '',
   erro:              null,
+  contextoTokens:    0,
 
   carregarConversas: async () => {
     const { data } = await supabase
@@ -118,11 +121,29 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       .select('id, titulo, cliente_id, updated_at')
       .order('updated_at', { ascending: false })
       .limit(50)
-    set({ conversas: (data ?? []) as ConversaIA[] })
+    const conversas = (data ?? []) as ConversaIA[]
+
+    // Custo estimado por conversa: soma de ia_uso (RLS owner-scoped cobre o
+    // filtro — as linhas do agente têm user_id). Agregado no client por volume baixo.
+    const ids = conversas.map((c) => c.id)
+    if (ids.length) {
+      const { data: usos } = await supabase
+        .from('ia_uso')
+        .select('conversa_id, custo_brl')
+        .in('conversa_id', ids)
+      const porConversa = new Map<string, number>()
+      for (const u of usos ?? []) {
+        const cid = (u as { conversa_id: string }).conversa_id
+        porConversa.set(cid, (porConversa.get(cid) ?? 0) + Number((u as { custo_brl: number }).custo_brl ?? 0))
+      }
+      for (const c of conversas) c.custo_total = porConversa.get(c.id) ?? 0
+    }
+
+    set({ conversas })
   },
 
   abrirConversa: async (id) => {
-    set({ conversaId: id, mensagens: [], carregando: true, erro: null })
+    set({ conversaId: id, mensagens: [], carregando: true, erro: null, contextoTokens: 0 })
     const { data } = await supabase
       .from('ia_mensagens')
       .select('id, role, content, anexos, ferramentas, created_at')
@@ -140,7 +161,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
 
   novaConversa: () => {
-    set({ conversaId: null, mensagens: [], anexos: [], erro: null })
+    set({ conversaId: null, mensagens: [], anexos: [], erro: null, contextoTokens: 0 })
   },
 
   renomearConversa: async (id, titulo) => {
@@ -207,16 +228,17 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           cliente_contexto_id: clienteContextoId || undefined,
         }),
       })
-      const json = await res.json() as { conversa_id?: string; mensagem?: MensagemIA; error?: string }
+      const json = await res.json() as { conversa_id?: string; mensagem?: MensagemIA; contexto_tokens?: number; error?: string }
 
       if (!res.ok || !json.mensagem) {
         throw new Error(json.error ?? `Erro HTTP ${res.status}`)
       }
 
       set({
-        conversaId: json.conversa_id ?? conversaId,
-        mensagens:  [...get().mensagens, json.mensagem],
-        enviando:   false,
+        conversaId:     json.conversa_id ?? conversaId,
+        mensagens:      [...get().mensagens, json.mensagem],
+        enviando:       false,
+        contextoTokens: json.contexto_tokens ?? get().contextoTokens,
       })
       void get().carregarConversas()
     } catch (err) {

@@ -76,7 +76,14 @@ function ListaConversas({ onSelecionar }: { onSelecionar?: () => void }) {
             </>
           ) : (
             <>
-              <span className="flex-1 min-w-0 truncate text-[0.75rem]">{c.titulo}</span>
+              <div className="flex-1 min-w-0 flex flex-col">
+                <span className="truncate text-[0.75rem] leading-tight">{c.titulo}</span>
+                {!!c.custo_total && c.custo_total > 0 && (
+                  <span className="text-[0.625rem] text-ink-muted font-mono leading-tight" title="Custo estimado desta conversa">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 4 }).format(c.custo_total)}
+                  </span>
+                )}
+              </div>
               <button
                 onClick={(e) => { e.stopPropagation(); setTitulo(c.titulo); setEditando(c.id) }}
                 title="Renomear"
@@ -110,6 +117,7 @@ export function FloatingChat() {
   const enviando    = useAssistantStore((s) => s.enviando)
   const anexos      = useAssistantStore((s) => s.anexos)
   const clienteCtx  = useAssistantStore((s) => s.clienteContextoId)
+  const ctxTokens   = useAssistantStore((s) => s.contextoTokens)
 
   const [minimized,    setMinimized]    = useState(false)
   const [expandido,    setExpandido]    = useState(false)
@@ -250,17 +258,27 @@ export function FloatingChat() {
   )
 
   const seletorCliente = (
-    <div className="px-[0.875rem] py-[0.5rem] border-b border-surface-border/30 shrink-0">
+    <div className="px-[0.875rem] py-[0.5rem] border-b border-surface-border/30 shrink-0 flex items-center gap-[0.5rem]">
       <select
         value={clienteCtx}
         onChange={(e) => store.setClienteContexto(e.target.value)}
-        className="w-full h-[1.75rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.6875rem] focus:outline-none focus:ring-1 focus:ring-ads-500/30"
+        className="flex-1 min-w-0 h-[1.75rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.6875rem] focus:outline-none focus:ring-1 focus:ring-ads-500/30"
       >
         <option value="">Conversa geral (sem cliente fixo)</option>
         {clientes.map((c) => (
           <option key={c.id} value={c.id}>Contexto: {c.nome}</option>
         ))}
       </select>
+      {ctxTokens > 0 && (
+        <span
+          title="Tamanho real do contexto enviado ao modelo na última resposta (histórico + memória + panorama)"
+          className={`shrink-0 font-mono text-[0.625rem] px-[0.375rem] py-[0.1875rem] rounded-md whitespace-nowrap ${
+            ctxTokens >= 32000 ? 'bg-status-orange/15 text-status-orange' : 'bg-surface-hover text-ink-muted'
+          }`}
+        >
+          {ctxTokens >= 1000 ? `~${(ctxTokens / 1000).toFixed(1)}k` : ctxTokens} tokens
+        </span>
+      )}
     </div>
   )
 

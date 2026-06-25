@@ -294,11 +294,14 @@ export async function POST(req: NextRequest) {
     // Acumuladores de uso (1 linha de telemetria por mensagem, somando o loop)
     const inicio = Date.now()
     let tokensEntrada = 0, tokensSaida = 0, tokensCache = 0, iteracoes = 0
+    let contextoTokens = 0 // promptTokenCount da última chamada = "leveza" da conversa
     const ferramentasUsadas: string[] = []
 
     for (let i = 0; i < MAX_ITERACOES; i++) {
       const result = await model.generateContent({ contents: conversaAtual })
       const uso    = extrairUso(result)
+      // 1ª iteração = histórico + system prompt, antes das ferramentas inflarem
+      if (i === 0) contextoTokens = uso.tokensEntrada
       tokensEntrada += uso.tokensEntrada
       tokensSaida   += uso.tokensSaida
       tokensCache   += uso.tokensCache
@@ -365,6 +368,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       conversa_id: conversaId,
+      contexto_tokens: contextoTokens,
       mensagem: msgIa ?? {
         id: crypto.randomUUID(), role: 'assistant', content: respostaFinal,
         ferramentas: executadas.length ? executadas : null, created_at: new Date().toISOString(),

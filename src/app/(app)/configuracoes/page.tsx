@@ -5,7 +5,7 @@ import {
   Save, User, Bell, Plug, DollarSign,
   Palette, Users, Check, History, Download, Upload,
   Layers, Tag, Plus, Trash2, Pencil, Mail, Zap,
-  Settings, MessageSquare, MessageCircle, Briefcase, ShieldCheck, Server, HeartPulse,
+  Settings, MessageSquare, MessageCircle, Briefcase, ShieldCheck, Server, HeartPulse, Sparkles,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
@@ -19,11 +19,12 @@ import { ImportAsaasModal } from '@/components/configuracoes/ImportAsaasModal'
 import { SetupChecklist } from '@/components/configuracoes/SetupChecklist'
 import { TemplatesEmail } from '@/components/configuracoes/TemplatesEmail'
 import { BibliotecaWhatsApp } from '@/components/configuracoes/BibliotecaWhatsApp'
+import { UsoIA } from '@/components/configuracoes/UsoIA'
 import type { LimiaresAtraso } from '@/lib/cobranca'
 import { HEALTH_REGRAS_PADRAO, type HealthRegras } from '@/lib/health-score'
 import { NICHOS_SUGERIDOS_PADRAO } from '@/lib/listas'
 
-type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'saude' | 'planos' | 'automacoes' | 'emails' | 'mensagens' | 'backup' | 'auditoria'
+type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'saude' | 'planos' | 'automacoes' | 'emails' | 'mensagens' | 'uso_ia' | 'backup' | 'auditoria'
 
 const ABAS: Record<AbaId, { label: string; icon: React.ElementType }> = {
   setup:        { label: 'Setup',          icon: Zap        },
@@ -39,6 +40,7 @@ const ABAS: Record<AbaId, { label: string; icon: React.ElementType }> = {
   automacoes:   { label: 'Automações',      icon: Settings   },
   emails:       { label: 'Emails',          icon: Mail          },
   mensagens:    { label: 'Mensagens',       icon: MessageCircle },
+  uso_ia:       { label: 'Uso da IA',       icon: Sparkles   },
   backup:       { label: 'Backup',          icon: Download   },
   auditoria:    { label: 'Auditoria',       icon: History    },
 }
@@ -53,7 +55,7 @@ const CATEGORIAS: { id: CategoriaId; label: string; icon: React.ElementType; aba
   { id: 'cobranca',    label: 'Cobrança',     icon: DollarSign,    abas: ['financeiro', 'planos'] },
   { id: 'operacao',    label: 'Operação',     icon: Briefcase,     abas: ['operacional', 'saude', 'integracoes'] },
   { id: 'conta',       label: 'Conta',        icon: ShieldCheck,   abas: ['equipe', 'auditoria'] },
-  { id: 'sistema',     label: 'Sistema',      icon: Server,        abas: ['backup'] },
+  { id: 'sistema',     label: 'Sistema',      icon: Server,        abas: ['uso_ia', 'backup'] },
 ]
 
 interface ConfigFinanceira {
@@ -1256,6 +1258,7 @@ export default function ConfiguracoesPage() {
     ),
     emails:        <TemplatesEmail />,
     mensagens:     <BibliotecaWhatsApp />,
+    uso_ia:        <UsoIA />,
     backup:        <AbaBackup />,
     auditoria:     <AuditLogViewer />,
   }

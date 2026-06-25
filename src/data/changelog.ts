@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.22.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Painel de Uso da IA (Configurações → Sistema → Uso da IA): agora dá para ver quanto a Gator custa. Cada chamada à IA passou a ser medida e o painel mostra o gasto estimado de hoje, do mês e o total acumulado, um gráfico dos últimos 30 dias e a quebra por tipo de uso (assistente, briefing, relatórios, hashtags, copy). O custo é estimado a partir dos tokens — pode divergir um pouco da fatura real do Google Cloud',
+      'Limite mensal de gasto da IA: defina um teto em reais e, quando o gasto estimado do mês passar dele, você recebe uma notificação in-app (uma por mês). É só um alerta — as chamadas continuam funcionando normalmente, nada trava no meio do mês',
+      'Custo por conversa no painel da Gator (Ctrl+I): a lista de conversas agora mostra um valorzinho discreto com o custo estimado de cada uma, para você saber quais sessões pesaram mais',
+      'Indicador de contexto no chat da Gator: ao lado do seletor de cliente aparece o tamanho real do contexto da conversa em tokens (ex.: "~12k tokens"), ficando laranja quando a conversa cresce muito — assim você sabe quando vale começar uma sessão nova',
+    ],
+  },
+  {
     versao: '0.21.0',
     data:   '2026-06-25',
     novidades: [

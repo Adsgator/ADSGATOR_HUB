@@ -74,7 +74,50 @@ export async function registrarUso(db: SupabaseClient, u: RegistrarUso): Promise
       iteracoes:      u.iteracoes ?? null,
       ferramentas:    u.ferramentas?.length ? u.ferramentas : null,
     })
+    if (u.userId) await checarLimiteMensal(db, u.userId)
   } catch (err) {
     console.error('[ia/uso] falha ao registrar uso (ignorado):', err)
   }
+}
+
+/**
+ * Se o gasto do mês ultrapassou o limite configurado pela 1ª vez no mês, gera
+ * 1 notificação in-app (idempotente via configuracoes_ia.limite_avisado_mes).
+ * Recebe service-role db (escreve em configuracoes_ia/notificacoes).
+ */
+async function checarLimiteMensal(db: SupabaseClient, userId: string): Promise<void> {
+  const { data: cfg } = await db
+    .from('configuracoes_ia')
+    .select('limite_mensal_brl, limite_ativo, limite_avisado_mes')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  const limite = cfg?.limite_mensal_brl as number | null | undefined
+  if (!cfg?.limite_ativo || !limite || limite <= 0) return
+
+  const mesAtual = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }).slice(0, 7)
+  if (cfg.limite_avisado_mes === mesAtual) return // já avisou neste mês
+
+  // Soma do mês corrente
+  const inicioMes = `${mesAtual}-01T00:00:00`
+  const { data: rows } = await db
+    .from('ia_uso')
+    .select('custo_brl')
+    .eq('user_id', userId)
+    .gte('created_at', inicioMes)
+  const gastoMes = (rows ?? []).reduce((s, r) => s + Number(r.custo_brl ?? 0), 0)
+  if (gastoMes < limite) return
+
+  // Marca antes de notificar (evita corrida disparar 2x)
+  await db.from('configuracoes_ia')
+    .update({ limite_avisado_mes: mesAtual })
+    .eq('user_id', userId)
+
+  await db.from('notificacoes').insert({
+    user_id:  userId,
+    titulo:   'Limite mensal da IA atingido',
+    mensagem: `O gasto estimado da IA neste mês (R$ ${gastoMes.toFixed(2)}) ultrapassou seu limite de R$ ${limite.toFixed(2)}. As chamadas continuam funcionando — isto é só um alerta.`,
+    tipo:     'alerta',
+    lida:     false,
+  })
 }
