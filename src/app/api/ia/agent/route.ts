@@ -16,6 +16,7 @@ import {
   type ToolExecutada,
 } from '@/lib/ia/tools'
 import type { Content, Part } from '@google-cloud/vertexai'
+import { extrairUso, registrarUso } from '@/lib/ia/uso'
 
 // O loop pode encadear várias chamadas ao modelo + ferramentas
 export const maxDuration = 120
@@ -290,8 +291,18 @@ export async function POST(req: NextRequest) {
     let conversaAtual: Content[] = contents
     let respostaFinal = ''
 
+    // Acumuladores de uso (1 linha de telemetria por mensagem, somando o loop)
+    const inicio = Date.now()
+    let tokensEntrada = 0, tokensSaida = 0, tokensCache = 0, iteracoes = 0
+    const ferramentasUsadas: string[] = []
+
     for (let i = 0; i < MAX_ITERACOES; i++) {
       const result = await model.generateContent({ contents: conversaAtual })
+      const uso    = extrairUso(result)
+      tokensEntrada += uso.tokensEntrada
+      tokensSaida   += uso.tokensSaida
+      tokensCache   += uso.tokensCache
+      iteracoes++
       const parts  = result.response?.candidates?.[0]?.content?.parts ?? []
       const calls  = parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
       const texto  = parts.filter((p) => p.text).map((p) => p.text).join('').trim()
@@ -310,6 +321,7 @@ export async function POST(req: NextRequest) {
           toolCtx,
         )
         executadas.push(meta)
+        ferramentasUsadas.push(fc.name)
         respostas.push({ functionResponse: { name: fc.name, response: { resultado } } })
       }
 
@@ -338,6 +350,18 @@ export async function POST(req: NextRequest) {
     await supabase.from('ia_conversas')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversaId)
+
+    // 6. Telemetria de uso — 1 linha por mensagem, somando todas as iterações
+    await registrarUso(supabase, {
+      userId:        user.id,
+      modelo:        MODELO_FLASH,
+      contexto:      'agente',
+      conversaId,
+      tokensEntrada, tokensSaida, tokensCache,
+      duracaoMs:     Date.now() - inicio,
+      iteracoes,
+      ferramentas:   ferramentasUsadas,
+    })
 
     return NextResponse.json({
       conversa_id: conversaId,

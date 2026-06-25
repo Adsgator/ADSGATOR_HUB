@@ -36,7 +36,7 @@ export async function POST(
 
     const { data: cliente, error: errCliente } = await supabase
       .from('clientes')
-      .select('google_ads_customer_id, ga4_property_id, nome, email')
+      .select('google_ads_customer_id, ga4_property_id, nome, email, user_id')
       .eq('id', clienteId)
       .single();
 
@@ -79,6 +79,7 @@ export async function POST(
           custoTotal, conversoesAds, ga4.sessoes,
           ga4.taxa_engajamento, ga4.taxa_rejeicao,
           custoTotal > 0 ? conversoesAds / custoTotal : 0,
+          (cliente as { user_id?: string }).user_id,
         );
         await supabase
           .from('relatorios_mensais')

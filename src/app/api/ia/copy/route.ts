@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       body.estilo ?? 'minimalista',
       body.direcaoArte ?? '',
       body.publicoAlvo,
+      user.id,
     );
 
     return NextResponse.json({ copy });

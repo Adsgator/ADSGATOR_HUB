@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { MODELO_PRO, criarVertexAI } from '@/lib/vertex-ai'
+import { extrairUso, registrarUso } from '@/lib/ia/uso'
 import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 
 export type FiltroModo = 'completo' | 'urgencias' | 'resumido'
@@ -153,8 +154,13 @@ ${memorias.map((m) => `- ${m.conteudo}`).join('\n')}` : ''}`
   try {
     const vertex = criarVertexAI()
     const model  = vertex.preview.getGenerativeModel({ model: MODELO_PRO })
+    const inicio = Date.now()
     const result = await model.generateContent(prompt)
     const texto  = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+    await registrarUso(db, {
+      userId: userId, modelo: MODELO_PRO, contexto: 'briefing',
+      duracaoMs: Date.now() - inicio, ...extrairUso(result),
+    })
     if (!texto) throw new Error('Resposta vazia do modelo')
     return { texto, fonte: 'ia', gerado_em: new Date().toISOString() }
   } catch {

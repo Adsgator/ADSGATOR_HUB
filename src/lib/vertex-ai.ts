@@ -1,4 +1,19 @@
 import { VertexAI } from '@google-cloud/vertexai';
+import { createClient } from '@supabase/supabase-js';
+import { extrairUso, registrarUso } from '@/lib/ia/uso';
+
+// Service-role para gravar telemetria de uso (ia_uso). Lazy: estas funções rodam
+// no lado Node (rotas/cron) e nem sempre têm um client à mão.
+let _servicoUso: ReturnType<typeof createClient> | null = null;
+function dbUso() {
+  if (!_servicoUso) {
+    _servicoUso = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+  }
+  return _servicoUso;
+}
 
 // ─── TIPOS ───────────────────────────────────────────────────────────────────
 
@@ -47,6 +62,7 @@ export async function gerarCopyLandingPage(
   estilo:        string,
   direcaoArte:   string,
   publicoAlvo?:  string,
+  userId?:       string,
 ): Promise<CopyGerada> {
   const prompt = `Você é um copywriter especialista em landing pages para pequenas e médias empresas brasileiras.
 
@@ -69,7 +85,12 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
   try {
     const vertex  = criarVertexAI();
     const model   = vertex.preview.getGenerativeModel({ model: MODELO_FLASH });
+    const inicio  = Date.now();
     const result  = await model.generateContent(prompt);
+    await registrarUso(dbUso(), {
+      userId: userId ?? null, modelo: MODELO_FLASH, contexto: 'copy',
+      duracaoMs: Date.now() - inicio, ...extrairUso(result),
+    });
     const text    = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
     return JSON.parse(text.trim()) as CopyGerada;
   } catch (error) {
@@ -95,6 +116,7 @@ export async function analisarRelatorioIA(
   taxaEngajamento:  number,
   taxaRejeicao:     number,
   roi:              number,
+  userId?:          string,
 ): Promise<AnaliseRelatorio> {
   const [ano, mes] = mesAno.split('-').map(Number);
   const nomeMes    = new Date(ano, mes - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -123,7 +145,12 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações):
   try {
     const vertex  = criarVertexAI();
     const model   = vertex.preview.getGenerativeModel({ model: MODELO_PRO });
+    const inicio  = Date.now();
     const result  = await model.generateContent(prompt);
+    await registrarUso(dbUso(), {
+      userId: userId ?? null, modelo: MODELO_PRO, contexto: 'relatorio',
+      duracaoMs: Date.now() - inicio, ...extrairUso(result),
+    });
     const text    = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
     return JSON.parse(text.trim()) as AnaliseRelatorio;
   } catch (error) {

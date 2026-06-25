@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
 import { MODELO_FLASH, criarVertexAI } from '@/lib/vertex-ai'
+import { extrairUso, registrarUso }   from '@/lib/ia/uso'
 import type { ChatMensagem }         from '@/lib/types'
 
 const supabase = createClient(
@@ -143,8 +144,14 @@ export async function POST(req: NextRequest) {
   try {
     const vertex = criarVertexAI()
     const model  = vertex.preview.getGenerativeModel({ model: MODELO_FLASH })
+    const inicio = Date.now()
     const result = await model.generateContent({ contents })
     const texto  = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+
+    await registrarUso(supabase, {
+      userId: user.id, modelo: MODELO_FLASH, contexto: 'chat',
+      duracaoMs: Date.now() - inicio, ...extrairUso(result),
+    })
 
     return NextResponse.json({ content: texto || 'Desculpe, não consegui processar sua mensagem.' } satisfies ChatResponse)
   } catch (err) {

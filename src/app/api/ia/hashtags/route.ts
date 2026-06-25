@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { MODELO_FLASH, criarVertexAI } from '@/lib/vertex-ai'
+import { extrairUso, registrarUso }   from '@/lib/ia/uso'
 import { createClient }              from '@/lib/supabase/server'
+
+// Service-role para gravar telemetria (ia_uso não tem policy de insert p/ cliente)
+const service = createServiceClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+)
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient()
@@ -23,8 +31,13 @@ Retorne APENAS as hashtags separadas por espaço, sem explicações. Exemplo: #m
   try {
     const vertex = criarVertexAI()
     const model  = vertex.preview.getGenerativeModel({ model: MODELO_FLASH })
+    const inicio = Date.now()
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    })
+    await registrarUso(service, {
+      userId: user.id, modelo: MODELO_FLASH, contexto: 'hashtags',
+      duracaoMs: Date.now() - inicio, ...extrairUso(result),
     })
     const raw      = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
     const hashtags = raw.match(/#[\w\u00C0-\u024F]+/g) ?? ['#marketing', '#digital', '#ads']
