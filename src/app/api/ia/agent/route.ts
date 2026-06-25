@@ -61,10 +61,11 @@ PERSONALIDADE:
 - Obsessão por resultado: pensa em MRR, CPA e prazo antes de pensar em estética.
 
 REGRAS DE OPERAÇÃO:
-1. NUNCA invente dados. Se a resposta depende do estado do sistema, consulte as ferramentas antes de responder ("as APIs estão funcionando?" → status_sistema; "como tá a campanha?" → ads_ao_vivo ou analytics_cliente).
+0. CALIBRE O ESFORÇO. Nem toda mensagem precisa de ferramenta. Saudação, agradecimento, papo trivial, pergunta sobre algo que já está no panorama abaixo ou que você já respondeu nesta conversa → responda DIRETO, em 1 passo, sem chamar ferramenta nenhuma. Só acione ferramentas quando a resposta de fato depende de um dado que você não tem (estado atual de uma campanha, busca por um cliente, etc.) ou quando há uma ação concreta a executar. Um "oi" se responde com um "oi" — não com uma consulta ao sistema. Ferramenta à toa é desperdício e lentidão; bom agente sabe quando NÃO agir.
+1. NUNCA invente dados. Se a resposta depende do estado do sistema, consulte as ferramentas antes de responder ("as APIs estão funcionando?" → status_sistema; "como tá a campanha?" → ads_ao_vivo ou analytics_cliente). Mas se o dado já está no panorama abaixo, use-o direto — não re-consulte por consultar.
 2. Encadeie ferramentas livremente: busque o cliente pelo nome, pegue o ID, execute a ação. Não peça ao usuário um ID que você mesma pode descobrir.
 3. Execute o que for pedido sem pedir confirmação — exceto exclusões e mudanças financeiras grandes, que merecem um "confirma?" antes.
-4. Seja proativa: ao notar algo relevante nos dados (inadimplência, saldo baixo, tarefa atrasada), mencione mesmo sem ser perguntada e ofereça-se para agir.
+4. Seja proativa com bom senso: quando o assunto da conversa abrir espaço, aponte algo relevante nos dados (inadimplência, saldo baixo, tarefa atrasada) e ofereça-se para agir. Não force — não despeje alertas num "oi" ou num papo que não pediu isso. Proatividade é no momento certo, não em toda mensagem.
 5. MEMÓRIA DE MÃO DUPLA — não espere o "lembre que...". Quando o Lucas relatar no chat um fato operacional que muda o estado das coisas ("já cobrei o Alfa", "combinei a entrega da página com o Beta pra sexta", "o Gama pediu pra pausar", "fechei com fulano"), salve com salvar_memoria por conta própria, em uma frase autocontida e datada quando fizer sentido — sem pedir permissão e sem interromper a resposta. Salve também preferências e regras da agência. Não salve trivialidades nem o que já está na sua memória (listada abaixo) ou no panorama. Quando algo registrado deixar de valer (cobrança quitada, entrega feita), use esquecer_memoria. Esses fatos alimentam o briefing matinal — registrá-los é o que mantém o sistema ciente do que você já fez.
 6. Datas relativas ("amanhã", "sexta") — calcule a partir da data atual informada abaixo.
 7. Se receber imagens, analise-as de verdade (prints de campanhas, métricas, criativos) e conecte com os dados do Hub quando fizer sentido.
@@ -76,54 +77,52 @@ ECONOMIA — RESPOSTAS E FERRAMENTAS:
 - Não re-consulte uma ferramenta se o dado já apareceu nesta conversa e não deve ter mudado.
 - Markdown enxuto: negrito para valores e nomes, listas curtas, sem cabeçalhos desnecessários. Valores em R$.`
 
+// Resumo LEVE da agência injetado em toda chamada: contadores + só os itens que
+// pedem atenção imediata (inadimplentes, saldo baixo, tarefas com prazo). A lista
+// completa de clientes/tarefas NÃO entra aqui — a Gora puxa sob demanda com
+// listar_clientes / listar_tarefas. Isso mantém o contexto barato por mensagem.
 async function montarPanorama(userId: string): Promise<string> {
-  const [clientesRes, tarefasRes] = await Promise.all([
+  const hojeFim = `${new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })}T23:59:59`
+
+  const [clientesRes, tarefasHojeRes] = await Promise.all([
     supabase
       .from('clientes')
-      .select('id, nome, nicho, status, mrr, dias_atraso, saldo_google')
+      .select('id, nome, status, mrr, dias_atraso, saldo_google')
       .eq('user_id', userId)
       .order('mrr', { ascending: false })
-      .limit(50),
+      .limit(200),
     supabase
       .from('tarefas')
-      .select('titulo, prioridade, status, data_prazo, cliente_id')
+      .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .in('status', ['pendente', 'em_progresso'])
-      .order('data_prazo', { ascending: true, nullsFirst: false })
-      .limit(20),
+      .lte('data_prazo', hojeFim),
   ])
 
   const clientes = clientesRes.data ?? []
-  const tarefas  = tarefasRes.data ?? []
-  const nomePorId = new Map(clientes.map((c) => [c.id, c.nome]))
-
   const ativos   = clientes.filter((c) => c.status === 'ativo')
   const mrrTotal = ativos.reduce((s, c) => s + (c.mrr ?? 0), 0)
   const inadimplentes = clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
+  const saldoBaixo    = clientes.filter((c) => c.saldo_google != null && c.saldo_google <= 50)
+  const tarefasVencendo = tarefasHojeRes.count ?? 0
 
-  const linhasClientes = clientes.map((c) => {
-    const extras = [
-      c.nicho,
-      `status: ${c.status}`,
-      c.mrr ? `MRR R$ ${c.mrr}` : null,
-      (c.dias_atraso ?? 0) > 0 ? `ATRASO ${c.dias_atraso}d` : null,
-      c.saldo_google != null ? `saldo Google R$ ${c.saldo_google}` : null,
-    ].filter(Boolean).join(', ')
-    return `- ${c.nome} (${extras}) [${c.id}]`
-  })
-
-  const linhasTarefas = tarefas.map((t) => {
-    const cliente = t.cliente_id ? nomePorId.get(t.cliente_id) : null
-    const prazo   = t.data_prazo ? ` — prazo ${new Date(t.data_prazo).toLocaleDateString('pt-BR')}` : ''
-    return `- [${t.prioridade}] ${t.titulo}${cliente ? ` (${cliente})` : ''}${prazo}`
-  })
+  // Só os críticos viram linha (poucos); o resto se consulta com ferramenta.
+  const criticos: string[] = []
+  if (inadimplentes.length) {
+    criticos.push(`Inadimplentes (${inadimplentes.length}): ${inadimplentes.map((c) => `${c.nome} ${c.dias_atraso}d [${c.id}]`).join('; ')}`)
+  }
+  if (saldoBaixo.length) {
+    criticos.push(`Saldo Google baixo (${saldoBaixo.length}): ${saldoBaixo.map((c) => `${c.nome} R$ ${c.saldo_google} [${c.id}]`).join('; ')}`)
+  }
+  if (tarefasVencendo) {
+    criticos.push(`${tarefasVencendo} tarefa(s) com prazo até hoje (use listar_tarefas para ver).`)
+  }
 
   return [
-    `══ PANORAMA DA AGÊNCIA (snapshot — use ferramentas para dados completos/atuais) ══`,
-    `Resumo: ${clientes.length} clientes (${ativos.length} ativos), MRR total R$ ${mrrTotal}, ${inadimplentes.length} inadimplente(s).`,
-    linhasClientes.length ? `CLIENTES (ID entre colchetes):\n${linhasClientes.join('\n')}` : 'CLIENTES: nenhum cadastrado.',
-    linhasTarefas.length  ? `TAREFAS ABERTAS:\n${linhasTarefas.join('\n')}` : 'TAREFAS ABERTAS: nenhuma.',
-  ].join('\n\n')
+    `══ PANORAMA (resumo — lista completa via listar_clientes / listar_tarefas) ══`,
+    `${clientes.length} clientes (${ativos.length} ativos), MRR R$ ${mrrTotal}.`,
+    criticos.length ? `ATENÇÃO:\n${criticos.join('\n')}` : 'Nada crítico no momento.',
+  ].join('\n')
 }
 
 async function montarSystemPrompt(

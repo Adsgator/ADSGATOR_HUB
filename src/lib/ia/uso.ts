@@ -9,13 +9,15 @@ import type { GenerateContentResult } from '@google-cloud/vertexai'
 
 // ── Preços (USD por 1M tokens) ────────────────────────────────────────────────
 // Estimativa jun/2026 — o painel rotula o custo como "estimado". Ajustar aqui
-// quando o preço Vertex mudar. Cache do v1 é cobrado como entrada (lado seguro).
+// quando o preço Vertex mudar. Tokens servidos do cache custam ~25% do preço de
+// entrada (caching implícito do Gemini 2.5 — cache hit do prefixo repetido).
 const PRECOS: Record<string, { in: number; out: number }> = {
   'gemini-2.5-pro':        { in: 1.25, out: 10.00 },
   'gemini-2.5-flash':      { in: 0.30, out: 2.50 },
   'gemini-2.5-flash-lite': { in: 0.10, out: 0.40 },
 }
 const PRECO_PADRAO = { in: 0.30, out: 2.50 } // fallback = flash
+const FATOR_CACHE = 0.25 // tokens em cache custam 1/4 do preço de entrada
 const USD_BRL = 5.5 // estimativa; câmbio real varia
 
 export type ContextoUso = 'agente' | 'chat' | 'hashtags' | 'briefing' | 'copy' | 'relatorio'
@@ -36,11 +38,18 @@ export function extrairUso(result: GenerateContentResult): Uso {
   }
 }
 
-/** Custo estimado em BRL. Cache tratado como entrada normal no v1 (superestima de leve). */
+/**
+ * Custo estimado em BRL. Atenção: na Vertex, `promptTokenCount` (tokensEntrada)
+ * JÁ INCLUI os `cachedContentTokenCount` (tokensCache) — o cache é subconjunto do
+ * prompt, não um adicional. Por isso separamos: a parte não-cacheada custa preço
+ * cheio; a cacheada custa FATOR_CACHE do preço de entrada.
+ */
 export function custoBRL(modelo: string, uso: Uso): number {
   const preco = PRECOS[modelo] ?? PRECO_PADRAO
+  const entradaNova = Math.max(0, uso.tokensEntrada - uso.tokensCache)
   const usd =
-    ((uso.tokensEntrada + uso.tokensCache) / 1_000_000) * preco.in +
+    (entradaNova   / 1_000_000) * preco.in +
+    (uso.tokensCache / 1_000_000) * preco.in * FATOR_CACHE +
     (uso.tokensSaida / 1_000_000) * preco.out
   return usd * USD_BRL
 }

@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.24.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Gator mais eficiente e mais barata: a IA passou a calibrar o esforço de cada mensagem. Um "oi" agora é respondido na hora, sem disparar consultas ao sistema — ela só aciona ferramentas quando a resposta de fato depende de um dado que não tem ou há uma ação a executar. Saudação e papo trivial deixaram de custar como uma consulta completa',
+      'Contexto enxuto por mensagem: em vez de reenviar a lista inteira de clientes e tarefas em toda interação, a Gator agora carrega só um resumo (contadores + o que é crítico, como inadimplência e saldo baixo) e puxa a lista completa sob demanda. Isso derrubou bastante o custo por mensagem sem ela perder noção do que está acontecendo',
+      'Cálculo de custo da IA corrigido: tokens servidos do cache do modelo (prefixo repetido) deixaram de ser cobrados em dobro e a preço cheio — agora contam pelo valor real (~1/4 do preço de entrada). O painel de Uso da IA passou a refletir o custo verdadeiro, mais baixo',
+    ],
+  },
+  {
     versao: '0.23.0',
     data:   '2026-06-25',
     novidades: [
