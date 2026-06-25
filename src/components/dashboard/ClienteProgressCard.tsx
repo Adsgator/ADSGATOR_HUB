@@ -9,7 +9,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { calcularHealthScore } from '@/lib/health-score'
+import { calcularHealthScore, type HealthRegras } from '@/lib/health-score'
 import { calcularCompletude } from '@/lib/cliente-completude'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
@@ -41,6 +41,7 @@ interface ClienteProgressCardProps {
   estagio:    Estagio | null
   onCongelar: (id: string) => void
   isRetido?:  boolean
+  healthRegras?: HealthRegras
 }
 
 function diasDesde(data?: string): string {
@@ -56,6 +57,7 @@ export function ClienteProgressCard({
   estagio,
   onCongelar,
   isRetido = false,
+  healthRegras,
 }: ClienteProgressCardProps) {
   const status = STATUS_CONFIG[cliente.status] ?? STATUS_CONFIG['ativo']
   const emoji  = NICHO_EMOJI[cliente.nicho?.toLowerCase() ?? ''] ?? '🏢'
@@ -70,7 +72,7 @@ export function ClienteProgressCard({
   const mrr = cliente.mrr ?? 0
   const diasAtraso = cliente.dias_atraso ?? 0
   const ultimaInteracao = diasDesde(cliente.updated_at)
-  const health = calcularHealthScore(cliente, estagio)
+  const health = calcularHealthScore(cliente, estagio, healthRegras)
   const completude = calcularCompletude(cliente)
 
   const handleWhatsApp = () => {

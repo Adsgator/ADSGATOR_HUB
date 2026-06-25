@@ -13,17 +13,12 @@ interface SaldoAlert {
   cliente_nome: string
   google_ads_customer_id: string
   saldo_atual: number
-  ultimo_gasto_dia: number
-  dias_restantes: number
-  status: 'normal' | 'alerta' | 'critico'
+  saldo_minimo: number
+  status: 'alerta' | 'critico'
   atualizado_em: string
 }
 
-interface AlertaSaldoGoogleProps {
-  limiteDias?: number
-}
-
-export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
+export function AlertaSaldoGoogle() {
   const [alertas, setAlertas] = useState<SaldoAlert[]>([])
   const [loading, setLoading] = useState(true)
   const [atualizando, setAtualizando] = useState(false)
@@ -31,10 +26,19 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
 
   const carregarSaldos = async () => {
     try {
-      // Buscar clientes com Google Ads ativado
+      // Mínimo global (Configurações → Operacional), fallback de quem não tem
+      // mínimo próprio definido.
+      const { data: cfg } = await supabase
+        .from('configuracoes_operacional')
+        .select('alerta_saldo_ads_minimo')
+        .eq('agencia_id', 'adsgator-main')
+        .maybeSingle()
+      const minimoGlobal = Number(cfg?.alerta_saldo_ads_minimo) || 50
+
+      // Clientes com Google Ads ativado e alertas de saldo NÃO desativados
       const { data: clientes, error } = await supabase
         .from('clientes')
-        .select('id, nome, google_ads_customer_id, google_ads_enabled, saldo_google')
+        .select('id, nome, google_ads_customer_id, saldo_google, saldo_minimo_alerta, saldo_alertas_ativos')
         .eq('google_ads_enabled', true)
         .not('google_ads_customer_id', 'is', null)
 
@@ -47,55 +51,32 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
         return
       }
 
-      // Buscar últimos snapshots para calcular gasto diário
-      const alertasCalculados: SaldoAlert[] = await Promise.all(
-        clientes.map(async (cliente) => {
-          // Buscar últimos 3 snapshots para calcular média de gasto
-          const { data: snapshots } = await supabase
-            .from('analytics_snapshots')
-            .select('investimento, created_at')
-            .eq('cliente_id', cliente.id)
-            .eq('fonte', 'google_ads')
-            .order('created_at', { ascending: false })
-            .limit(3)
+      const apenasAlertas: SaldoAlert[] = []
+      for (const cliente of clientes) {
+        // Alertas desativados para este cliente (a pedido / cancelamento)
+        if (cliente.saldo_alertas_ativos === false) continue
 
-          const saldoAtual = cliente.saldo_google || 0
-          
-          // Calcular gasto médio diário baseado nos últimos snapshots
-          let gastoMedioDia = 0
-          if (snapshots && snapshots.length >= 2) {
-            const investimentos = snapshots.map(s => s.investimento || 0)
-            const mediaInvestimento = investimentos.reduce((a, b) => a + b, 0) / investimentos.length
-            // Assumindo período de 30 dias entre snapshots
-            gastoMedioDia = mediaInvestimento / 30
-          } else {
-            // Fallback: estimativa conservadora de R$ 50/dia
-            gastoMedioDia = 50
-          }
+        const saldoAtual = cliente.saldo_google || 0
+        const saldoMinimo = cliente.saldo_minimo_alerta != null
+          ? Number(cliente.saldo_minimo_alerta)
+          : minimoGlobal
 
-          const diasRestantes = gastoMedioDia > 0 ? Math.floor(saldoAtual / gastoMedioDia) : 999
-          
-          let status: 'normal' | 'alerta' | 'critico' = 'normal'
-          if (diasRestantes <= 3) status = 'critico'
-          else if (diasRestantes <= limiteDias) status = 'alerta'
+        // crítico = zerado; alerta = abaixo do mínimo. Acima do mínimo: ok.
+        let status: 'alerta' | 'critico' | null = null
+        if (saldoAtual <= 0) status = 'critico'
+        else if (saldoAtual < saldoMinimo) status = 'alerta'
+        if (!status) continue
 
-          return {
-            cliente_id: cliente.id,
-            cliente_nome: cliente.nome,
-            google_ads_customer_id: cliente.google_ads_customer_id!,
-            saldo_atual: saldoAtual,
-            ultimo_gasto_dia: gastoMedioDia,
-            dias_restantes: diasRestantes,
-            status,
-            atualizado_em: new Date().toISOString(),
-          }
+        apenasAlertas.push({
+          cliente_id: cliente.id,
+          cliente_nome: cliente.nome,
+          google_ads_customer_id: cliente.google_ads_customer_id!,
+          saldo_atual: saldoAtual,
+          saldo_minimo: saldoMinimo,
+          status,
+          atualizado_em: new Date().toISOString(),
         })
-      )
-
-      // Filtrar apenas alertas (não mostrar normais)
-      const apenasAlertas = alertasCalculados.filter(
-        a => a.status === 'alerta' || a.status === 'critico'
-      )
+      }
 
       setAlertas(apenasAlertas)
     } catch (error) {
@@ -119,7 +100,7 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
     // Atualizar a cada 5 minutos
     const interval = setInterval(carregarSaldos, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [limiteDias])
+  }, [])
 
   if (loading) {
     return (
@@ -229,10 +210,12 @@ export function AlertaSaldoGoogle({ limiteDias = 7 }: AlertaSaldoGoogleProps) {
                 'text-lg font-bold',
                 alerta.status === 'critico' ? 'text-status-red' : 'text-status-orange'
               )}>
-                {alerta.dias_restantes} dias
+                R$ {alerta.saldo_atual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </p>
               <p className="text-xs text-ink-muted">
-                R$ {alerta.saldo_atual.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                {alerta.status === 'critico'
+                  ? 'saldo zerado'
+                  : `mín. R$ ${alerta.saldo_minimo.toLocaleString('pt-BR')}`}
               </p>
             </div>
           </div>

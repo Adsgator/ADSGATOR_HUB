@@ -10,6 +10,7 @@ import {
 import { MainLayout }                from '@/components/layout/MainLayout'
 import { Button }                    from '@/components/ui/Button'
 import { ClienteProgressCard }       from '@/components/dashboard/ClienteProgressCard'
+import { carregarHealthRegras, HEALTH_REGRAS_PADRAO, type HealthRegras } from '@/lib/health-score'
 import { WhatsAppTemplateModal }     from '@/components/clientes/WhatsAppTemplateModal'
 import { ContextMenu }               from '@/components/ui/ContextMenu'
 import { useClientes }               from '@/lib/hooks/useClientes'
@@ -92,6 +93,11 @@ export default function ClientesPage() {
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set())
   const [batchStatus,  setBatchStatus]  = useState<StatusValue>('')
   const [salvandoBatch, setSalvandoBatch] = useState(false)
+  const [healthRegras, setHealthRegras] = useState<HealthRegras>(HEALTH_REGRAS_PADRAO)
+
+  useEffect(() => {
+    carregarHealthRegras(supabase).then(setHealthRegras)
+  }, [])
 
   useEffect(() => {
     setContextActions([
@@ -644,6 +650,7 @@ export default function ClientesPage() {
                   cliente={c}
                   estagio={estagio}
                   onCongelar={handleCongelar}
+                  healthRegras={healthRegras}
                 />
               </div>
             </div>

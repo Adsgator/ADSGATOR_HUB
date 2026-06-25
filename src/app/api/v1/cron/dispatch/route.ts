@@ -7,6 +7,7 @@ import { gerarBriefing, salvarBriefing } from '@/lib/briefing'
 import { arquivarCongelados, DIAS_CONGELAMENTO_PADRAO } from '@/lib/arquivar-congelados'
 import { processarLembretesOnboarding } from '@/lib/onboarding-lembretes'
 import { enviarRelatoriosSemanais } from '@/lib/relatorio-semanal'
+import { processarAlertasSaldo } from '@/lib/saldo-ads'
 
 export const dynamic = 'force-dynamic'
 // Pode encadear sync de analytics + Asaas + emails na mesma janela.
@@ -94,6 +95,7 @@ export async function GET(req: NextRequest) {
     arquivar_congelados: async () => arquivarCongelados(db, await diasArquivamento()),
     onboarding_lembretes: () => processarLembretesOnboarding(db),
     relatorio_semanal:   () => enviarRelatoriosSemanais(db),
+    saldo_baixo:         () => processarAlertasSaldo(db),
   }
 
   const executados: CronTipo[] = []

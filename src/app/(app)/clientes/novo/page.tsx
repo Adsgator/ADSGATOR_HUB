@@ -10,12 +10,7 @@ import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/Button'
 import type { ClienteStatus, Cliente } from '@/lib/types'
 import { toast } from 'sonner'
-
-const NICHOS_SUGERIDOS = [
-  'Psicologia', 'Odontologia', 'Estética', 'Advocacia', 'Medicina',
-  'Fisioterapia', 'Nutrição', 'Academia', 'Imóveis', 'Adestramento',
-  'Educação', 'Contabilidade', 'Engenharia', 'Outro',
-]
+import { carregarNichosSugeridos, NICHOS_SUGERIDOS_PADRAO } from '@/lib/listas'
 
 const MSG_BOASVINDAS = (nome: string) =>
   `Olá ${nome.split(' ')[0]}! 👋 Bem-vindo(a) à Adsgator!\n\nEstamos muito felizes em ter você como cliente. Nos próximos dias entraremos em contato para iniciar o onboarding e configurar suas campanhas.\n\nQualquer dúvida, estou à disposição!`
@@ -126,6 +121,11 @@ export default function NovoClientePage() {
   const [erro,             setErro]             = useState('')
   const [clienteCriado,    setClienteCriado]    = useState<Cliente | null>(null)
   const [setupCriado,      setSetupCriado]      = useState(false)
+  const [nichos,           setNichos]           = useState<string[]>(NICHOS_SUGERIDOS_PADRAO)
+
+  React.useEffect(() => {
+    carregarNichosSugeridos(supabase).then(setNichos)
+  }, [])
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -218,7 +218,7 @@ export default function NovoClientePage() {
               <label className={labelClass}>Nicho *</label>
               <select name="nicho" value={form.nicho} onChange={handleChange} required className={inputClass + ' cursor-pointer'}>
                 <option value="">Selecione…</option>
-                {NICHOS_SUGERIDOS.map((n) => <option key={n} value={n}>{n}</option>)}
+                {nichos.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
             <div>

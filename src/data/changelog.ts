@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.19.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Alerta de saldo do Google Ads agora é por cliente e automático: você define o saldo mínimo de cada cliente no detalhe dele (Integrações → Alerta de saldo) e pode desligar os alertas para quem está em cancelamento ou pediu para parar. Todo dia às 9h31 (pula domingo), quem estiver abaixo do mínimo recebe o email de "saldo baixo" por 3 dias. No 4º dia, em vez do cliente, quem é avisado é você — para chamar no WhatsApp. Se o saldo zera, sai o email de "saldo acabou" e ele se repete a cada 3 dias até recarregar. Liga pelo toggle "email saldo ads" em Configurações → Comunicação (começa desligado)',
+      'Estágios de inadimplência viraram editáveis: em Configurações → Cobrança → Financeiro você define a partir de quantos dias de atraso entra cada consequência (atenção, suspensão, grave, crítico). Vale para todo o sistema — alertas, cobrança e status do cliente',
+      'Regras de saúde do cliente editáveis: em Configurações → Operação → Saúde & Listas você ajusta o peso de cada critério do health score (pagamento, integração, checklist, atualização, status) e os limiares de "saudável" e "atenção"',
+      'Lista de nichos sugeridos editável: adicione ou remova os nichos que aparecem no cadastro de cliente, sem precisar mexer no código',
+    ],
+  },
+  {
     versao: '0.18.0',
     data:   '2026-06-24',
     novidades: [

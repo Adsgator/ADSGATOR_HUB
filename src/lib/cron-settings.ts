@@ -17,6 +17,7 @@ export const CRON_TIPOS = [
   'arquivar_congelados',
   'onboarding_lembretes',
   'relatorio_semanal',
+  'saldo_baixo',
 ] as const
 
 export type CronTipo = (typeof CRON_TIPOS)[number]

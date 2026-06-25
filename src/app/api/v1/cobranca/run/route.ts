@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { criarClienteServiceRole } from '@/lib/supabase'
 import { dispararEmailAutomatico, automacaoAtiva } from '@/lib/email-automation'
-import { estagioInadimplencia } from '@/lib/cobranca'
+import { estagioInadimplencia, carregarLimiaresAtraso, type LimiaresAtraso } from '@/lib/cobranca'
 import { asaasGetAll, buscarLinkPagamento } from '@/lib/asaas'
 import type { EmailTemplateId } from '@/lib/types/email'
 
@@ -40,7 +40,10 @@ const STATUS_ASSINATURA_POR_ESTAGIO: Record<string, string> = {
   critico:   'cancelado_debito',
 }
 
-async function sincronizarAtrasos(supabase: Parameters<typeof dispararEmailAutomatico>[0]) {
+async function sincronizarAtrasos(
+  supabase: Parameters<typeof dispararEmailAutomatico>[0],
+  limiares: LimiaresAtraso,
+) {
   if (!process.env.ASAAS_API_KEY) {
     return { ok: false, motivo: 'ASAAS_API_KEY ausente' }
   }
@@ -74,7 +77,7 @@ async function sincronizarAtrasos(supabase: Parameters<typeof dispararEmailAutom
     if (['cancelada', 'deletada'].includes(a.status)) continue
 
     const novoAtraso = atrasoPorSub.get(a.asaas_subscription_id) ?? 0
-    const novoStatus = STATUS_ASSINATURA_POR_ESTAGIO[estagioInadimplencia(novoAtraso)]
+    const novoStatus = STATUS_ASSINATURA_POR_ESTAGIO[estagioInadimplencia(novoAtraso, limiares)]
 
     if (novoAtraso !== (a.dias_atraso ?? 0) || novoStatus !== a.status) {
       await supabase
@@ -101,7 +104,7 @@ async function sincronizarAtrasos(supabase: Parameters<typeof dispararEmailAutom
 
     const updates: Record<string, unknown> = {}
     if ((cliente.dias_atraso ?? 0) !== dias) updates.dias_atraso = dias
-    if (estagioInadimplencia(dias) === 'critico' && cliente.status === 'ativo') {
+    if (estagioInadimplencia(dias, limiares) === 'critico' && cliente.status === 'ativo') {
       // perdido por inadimplência → arquiva como inativo + motivo (lib/cliente-status.ts)
       updates.status = 'inativo'
       updates.motivo_inativacao = 'debito'
@@ -133,9 +136,12 @@ interface ClienteCobranca {
 }
 
 async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0]) {
+  // Limiares editáveis (Configurações → Financeiro), com fallback nos defaults.
+  const limiares = await carregarLimiaresAtraso(supabase)
+
   // Etapa 1: sincroniza dias_atraso com o Asaas — roda SEMPRE, mesmo com
   // email desligado, senão a inadimplência congela.
-  const sync = await sincronizarAtrasos(supabase)
+  const sync = await sincronizarAtrasos(supabase, limiares)
 
   // Etapa 2: emails — curto-circuito se a automação está desligada.
   if (!(await automacaoAtiva(supabase, 'email_cobranca_vencida'))) {
@@ -151,7 +157,7 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
   let enviados = 0
 
   for (const c of (clientes ?? []) as ClienteCobranca[]) {
-    const estagio = estagioInadimplencia(c.dias_atraso)
+    const estagio = estagioInadimplencia(c.dias_atraso, limiares)
     const templateId = TEMPLATE_POR_ESTAGIO[estagio]
     if (!templateId) continue
 

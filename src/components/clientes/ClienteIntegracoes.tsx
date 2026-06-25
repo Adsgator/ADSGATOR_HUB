@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState } from 'react'
-import { ExternalLink, BarChart3, LineChart, MapPin, FileSpreadsheet, Globe, Save, Pencil, X, Check } from 'lucide-react'
+import { ExternalLink, BarChart3, LineChart, MapPin, FileSpreadsheet, Globe, Save, Pencil, X, Check, Wallet } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -111,6 +111,8 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
     looker_url: cliente.looker_url || '',
     website: cliente.website || '',
     dominio: cliente.dominio || '',
+    saldo_minimo_alerta: cliente.saldo_minimo_alerta != null ? String(cliente.saldo_minimo_alerta) : '',
+    saldo_alertas_ativos: cliente.saldo_alertas_ativos ?? true,
   })
 
   const handleSave = async () => {
@@ -127,6 +129,8 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
           looker_url: formData.looker_url || null,
           website: formData.website || null,
           dominio: formData.dominio || null,
+          saldo_minimo_alerta: formData.saldo_minimo_alerta.trim() ? parseFloat(formData.saldo_minimo_alerta) : null,
+          saldo_alertas_ativos: formData.saldo_alertas_ativos,
           data_atualizacao: new Date().toISOString(),
         })
         .eq('id', cliente.id)
@@ -158,6 +162,8 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
       looker_url: cliente.looker_url || '',
       website: cliente.website || '',
       dominio: cliente.dominio || '',
+      saldo_minimo_alerta: cliente.saldo_minimo_alerta != null ? String(cliente.saldo_minimo_alerta) : '',
+      saldo_alertas_ativos: cliente.saldo_alertas_ativos ?? true,
     })
     setEditing(false)
   }
@@ -273,6 +279,54 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
           color="slate"
           editing={editing}
         />
+      </div>
+
+      {/* Alerta de saldo Google Ads */}
+      <div className="px-4 pb-4">
+        <div className={cn(
+          'rounded-xl border p-3 transition-all',
+          formData.saldo_alertas_ativos
+            ? 'bg-status-blue/10 text-status-blue border-status-blue/20'
+            : 'bg-surface-hover/50 border-surface-border/50 opacity-70'
+        )}>
+          <div className="flex items-center gap-2 mb-2">
+            <Wallet className="w-4 h-4 shrink-0" strokeWidth={2} />
+            <span className="text-sm font-medium">Alerta de saldo Google Ads</span>
+            <button
+              onClick={() => editing && setFormData({ ...formData, saldo_alertas_ativos: !formData.saldo_alertas_ativos })}
+              disabled={!editing}
+              className={cn(
+                'ml-auto w-8 h-4 rounded-full transition-colors relative disabled:cursor-default',
+                formData.saldo_alertas_ativos ? 'bg-status-green' : 'bg-surface-border'
+              )}
+            >
+              <span className={cn(
+                'absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all',
+                formData.saldo_alertas_ativos ? 'left-4' : 'left-0.5'
+              )} />
+            </button>
+          </div>
+          {editing ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-ink-secondary shrink-0">Avisar abaixo de R$</span>
+              <input
+                type="number" min="0" step="1"
+                value={formData.saldo_minimo_alerta}
+                onChange={(e) => setFormData({ ...formData, saldo_minimo_alerta: e.target.value })}
+                placeholder="mínimo global"
+                className="w-28 px-2 py-1.5 text-sm bg-surface-base border border-surface-border rounded-md focus:outline-none focus:border-ads-500 text-ink-primary"
+              />
+            </div>
+          ) : (
+            <p className="text-sm">
+              {formData.saldo_alertas_ativos
+                ? formData.saldo_minimo_alerta.trim()
+                  ? `Avisa quando o saldo cair abaixo de R$ ${formData.saldo_minimo_alerta}`
+                  : 'Avisa pelo mínimo global (Configurações → Operacional)'
+                : 'Alertas de saldo desativados para este cliente'}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

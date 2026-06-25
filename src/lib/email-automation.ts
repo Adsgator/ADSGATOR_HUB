@@ -21,6 +21,7 @@ export type TipoAutomacao =
   | 'email_cobranca_vencida'
   | 'email_alerta_critico'
   | 'email_onboarding'
+  | 'email_saldo_ads'
 
 interface DispararParams {
   tipo: TipoAutomacao

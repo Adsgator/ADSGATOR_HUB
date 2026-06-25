@@ -5,7 +5,7 @@ import {
   Save, User, Bell, Plug, DollarSign,
   Palette, Users, Check, History, Download, Upload,
   Layers, Tag, Plus, Trash2, Pencil, Mail, Zap,
-  Settings, MessageSquare, Briefcase, ShieldCheck, Server,
+  Settings, MessageSquare, Briefcase, ShieldCheck, Server, HeartPulse,
 } from 'lucide-react'
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
@@ -18,8 +18,11 @@ import { Agendamentos } from '@/components/configuracoes/Agendamentos'
 import { ImportAsaasModal } from '@/components/configuracoes/ImportAsaasModal'
 import { SetupChecklist } from '@/components/configuracoes/SetupChecklist'
 import { TemplatesEmail } from '@/components/configuracoes/TemplatesEmail'
+import type { LimiaresAtraso } from '@/lib/cobranca'
+import { HEALTH_REGRAS_PADRAO, type HealthRegras } from '@/lib/health-score'
+import { NICHOS_SUGERIDOS_PADRAO } from '@/lib/listas'
 
-type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'planos' | 'automacoes' | 'emails' | 'backup' | 'auditoria'
+type AbaId = 'setup' | 'perfil' | 'notificacoes' | 'integracoes' | 'financeiro' | 'aparencia' | 'equipe' | 'operacional' | 'saude' | 'planos' | 'automacoes' | 'emails' | 'backup' | 'auditoria'
 
 const ABAS: Record<AbaId, { label: string; icon: React.ElementType }> = {
   setup:        { label: 'Setup',          icon: Zap        },
@@ -30,6 +33,7 @@ const ABAS: Record<AbaId, { label: string; icon: React.ElementType }> = {
   aparencia:    { label: 'Aparência',       icon: Palette    },
   equipe:       { label: 'Equipe',          icon: Users      },
   operacional:  { label: 'Operacional',     icon: Layers     },
+  saude:        { label: 'Saúde & Listas',  icon: HeartPulse },
   planos:       { label: 'Planos',          icon: Tag        },
   automacoes:   { label: 'Automações',      icon: Settings   },
   emails:       { label: 'Emails',          icon: Mail       },
@@ -45,7 +49,7 @@ const CATEGORIAS: { id: CategoriaId; label: string; icon: React.ElementType; aba
   { id: 'geral',       label: 'Geral',        icon: Settings,     abas: ['setup', 'perfil', 'aparencia'] },
   { id: 'comunicacao', label: 'Comunicação',  icon: MessageSquare, abas: ['emails', 'automacoes', 'notificacoes'] },
   { id: 'cobranca',    label: 'Cobrança',     icon: DollarSign,    abas: ['financeiro', 'planos'] },
-  { id: 'operacao',    label: 'Operação',     icon: Briefcase,     abas: ['operacional', 'integracoes'] },
+  { id: 'operacao',    label: 'Operação',     icon: Briefcase,     abas: ['operacional', 'saude', 'integracoes'] },
   { id: 'conta',       label: 'Conta',        icon: ShieldCheck,   abas: ['equipe', 'auditoria'] },
   { id: 'sistema',     label: 'Sistema',      icon: Server,        abas: ['backup'] },
 ]
@@ -376,6 +380,18 @@ interface EtapaRegua {
   template:  string
 }
 
+// Limiares de inadimplência (consequências por estágio). As "etapas" abaixo são
+// as MENSAGENS da régua; estes são os DIAS em que cada consequência entra em
+// vigor (lib/cobranca.ts). Mantidos separados de propósito.
+const LIMIARES_PADRAO: LimiaresAtraso = { atencao: 1, suspensao: 7, grave: 15, critico: 30 }
+
+const LIMIARES_CAMPOS: { key: keyof LimiaresAtraso; label: string; hint: string }[] = [
+  { key: 'atencao',   label: 'Atenção',        hint: 'lembrete amigável' },
+  { key: 'suspensao', label: 'Suspensão',      hint: 'risco de pausar campanhas' },
+  { key: 'grave',     label: 'Grave',          hint: 'quebra de contrato' },
+  { key: 'critico',   label: 'Crítico',        hint: 'risco de cancelamento' },
+]
+
 const ETAPAS_PADRAO: EtapaRegua[] = [
   { dias: 3,  ativo: true,  template: 'Olá {nome}, sua fatura está próxima do vencimento (D+3). Podemos resolver isso juntos?' },
   { dias: 7,  ativo: true,  template: 'Oi {nome}, identificamos que sua mensalidade está em atraso há {dias} dias. Precisamos regularizar para manter suas campanhas ativas.' },
@@ -392,20 +408,35 @@ function AbaFinanceiro() {
   const [etapas,   setEtapas]   = useState<EtapaRegua[]>(ETAPAS_PADRAO)
   const [salvandoRegua, setSalvandoRegua] = useState(false)
   const [salvoRegua,    setSalvoRegua]    = useState(false)
+  const [limiares, setLimiares] = useState<LimiaresAtraso>(LIMIARES_PADRAO)
+  const [salvandoLimiares, setSalvandoLimiares] = useState(false)
+  const [salvoLimiares,    setSalvoLimiares]    = useState(false)
 
   useEffect(() => {
     supabase.from('configuracoes_financeiras')
-      .select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta,regua_cobranca')
+      .select('custos_fixos_mensais,custos_variaveis_percentual,margem_lucro_minima,saldo_google_ads_limite_alerta,regua_cobranca,limiares_atraso')
       .eq('agencia_id', 'adsgator-main').single()
       .then(({ data }) => {
         if (data) {
-          const d = data as ConfigFinanceira & { regua_cobranca?: EtapaRegua[] }
+          const d = data as ConfigFinanceira & { regua_cobranca?: EtapaRegua[]; limiares_atraso?: Partial<LimiaresAtraso> }
           setConfig({ custos_fixos_mensais: d.custos_fixos_mensais, custos_variaveis_percentual: d.custos_variaveis_percentual, margem_lucro_minima: d.margem_lucro_minima, saldo_google_ads_limite_alerta: d.saldo_google_ads_limite_alerta })
           if (d.regua_cobranca?.length) setEtapas(d.regua_cobranca)
+          if (d.limiares_atraso) setLimiares({ ...LIMIARES_PADRAO, ...d.limiares_atraso })
         }
         setLoading(false)
       })
   }, [])
+
+  async function salvarLimiares(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvandoLimiares(true)
+    await supabase.from('configuracoes_financeiras')
+      .update({ limiares_atraso: limiares } as Record<string, unknown>)
+      .eq('agencia_id', 'adsgator-main')
+    setSalvandoLimiares(false)
+    setSalvoLimiares(true)
+    setTimeout(() => setSalvoLimiares(false), 3000)
+  }
 
   async function salvar(e: React.FormEvent) {
     e.preventDefault()
@@ -462,6 +493,37 @@ function AbaFinanceiro() {
         <div className="flex items-center gap-[1rem]">
           <BtnSalvar salvando={salvando} />
           <FeedbackSalvo ok={salvo} erro={erro} />
+        </div>
+      </form>
+
+      {/* ── Estágios de inadimplência (limiares em dias) ── */}
+      <form onSubmit={salvarLimiares} className="flex flex-col gap-[1.25rem]">
+        <div className="border-t border-surface-border/30 pt-[1.5rem]">
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[0.25rem]">Estágios de Inadimplência</h3>
+          <p className="text-ink-muted text-[0.8125rem] mb-[1.25rem]">
+            A partir de quantos dias de atraso cada consequência entra em vigor. Vale para todo o sistema (alertas, cobrança, status do cliente).
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-[1rem] max-w-[36rem]">
+            {LIMIARES_CAMPOS.map(({ key, label, hint }) => (
+              <div key={key}>
+                <label className="block text-ink-secondary text-[0.8125rem] font-medium mb-[0.375rem]">{label}</label>
+                <div className="flex items-center gap-[0.375rem]">
+                  <span className="text-ink-muted text-[0.8125rem]">D+</span>
+                  <input
+                    type="number" min="1" max="365"
+                    value={limiares[key]}
+                    onChange={(e) => setLimiares((p) => ({ ...p, [key]: parseInt(e.target.value) || 1 }))}
+                    className="w-[4.5rem] h-[2.25rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 text-center"
+                  />
+                </div>
+                <p className="text-ink-muted text-[0.6875rem] mt-[0.25rem]">{hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-[1rem]">
+          <BtnSalvar salvando={salvandoLimiares} />
+          <FeedbackSalvo ok={salvoLimiares} erro="" />
         </div>
       </form>
 
@@ -745,6 +807,148 @@ function AbaBackup() {
         <p className="text-status-blue text-[0.8125rem] leading-relaxed">
           <strong>Dica:</strong> Realize backups regularmente. Para restaurações em massa, acesse o painel Supabase Dashboard e use a seção de Backups & Recovery.
         </p>
+      </div>
+    </div>
+  )
+}
+
+// ── ABA SAÚDE & LISTAS ───────────────────────────────────────────────────────
+const HEALTH_CAMPOS_PESO: { key: keyof HealthRegras; label: string }[] = [
+  { key: 'peso_pagamento',  label: 'Pagamento em dia' },
+  { key: 'peso_google',     label: 'Integração Google ativa' },
+  { key: 'peso_checklist',  label: 'Checklist > 50%' },
+  { key: 'peso_atualizado', label: 'Atualizado nos últimos 7 dias' },
+  { key: 'peso_status',     label: 'Status positivo (ativo/onboarding)' },
+]
+
+function AbaSaude() {
+  const [regras, setRegras] = useState<HealthRegras>(HEALTH_REGRAS_PADRAO)
+  const [nichos, setNichos] = useState<string[]>(NICHOS_SUGERIDOS_PADRAO)
+  const [novoNicho, setNovoNicho] = useState('')
+  const [salvandoSaude, setSalvandoSaude] = useState(false)
+  const [okSaude, setOkSaude] = useState(false)
+  const [salvandoNichos, setSalvandoNichos] = useState(false)
+  const [okNichos, setOkNichos] = useState(false)
+
+  useEffect(() => {
+    supabase.from('configuracoes_operacional')
+      .select('health_regras, nichos_sugeridos')
+      .eq('agencia_id', 'adsgator-main').maybeSingle()
+      .then(({ data }) => {
+        if (data?.health_regras) setRegras({ ...HEALTH_REGRAS_PADRAO, ...data.health_regras })
+        if (Array.isArray(data?.nichos_sugeridos) && data.nichos_sugeridos.length) setNichos(data.nichos_sugeridos)
+      })
+  }, [])
+
+  const somaPesos = HEALTH_CAMPOS_PESO.reduce((acc, { key }) => acc + (regras[key] || 0), 0)
+
+  async function salvarSaude(e: React.FormEvent) {
+    e.preventDefault()
+    setSalvandoSaude(true)
+    await supabase.from('configuracoes_operacional')
+      .upsert({ agencia_id: 'adsgator-main', health_regras: regras } as Record<string, unknown>, { onConflict: 'agencia_id' })
+    setSalvandoSaude(false)
+    setOkSaude(true); setTimeout(() => setOkSaude(false), 3000)
+  }
+
+  async function salvarNichos() {
+    setSalvandoNichos(true)
+    await supabase.from('configuracoes_operacional')
+      .upsert({ agencia_id: 'adsgator-main', nichos_sugeridos: nichos } as Record<string, unknown>, { onConflict: 'agencia_id' })
+    setSalvandoNichos(false)
+    setOkNichos(true); setTimeout(() => setOkNichos(false), 3000)
+  }
+
+  function addNicho() {
+    const n = novoNicho.trim()
+    if (!n || nichos.includes(n)) { setNovoNicho(''); return }
+    setNichos((p) => [...p, n]); setNovoNicho('')
+  }
+
+  return (
+    <div className="flex flex-col gap-[2.5rem] max-w-[40rem]">
+      {/* Regras de health score */}
+      <form onSubmit={salvarSaude} className="flex flex-col gap-[1.25rem]">
+        <div>
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[0.25rem]">Regras de Saúde do Cliente</h3>
+          <p className="text-ink-muted text-[0.8125rem]">
+            Pesos de cada critério do health score (0–100). Soma atual:{' '}
+            <strong className={somaPesos === 100 ? 'text-status-green' : 'text-status-orange'}>{somaPesos}</strong>
+            {somaPesos !== 100 && ' (o ideal é somar 100)'}.
+          </p>
+        </div>
+        <div className="flex flex-col gap-[0.75rem]">
+          {HEALTH_CAMPOS_PESO.map(({ key, label }) => (
+            <div key={key} className="flex items-center justify-between gap-[1rem]">
+              <label className="text-ink-secondary text-[0.875rem]">{label}</label>
+              <div className="flex items-center gap-[0.375rem]">
+                <span className="text-ink-muted text-[0.8125rem]">+</span>
+                <input
+                  type="number" min="0" max="100"
+                  value={regras[key]}
+                  onChange={(e) => setRegras((p) => ({ ...p, [key]: parseInt(e.target.value) || 0 }))}
+                  className="w-[4.5rem] h-[2.25rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] text-center focus:outline-none focus:ring-2 focus:ring-ads-500/20"
+                />
+              </div>
+            </div>
+          ))}
+          <div className="border-t border-surface-border/30 pt-[0.75rem] mt-[0.25rem] flex flex-col gap-[0.75rem]">
+            {([['nivel_saudavel', 'Saudável a partir de'], ['nivel_atencao', 'Atenção a partir de']] as const).map(([key, label]) => (
+              <div key={key} className="flex items-center justify-between gap-[1rem]">
+                <label className="text-ink-secondary text-[0.875rem]">{label}</label>
+                <div className="flex items-center gap-[0.375rem]">
+                  <input
+                    type="number" min="0" max="100"
+                    value={regras[key]}
+                    onChange={(e) => setRegras((p) => ({ ...p, [key]: parseInt(e.target.value) || 0 }))}
+                    className="w-[4.5rem] h-[2.25rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] text-center focus:outline-none focus:ring-2 focus:ring-ads-500/20"
+                  />
+                  <span className="text-ink-muted text-[0.8125rem]">pts</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center gap-[1rem]">
+          <BtnSalvar salvando={salvandoSaude} />
+          <FeedbackSalvo ok={okSaude} erro="" />
+        </div>
+      </form>
+
+      {/* Lista de nichos sugeridos */}
+      <div className="flex flex-col gap-[1rem] border-t border-surface-border/30 pt-[1.5rem]">
+        <div>
+          <h3 className="text-ink-primary font-semibold text-[0.9375rem] mb-[0.25rem]">Nichos Sugeridos</h3>
+          <p className="text-ink-muted text-[0.8125rem]">Aparecem no formulário de novo cliente.</p>
+        </div>
+        <div className="flex flex-wrap gap-[0.5rem]">
+          {nichos.map((n) => (
+            <span key={n} className="inline-flex items-center gap-[0.375rem] px-[0.625rem] py-[0.25rem] rounded-full bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem]">
+              {n}
+              <button type="button" onClick={() => setNichos((p) => p.filter((x) => x !== n))} className="text-ink-muted hover:text-status-red transition-colors">
+                <Trash2 className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex items-center gap-[0.5rem]">
+          <input
+            value={novoNicho}
+            onChange={(e) => setNovoNicho(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addNicho() } }}
+            placeholder="Adicionar nicho…"
+            className="h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 w-[14rem]"
+          />
+          <Button type="button" variant="secondary" size="sm" onClick={addNicho}>
+            <Plus className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Adicionar
+          </Button>
+        </div>
+        <div className="flex items-center gap-[1rem]">
+          <Button type="button" variant="primary" size="md" onClick={salvarNichos} disabled={salvandoNichos}>
+            {salvandoNichos ? 'Salvando…' : 'Salvar nichos'}
+          </Button>
+          <FeedbackSalvo ok={okNichos} erro="" />
+        </div>
       </div>
     </div>
   )
@@ -1040,6 +1244,7 @@ export default function ConfiguracoesPage() {
     aparencia:     <AbaAparencia />,
     equipe:        <AbaEquipe />,
     operacional:   <AbaOperacional />,
+    saude:         <AbaSaude />,
     planos:        <AbaPlanos />,
     automacoes:    (
       <div className="flex flex-col gap-[2rem]">

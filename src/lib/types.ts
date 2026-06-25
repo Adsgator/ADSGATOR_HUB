@@ -59,6 +59,9 @@ export interface Cliente {
   looker_url?:      string
   google_ads_perfil_url?: string | null  // link do perfil/conta Google Ads do cliente
   saldo_google?:    number
+  // Alerta de saldo Google Ads (lib/saldo-ads.ts)
+  saldo_minimo_alerta?:  number | null   // R$ abaixo do qual dispara "saldo baixo"; null = mínimo global
+  saldo_alertas_ativos?: boolean         // false = não dispara nenhum alerta de saldo (a pedido / cancelamento)
   congelado_em?:    string
   // Inativação (ver lib/cliente-status.ts): motivo da saída + quando arquivou
   motivo_inativacao?: 'debito' | 'cancelado' | 'congelamento_expirado' | null
