@@ -14,6 +14,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       'A Gator deixou de ser guiada por uma lista de regras específicas e passou a operar por princípios — como uma IA de ponta de verdade. Na prática: ela julga cada situação e deduz a ação certa, em vez de seguir receita. Some "regra pra cada caso", entra inteligência que generaliza para situações que ninguém previu',
       'Ela agora te CONDUZ, não só responde: em assunto operacional, aponta o que é crítico (não a lista toda), diz o próximo passo e se oferece pra fazer, e explica o porquê em uma linha quando ajuda. É a diferença entre uma ferramenta que responde e uma sócia que te guia',
       'Honestidade reforçada como princípio central: ela nunca inventa um dado, uma capacidade nem uma limitação. O caso de "não consigo ver imagem" deixou de ser um remendo e virou consequência natural do princípio — ela é honesta sobre o que é e o que vê',
+      'Trocar o cérebro da Gator (Flash/Pro) agora dá pra fazer direto no chat, num botãozinho ao lado do seletor de cliente — sem ter que ir até as Configurações. Vale na próxima mensagem',
     ],
   },
   {

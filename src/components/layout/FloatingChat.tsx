@@ -126,6 +126,8 @@ export function FloatingChat() {
   const [clientes,     setClientes]     = useState<ClienteOpcao[]>([])
   const [size,         setSize]         = useState({ w: 384, h: 540 })
   const [gasto,        setGasto]        = useState<{ hoje: number; mes: number } | null>(null)
+  const [modelo,       setModelo]       = useState<string>('gemini-2.5-flash')
+  const [thinking,     setThinking]     = useState(true)
 
   // Ctrl+I — abre/fecha o agente em qualquer página
   useEffect(() => {
@@ -147,16 +149,27 @@ export function FloatingChat() {
       .then(({ data }) => setClientes((data ?? []) as ClienteOpcao[]))
   }, [aberto])
 
-  // Gasto do dia/mês — recarrega ao abrir e a cada nova resposta (custoConversa muda)
+  // Gasto do dia/mês + cérebro atual — recarrega ao abrir e a cada nova resposta
   useEffect(() => {
     if (!aberto) return
     fetch('/api/v1/ia/uso/resumo')
       .then((r) => r.json())
-      .then((d: { custo_hoje?: number; custo_mes?: number }) => {
+      .then((d: { custo_hoje?: number; custo_mes?: number; cerebro?: { modelo: string; thinking: boolean } }) => {
         if (typeof d.custo_hoje === 'number') setGasto({ hoje: d.custo_hoje, mes: d.custo_mes ?? 0 })
+        if (d.cerebro) { setModelo(d.cerebro.modelo); setThinking(d.cerebro.thinking) }
       })
       .catch(() => { /* silencioso — custo é secundário ao chat */ })
   }, [aberto, custoConversa])
+
+  // Troca o cérebro direto do chat (mesma config de Configurações → Uso da IA)
+  async function trocarModelo(novoModelo: string) {
+    setModelo(novoModelo)
+    await fetch('/api/v1/ia/uso/modelo', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelo: novoModelo, thinking }),
+    }).catch(() => {})
+  }
 
   // Restaura o tamanho salvo (só no cliente, para não divergir do SSR)
   useEffect(() => {
@@ -270,8 +283,28 @@ export function FloatingChat() {
     </div>
   )
 
+  const seletorModelo = (
+    <div
+      title="Cérebro da Gator — Flash (rápido/barato) ou Pro (mais inteligente). Vale na próxima mensagem."
+      className="shrink-0 flex items-center rounded-lg bg-surface-hover border border-surface-border/40 p-[0.125rem]"
+    >
+      {([['gemini-2.5-flash', 'Flash'], ['gemini-2.5-pro', 'Pro']] as const).map(([id, label]) => (
+        <button
+          key={id}
+          onClick={() => void trocarModelo(id)}
+          className={`h-[1.375rem] px-[0.5rem] rounded-md text-[0.625rem] font-semibold transition-colors ${
+            modelo === id ? 'bg-ads-500 text-white' : 'text-ink-muted hover:text-ink-secondary'
+          }`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+
   const seletorCliente = (
     <div className="px-[0.875rem] py-[0.5rem] border-b border-surface-border/30 shrink-0 flex items-center gap-[0.5rem]">
+      {seletorModelo}
       <select
         value={clienteCtx}
         onChange={(e) => store.setClienteContexto(e.target.value)}
