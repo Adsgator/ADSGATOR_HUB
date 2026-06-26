@@ -83,7 +83,7 @@ Não espere o "lembre que". Quando o Lucas relatar um fato que muda o estado ou 
 Você é inteligente porque pensa, não porque obedece a uma lista. Quando esbarrar num limite — um dado que você não alcança, um acesso que não tem, uma ferramenta que ainda não existe pra aquilo — não improvise nem trave calada: faça o que dá com o que tem e diga ao Lucas, em uma linha, o que falta e por que ajudaria. É assim que o sistema cresce: você opera de verdade e aponta onde ele precisa evoluir. Sinalizar uma lacuna real vale mais que fingir que deu conta.
 
 — PRÓXIMOS PASSOS CLICÁVEIS —
-Quando houver próximos passos concretos que o Lucas provavelmente vai querer, termine a resposta com UMA linha — a última de todas — no formato exato: [[PROXIMOS]] primeiro passo || segundo || terceiro. De 1 a 3 itens, cada um um comando curto, escrito como o Lucas pediria a você (ex.: "Cobrar a Ana Julia" || "Ver a campanha da Beta ao vivo"). Eles viram botões que viram a próxima mensagem dele. Só inclua quando forem ações reais e úteis — nunca em saudação, papo ou quando não há próximo passo claro. Nunca mencione o marcador no corpo da resposta nem explique que ele existe.
+Quando houver próximos passos concretos que o Lucas provavelmente vai querer, termine a resposta — depois do texto, por último de tudo — com 1 a 3 sugestões, CADA UMA entre colchetes duplos próprios: [[Cobrar a Ana Julia]] [[Ver a campanha da Beta ao vivo]]. Cada uma é um comando curto, escrito como o Lucas pediria a você (não em CAIXA ALTA). Viram botões que, clicados, viram a próxima mensagem dele. Só inclua quando forem ações reais e úteis — nunca em saudação, papo ou quando não há próximo passo claro. Não repita esse texto no corpo da resposta nem explique que esses marcadores existem.
 
 — COMO VOCÊ ESCREVE —
 Curto por padrão (2–6 linhas); alongue só em análise, relatório ou plano de verdade. Markdown enxuto: negrito em valores e nomes, valores em R$, sem cabeçalho desnecessário, sem despejar lista inteira de ferramenta.`
@@ -377,16 +377,32 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Extrai os chips de próximo passo do marcador no fim do texto e limpa o
-        // conteúdo (exibido e persistido). Se o `[[` seguro NÃO era o marcador
-        // (falso positivo), libera o restante que ficou retido.
+        // Extrai os chips de próximo passo da zona de marcadores no fim do texto e
+        // limpa o conteúdo (exibido e persistido). Tolerante ao que o Flash produz:
+        // cada sugestão em [[...]] (formato atual) ou o legado [[PROXIMOS]] a || b.
+        // Se o `[[` retido NÃO era zona de chips (texto de sobra = falso positivo),
+        // libera o restante que o hold-back segurou — nada vaza.
         let sugestoes: string[] = []
-        const mIdx = respostaFinal.indexOf('[[PROXIMOS]]')
-        if (mIdx !== -1) {
-          sugestoes = respostaFinal.slice(mIdx + '[[PROXIMOS]]'.length)
-            .split('||').map((s) => s.trim()).filter(Boolean).slice(0, 3)
-          respostaFinal = respostaFinal.slice(0, mIdx).trimEnd()
-        } else if (emitidoLen < respostaFinal.length) {
+        const idxMarcador = respostaFinal.indexOf('[[')
+        if (idxMarcador !== -1) {
+          const zona = respostaFinal.slice(idxMarcador).trim()
+          let casou = false
+          const legado = zona.match(/^\[\[\s*pr[oó]ximos?\s*\]\]\s*([\s\S]+)$/i)
+          if (legado) {
+            sugestoes = legado[1].split('||').map((s) => s.trim()).filter(Boolean).slice(0, 3)
+            casou = true
+          } else {
+            const matches = [...zona.matchAll(/\[\[\s*([^[\]]+?)\s*\]\]/g)]
+            const sobra   = zona.replace(/\[\[\s*[^[\]]+?\s*\]\]/g, '').replace(/[\s|]+/g, '')
+            if (matches.length && sobra.length === 0) {
+              sugestoes = matches.map((m) => m[1].trim())
+                .filter((s) => s && !/^pr[oó]ximos?$/i.test(s)).slice(0, 3)
+              casou = true
+            }
+          }
+          if (casou) respostaFinal = respostaFinal.slice(0, idxMarcador).trimEnd()
+        }
+        if (!sugestoes.length && emitidoLen < respostaFinal.length) {
           envia({ t: 'texto', v: respostaFinal.slice(emitidoLen) })
           emitidoLen = respostaFinal.length
         }
