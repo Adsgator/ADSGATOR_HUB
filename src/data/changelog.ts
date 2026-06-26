@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.34.0',
+    data:   '2026-06-26',
+    novidades: [
+      'A Gator não esquece mais o começo de uma conversa longa: antes, ao passar de ~40 mensagens, o início era simplesmente jogado fora e ela perdia o fio (combinados, decisões, o que já tinha feito). Agora o trecho antigo é RESUMIDO automaticamente — um resumo cumulativo que ela carrega junto com as mensagens recentes. Conversa pode esticar à vontade que ela continua sabendo do que foi falado lá atrás',
+      'O resumo é gerado pelo modelo rápido (Flash) só quando a conversa cresce de verdade, e cada chamada é medida no painel de Uso da IA (tipo "resumo") — nada de custo invisível',
+    ],
+  },
+  {
     versao: '0.33.2',
     data:   '2026-06-26',
     novidades: [

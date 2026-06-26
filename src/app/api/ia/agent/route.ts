@@ -15,6 +15,7 @@ import {
   type ToolCtx,
   type ToolExecutada,
 } from '@/lib/ia/tools'
+import { montarHistoricoCompactado, type AnexoIA, type MensagemDb } from '@/lib/ia/compactacao'
 import type { Content, Part, GenerationConfig, GenerateContentResult } from '@google-cloud/vertexai'
 import { extrairUso, registrarUso, custoBRL } from '@/lib/ia/uso'
 
@@ -29,7 +30,6 @@ const supabase = createClient(
 const MAX_ITERACOES      = 10
 const MAX_ANEXO_BASE64   = 4 * 1024 * 1024 // ~3MB de imagem real
 const MAX_ARQUIVO_CHARS  = 30_000
-const HISTORICO_MENSAGENS = 40
 
 const MODELOS_VALIDOS = new Set([MODELO_FLASH, MODELO_PRO])
 
@@ -45,14 +45,6 @@ async function resolverModelo(userId: string): Promise<{ modelo: string; thinkin
   return { modelo, thinking }
 }
 const MENSAGENS_COM_IMAGEM = 8 // só as N últimas mensagens reenviam imagens ao modelo
-
-export interface AnexoIA {
-  tipo:        'imagem' | 'texto'
-  nome:        string
-  mimeType?:   string
-  dataBase64?: string // imagens
-  conteudo?:   string // arquivos .md/.txt
-}
 
 interface AgentRequest {
   conversa_id?:         string
@@ -96,6 +88,7 @@ async function montarSystemPrompt(
   userId: string,
   pagina?: string,
   clienteContextoId?: string,
+  resumoContexto?: string | null,
 ): Promise<string> {
   const agora = new Date().toLocaleString('pt-BR', {
     timeZone: 'America/Sao_Paulo', dateStyle: 'full', timeStyle: 'short',
@@ -130,6 +123,10 @@ async function montarSystemPrompt(
     }
   }
 
+  const blocoResumo = resumoContexto
+    ? `══ RESUMO DA CONVERSA ATÉ AQUI (contexto das mensagens mais antigas, já fora da janela recente — as últimas mensagens vêm na íntegra abaixo) ══\n${resumoContexto}`
+    : ''
+
   return [
     IDENTIDADE,
     `Data e hora atual (America/Sao_Paulo): ${agora}.`,
@@ -137,18 +134,12 @@ async function montarSystemPrompt(
     `ESTADO DA AGÊNCIA: você NÃO recebe o estado pré-carregado. Quando a conversa tocar em operação/clientes/finanças — ou quando quiser ser proativa — chame panorama_agencia para o resumo (clientes, MRR, inadimplência, saldo baixo). Não chame em saudações/papo trivial. Para listas completas, listar_clientes/listar_tarefas.`,
     blocoMemoria,
     blocoCliente,
+    blocoResumo,
   ].filter(Boolean).join('\n\n')
 }
 
 // ── Histórico → contents do Gemini ────────────────────────────────────────────
-
-interface MensagemDb {
-  id:         string
-  role:       'user' | 'assistant'
-  content:    string
-  anexos:     AnexoIA[] | null
-  created_at: string
-}
+// MensagemDb e AnexoIA vêm de lib/ia/compactacao (fonte única do histórico).
 
 function mensagemParaContent(m: MensagemDb, incluirImagens: boolean): Content {
   if (m.role === 'assistant') {
@@ -220,19 +211,14 @@ export async function POST(req: NextRequest) {
   })
   if (insertErr) return NextResponse.json({ error: insertErr.message }, { status: 500 })
 
-  // 3. Monta histórico + system prompt
-  const { data: historicoDb } = await supabase
-    .from('ia_mensagens')
-    .select('id, role, content, anexos, created_at')
-    .eq('conversa_id', conversaId)
-    .order('created_at', { ascending: false })
-    .limit(HISTORICO_MENSAGENS)
-
-  const mensagens = ((historicoDb ?? []) as MensagemDb[]).reverse()
-  const corte     = Math.max(0, mensagens.length - MENSAGENS_COM_IMAGEM)
+  // 3. Monta histórico (compactado) + system prompt. Em conversa longa, o trecho
+  //    antigo vira resumo (Fase 3b) em vez de ser descartado — a Gator não esquece
+  //    o começo. O resumo entra no system prompt; a janela recente vai na íntegra.
+  const { mensagens, resumo } = await montarHistoricoCompactado(supabase, conversaId, user.id)
+  const corte               = Math.max(0, mensagens.length - MENSAGENS_COM_IMAGEM)
   const contents: Content[] = mensagens.map((m, i) => mensagemParaContent(m, i >= corte))
 
-  const systemPrompt = await montarSystemPrompt(user.id, body.pagina, body.cliente_contexto_id)
+  const systemPrompt = await montarSystemPrompt(user.id, body.pagina, body.cliente_contexto_id, resumo)
 
   const toolCtx: ToolCtx = {
     db:     supabase,
