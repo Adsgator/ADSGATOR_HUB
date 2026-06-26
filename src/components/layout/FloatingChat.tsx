@@ -128,7 +128,7 @@ export function FloatingChat() {
   const [size,         setSize]         = useState({ w: 384, h: 540 })
   const [gasto,        setGasto]        = useState<{ hoje: number; mes: number } | null>(null)
   const [modelo,       setModelo]       = useState<string>('gemini-2.5-flash')
-  const [thinking,     setThinking]     = useState(true)
+  const [thinking,     setThinking]     = useState(false)
 
   // Ctrl+I — abre/fecha o agente em qualquer página
   useEffect(() => {

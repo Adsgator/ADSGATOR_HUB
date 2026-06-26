@@ -96,7 +96,7 @@ export async function GET() {
     },
     cerebro: {
       modelo:   (cfg?.modelo as string) ?? 'gemini-2.5-flash',
-      thinking: cfg?.thinking ?? true,
+      thinking: cfg?.thinking ?? false,
     },
   })
 }

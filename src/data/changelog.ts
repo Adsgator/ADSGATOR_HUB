@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.31.0',
+    data:   '2026-06-26',
+    novidades: [
+      'Raciocínio da Gator agora começa DESLIGADO — mais rápido e barato no dia a dia; você liga no menu do cérebro quando precisar de uma análise mais fina',
+      'Corrigido um erro que derrubaria a Gator: o modelo Pro não aceita ter o raciocínio "desligado" (ele sempre pensa), e isso quebrava a resposta com erro. Agora a troca Flash↔Pro e o liga/desliga do raciocínio foram testados de ponta a ponta contra a API e funcionam nas quatro combinações',
+    ],
+  },
+  {
     versao: '0.30.0',
     data:   '2026-06-25',
     novidades: [

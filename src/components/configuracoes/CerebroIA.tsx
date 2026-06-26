@@ -27,7 +27,7 @@ const MODELOS = [
 
 export function CerebroIA() {
   const [modelo, setModelo] = useState<string>('gemini-2.5-flash')
-  const [thinking, setThinking] = useState(true)
+  const [thinking, setThinking] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [salvando, setSalvando] = useState(false)
   const [salvo, setSalvo] = useState(false)

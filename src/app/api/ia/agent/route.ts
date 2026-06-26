@@ -41,7 +41,7 @@ async function resolverModelo(userId: string): Promise<{ modelo: string; thinkin
     .eq('user_id', userId)
     .maybeSingle()
   const modelo = typeof data?.modelo === 'string' && MODELOS_VALIDOS.has(data.modelo) ? data.modelo : MODELO_FLASH
-  const thinking = data?.thinking ?? true
+  const thinking = data?.thinking ?? false
   return { modelo, thinking }
 }
 const MENSAGENS_COM_IMAGEM = 8 // só as N últimas mensagens reenviam imagens ao modelo
@@ -243,11 +243,13 @@ export async function POST(req: NextRequest) {
     const { modelo, thinking } = await resolverModelo(user.id)
 
     // thinkingConfig não é tipado no SDK 1.12, mas o Vertex aceita via generationConfig.
-    // Flash: thinkingBudget 0 desliga; -1 = dinâmico. Pro: sempre pensa (ignora 0).
+    // O Pro SEMPRE raciocina e REJEITA thinkingBudget 0 (erro 400) — então só
+    // controlamos o budget no Flash (0 desliga, -1 dinâmico). No Pro, omitimos.
+    const ehPro = modelo === MODELO_PRO
     const generationConfig = {
       maxOutputTokens: 8192,
       temperature: 0.7,
-      thinkingConfig: { thinkingBudget: thinking ? -1 : 0 },
+      ...(ehPro ? {} : { thinkingConfig: { thinkingBudget: thinking ? -1 : 0 } }),
     } as unknown as GenerationConfig
 
     const vertex = criarVertexAI()
