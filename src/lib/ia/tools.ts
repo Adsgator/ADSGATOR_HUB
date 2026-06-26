@@ -694,21 +694,27 @@ export const TOOLS: Record<string, Tool> = {
     },
     execute: async (_args, ctx) => {
       const hojeFim = `${new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })}T23:59:59`
-      const [clientesRes, tarefasHojeRes] = await Promise.all([
+      const [clientesRes, tarefasHojeRes, assinRes] = await Promise.all([
         ctx.db.from('clientes')
-          .select('id, nome, status, mrr, dias_atraso, saldo_google')
+          .select('id, nome, status, dias_atraso, saldo_google')
           .eq('user_id', ctx.userId)
-          .order('mrr', { ascending: false })
           .limit(200),
         ctx.db.from('tarefas')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', ctx.userId)
           .in('status', ['pendente', 'em_progresso'])
           .lte('data_prazo', hojeFim),
+        // MRR pela FONTE ÚNICA (assinaturas vivas — lib/mrr), não pelo espelho
+        // clientes.mrr nem só de status='ativo': receita recorrente inclui quem
+        // está em atraso ou ainda em recebido com cobrança viva.
+        ctx.db.from('assinaturas')
+          .select('valor_mensal, status, clientes!inner(user_id)')
+          .eq('clientes.user_id', ctx.userId)
+          .in('status', STATUS_ASSINATURA_ATIVA),
       ])
-      const clientes = (clientesRes.data ?? []) as Array<{ id: string; nome: string; status: string; mrr: number | null; dias_atraso: number | null; saldo_google: number | null }>
+      const clientes = (clientesRes.data ?? []) as Array<{ id: string; nome: string; status: string; dias_atraso: number | null; saldo_google: number | null }>
       const ativos = clientes.filter((c) => c.status === 'ativo')
-      const mrrTotal = ativos.reduce((s, c) => s + (c.mrr ?? 0), 0)
+      const mrrTotal = calcularMRR(assinRes.data ?? [])
       return {
         total_clientes: clientes.length,
         ativos:         ativos.length,

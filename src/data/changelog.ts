@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.41.1',
+    data:   '2026-06-26',
+    novidades: [
+      'Corrigido: o MRR no panorama da Gator aparecia ZERADO. Ela somava o espelho antigo de MRR só dos clientes em status "ativo" — mas a receita recorrente vem das assinaturas vivas (inclui clientes em atraso ou ainda em recebido com cobrança ativa), então dava R$ 0. Agora usa a mesma fonte única do Financeiro (tabela de assinaturas): o MRR real passa a aparecer certo no panorama',
+    ],
+  },
+  {
     versao: '0.41.0',
     data:   '2026-06-26',
     novidades: [
