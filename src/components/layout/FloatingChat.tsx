@@ -12,6 +12,7 @@ import { useAssistantStore } from '@/lib/store/assistant-store'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { ChatThread } from '@/components/ia/ChatThread'
 import { Composer } from '@/components/ia/Composer'
+import { ChatControls } from '@/components/ia/ChatControls'
 
 interface ClienteOpcao {
   id:   string
@@ -162,12 +163,12 @@ export function FloatingChat() {
   }, [aberto, custoConversa])
 
   // Troca o cérebro direto do chat (mesma config de Configurações → Uso da IA)
-  async function trocarModelo(novoModelo: string) {
-    setModelo(novoModelo)
+  async function salvarCerebro(novoModelo: string, novoThinking: boolean) {
+    setModelo(novoModelo); setThinking(novoThinking)
     await fetch('/api/v1/ia/uso/modelo', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ modelo: novoModelo, thinking }),
+      body: JSON.stringify({ modelo: novoModelo, thinking: novoThinking }),
     }).catch(() => {})
   }
 
@@ -283,69 +284,20 @@ export function FloatingChat() {
     </div>
   )
 
-  const seletorModelo = (
-    <div
-      title="Cérebro da Gator — Flash (rápido/barato) ou Pro (mais inteligente). Vale na próxima mensagem."
-      className="shrink-0 flex items-center rounded-lg bg-surface-hover border border-surface-border/40 p-[0.125rem]"
-    >
-      {([['gemini-2.5-flash', 'Flash'], ['gemini-2.5-pro', 'Pro']] as const).map(([id, label]) => (
-        <button
-          key={id}
-          onClick={() => void trocarModelo(id)}
-          className={`h-[1.375rem] px-[0.5rem] rounded-md text-[0.625rem] font-semibold transition-colors ${
-            modelo === id ? 'bg-ads-500 text-white' : 'text-ink-muted hover:text-ink-secondary'
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
+  const controles = (
+    <ChatControls
+      modelo={modelo}
+      thinking={thinking}
+      onModelo={(m) => void salvarCerebro(m, thinking)}
+      onThinking={(t) => void salvarCerebro(modelo, t)}
+      clienteCtx={clienteCtx}
+      clientes={clientes}
+      onCliente={(id) => store.setClienteContexto(id)}
+      custoConversa={custoConversa}
+      gasto={gasto}
+      ctxTokens={ctxTokens}
+    />
   )
-
-  const seletorCliente = (
-    <div className="px-[0.875rem] py-[0.5rem] border-b border-surface-border/30 shrink-0 flex items-center gap-[0.5rem]">
-      {seletorModelo}
-      <select
-        value={clienteCtx}
-        onChange={(e) => store.setClienteContexto(e.target.value)}
-        className="flex-1 min-w-0 h-[1.75rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.6875rem] focus:outline-none focus:ring-1 focus:ring-ads-500/30"
-      >
-        <option value="">Conversa geral (sem cliente fixo)</option>
-        {clientes.map((c) => (
-          <option key={c.id} value={c.id}>Contexto: {c.nome}</option>
-        ))}
-      </select>
-      {ctxTokens > 0 && (
-        <span
-          title="Tamanho real do contexto enviado ao modelo na última resposta (histórico + memória + panorama)"
-          className={`shrink-0 font-mono text-[0.625rem] px-[0.375rem] py-[0.1875rem] rounded-md whitespace-nowrap ${
-            ctxTokens >= 32000 ? 'bg-status-orange/15 text-status-orange' : 'bg-surface-hover text-ink-muted'
-          }`}
-        >
-          {ctxTokens >= 1000 ? `~${(ctxTokens / 1000).toFixed(1)}k` : ctxTokens} tokens
-        </span>
-      )}
-    </div>
-  )
-
-  // Barra de custo da IA — conversa atual · última resposta · gasto hoje/mês.
-  // Custo ESTIMADO (mesma base do painel de Uso da IA).
-  const fmtBRL = (v: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: v < 0.1 ? 4 : 2 }).format(v)
-
-  const barraCusto = (custoConversa > 0 || gasto) ? (
-    <div
-      title="Custo estimado da IA (pode divergir da fatura real)"
-      className="px-[0.875rem] py-[0.375rem] border-b border-surface-border/30 shrink-0 flex items-center gap-x-[0.75rem] gap-y-[0.125rem] flex-wrap text-[0.625rem] text-ink-muted font-mono"
-    >
-      {custoConversa > 0 && (
-        <span>Conversa <strong className="text-ink-secondary font-semibold">{fmtBRL(custoConversa)}</strong></span>
-      )}
-      {gasto && (
-        <span className="ml-auto">Hoje {fmtBRL(gasto.hoje)} · Mês <strong className="text-ink-secondary font-semibold">{fmtBRL(gasto.mes)}</strong></span>
-      )}
-    </div>
-  ) : null
 
   const corpo = (
     <>
@@ -373,8 +325,7 @@ export function FloatingChat() {
               <ListaConversas />
             </aside>
             <div className="flex flex-col flex-1 min-w-0">
-              {seletorCliente}
-              {barraCusto}
+              {controles}
               {corpo}
             </div>
           </div>
@@ -406,8 +357,7 @@ export function FloatingChat() {
           </div>
         ) : (
           <>
-            {seletorCliente}
-            {barraCusto}
+            {controles}
             {corpo}
           </>
         )

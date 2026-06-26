@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.30.0',
+    data:   '2026-06-25',
+    novidades: [
+      'Cabeçalho do chat da Gator repensado: as duas barrinhas de controle viraram uma faixa só e mais limpa, pra conversa ganhar espaço (que é o que importa). O cérebro (Flash/Pro + raciocínio) agora abre num menu que explica o trade-off de cada modelo e mostra o selo de custo — escolha guiada, não dois botões mudos',
+      'Custo saiu da frente: em vez de uma faixa fixa de números, agora é um chip discreto com o gasto da conversa que, clicado, abre o detalhe (hoje, mês e o "peso" da conversa em tokens, explicado). Informação quando você quer, sem ruído o tempo todo',
+    ],
+  },
+  {
     versao: '0.29.0',
     data:   '2026-06-25',
     novidades: [
