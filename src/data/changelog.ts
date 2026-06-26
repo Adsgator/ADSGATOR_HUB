@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.36.0',
+    data:   '2026-06-26',
+    novidades: [
+      'A Gator ficou mais eficiente (e barata) por dentro: quando ela consulta listas grandes — clientes, lançamentos do mês, analytics — agora recebe só o essencial de cada item mais o total, em vez do dado cru inteiro. Isso libera "espaço de pensamento" pra raciocinar sobre mais coisas na mesma resposta e reduz o custo por consulta, sem você notar diferença no que ela te entrega',
+      'Em lista de lançamentos ela já recebe a soma do período junto, e os números de analytics vêm arredondados — respostas mais diretas, menos ruído',
+    ],
+  },
+  {
     versao: '0.35.0',
     data:   '2026-06-26',
     novidades: [

@@ -88,6 +88,27 @@ function mesRange(mes?: string): { inicio: string; fim: string; label: string } 
   }
 }
 
+// ── Compactação de resultados (Fase 5) ─────────────────────────────────────────
+// Ferramentas de lista grande devolvem forma ENXUTA (só o essencial) + o total
+// real, em vez de despejar o payload cru no contexto do modelo. Os resultados de
+// tool só vivem no contexto durante o loop (não são persistidos), então isto é
+// ganho direto de tokens/custo. Precedente: ads_ao_vivo (top-N por dimensão).
+const MAX_LISTA = 50
+
+/** Mantém só os campos pedidos de cada linha (descarta uuids e colunas pesadas). */
+function enxugar<R extends Record<string, unknown>>(rows: R[], campos: (keyof R)[]): Partial<R>[] {
+  return rows.map((r) => {
+    const o: Partial<R> = {}
+    for (const c of campos) { const v = r[c]; if (v !== null && v !== undefined) o[c] = v }
+    return o
+  })
+}
+
+/** Nota de truncamento quando a lista real é maior que o teto exibido. */
+function notaTruncada(total: number, max = MAX_LISTA): string | undefined {
+  return total > max ? `Mostrando ${max} de ${total} — refine com filtro/busca ou peça o detalhe de um item.` : undefined
+}
+
 // ── Registro de ferramentas ───────────────────────────────────────────────────
 
 export const TOOLS: Record<string, Tool> = {
@@ -119,7 +140,13 @@ export const TOOLS: Record<string, Tool> = {
       if (busca)  q = q.or(`nome.ilike.%${busca}%,nicho.ilike.%${busca}%`)
       const { data, error } = await q
       if (error) throw new Error(error.message)
-      return { total: data.length, clientes: data }
+      const nota = notaTruncada(data.length)
+      return {
+        total: data.length,
+        clientes: enxugar(data.slice(0, MAX_LISTA),
+          ['nome', 'nicho', 'status', 'mrr', 'dias_atraso', 'saldo_google', 'data_vencimento']),
+        ...(nota ? { nota } : {}),
+      }
     },
     resumo: () => 'Consultou clientes',
   },
@@ -509,7 +536,15 @@ export const TOOLS: Record<string, Tool> = {
       if (tipo) q = q.eq('tipo', tipo)
       const { data, error } = await q
       if (error) throw new Error(error.message)
-      return { total: data.length, lancamentos: data }
+      const totalValor = data.reduce((s: number, l: { valor?: number }) => s + (Number(l.valor) || 0), 0)
+      const nota = notaTruncada(data.length)
+      return {
+        total: data.length,
+        total_valor: totalValor,
+        lancamentos: enxugar(data.slice(0, MAX_LISTA),
+          ['tipo', 'categoria', 'descricao', 'valor', 'data', 'status']),
+        ...(nota ? { nota } : {}),
+      }
     },
     resumo: () => 'Consultou lançamentos',
   },
@@ -875,12 +910,18 @@ export const TOOLS: Record<string, Tool> = {
         .select('fonte, periodo_inicio, periodo_fim, investimento, impressoes, cliques, ctr, conversoes, cpa, roas, cpc_medio, usuarios, sessoes, taxa_conversao')
         .eq('cliente_id', id)
         .order('periodo_fim', { ascending: false })
-        .limit(12)
+        .limit(8)
       const fonte = str(args.fonte)
       if (fonte) q = q.eq('fonte', fonte)
       const { data, error } = await q
       if (error) throw new Error(error.message)
-      return { total: data.length, snapshots: data }
+      // Arredonda os floats (ctr, cpa, roas…) p/ 2 casas — menos tokens, mais legível.
+      const snapshots = (data ?? []).map((s: Record<string, unknown>) => {
+        const o: Record<string, unknown> = {}
+        for (const [k, v] of Object.entries(s)) o[k] = typeof v === 'number' ? Math.round(v * 100) / 100 : v
+        return o
+      })
+      return { total: snapshots.length, snapshots }
     },
     resumo: () => 'Consultou analytics',
   },
