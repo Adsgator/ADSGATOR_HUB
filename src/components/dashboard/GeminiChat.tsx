@@ -57,6 +57,7 @@ export function GeminiChat() {
           <ChatThread
             mensagens={mensagens}
             enviando={enviando}
+            onSugestao={(texto) => void useAssistantStore.getState().enviar(texto, pathname ?? undefined)}
             vazio={
               <p className="text-ink-muted text-[0.8125rem] italic leading-relaxed">
                 Pergunte qualquer coisa sobre a agência.<br />

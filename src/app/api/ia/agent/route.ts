@@ -82,6 +82,9 @@ Não espere o "lembre que". Quando o Lucas relatar um fato que muda o estado ou 
 — PEÇA O QUE FALTA —
 Você é inteligente porque pensa, não porque obedece a uma lista. Quando esbarrar num limite — um dado que você não alcança, um acesso que não tem, uma ferramenta que ainda não existe pra aquilo — não improvise nem trave calada: faça o que dá com o que tem e diga ao Lucas, em uma linha, o que falta e por que ajudaria. É assim que o sistema cresce: você opera de verdade e aponta onde ele precisa evoluir. Sinalizar uma lacuna real vale mais que fingir que deu conta.
 
+— PRÓXIMOS PASSOS CLICÁVEIS —
+Quando houver próximos passos concretos que o Lucas provavelmente vai querer, termine a resposta com UMA linha — a última de todas — no formato exato: [[PROXIMOS]] primeiro passo || segundo || terceiro. De 1 a 3 itens, cada um um comando curto, escrito como o Lucas pediria a você (ex.: "Cobrar a Ana Julia" || "Ver a campanha da Beta ao vivo"). Eles viram botões que viram a próxima mensagem dele. Só inclua quando forem ações reais e úteis — nunca em saudação, papo ou quando não há próximo passo claro. Nunca mencione o marcador no corpo da resposta nem explique que ele existe.
+
 — COMO VOCÊ ESCREVE —
 Curto por padrão (2–6 linhas); alongue só em análise, relatório ou plano de verdade. Markdown enxuto: negrito em valores e nomes, valores em R$, sem cabeçalho desnecessário, sem despejar lista inteira de ferramenta.`
 
@@ -262,6 +265,22 @@ export async function POST(req: NextRequest) {
         let conversaAtual: Content[] = contents
         let respostaFinal = ''
 
+        // Chips de próximo passo: a Gator pode terminar com uma linha-marcador
+        // `[[PROXIMOS]] a || b || c`. O texto é emitido ao vivo, mas SEGURAMOS a
+        // partir de um possível `[[` para o marcador não vazar na bolha; no fim
+        // extraímos as sugestões e limpamos o conteúdo persistido.
+        let emitidoLen = 0
+        const fluxoTexto = (t: string) => {
+          if (!t) return
+          respostaFinal += t
+          const corte  = respostaFinal.indexOf('[[')
+          const limite = corte === -1 ? respostaFinal.length : corte
+          if (emitidoLen < limite) {
+            envia({ t: 'texto', v: respostaFinal.slice(emitidoLen, limite) })
+            emitidoLen = limite
+          }
+        }
+
         const inicio = Date.now()
         let tokensEntrada = 0, tokensSaida = 0, tokensCache = 0, iteracoes = 0
         let contextoTokens = 0
@@ -275,7 +294,7 @@ export async function POST(req: NextRequest) {
           // Texto ao vivo: cada chunk vira um evento e acumula na resposta final.
           for await (const chunk of streamResult.stream) {
             const t = chunk.candidates?.[0]?.content?.parts?.filter((p) => p.text).map((p) => p.text).join('') ?? ''
-            if (t) { respostaFinal += t; envia({ t: 'texto', v: t }) }
+            fluxoTexto(t)
           }
 
           // Agregado: fonte autoritativa de tokens, parts e functionCalls.
@@ -342,11 +361,11 @@ export async function POST(req: NextRequest) {
               fechamento.push({ role: 'user', parts: [instrPart] })
             }
 
-            if (respostaFinal.trim()) { respostaFinal += '\n\n'; envia({ t: 'texto', v: '\n\n' }) }
+            if (respostaFinal.trim()) fluxoTexto('\n\n')
             const closeStream = await modelFechamento.generateContentStream({ contents: fechamento })
             for await (const chunk of closeStream.stream) {
               const t = chunk.candidates?.[0]?.content?.parts?.filter((p) => p.text).map((p) => p.text).join('') ?? ''
-              if (t) { respostaFinal += t; envia({ t: 'texto', v: t }) }
+              fluxoTexto(t)
             }
             const usoClose = extrairUso({ response: await closeStream.response } as GenerateContentResult)
             tokensEntrada += usoClose.tokensEntrada
@@ -356,6 +375,20 @@ export async function POST(req: NextRequest) {
           } catch (err) {
             console.error('[ia/agent] falha no fechamento de limite:', err)
           }
+        }
+
+        // Extrai os chips de próximo passo do marcador no fim do texto e limpa o
+        // conteúdo (exibido e persistido). Se o `[[` seguro NÃO era o marcador
+        // (falso positivo), libera o restante que ficou retido.
+        let sugestoes: string[] = []
+        const mIdx = respostaFinal.indexOf('[[PROXIMOS]]')
+        if (mIdx !== -1) {
+          sugestoes = respostaFinal.slice(mIdx + '[[PROXIMOS]]'.length)
+            .split('||').map((s) => s.trim()).filter(Boolean).slice(0, 3)
+          respostaFinal = respostaFinal.slice(0, mIdx).trimEnd()
+        } else if (emitidoLen < respostaFinal.length) {
+          envia({ t: 'texto', v: respostaFinal.slice(emitidoLen) })
+          emitidoLen = respostaFinal.length
         }
 
         if (!respostaFinal.trim()) {
@@ -390,6 +423,7 @@ export async function POST(req: NextRequest) {
           conversa_id:     conversaId,
           contexto_tokens: contextoTokens,
           custo_resposta:  custoResposta,
+          sugestoes,
           mensagem: msgIa ?? {
             id: crypto.randomUUID(), role: 'assistant', content: respostaFinal,
             ferramentas: executadas.length ? executadas : null, custo_brl: custoResposta,

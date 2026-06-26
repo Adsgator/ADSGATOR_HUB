@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { Bot, FileText, User, Volume2, Wrench, Square, Loader2, AlertTriangle } from 'lucide-react'
+import { Fragment, useEffect, useRef, useState } from 'react'
+import { ArrowRight, Bot, FileText, User, Volume2, Wrench, Square, Loader2, AlertTriangle } from 'lucide-react'
 import { Markdown } from './Markdown'
 import type { MensagemIA } from '@/lib/store/assistant-store'
 
@@ -10,6 +10,8 @@ interface ChatThreadProps {
   enviando:  boolean
   /** Texto exibido quando a conversa está vazia */
   vazio?:    React.ReactNode
+  /** Clique num chip de próximo passo → vira a próxima mensagem */
+  onSugestao?: (texto: string) => void
 }
 
 // Leitura em voz alta da resposta (speechSynthesis nativo, pt-BR)
@@ -49,8 +51,9 @@ function BotaoOuvir({ texto }: { texto: string }) {
   )
 }
 
-export function ChatThread({ mensagens, enviando, vazio }: ChatThreadProps) {
+export function ChatThread({ mensagens, enviando, vazio, onSugestao }: ChatThreadProps) {
   const bottomRef = useRef<HTMLDivElement>(null)
+  const ultimaId  = mensagens[mensagens.length - 1]?.id
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -73,7 +76,8 @@ export function ChatThread({ mensagens, enviando, vazio }: ChatThreadProps) {
       )}
 
       {mensagens.map((m) => (
-        <div key={m.id} className={`group flex gap-[0.375rem] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+        <Fragment key={m.id}>
+        <div className={`group flex gap-[0.375rem] ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
           <div className={`w-[1.375rem] h-[1.375rem] rounded-full flex items-center justify-center shrink-0 ${m.role === 'user' ? 'bg-ads-500/20' : 'bg-surface-hover'}`}>
             {m.role === 'user'
               ? <User className="w-[0.625rem] h-[0.625rem] text-ads-500" strokeWidth={2} />
@@ -163,6 +167,24 @@ export function ChatThread({ mensagens, enviando, vazio }: ChatThreadProps) {
           {/* Ler em voz alta — só quando a resposta terminou de chegar */}
           {m.role === 'assistant' && m.content && !m.streaming && <BotaoOuvir texto={m.content} />}
         </div>
+
+        {/* Chips de próximo passo — só na última resposta, quando a Gator sugeriu */}
+        {m.role === 'assistant' && !m.streaming && m.id === ultimaId && !!m.sugestoes?.length && onSugestao && (
+          <div className="flex flex-wrap gap-[0.375rem] pl-[1.75rem] animate-fade-up">
+            {m.sugestoes.map((s, i) => (
+              <button
+                key={i}
+                onClick={() => onSugestao(s)}
+                disabled={enviando}
+                className="inline-flex items-center gap-[0.25rem] pl-[0.625rem] pr-[0.5rem] py-[0.25rem] rounded-full bg-ads-500/10 text-ads-600 hover:bg-ads-500/20 border border-ads-500/20 text-[0.6875rem] font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-left"
+              >
+                <span>{s}</span>
+                <ArrowRight className="w-[0.625rem] h-[0.625rem] shrink-0" strokeWidth={2.5} />
+              </button>
+            ))}
+          </div>
+        )}
+        </Fragment>
       ))}
       <div ref={bottomRef} />
     </div>

@@ -301,7 +301,7 @@ export function FloatingChat() {
 
   const corpo = (
     <>
-      <ChatThread mensagens={mensagens} enviando={enviando} />
+      <ChatThread mensagens={mensagens} enviando={enviando} onSugestao={enviar} />
       <Composer
         enviando={enviando}
         anexos={anexos}

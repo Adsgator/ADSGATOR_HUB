@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.40.0',
+    data:   '2026-06-26',
+    novidades: [
+      'Próximos passos clicáveis: ao terminar uma resposta operacional, a Gator sugere 1 a 3 ações em botões ("Cobrar a Ana Julia", "Ver a campanha da Beta ao vivo") — clicar manda aquilo como sua próxima mensagem e ela já executa. É ela te conduzindo: você segue o fio sem precisar digitar. Aparecem só quando há próximo passo real (nunca num "oi") e sem custo extra de IA',
+    ],
+  },
+  {
     versao: '0.39.0',
     data:   '2026-06-26',
     novidades: [

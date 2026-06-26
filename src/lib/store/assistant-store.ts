@@ -29,6 +29,7 @@ export interface MensagemIA {
   ferramentas?: FerramentaExecutada[] | null
   custo_brl?:   number | null // custo estimado (R$) da resposta — só em mensagens do agente
   streaming?:   boolean       // true enquanto a resposta está chegando ao vivo
+  sugestoes?:   string[]      // próximos passos clicáveis (chips) — só ao vivo, não persiste
   created_at:   string
 }
 
@@ -287,9 +288,10 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
             recebeuFim = true
             const finalMsg = ev.mensagem as MensagemIA | undefined
             const custoResp = Number(ev.custo_resposta ?? 0)
+            const sugestoes = Array.isArray(ev.sugestoes) ? (ev.sugestoes as string[]) : []
             set({
               conversaId:     (ev.conversa_id as string) ?? get().conversaId,
-              mensagens:      get().mensagens.map((m) => (m.id === assistId ? { ...(finalMsg ?? m), streaming: false } : m)),
+              mensagens:      get().mensagens.map((m) => (m.id === assistId ? { ...(finalMsg ?? m), sugestoes, streaming: false } : m)),
               enviando:       false,
               contextoTokens: (ev.contexto_tokens as number) ?? get().contextoTokens,
               custoConversa:  get().custoConversa + custoResp,
