@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.39.0',
+    data:   '2026-06-26',
+    novidades: [
+      'Trava de segurança real para ações que não dão pra desfazer (enviar email ao cliente, excluir tarefa, esquecer memória): antes o "confirma antes?" era só uma instrução no comportamento da Gator — agora é o próprio código que segura. Ela anuncia a ação e pede seu ok; a execução só acontece depois que VOCÊ autoriza, e ela não tem como confirmar sozinha no mesmo passo. Se você já mandar autorizando ("pode excluir, confirmo"), sai na hora — a trava só existe pra ela não disparar por conta própria',
+    ],
+  },
+  {
     versao: '0.38.0',
     data:   '2026-06-26',
     novidades: [

@@ -495,7 +495,10 @@ export const TOOLS: Record<string, Tool> = {
       description: 'Exclui uma tarefa definitivamente. Use apenas com pedido explícito do usuário.',
       parameters: {
         type: T.OBJECT,
-        properties: { tarefa_id: { type: T.STRING, description: 'Título OU id da tarefa — prefira o TÍTULO; o sistema resolve.' } },
+        properties: {
+          tarefa_id: { type: T.STRING, description: 'Título OU id da tarefa — prefira o TÍTULO; o sistema resolve.' },
+          confirmar: { type: T.BOOLEAN, description: 'true SOMENTE depois que o Lucas autorizar explicitamente ESTA exclusão. Sem isso, a chamada só pede confirmação.' },
+        },
         required: ['tarefa_id'],
       },
     },
@@ -1090,7 +1093,10 @@ export const TOOLS: Record<string, Tool> = {
       description: 'Remove um fato da sua memória de longo prazo (os IDs estão listados junto à memória no contexto).',
       parameters: {
         type: T.OBJECT,
-        properties: { memoria_id: { type: T.STRING, description: 'id da memória (estão no contexto) OU um trecho do conteúdo — o sistema resolve e confere antes de apagar.' } },
+        properties: {
+          memoria_id: { type: T.STRING, description: 'id da memória (estão no contexto) OU um trecho do conteúdo — o sistema resolve e confere antes de apagar.' },
+          confirmar:  { type: T.BOOLEAN, description: 'true SOMENTE depois que o Lucas autorizar explicitamente esquecer ISTO. Sem isso, a chamada só pede confirmação.' },
+        },
         required: ['memoria_id'],
       },
     },
@@ -1209,6 +1215,7 @@ export const TOOLS: Record<string, Tool> = {
           cliente_id:  { type: T.STRING, description: 'Cliente destinatário (usa o email do cadastro)' },
           template_id: { type: T.STRING, description: 'Nome OU id do template (veja listar_templates_email; aceita personalizados custom-*) — o sistema resolve.' },
           observacao:  { type: T.STRING, description: 'Texto extra disponível como {{observacao}} no template (opcional)' },
+          confirmar:   { type: T.BOOLEAN, description: 'true SOMENTE depois que o Lucas autorizar explicitamente ESTE envio. Sem isso, a chamada só pede confirmação.' },
         },
         required: ['cliente_id', 'template_id'],
       },
@@ -1358,6 +1365,10 @@ const TOOLS_MUTANTES = new Set<string>([
   'enviar_email',
 ])
 
+/** Tools IRREVERSÍVEIS — exigem confirmação que NÃO depende só do prompt: o código
+ *  recusa executar sem confirmar:true, e recusa a IA confirmar a si mesma no turno. */
+const TOOLS_CONFIRMACAO = new Set<string>(['enviar_email', 'excluir_tarefa', 'esquecer_memoria'])
+
 /** Chave estável de uma ação (nome + args ordenados, ignorando 'confirmar'). */
 function chaveAcao(nome: string, args: Args): string {
   const limpo: Args = {}
@@ -1382,6 +1393,28 @@ export async function executarFerramenta(
     if (typeof args?.cliente_id === 'string' && args.cliente_id.trim()) {
       const cli = await ownCliente(ctx, args.cliente_id)
       args = { ...args, cliente_id: String(cli.id) }
+    }
+
+    // Gate de confirmação: ação IRREVERSÍVEL não roda sem confirmar:true — e a trava
+    // está no CÓDIGO, não só no prompt. A 1ª chamada (sem confirmar) registra o pedido
+    // e devolve "requer confirmação"; um confirmar:true para a MESMA ação no mesmo turno
+    // é recusado, então a IA não confirma a si mesma — a autorização tem que vir do
+    // Lucas num próximo turno. (Pré-autorização dele na própria mensagem → 1 turno.)
+    if (TOOLS_CONFIRMACAO.has(nome)) {
+      const chave = chaveAcao(nome, args ?? {})
+      if (args?.confirmar !== true) {
+        ctx.confirmacoesPedidas?.add(chave)
+        return {
+          resultado: { requer_confirmacao: true, instrucao: `Ação irreversível: ${tool.resumo(args ?? {})}. Anuncie em uma linha e peça o ok do Lucas; só repita com confirmar:true depois que ELE autorizar. Não confirme você mesma.` },
+          meta: { nome, resumo: `Aguardando confirmação: ${tool.resumo(args ?? {})}` },
+        }
+      }
+      if (ctx.confirmacoesPedidas?.has(chave)) {
+        return {
+          resultado: { erro: 'Confirmação inválida: você não pode confirmar a própria ação no mesmo turno. Pergunte ao Lucas e aguarde a resposta dele numa próxima mensagem.' },
+          meta: { nome, resumo: `Confirmação negada: ${tool.resumo(args ?? {})}` },
+        }
+      }
     }
 
     // Idempotência por turno: tool de escrita com os MESMOS args não roda duas vezes
