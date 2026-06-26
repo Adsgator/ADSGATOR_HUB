@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.33.1',
+    data:   '2026-06-26',
+    novidades: [
+      'Memória à prova de repetição: anotar um fato (no cliente ou na memória de longo prazo) virou idempotente — se aquilo já está guardado, não duplica. Antes, se a Gator se confundia numa tarefa longa e mandava o mesmo fato duas vezes, a ficha do cliente ganhava linhas repetidas. Agora a ferramenta ignora a repetição em vez de obedecer cegamente',
+    ],
+  },
+  {
     versao: '0.33.0',
     data:   '2026-06-26',
     novidades: [

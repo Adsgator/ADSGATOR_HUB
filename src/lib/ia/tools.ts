@@ -967,6 +967,11 @@ export const TOOLS: Record<string, Tool> = {
     execute: async (args, ctx) => {
       const conteudo = str(args.conteudo)
       if (!conteudo) throw new Error('conteudo é obrigatório.')
+      // Idempotente: não duplica um fato idêntico já guardado (protege contra
+      // re-execução do loop e salvamentos repetidos do mesmo fato ao longo do tempo).
+      const { data: existente } = await ctx.db.from('ia_memoria')
+        .select('id').eq('user_id', ctx.userId).eq('conteudo', conteudo).maybeSingle()
+      if (existente) return { ok: true, memoria_id: existente.id, ja_existia: true }
       const { data, error } = await ctx.db.from('ia_memoria').insert({
         user_id:  ctx.userId,
         conteudo,
@@ -1052,8 +1057,14 @@ export const TOOLS: Record<string, Tool> = {
       const linha = `- (${hoje}) ${fato}`
       const { data: atual } = await ctx.db
         .from('memoria_clientes').select('id, conteudo_md, versao').eq('cliente_id', id).maybeSingle()
+      const conteudoAtual = String(atual?.conteudo_md ?? '')
+      // Idempotente: se o mesmo fato já está na ficha, não duplica (protege contra
+      // re-execução do loop ou fatos repetidos vindos da memória global).
+      if (conteudoAtual.includes(fato)) {
+        return { ok: true, ja_existia: true }
+      }
       if (atual) {
-        const novo = `${String(atual.conteudo_md ?? '').trimEnd()}\n${linha}\n`
+        const novo = `${conteudoAtual.trimEnd()}\n${linha}\n`
         const { error } = await ctx.db.from('memoria_clientes')
           .update({ conteudo_md: novo, versao: (atual.versao ?? 1) + 1, updated_at: new Date().toISOString() })
           .eq('id', atual.id)
