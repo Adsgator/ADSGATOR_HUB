@@ -955,11 +955,11 @@ export const TOOLS: Record<string, Tool> = {
   salvar_memoria: {
     declaration: {
       name: 'salvar_memoria',
-      description: 'Salva um fato na SUA memória de longo prazo (persiste entre conversas). Use quando o usuário ensinar algo que deve ser lembrado sempre: preferências, regras da agência, contexto de clientes.',
+      description: 'Salva um fato GERAL na sua memória de longo prazo — o que vale sempre, sem dono específico: como o Lucas opera, regras e jeito da agência, preferências dele. Entra em TODA conversa, então guarde só o durável. Fato preso a UM cliente NÃO vai aqui — vai em anotar_no_cliente.',
       parameters: {
         type: T.OBJECT,
         properties: {
-          conteudo: { type: T.STRING, description: 'O fato, escrito de forma autocontida (ex.: "Cliente Alfa prefere reuniões às 9h")' },
+          conteudo: { type: T.STRING, description: 'O fato geral, autocontido (ex.: "O Lucas prefere cobrar por WhatsApp antes de suspender")' },
         },
         required: ['conteudo'],
       },
@@ -1028,6 +1028,44 @@ export const TOOLS: Record<string, Tool> = {
       return { ok: true }
     },
     resumo: () => 'Memória do cliente atualizada',
+  },
+
+  anotar_no_cliente: {
+    declaration: {
+      name: 'anotar_no_cliente',
+      description: 'Acrescenta UM fato à memória (.md) de um cliente — sem reescrever o resto, barato e seguro. É AQUI que vai todo contexto específico de cliente: preferência, peculiaridade, motivo de atraso, combinado, histórico de interação. Não jogue isso na sua memória de longo prazo. A linha é datada automaticamente.',
+      parameters: {
+        type: T.OBJECT,
+        properties: {
+          cliente_id: { type: T.STRING },
+          fato:       { type: T.STRING, description: 'O fato em uma linha autocontida (ex.: "Pediu mudar vencimento do dia 23 p/ 08; não dava por estar vencido — plano será pausado e reativado no pagamento")' },
+        },
+        required: ['cliente_id', 'fato'],
+      },
+    },
+    execute: async (args, ctx) => {
+      const id   = str(args.cliente_id)
+      const fato = str(args.fato)
+      if (!id || !fato) throw new Error('cliente_id e fato são obrigatórios.')
+      const cli  = await ownCliente(ctx, id)
+      const hoje = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      const linha = `- (${hoje}) ${fato}`
+      const { data: atual } = await ctx.db
+        .from('memoria_clientes').select('id, conteudo_md, versao').eq('cliente_id', id).maybeSingle()
+      if (atual) {
+        const novo = `${String(atual.conteudo_md ?? '').trimEnd()}\n${linha}\n`
+        const { error } = await ctx.db.from('memoria_clientes')
+          .update({ conteudo_md: novo, versao: (atual.versao ?? 1) + 1, updated_at: new Date().toISOString() })
+          .eq('id', atual.id)
+        if (error) throw new Error(error.message)
+      } else {
+        const inicial = `# Memória — ${str(cli.nome) ?? 'cliente'}\n\n${linha}\n`
+        const { error } = await ctx.db.from('memoria_clientes').insert({ cliente_id: id, conteudo_md: inicial })
+        if (error) throw new Error(error.message)
+      }
+      return { ok: true }
+    },
+    resumo: () => 'Anotou no cliente',
   },
 
   // ════ EMAIL ═══════════════════════════════════════════════════════════════

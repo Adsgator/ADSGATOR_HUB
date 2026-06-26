@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.33.0',
+    data:   '2026-06-26',
+    novidades: [
+      'Memória da Gator ficou inteligente: ela agora guarda cada fato no lugar certo. Coisa de UM cliente (motivo de um atraso, uma preferência, um combinado) vai pra memória DAQUELE cliente e só reaparece quando ele está em pauta; o que é geral da agência (como você opera, suas regras) fica na memória de longo prazo dela. Antes ia tudo no mesmo balde — o que enchia toda conversa de contexto de cliente que nem vinha ao caso, encarecia e não escalava',
+      'Anotar no cliente virou leve: a Gator acrescenta um fato à ficha do cliente sem reescrever o resto (datado automaticamente), em vez de ter que reler e regravar o dossiê inteiro',
+      'A Gator agora PEDE o que falta: quando esbarra num limite — um dado que não alcança, um acesso que não tem, uma ferramenta que ainda não existe pra aquilo — ela faz o que dá e te aponta a lacuna em uma linha, em vez de improvisar ou travar calada. É o sistema te mostrando onde precisa crescer',
+    ],
+  },
+  {
     versao: '0.32.0',
     data:   '2026-06-26',
     novidades: [
