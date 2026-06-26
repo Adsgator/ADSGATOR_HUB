@@ -45,17 +45,34 @@ function num(v: unknown): number | undefined {
   return typeof v === 'number' && Number.isFinite(v) ? v : undefined
 }
 
-/** Garante que o cliente pertence ao usuário; retorna o registro ou lança erro. */
-async function ownCliente(ctx: ToolCtx, clienteId: string, campos = 'id, nome') {
-  const { data, error } = await ctx.db
-    .from('clientes')
-    .select(campos)
-    .eq('id', clienteId)
-    .eq('user_id', ctx.userId)
-    .maybeSingle()
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Resolve um cliente por ID **ou NOME** e garante que pertence ao usuário; retorna
+ *  o registro (sempre com id canônico). Aceita nome de propósito: o modelo às vezes
+ *  inventa/decora UUID errado — passar o nome é confiável e não causa dano. */
+async function ownCliente(ctx: ToolCtx, idOuNome: string | undefined, campos = 'id, nome') {
+  const v = str(idOuNome)
+  if (!v) throw new Error('Informe o cliente (nome ou ID).')
+  const cols = campos.split(',').map((c) => c.trim())
+  const sel  = cols.includes('id') ? campos : ['id', ...cols].join(', ')
+
+  if (UUID_RE.test(v)) {
+    const { data, error } = await ctx.db.from('clientes').select(sel)
+      .eq('id', v).eq('user_id', ctx.userId).maybeSingle()
+    if (error) throw new Error(error.message)
+    if (data) return data as unknown as Record<string, unknown>
+    throw new Error(`Nenhum cliente com o ID ${v}. Passe o NOME do cliente em vez do ID.`)
+  }
+
+  const { data, error } = await ctx.db.from('clientes').select(sel)
+    .eq('user_id', ctx.userId).ilike('nome', `%${v}%`).limit(6)
   if (error) throw new Error(error.message)
-  if (!data) throw new Error(`Cliente ${clienteId} não encontrado.`)
-  return data as unknown as Record<string, unknown>
+  if (!data || data.length === 0) throw new Error(`Cliente "${v}" não encontrado.`)
+  if (data.length > 1) {
+    const lista = (data as unknown as Array<{ id: string; nome?: string }>).map((c) => `${c.nome ?? '?'} [${c.id}]`).join('; ')
+    throw new Error(`Mais de um cliente combina com "${v}": ${lista}. Diga qual usando o nome exato.`)
+  }
+  return data[0] as unknown as Record<string, unknown>
 }
 
 function mesRange(mes?: string): { inicio: string; fim: string; label: string } {
@@ -114,7 +131,7 @@ export const TOOLS: Record<string, Tool> = {
       parameters: {
         type: T.OBJECT,
         properties: {
-          cliente_id: { type: T.STRING, description: 'ID do cliente (obtenha via listar_clientes ou buscar)' },
+          cliente_id: { type: T.STRING, description: 'Nome OU id do cliente — prefira o NOME (ex.: "Beatriz Mattos"); o sistema resolve. Não invente IDs.' },
         },
         required: ['cliente_id'],
       },
@@ -1249,6 +1266,13 @@ export async function executarFerramenta(
     return { resultado: { erro: `Ferramenta desconhecida: ${nome}` }, meta: { nome, resumo: `Ferramenta inválida` } }
   }
   try {
+    // Canonicaliza cliente_id num ponto só: o modelo às vezes inventa UUID. Aceitamos
+    // NOME ou id e resolvemos para o id real aqui — assim um id alucinado não chega
+    // às ferramentas (e passar o nome simplesmente funciona, em todas elas).
+    if (typeof args?.cliente_id === 'string' && args.cliente_id.trim()) {
+      const cli = await ownCliente(ctx, args.cliente_id)
+      args = { ...args, cliente_id: String(cli.id) }
+    }
     const resultado = await tool.execute(args ?? {}, ctx)
     return { resultado, meta: { nome, resumo: tool.resumo(args ?? {}) } }
   } catch (err) {

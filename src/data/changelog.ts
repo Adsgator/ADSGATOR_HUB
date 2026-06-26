@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.33.2',
+    data:   '2026-06-26',
+    novidades: [
+      'A Gator parou de errar o cliente "de primeira": agora você (e ela) pode se referir ao cliente pelo NOME em qualquer ação — o sistema resolve o id certo sozinho, num ponto único por onde toda ferramenta passa. Antes o modelo às vezes inventava um id (um código aleatório de 36 caracteres que LLM nenhum decora bem) e a ação falhava, ou pior, acertava o cliente errado. Se o nome casar com mais de um cliente, ela pergunta qual em vez de chutar',
+    ],
+  },
+  {
     versao: '0.33.1',
     data:   '2026-06-26',
     novidades: [
