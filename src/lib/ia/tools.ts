@@ -81,6 +81,45 @@ async function ownCliente(ctx: ToolCtx, idOuNome: string | undefined, campos = '
   return data[0] as unknown as Record<string, unknown>
 }
 
+/** Resolve uma entidade por ID **ou** por um campo de texto (título/nome/conteúdo),
+ *  garantindo unicidade — o mesmo padrão de ownCliente, generalizado. O modelo às
+ *  vezes inventa/decora IDs; passar o nome é confiável e não acerta a linha errada.
+ *  idTexto=true para tabelas cujo id NÃO é UUID (ex.: email_templates com slug). */
+async function resolverEntidade(
+  ctx: ToolCtx,
+  tabela: string,
+  idOuNome: string | undefined,
+  campoTexto: string,
+  opts: { scopeUser?: boolean; idTexto?: boolean; campos?: string } = {},
+): Promise<Record<string, unknown>> {
+  const v = str(idOuNome)
+  if (!v) throw new Error(`Informe o ${campoTexto} ou o ID.`)
+  const sel   = opts.campos ?? `id, ${campoTexto}`
+  const build = () => {
+    const base = ctx.db.from(tabela).select(sel)
+    return opts.scopeUser ? base.eq('user_id', ctx.userId) : base
+  }
+
+  // Por ID: UUID (com gate, p/ não quebrar coluna uuid) ou id-texto (tenta exato).
+  if (opts.idTexto || UUID_RE.test(v)) {
+    const { data, error } = await build().eq('id', v).maybeSingle()
+    if (error) throw new Error(error.message)
+    if (data) return data as unknown as Record<string, unknown>
+    if (!opts.idTexto) throw new Error(`Nenhum registro com o ID ${v}. Passe o ${campoTexto} em vez do ID.`)
+    // idTexto que não casou por id → cai para a busca textual abaixo.
+  }
+
+  const { data, error } = await build().ilike(campoTexto, `%${v}%`).limit(6)
+  if (error) throw new Error(error.message)
+  const rows = (data ?? []) as unknown as Array<Record<string, unknown>>
+  if (rows.length === 0) throw new Error(`Nada encontrado para "${v}" (${campoTexto}).`)
+  if (rows.length > 1) {
+    const lista = rows.map((r) => `${String(r[campoTexto] ?? '?').slice(0, 80)} [${r.id}]`).join('; ')
+    throw new Error(`Mais de um combina com "${v}": ${lista}. Especifique qual.`)
+  }
+  return rows[0]
+}
+
 function mesRange(mes?: string): { inicio: string; fim: string; label: string } {
   const base  = mes && /^\d{4}-\d{2}$/.test(mes) ? new Date(`${mes}-01T12:00:00`) : new Date()
   const ano   = base.getFullYear()
@@ -424,7 +463,7 @@ export const TOOLS: Record<string, Tool> = {
       parameters: {
         type: T.OBJECT,
         properties: {
-          tarefa_id:  { type: T.STRING },
+          tarefa_id:  { type: T.STRING, description: 'Título OU id da tarefa — prefira o TÍTULO; o sistema resolve. Não invente IDs.' },
           titulo:     { type: T.STRING },
           descricao:  { type: T.STRING },
           status:     { type: T.STRING, description: 'pendente, em_progresso, feito, adiado' },
@@ -435,8 +474,8 @@ export const TOOLS: Record<string, Tool> = {
       },
     },
     execute: async (args, ctx) => {
-      const id = str(args.tarefa_id)
-      if (!id) throw new Error('tarefa_id é obrigatório.')
+      const tarefa = await resolverEntidade(ctx, 'tarefas', str(args.tarefa_id), 'titulo', { scopeUser: true })
+      const id = String(tarefa.id)
       const campos: Record<string, unknown> = {}
       for (const k of ['titulo', 'descricao', 'status', 'prioridade', 'data_prazo'] as const) {
         if (str(args[k]) !== undefined) campos[k] = str(args[k])
@@ -456,16 +495,15 @@ export const TOOLS: Record<string, Tool> = {
       description: 'Exclui uma tarefa definitivamente. Use apenas com pedido explícito do usuário.',
       parameters: {
         type: T.OBJECT,
-        properties: { tarefa_id: { type: T.STRING } },
+        properties: { tarefa_id: { type: T.STRING, description: 'Título OU id da tarefa — prefira o TÍTULO; o sistema resolve.' } },
         required: ['tarefa_id'],
       },
     },
     execute: async (args, ctx) => {
-      const id = str(args.tarefa_id)
-      if (!id) throw new Error('tarefa_id é obrigatório.')
-      const { error } = await ctx.db.from('tarefas').delete().eq('id', id).eq('user_id', ctx.userId)
+      const tarefa = await resolverEntidade(ctx, 'tarefas', str(args.tarefa_id), 'titulo', { scopeUser: true })
+      const { error } = await ctx.db.from('tarefas').delete().eq('id', String(tarefa.id)).eq('user_id', ctx.userId)
       if (error) throw new Error(error.message)
-      return { ok: true }
+      return { ok: true, excluida: tarefa.titulo }
     },
     resumo: () => 'Tarefa excluída',
   },
@@ -866,7 +904,7 @@ export const TOOLS: Record<string, Tool> = {
       parameters: {
         type: T.OBJECT,
         properties: {
-          prospect_id:    { type: T.STRING },
+          prospect_id:    { type: T.STRING, description: 'Nome OU id do prospect — prefira o NOME; o sistema resolve.' },
           estagio:        { type: T.STRING },
           observacoes:    { type: T.STRING },
           valor_proposta: { type: T.NUMBER },
@@ -877,8 +915,8 @@ export const TOOLS: Record<string, Tool> = {
       },
     },
     execute: async (args, ctx) => {
-      const id = str(args.prospect_id)
-      if (!id) throw new Error('prospect_id é obrigatório.')
+      const prospect = await resolverEntidade(ctx, 'prospects', str(args.prospect_id), 'nome')
+      const id = String(prospect.id)
       const campos: Record<string, unknown> = {}
       for (const k of ['estagio', 'observacoes', 'telefone', 'email'] as const) {
         if (str(args[k]) !== undefined) campos[k] = str(args[k])
@@ -1052,16 +1090,15 @@ export const TOOLS: Record<string, Tool> = {
       description: 'Remove um fato da sua memória de longo prazo (os IDs estão listados junto à memória no contexto).',
       parameters: {
         type: T.OBJECT,
-        properties: { memoria_id: { type: T.STRING } },
+        properties: { memoria_id: { type: T.STRING, description: 'id da memória (estão no contexto) OU um trecho do conteúdo — o sistema resolve e confere antes de apagar.' } },
         required: ['memoria_id'],
       },
     },
     execute: async (args, ctx) => {
-      const id = str(args.memoria_id)
-      if (!id) throw new Error('memoria_id é obrigatório.')
-      const { error } = await ctx.db.from('ia_memoria').delete().eq('id', id).eq('user_id', ctx.userId)
+      const memoria = await resolverEntidade(ctx, 'ia_memoria', str(args.memoria_id), 'conteudo', { scopeUser: true })
+      const { error } = await ctx.db.from('ia_memoria').delete().eq('id', String(memoria.id)).eq('user_id', ctx.userId)
       if (error) throw new Error(error.message)
-      return { ok: true }
+      return { ok: true, removida: String(memoria.conteudo ?? '').slice(0, 80) }
     },
     resumo: () => 'Memória removida',
   },
@@ -1170,7 +1207,7 @@ export const TOOLS: Record<string, Tool> = {
         type: T.OBJECT,
         properties: {
           cliente_id:  { type: T.STRING, description: 'Cliente destinatário (usa o email do cadastro)' },
-          template_id: { type: T.STRING, description: 'ID do template (veja listar_templates_email; aceita personalizados custom-*)' },
+          template_id: { type: T.STRING, description: 'Nome OU id do template (veja listar_templates_email; aceita personalizados custom-*) — o sistema resolve.' },
           observacao:  { type: T.STRING, description: 'Texto extra disponível como {{observacao}} no template (opcional)' },
         },
         required: ['cliente_id', 'template_id'],
@@ -1178,8 +1215,10 @@ export const TOOLS: Record<string, Tool> = {
     },
     execute: async (args, ctx) => {
       const cid = str(args.cliente_id)
-      const templateId = str(args.template_id)
-      if (!cid || !templateId) throw new Error('cliente_id e template_id são obrigatórios.')
+      if (!cid) throw new Error('cliente_id é obrigatório.')
+      // id de template é texto (slug/custom-*), não UUID → idTexto.
+      const tpl = await resolverEntidade(ctx, 'email_templates', str(args.template_id), 'nome', { idTexto: true })
+      const templateId = String(tpl.id)
       const cliente = await ownCliente(ctx, cid, 'id, nome, email')
       const email = (cliente.email as string | null)?.trim()
       if (!email) throw new Error(`Cliente ${cliente.nome} não tem email cadastrado.`)

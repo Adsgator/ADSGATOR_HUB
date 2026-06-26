@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.38.0',
+    data:   '2026-06-26',
+    novidades: [
+      'A correção de "errar o alvo de primeira" foi estendida além do cliente: agora a Gator também pode se referir a TAREFA (pelo título), PROSPECT (pelo nome), TEMPLATE de email (pelo nome) e MEMÓRIA (por um trecho) — não só por um id que o modelo às vezes inventava. Antes, fora cliente, uma ação podia cair na linha errada ou falhar; agora o sistema resolve pelo nome e, se houver ambiguidade, ela pergunta qual em vez de chutar',
+      'Apagar uma memória ficou seguro: o sistema confere que ela existe (e é sua) antes de remover — acabou o "apagar no escuro" por id inventado',
+    ],
+  },
+  {
     versao: '0.37.0',
     data:   '2026-06-26',
     novidades: [
