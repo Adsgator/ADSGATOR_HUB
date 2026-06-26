@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.41.0',
+    data:   '2026-06-26',
+    novidades: [
+      'A Gator agora vê o que você não vê: ela cruza, por cliente, atraso + saldo do Google + performance caindo + onboarding travado — sinais que hoje vivem em telas separadas e ninguém junta — e te entrega quem está em risco, ordenado por gravidade, com o porquê, o MRR em jogo (R$) e o prazo até a consequência (ex.: "2 dias até suspensão"). É o raio-x que vira sócia/analista: pergunte "alguma novidade?" ou "o que não estou vendo?" e ela puxa o radar',
+      'Tudo ancorado em dado real e honesto sobre certeza: onde ainda faltam dados (ex.: analytics do Google sem histórico), ela diz que não dá pra avaliar aquela parte em vez de chutar',
+    ],
+  },
+  {
     versao: '0.40.0',
     data:   '2026-06-26',
     novidades: [

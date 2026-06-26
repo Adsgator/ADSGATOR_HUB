@@ -7,7 +7,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { FunctionDeclaration } from '@google-cloud/vertexai'
 import { FunctionDeclarationSchemaType as T } from '@google-cloud/vertexai'
-import { estagioInadimplencia } from '@/lib/cobranca'
+import { estagioInadimplencia, carregarLimiaresAtraso } from '@/lib/cobranca'
 import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 import { SYSTEM_MAP } from '@/lib/ia/system-map'
 import { computarSetupChecklist } from '@/lib/setup-checklist'
@@ -1053,6 +1053,133 @@ export const TOOLS: Record<string, Tool> = {
       return { total: data.length, historico: data }
     },
     resumo: () => 'Consultou histórico',
+  },
+
+  // ════ RADAR (APEX — ver o que não se vê) ══════════════════════════════════
+
+  radar: {
+    declaration: {
+      name: 'radar',
+      description: 'RAIO-X PROATIVO da agência: cruza, por cliente, inadimplência (política D+7/D+15/D+30), saldo Google baixo/zerado, tendência de performance (analytics caindo) e onboarding travado — sinais que vivem em telas separadas e ninguém junta. Devolve os clientes em RISCO ordenados por gravidade com os motivos cruzados, o MRR em risco (R$) e o prazo até a próxima consequência. Use quando o Lucas pedir análise/novidade/"o que não estou vendo" ou para embasar um alerta proativo. Só dado real — nunca invente.',
+      parameters: { type: T.OBJECT, properties: {} },
+    },
+    execute: async (_args, ctx) => {
+      const limiares = await carregarLimiaresAtraso(ctx.db)
+      const [cliRes, cfgRes, assinRes] = await Promise.all([
+        ctx.db.from('clientes')
+          .select('id, nome, nicho, status, dias_atraso, saldo_google, saldo_minimo_alerta, google_ads_enabled, data_criacao')
+          .eq('user_id', ctx.userId)
+          .neq('status', 'inativo'),
+        ctx.db.from('configuracoes_operacional')
+          .select('alerta_saldo_ads_minimo').eq('agencia_id', 'adsgator-main').maybeSingle(),
+        ctx.db.from('assinaturas')
+          .select('cliente_id, valor_mensal, status, clientes!inner(user_id)')
+          .eq('clientes.user_id', ctx.userId)
+          .in('status', STATUS_ASSINATURA_ATIVA),
+      ])
+      if (cliRes.error) throw new Error(cliRes.error.message)
+      const clientes = (cliRes.data ?? []) as Array<Record<string, unknown>>
+      const minimoGlobal = Number(cfgRes.data?.alerta_saldo_ads_minimo) || 50
+
+      // MRR vivo por cliente (fonte: assinaturas — ver lib/mrr).
+      const mrrPorCliente = new Map<string, number>()
+      for (const a of (assinRes.data ?? []) as Array<{ cliente_id: string; valor_mensal: number | null }>) {
+        mrrPorCliente.set(a.cliente_id, (mrrPorCliente.get(a.cliente_id) ?? 0) + (a.valor_mensal ?? 0))
+      }
+
+      // Tendência de performance: compara os 2 snapshots mais recentes por cliente+fonte.
+      const ids = clientes.map((c) => c.id as string)
+      const tendenciaRuim = new Map<string, string>()
+      let temAnalytics = false
+      if (ids.length) {
+        const { data: snaps } = await ctx.db.from('analytics_snapshots')
+          .select('cliente_id, fonte, periodo_fim, conversoes, cpa')
+          .in('cliente_id', ids)
+          .order('periodo_fim', { ascending: false })
+          .limit(300)
+        const porChave = new Map<string, Array<{ conversoes: number | null; cpa: number | null }>>()
+        for (const s of (snaps ?? []) as Array<{ cliente_id: string; fonte: string; conversoes: number | null; cpa: number | null }>) {
+          const k = `${s.cliente_id}|${s.fonte}`
+          const arr = porChave.get(k) ?? []
+          if (arr.length < 2) { arr.push({ conversoes: s.conversoes, cpa: s.cpa }); porChave.set(k, arr) }
+        }
+        for (const [k, arr] of porChave) {
+          if (arr.length < 2) continue
+          temAnalytics = true
+          const [novo, velho] = arr
+          const motivos: string[] = []
+          const convNovo = novo.conversoes ?? 0, convVelho = velho.conversoes ?? 0
+          if (convVelho > 0 && convNovo < convVelho * 0.85) motivos.push(`conversões -${Math.round((1 - convNovo / convVelho) * 100)}%`)
+          const cpaNovo = novo.cpa ?? 0, cpaVelho = velho.cpa ?? 0
+          if (cpaVelho > 0 && cpaNovo > cpaVelho * 1.2) motivos.push(`CPA +${Math.round((cpaNovo / cpaVelho - 1) * 100)}%`)
+          if (motivos.length) tendenciaRuim.set(k.split('|')[0], `performance caindo (${motivos.join(', ')})`)
+        }
+      }
+
+      const agora = Date.now()
+      const diasDesde = (d: unknown) => (typeof d === 'string' ? Math.floor((agora - new Date(d).getTime()) / 86_400_000) : null)
+
+      type Risco = { nome: string; nicho?: string; nivel: 'alto' | 'medio'; mrr: number; motivos: string[]; prazo?: string }
+      const emRisco: Risco[] = []
+
+      for (const c of clientes) {
+        const motivos: string[] = []
+        let alto = false
+
+        // Inadimplência (política centralizada) + prazo até a próxima consequência.
+        const dias = Number(c.dias_atraso) || 0
+        const estagio = estagioInadimplencia(dias, limiares)
+        let prazo: string | undefined
+        if (estagio !== 'em_dia') {
+          const rotulo: Record<string, string> = { atencao: 'em atraso', suspensao: 'suspensão iminente (D+7)', grave: 'quebra de contrato (D+15)', critico: 'crítico (D+30)' }
+          motivos.push(`inadimplente ${dias}d — ${rotulo[estagio]}`)
+          if (estagio !== 'atencao') alto = true
+          const prox = dias < limiares.suspensao ? { d: limiares.suspensao, n: 'suspensão' }
+            : dias < limiares.grave ? { d: limiares.grave, n: 'quebra de contrato' }
+            : dias < limiares.critico ? { d: limiares.critico, n: 'estágio crítico' } : null
+          if (prox) prazo = `${prox.d - dias} dia(s) até ${prox.n}`
+        }
+
+        // Saldo Google (mín por cliente, fallback global — mesma regra do alerta de saldo).
+        const saldo = c.saldo_google == null ? null : Number(c.saldo_google)
+        const minimo = Number(c.saldo_minimo_alerta) || minimoGlobal
+        if (c.google_ads_enabled && saldo !== null) {
+          if (saldo <= 0) { motivos.push('saldo Google ZERADO'); alto = true }
+          else if (saldo <= minimo) motivos.push(`saldo Google baixo (R$ ${saldo} / mín R$ ${minimo})`)
+        }
+
+        // Tendência de performance.
+        const t = tendenciaRuim.get(c.id as string)
+        if (t) motivos.push(t)
+
+        // Onboarding travado (gargalo do próprio Lucas).
+        const status = String(c.status)
+        if (['recebido', 'onboarding', 'setup_trafego'].includes(status)) {
+          const d = diasDesde(c.data_criacao)
+          if (d !== null && d > 14) motivos.push(`onboarding parado há ${d}d (status ${status})`)
+        }
+
+        if (!motivos.length) continue
+        const nivel: 'alto' | 'medio' = alto || motivos.length >= 2 ? 'alto' : 'medio'
+        emRisco.push({ nome: String(c.nome), nicho: c.nicho ? String(c.nicho) : undefined, nivel, mrr: mrrPorCliente.get(c.id as string) ?? 0, motivos, prazo })
+      }
+
+      // Alto antes; dentro do nível, maior MRR em risco primeiro.
+      emRisco.sort((a, b) => (a.nivel === b.nivel ? b.mrr - a.mrr : a.nivel === 'alto' ? -1 : 1))
+      const mrrRisco     = emRisco.reduce((s, r) => s + r.mrr, 0)
+      const mrrRiscoAlto = emRisco.filter((r) => r.nivel === 'alto').reduce((s, r) => s + r.mrr, 0)
+
+      return {
+        analisados:     clientes.length,
+        em_risco_alto:  emRisco.filter((r) => r.nivel === 'alto').length,
+        em_risco_medio: emRisco.filter((r) => r.nivel === 'medio').length,
+        mrr_em_risco:       Math.round(mrrRisco),
+        mrr_em_risco_alto:  Math.round(mrrRiscoAlto),
+        clientes_em_risco:  emRisco.slice(0, 20),
+        nota: temAnalytics ? undefined : 'Sem ≥2 snapshots de analytics: tendência de performance não avaliada (faltam dados Google/GA4).',
+      }
+    },
+    resumo: () => 'Cruzou os riscos da agência',
   },
 
   // ════ MEMÓRIA ═════════════════════════════════════════════════════════════
