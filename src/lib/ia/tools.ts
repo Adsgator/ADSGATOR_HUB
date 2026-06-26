@@ -19,6 +19,12 @@ export interface ToolCtx {
   /** Para ferramentas que consultam rotas internas (ex.: /api/status) */
   origin: string
   cookie: string
+  /** Idempotência por turno: tool de escrita + mesmos args memoiza a promise e
+   *  não re-executa na mesma resposta (mata duplicação por re-execução do loop). */
+  dedupe?: Map<string, Promise<unknown>>
+  /** Gate de confirmação: chaves de ações irreversíveis que pediram confirmação
+   *  neste turno — impede a IA de confirmar a si mesma no mesmo turno. */
+  confirmacoesPedidas?: Set<string>
 }
 
 type Args = Record<string, unknown>
@@ -1296,6 +1302,30 @@ export const TOOLS: Record<string, Tool> = {
 export const FUNCTION_DECLARATIONS: FunctionDeclaration[] =
   Object.values(TOOLS).map((t) => t.declaration)
 
+// ── Robustez do dispatcher (auditoria 26/06) ───────────────────────────────────
+// O código não confia cego no que o modelo produz. Dois pontos de estrangulamento:
+// (1) idempotência por turno p/ tools de ESCRITA; (2) gate de confirmação p/ ação
+// IRREVERSÍVEL. Centralizados aqui em vez de espalhados tool a tool.
+
+/** Tools que escrevem no banco — sujeitas à idempotência por turno. */
+const TOOLS_MUTANTES = new Set<string>([
+  'criar_cliente', 'atualizar_cliente',
+  'criar_tarefa', 'criar_tarefa_de_template', 'atualizar_tarefa', 'excluir_tarefa',
+  'criar_lancamento',
+  'criar_notificacao',
+  'criar_post_marketing',
+  'criar_prospect', 'atualizar_prospect',
+  'esquecer_memoria', 'atualizar_memoria_cliente',
+  'enviar_email',
+])
+
+/** Chave estável de uma ação (nome + args ordenados, ignorando 'confirmar'). */
+function chaveAcao(nome: string, args: Args): string {
+  const limpo: Args = {}
+  for (const k of Object.keys(args).sort()) if (k !== 'confirmar') limpo[k] = args[k]
+  return `${nome}|${JSON.stringify(limpo)}`
+}
+
 /** Executa uma ferramenta com tratamento de erro — o erro volta ao modelo, que decide como reagir. */
 export async function executarFerramenta(
   nome: string,
@@ -1314,6 +1344,27 @@ export async function executarFerramenta(
       const cli = await ownCliente(ctx, args.cliente_id)
       args = { ...args, cliente_id: String(cli.id) }
     }
+
+    // Idempotência por turno: tool de escrita com os MESMOS args não roda duas vezes
+    // na mesma resposta. Memoiza a PROMISE (reserva síncrona antes do await), então
+    // pega também chamadas idênticas no mesmo lote (Promise.all), não só em iterações
+    // seguintes. Mata a duplicação por re-execução do loop — inclusive financeira.
+    if (TOOLS_MUTANTES.has(nome) && ctx.dedupe) {
+      const chave = chaveAcao(nome, args ?? {})
+      const emAndamento = ctx.dedupe.get(chave)
+      if (emAndamento) {
+        const anterior = await emAndamento
+        return {
+          resultado: { idempotente: true, aviso: 'Ação idêntica já executada neste turno — ignorada para não duplicar.', anterior },
+          meta: { nome, resumo: `(já feito) ${tool.resumo(args ?? {})}` },
+        }
+      }
+      const p = tool.execute(args ?? {}, ctx)
+      ctx.dedupe.set(chave, p)
+      const resultado = await p
+      return { resultado, meta: { nome, resumo: tool.resumo(args ?? {}) } }
+    }
+
     const resultado = await tool.execute(args ?? {}, ctx)
     return { resultado, meta: { nome, resumo: tool.resumo(args ?? {}) } }
   } catch (err) {

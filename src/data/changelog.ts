@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.37.0',
+    data:   '2026-06-26',
+    novidades: [
+      'Blindagem contra ação duplicada: se a Gator, no meio de uma tarefa, repetir internamente a MESMA ação (o mesmo lançamento financeiro, a mesma tarefa, o mesmo email) — algo que podia acontecer quando ela reexecutava passos —, o sistema agora ignora a repetição em vez de obedecer cego. O risco mais sério era no financeiro: lançar o mesmo valor duas vezes e bagunçar o DRE em silêncio. Agora é à prova disso, e a proteção pega até quando as ações disparam em paralelo',
+    ],
+  },
+  {
     versao: '0.36.0',
     data:   '2026-06-26',
     novidades: [

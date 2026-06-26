@@ -226,6 +226,9 @@ export async function POST(req: NextRequest) {
     userId: user.id,
     origin: req.nextUrl.origin,
     cookie: req.headers.get('cookie') ?? '',
+    // Estado por turno: idempotência (não duplica escrita) e gate de confirmação.
+    dedupe:              new Map(),
+    confirmacoesPedidas: new Set(),
   }
 
   // 4. Loop agêntico com STREAMING — emite eventos NDJSON conforme a Gator pensa,
