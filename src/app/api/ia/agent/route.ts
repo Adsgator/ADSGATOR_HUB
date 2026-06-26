@@ -27,7 +27,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
 )
 
-const MAX_ITERACOES      = 10
+const MAX_ITERACOES           = 25   // teto generoso p/ tarefa complexa (era 10 — desistia cedo)
+const TETO_CUSTO_RESPOSTA_BRL = 0.50 // guarda: pausa e devolve o controle se UMA resposta passar disto
 const MAX_ANEXO_BASE64   = 4 * 1024 * 1024 // ~3MB de imagem real
 const MAX_ARQUIVO_CHARS  = 30_000
 
@@ -263,7 +264,9 @@ export async function POST(req: NextRequest) {
         let contextoTokens = 0
         const ferramentasUsadas: string[] = []
 
-        for (let i = 0; i < MAX_ITERACOES; i++) {
+        let interrompido: 'iteracoes' | 'custo' | null = null
+        let i = 0
+        for (; i < MAX_ITERACOES; i++) {
           const streamResult = await model.generateContentStream({ contents: conversaAtual })
 
           // Texto ao vivo: cada chunk vira um evento e acumula na resposta final.
@@ -283,7 +286,7 @@ export async function POST(req: NextRequest) {
 
           const parts = agg.candidates?.[0]?.content?.parts ?? []
           const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
-          if (!calls.length) break
+          if (!calls.length) break // resposta final natural — a Gator terminou
 
           // Ações ao vivo: avisa que vai executar, roda em PARALELO, avisa o resultado.
           for (const fc of calls) envia({ t: 'acao', nome: fc.name, status: 'rodando' })
@@ -300,11 +303,61 @@ export async function POST(req: NextRequest) {
           })
 
           conversaAtual = [...conversaAtual, { role: 'model', parts }, { role: 'user', parts: respostas }]
+
+          // Guarda de custo: numa tarefa longa, se UMA resposta já gastou demais,
+          // pausa antes de mais uma rodada cara e devolve o controle ao Lucas.
+          if (custoBRL(modelo, { tokensEntrada, tokensSaida, tokensCache }) >= TETO_CUSTO_RESPOSTA_BRL) {
+            interrompido = 'custo'
+            break
+          }
+        }
+        if (i >= MAX_ITERACOES) interrompido = 'iteracoes'
+
+        // Parou no meio de uma tarefa (estourou passos ou custo) sem fechar a
+        // resposta: em vez de uma mensagem genérica, a própria Gator faz um
+        // fechamento honesto — o que já fez, o que falta e oferece continuar.
+        if (interrompido) {
+          try {
+            const modelFechamento = vertex.preview.getGenerativeModel({
+              model:             modelo,
+              systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
+              generationConfig, // sem tools: esta chamada é só para escrever o fechamento
+            })
+            const instrucao = interrompido === 'custo'
+              ? 'Esta tarefa já consumiu bastante processamento numa única resposta. NÃO chame mais ferramentas. Em português e em poucas linhas, diga o que você JÁ executou até aqui, o que ainda falta, e pergunte ao Lucas se quer que você continue de onde parou.'
+              : 'Você atingiu o limite de passos para uma única resposta. NÃO chame mais ferramentas. Em português e em poucas linhas, diga o que você JÁ executou até aqui, o que ainda falta, e ofereça continuar de onde parou.'
+
+            // A instrução tem que cair num turno 'user' que sucede um 'model'
+            // (alternância válida) — anexa ao último turno do usuário, que aqui
+            // são as respostas de ferramenta.
+            const fechamento = [...conversaAtual]
+            const ultimo = fechamento[fechamento.length - 1]
+            const instrPart: Part = { text: `[${instrucao}]` }
+            if (ultimo?.role === 'user') {
+              fechamento[fechamento.length - 1] = { role: 'user', parts: [...(ultimo.parts ?? []), instrPart] }
+            } else {
+              fechamento.push({ role: 'user', parts: [instrPart] })
+            }
+
+            if (respostaFinal.trim()) { respostaFinal += '\n\n'; envia({ t: 'texto', v: '\n\n' }) }
+            const closeStream = await modelFechamento.generateContentStream({ contents: fechamento })
+            for await (const chunk of closeStream.stream) {
+              const t = chunk.candidates?.[0]?.content?.parts?.filter((p) => p.text).map((p) => p.text).join('') ?? ''
+              if (t) { respostaFinal += t; envia({ t: 'texto', v: t }) }
+            }
+            const usoClose = extrairUso({ response: await closeStream.response } as GenerateContentResult)
+            tokensEntrada += usoClose.tokensEntrada
+            tokensSaida   += usoClose.tokensSaida
+            tokensCache   += usoClose.tokensCache
+            iteracoes++
+          } catch (err) {
+            console.error('[ia/agent] falha no fechamento de limite:', err)
+          }
         }
 
         if (!respostaFinal.trim()) {
           respostaFinal = executadas.length
-            ? 'Executei as ações, mas atingi o limite de passos antes de formular a resposta completa.'
+            ? 'Trabalhei na tarefa, mas atingi o limite desta resposta antes de fechar. Me peça pra continuar que eu retomo de onde parei.'
             : 'Não consegui processar sua mensagem. Tente reformular.'
           envia({ t: 'texto', v: respostaFinal })
         }

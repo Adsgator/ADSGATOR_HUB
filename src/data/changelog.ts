@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.35.0',
+    data:   '2026-06-26',
+    novidades: [
+      'A Gator não desiste mais no meio de uma tarefa complexa: o teto de passos por resposta subiu de 10 para 25, então tarefas que exigem encadear muitas ações (varrer vários clientes, cruzar dados, executar uma sequência longa) agora chegam ao fim em vez de parar na metade',
+      'Quando ela realmente bate o limite de uma resposta (passos OU um teto de custo de R$ 0,50 por resposta, pra nenhuma resposta sozinha sair cara demais), ela não some com uma mensagem genérica: a própria Gator escreve um fechamento honesto — o que já fez, o que ainda falta — e te oferece continuar de onde parou. É só dizer "continua"',
+    ],
+  },
+  {
     versao: '0.34.0',
     data:   '2026-06-26',
     novidades: [
