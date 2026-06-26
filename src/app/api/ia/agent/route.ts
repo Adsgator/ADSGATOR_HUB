@@ -15,7 +15,7 @@ import {
   type ToolCtx,
   type ToolExecutada,
 } from '@/lib/ia/tools'
-import type { Content, Part, GenerationConfig } from '@google-cloud/vertexai'
+import type { Content, Part, GenerationConfig, GenerateContentResult } from '@google-cloud/vertexai'
 import { extrairUso, registrarUso, custoBRL } from '@/lib/ia/uso'
 
 // O loop pode encadear várias chamadas ao modelo + ferramentas
@@ -238,122 +238,133 @@ export async function POST(req: NextRequest) {
     cookie: req.headers.get('cookie') ?? '',
   }
 
-  // 4. Loop agêntico
-  try {
-    const { modelo, thinking } = await resolverModelo(user.id)
+  // 4. Loop agêntico com STREAMING — emite eventos NDJSON conforme a Gator pensa,
+  //    executa ferramentas e responde. O front consome e mostra ao vivo.
+  const { modelo, thinking } = await resolverModelo(user.id)
 
-    // thinkingConfig não é tipado no SDK 1.12, mas o Vertex aceita via generationConfig.
-    // O Pro SEMPRE raciocina e REJEITA thinkingBudget 0 (erro 400) — então só
-    // controlamos o budget no Flash (0 desliga, -1 dinâmico). No Pro, omitimos.
-    const ehPro = modelo === MODELO_PRO
-    const generationConfig = {
-      maxOutputTokens: 8192,
-      temperature: 0.7,
-      ...(ehPro ? {} : { thinkingConfig: { thinkingBudget: thinking ? -1 : 0 } }),
-    } as unknown as GenerationConfig
+  // thinkingConfig não é tipado no SDK 1.12, mas o Vertex aceita via generationConfig.
+  // O Pro SEMPRE raciocina e REJEITA thinkingBudget 0 (erro 400) — então só
+  // controlamos o budget no Flash (0 desliga, -1 dinâmico). No Pro, omitimos.
+  const ehPro = modelo === MODELO_PRO
+  const generationConfig = {
+    maxOutputTokens: 8192,
+    temperature: 0.7,
+    ...(ehPro ? {} : { thinkingConfig: { thinkingBudget: thinking ? -1 : 0 } }),
+  } as unknown as GenerationConfig
 
-    const vertex = criarVertexAI()
-    const model  = vertex.preview.getGenerativeModel({
-      model:             modelo,
-      systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
-      tools:             [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-      generationConfig,
-    })
+  const encoder = new TextEncoder()
+  const stream = new ReadableStream({
+    async start(controller) {
+      const envia = (ev: object) => controller.enqueue(encoder.encode(JSON.stringify(ev) + '\n'))
+      try {
+        const vertex = criarVertexAI()
+        const model  = vertex.preview.getGenerativeModel({
+          model:             modelo,
+          systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
+          tools:             [{ functionDeclarations: FUNCTION_DECLARATIONS }],
+          generationConfig,
+        })
 
-    const executadas: ToolExecutada[] = []
-    let conversaAtual: Content[] = contents
-    let respostaFinal = ''
+        const executadas: ToolExecutada[] = []
+        let conversaAtual: Content[] = contents
+        let respostaFinal = ''
 
-    // Acumuladores de uso (1 linha de telemetria por mensagem, somando o loop)
-    const inicio = Date.now()
-    let tokensEntrada = 0, tokensSaida = 0, tokensCache = 0, iteracoes = 0
-    let contextoTokens = 0 // promptTokenCount da última chamada = "leveza" da conversa
-    const ferramentasUsadas: string[] = []
+        const inicio = Date.now()
+        let tokensEntrada = 0, tokensSaida = 0, tokensCache = 0, iteracoes = 0
+        let contextoTokens = 0
+        const ferramentasUsadas: string[] = []
 
-    for (let i = 0; i < MAX_ITERACOES; i++) {
-      const result = await model.generateContent({ contents: conversaAtual })
-      const uso    = extrairUso(result)
-      // 1ª iteração = histórico + system prompt, antes das ferramentas inflarem
-      if (i === 0) contextoTokens = uso.tokensEntrada
-      tokensEntrada += uso.tokensEntrada
-      tokensSaida   += uso.tokensSaida
-      tokensCache   += uso.tokensCache
-      iteracoes++
-      const parts  = result.response?.candidates?.[0]?.content?.parts ?? []
-      const calls  = parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
-      const texto  = parts.filter((p) => p.text).map((p) => p.text).join('').trim()
+        for (let i = 0; i < MAX_ITERACOES; i++) {
+          const streamResult = await model.generateContentStream({ contents: conversaAtual })
 
-      if (!calls.length) {
-        respostaFinal = texto
-        break
+          // Texto ao vivo: cada chunk vira um evento e acumula na resposta final.
+          for await (const chunk of streamResult.stream) {
+            const t = chunk.candidates?.[0]?.content?.parts?.filter((p) => p.text).map((p) => p.text).join('') ?? ''
+            if (t) { respostaFinal += t; envia({ t: 'texto', v: t }) }
+          }
+
+          // Agregado: fonte autoritativa de tokens, parts e functionCalls.
+          const agg = await streamResult.response
+          const uso = extrairUso({ response: agg } as GenerateContentResult)
+          if (i === 0) contextoTokens = uso.tokensEntrada
+          tokensEntrada += uso.tokensEntrada
+          tokensSaida   += uso.tokensSaida
+          tokensCache   += uso.tokensCache
+          iteracoes++
+
+          const parts = agg.candidates?.[0]?.content?.parts ?? []
+          const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
+          if (!calls.length) break
+
+          // Ações ao vivo: avisa que vai executar, roda em PARALELO, avisa o resultado.
+          for (const fc of calls) envia({ t: 'acao', nome: fc.name, status: 'rodando' })
+          const resultados = await Promise.all(
+            calls.map((fc) => executarFerramenta(fc.name, (fc.args ?? {}) as Record<string, unknown>, toolCtx)),
+          )
+          const respostas: Part[] = []
+          resultados.forEach(({ resultado, meta }, idx) => {
+            executadas.push(meta)
+            ferramentasUsadas.push(calls[idx].name)
+            const falhou = meta.resumo.startsWith('Falhou:')
+            envia({ t: 'acao', nome: calls[idx].name, resumo: meta.resumo, status: falhou ? 'erro' : 'ok' })
+            respostas.push({ functionResponse: { name: calls[idx].name, response: { resultado } } })
+          })
+
+          conversaAtual = [...conversaAtual, { role: 'model', parts }, { role: 'user', parts: respostas }]
+        }
+
+        if (!respostaFinal.trim()) {
+          respostaFinal = executadas.length
+            ? 'Executei as ações, mas atingi o limite de passos antes de formular a resposta completa.'
+            : 'Não consegui processar sua mensagem. Tente reformular.'
+          envia({ t: 'texto', v: respostaFinal })
+        }
+
+        const custoResposta = custoBRL(modelo, { tokensEntrada, tokensSaida, tokensCache })
+
+        // Persiste a resposta + telemetria (igual antes; agora ao fim do stream).
+        const { data: msgIa } = await supabase.from('ia_mensagens').insert({
+          conversa_id: conversaId,
+          user_id:     user.id,
+          role:        'assistant',
+          content:     respostaFinal,
+          ferramentas: executadas.length ? executadas : null,
+          custo_brl:   custoResposta,
+        }).select('id, role, content, ferramentas, custo_brl, created_at').single()
+
+        await supabase.from('ia_conversas').update({ updated_at: new Date().toISOString() }).eq('id', conversaId)
+
+        await registrarUso(supabase, {
+          userId: user.id, modelo, contexto: 'agente', conversaId,
+          tokensEntrada, tokensSaida, tokensCache,
+          duracaoMs: Date.now() - inicio, iteracoes, ferramentas: ferramentasUsadas,
+        })
+
+        envia({
+          t: 'fim',
+          conversa_id:     conversaId,
+          contexto_tokens: contextoTokens,
+          custo_resposta:  custoResposta,
+          mensagem: msgIa ?? {
+            id: crypto.randomUUID(), role: 'assistant', content: respostaFinal,
+            ferramentas: executadas.length ? executadas : null, custo_brl: custoResposta,
+            created_at: new Date().toISOString(),
+          },
+        })
+        controller.close()
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Erro desconhecido'
+        try { controller.enqueue(encoder.encode(JSON.stringify({ t: 'erro', v: msg }) + '\n')) } catch { /* já fechado */ }
+        controller.close()
       }
+    },
+  })
 
-      // Executa as ferramentas pedidas e devolve os resultados ao modelo
-      const respostas: Part[] = []
-      for (const fc of calls) {
-        const { resultado, meta } = await executarFerramenta(
-          fc.name,
-          (fc.args ?? {}) as Record<string, unknown>,
-          toolCtx,
-        )
-        executadas.push(meta)
-        ferramentasUsadas.push(fc.name)
-        respostas.push({ functionResponse: { name: fc.name, response: { resultado } } })
-      }
-
-      conversaAtual = [
-        ...conversaAtual,
-        { role: 'model', parts },
-        { role: 'user',  parts: respostas },
-      ]
-    }
-
-    if (!respostaFinal) {
-      respostaFinal = executadas.length
-        ? 'Executei as ações, mas atingi o limite de passos antes de formular a resposta completa. Veja as ações executadas abaixo.'
-        : 'Não consegui processar sua mensagem. Tente reformular.'
-    }
-
-    const custoResposta = custoBRL(modelo, { tokensEntrada, tokensSaida, tokensCache })
-
-    // 5. Persiste a resposta (com o custo estimado) e atualiza a conversa
-    const { data: msgIa } = await supabase.from('ia_mensagens').insert({
-      conversa_id: conversaId,
-      user_id:     user.id,
-      role:        'assistant',
-      content:     respostaFinal,
-      ferramentas: executadas.length ? executadas : null,
-      custo_brl:   custoResposta,
-    }).select('id, role, content, ferramentas, custo_brl, created_at').single()
-
-    await supabase.from('ia_conversas')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversaId)
-
-    // 6. Telemetria de uso — 1 linha por mensagem, somando todas as iterações
-    await registrarUso(supabase, {
-      userId:        user.id,
-      modelo,
-      contexto:      'agente',
-      conversaId,
-      tokensEntrada, tokensSaida, tokensCache,
-      duracaoMs:     Date.now() - inicio,
-      iteracoes,
-      ferramentas:   ferramentasUsadas,
-    })
-
-    return NextResponse.json({
-      conversa_id: conversaId,
-      contexto_tokens: contextoTokens,
-      custo_resposta: custoResposta,
-      mensagem: msgIa ?? {
-        id: crypto.randomUUID(), role: 'assistant', content: respostaFinal,
-        ferramentas: executadas.length ? executadas : null, custo_brl: custoResposta,
-        created_at: new Date().toISOString(),
-      },
-    })
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'Erro desconhecido'
-    return NextResponse.json({ error: msg }, { status: 500 })
-  }
+  return new Response(stream, {
+    headers: {
+      'Content-Type':      'application/x-ndjson; charset=utf-8',
+      'Cache-Control':     'no-cache, no-transform',
+      'X-Accel-Buffering': 'no',
+    },
+  })
 }

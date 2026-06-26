@@ -16,8 +16,9 @@ export interface AnexoIA {
 }
 
 export interface FerramentaExecutada {
-  nome:   string
-  resumo: string
+  nome:    string
+  resumo:  string
+  status?: 'rodando' | 'ok' | 'erro' // só ao vivo (streaming); persistido fica sem
 }
 
 export interface MensagemIA {
@@ -27,6 +28,7 @@ export interface MensagemIA {
   anexos?:      AnexoIA[] | null
   ferramentas?: FerramentaExecutada[] | null
   custo_brl?:   number | null // custo estimado (R$) da resposta — só em mensagens do agente
+  streaming?:   boolean       // true enquanto a resposta está chegando ao vivo
   created_at:   string
 }
 
@@ -218,7 +220,16 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       anexos:     anexos.length ? anexos : null,
       created_at: new Date().toISOString(),
     }
-    set({ mensagens: [...get().mensagens, otimista], anexos: [], enviando: true, erro: null })
+    // Placeholder da resposta que vai sendo preenchido ao vivo pelo stream.
+    const assistId = `stream-${Date.now()}`
+    const placeholder: MensagemIA = {
+      id: assistId, role: 'assistant', content: '', streaming: true, created_at: new Date().toISOString(),
+    }
+    set({ mensagens: [...get().mensagens, otimista, placeholder], anexos: [], enviando: true, erro: null })
+
+    // Atualiza só a mensagem em streaming, preservando o resto.
+    const patch = (fn: (m: MensagemIA) => MensagemIA) =>
+      set({ mensagens: get().mensagens.map((m) => (m.id === assistId ? fn(m) : m)) })
 
     try {
       const res = await fetch('/api/ia/agent', {
@@ -232,31 +243,73 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           cliente_contexto_id: clienteContextoId || undefined,
         }),
       })
-      const json = await res.json() as { conversa_id?: string; mensagem?: MensagemIA; contexto_tokens?: number; custo_resposta?: number; error?: string }
 
-      if (!res.ok || !json.mensagem) {
-        throw new Error(json.error ?? `Erro HTTP ${res.status}`)
+      if (!res.ok || !res.body) {
+        const j = await res.json().catch(() => ({})) as { error?: string }
+        throw new Error(j.error ?? `Erro HTTP ${res.status}`)
       }
 
-      const custoResp = json.custo_resposta ?? 0
-      set({
-        conversaId:     json.conversa_id ?? conversaId,
-        mensagens:      [...get().mensagens, json.mensagem],
-        enviando:       false,
-        contextoTokens: json.contexto_tokens ?? get().contextoTokens,
-        custoConversa:  get().custoConversa + custoResp,
-      })
-      void get().carregarConversas()
+      const reader  = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let recebeuFim = false
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const linhas = buffer.split('\n')
+        buffer = linhas.pop() ?? '' // guarda a linha parcial pro próximo chunk
+
+        for (const linha of linhas) {
+          if (!linha.trim()) continue
+          let ev: Record<string, unknown>
+          try { ev = JSON.parse(linha) } catch { continue }
+
+          if (ev.t === 'texto') {
+            const delta = String(ev.v ?? '')
+            patch((m) => ({ ...m, content: m.content + delta }))
+          } else if (ev.t === 'acao') {
+            const nome = String(ev.nome ?? '')
+            const status = ev.status as FerramentaExecutada['status']
+            if (status === 'rodando') {
+              patch((m) => ({ ...m, ferramentas: [...(m.ferramentas ?? []), { nome, resumo: '', status: 'rodando' }] }))
+            } else {
+              // Finaliza a 1ª ferramenta 'rodando' com esse nome.
+              patch((m) => {
+                const fs = [...(m.ferramentas ?? [])]
+                const i = fs.findIndex((f) => f.nome === nome && f.status === 'rodando')
+                if (i >= 0) fs[i] = { nome, resumo: String(ev.resumo ?? ''), status }
+                return { ...m, ferramentas: fs }
+              })
+            }
+          } else if (ev.t === 'fim') {
+            recebeuFim = true
+            const finalMsg = ev.mensagem as MensagemIA | undefined
+            const custoResp = Number(ev.custo_resposta ?? 0)
+            set({
+              conversaId:     (ev.conversa_id as string) ?? get().conversaId,
+              mensagens:      get().mensagens.map((m) => (m.id === assistId ? { ...(finalMsg ?? m), streaming: false } : m)),
+              enviando:       false,
+              contextoTokens: (ev.contexto_tokens as number) ?? get().contextoTokens,
+              custoConversa:  get().custoConversa + custoResp,
+            })
+            void get().carregarConversas()
+          } else if (ev.t === 'erro') {
+            throw new Error(String(ev.v ?? 'Erro no agente'))
+          }
+        }
+      }
+
+      // Stream terminou sem 'fim' (ex.: queda de conexão) — finaliza o que veio.
+      if (!recebeuFim) {
+        patch((m) => ({ ...m, streaming: false, content: m.content || '⚠️ Conexão interrompida antes de concluir a resposta.' }))
+        set({ enviando: false })
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sem conexão com o agente'
-      set({
-        enviando: false,
-        erro:     msg,
-        mensagens: [
-          ...get().mensagens,
-          { id: `erro-${Date.now()}`, role: 'assistant', content: `⚠️ ${msg}`, created_at: new Date().toISOString() },
-        ],
-      })
+      patch((m) => ({ ...m, streaming: false, content: m.content || `⚠️ ${msg}` }))
+      set({ enviando: false, erro: msg })
     }
   },
 

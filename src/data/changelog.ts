@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.32.0',
+    data:   '2026-06-26',
+    novidades: [
+      'A Gator agora responde AO VIVO: o texto aparece sendo escrito na hora (token a token), com um cursor piscando, em vez de você esperar a resposta inteira ficar pronta. A sensação é a de uma IA de ponta de verdade',
+      'Você vê a Gator trabalhando: quando ela precisa consultar ou executar algo, a ação aparece na hora com um indicador girando ("panorama agencia…") e vira ✓ quando conclui (ou fica vermelha se falhar). Acabou a caixa-preta — dá pra acompanhar o que ela está fazendo',
+      'Quando ela faz várias consultas de uma vez, agora rodam em paralelo (mais rápido), e um erro no meio não derruba mais a conversa inteira',
+    ],
+  },
+  {
     versao: '0.31.0',
     data:   '2026-06-26',
     novidades: [

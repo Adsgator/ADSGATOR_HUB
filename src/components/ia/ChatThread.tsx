@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Bot, FileText, User, Volume2, Wrench, Square } from 'lucide-react'
+import { Bot, FileText, User, Volume2, Wrench, Square, Loader2, AlertTriangle } from 'lucide-react'
 import { Markdown } from './Markdown'
 import type { MensagemIA } from '@/lib/store/assistant-store'
 
@@ -108,20 +108,46 @@ export function ChatThread({ mensagens, enviando, vazio }: ChatThreadProps) {
               </div>
             )}
 
-            {m.role === 'assistant'
-              ? <Markdown texto={m.content} />
-              : <span className="whitespace-pre-wrap leading-relaxed">{m.content}</span>
-            }
+            {m.role === 'assistant' ? (
+              m.streaming && !m.content && !m.ferramentas?.length ? (
+                // Esperando o 1º token — dots dentro da própria bolha
+                <div className="flex gap-[0.25rem] items-center h-[0.875rem] py-[0.125rem]">
+                  {[0, 120, 240].map((d) => (
+                    <div key={d} className="w-[0.3125rem] h-[0.3125rem] rounded-full bg-ink-muted animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                  ))}
+                </div>
+              ) : (
+                <span>
+                  <Markdown texto={m.content} />
+                  {m.streaming && m.content && (
+                    <span className="inline-block w-[0.4rem] h-[0.85rem] align-text-bottom bg-ads-500 ml-[0.125rem] animate-pulse rounded-[0.0625rem]" />
+                  )}
+                </span>
+              )
+            ) : (
+              <span className="whitespace-pre-wrap leading-relaxed">{m.content}</span>
+            )}
 
             {/* Ações executadas + custo estimado da resposta */}
             {(!!m.ferramentas?.length || (m.role === 'assistant' && !!m.custo_brl)) && (
               <div className="flex flex-wrap items-center gap-[0.25rem] mt-[0.5rem] pt-[0.375rem] border-t border-surface-border/30">
-                {m.ferramentas?.map((f, i) => (
-                  <span key={i} className="inline-flex items-center gap-[0.25rem] px-[0.375rem] py-[0.125rem] rounded-full bg-ads-500/10 text-ads-600 text-[0.625rem] font-medium">
-                    <Wrench className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2.5} />
-                    {f.resumo}
-                  </span>
-                ))}
+                {m.ferramentas?.map((f, i) => {
+                  const rodando = f.status === 'rodando'
+                  const erro    = f.status === 'erro'
+                  return (
+                    <span
+                      key={i}
+                      className={`inline-flex items-center gap-[0.25rem] px-[0.375rem] py-[0.125rem] rounded-full text-[0.625rem] font-medium ${
+                        erro ? 'bg-status-red/10 text-status-red' : 'bg-ads-500/10 text-ads-600'
+                      }`}
+                    >
+                      {rodando ? <Loader2 className="w-[0.5625rem] h-[0.5625rem] animate-spin" strokeWidth={2.5} />
+                        : erro  ? <AlertTriangle className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2.5} />
+                        :         <Wrench className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2.5} />}
+                      {rodando ? `${f.nome.replace(/_/g, ' ')}…` : f.resumo}
+                    </span>
+                  )
+                })}
                 {m.role === 'assistant' && !!m.custo_brl && (
                   <span
                     title="Custo estimado desta resposta"
@@ -134,24 +160,10 @@ export function ChatThread({ mensagens, enviando, vazio }: ChatThreadProps) {
             )}
           </div>
 
-          {m.role === 'assistant' && m.content && <BotaoOuvir texto={m.content} />}
+          {/* Ler em voz alta — só quando a resposta terminou de chegar */}
+          {m.role === 'assistant' && m.content && !m.streaming && <BotaoOuvir texto={m.content} />}
         </div>
       ))}
-
-      {enviando && (
-        <div className="flex gap-[0.375rem]">
-          <div className="w-[1.375rem] h-[1.375rem] rounded-full bg-surface-hover flex items-center justify-center shrink-0">
-            <Bot className="w-[0.625rem] h-[0.625rem] text-ads-500 animate-pulse" strokeWidth={1.75} />
-          </div>
-          <div className="bg-surface-hover rounded-xl px-[0.625rem] py-[0.5rem]">
-            <div className="flex gap-[0.25rem] items-center h-[0.875rem]">
-              {[0, 120, 240].map((d) => (
-                <div key={d} className="w-[0.3125rem] h-[0.3125rem] rounded-full bg-ink-muted animate-bounce" style={{ animationDelay: `${d}ms` }} />
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
       <div ref={bottomRef} />
     </div>
   )
