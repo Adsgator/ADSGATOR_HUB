@@ -51,6 +51,14 @@ function num(v: unknown): number | undefined {
   return typeof v === 'number' && Number.isFinite(v) ? v : undefined
 }
 
+/** Boolean tolerante: aceita boolean real ou as strings "true"/"false" do modelo. */
+function bool(v: unknown): boolean | undefined {
+  if (typeof v === 'boolean') return v
+  if (v === 'true')  return true
+  if (v === 'false') return false
+  return undefined
+}
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** Resolve um cliente por ID **ou NOME** e garante que pertence ao usuário; retorna
@@ -273,7 +281,7 @@ export const TOOLS: Record<string, Tool> = {
   atualizar_cliente: {
     declaration: {
       name: 'atualizar_cliente',
-      description: 'Atualiza campos do cadastro de um cliente (status, MRR, contato, saldo Google etc.). Só envie os campos que mudam.',
+      description: 'Atualiza campos do cadastro de um cliente (status, MRR, contato, saldo Google, integrações Google Ads/GA4 etc.). Só envie os campos que mudam. Para CONECTAR analytics, preencha google_ads_customer_id (ID da conta Google Ads) e/ou ga4_property_id e ligue os flags correspondentes — NÃO existe OAuth/login no Hub; a conexão é por ID + credenciais globais da agência.',
       parameters: {
         type: T.OBJECT,
         properties: {
@@ -287,6 +295,10 @@ export const TOOLS: Record<string, Tool> = {
           saldo_google: { type: T.NUMBER },
           plano:        { type: T.STRING },
           website:      { type: T.STRING },
+          google_ads_customer_id: { type: T.STRING,  description: 'ID da conta Google Ads do cliente (ex.: 159-984-5807; o sistema guarda só os dígitos)' },
+          ga4_property_id:        { type: T.STRING,  description: 'ID da propriedade GA4 do cliente' },
+          google_ads_enabled:     { type: T.BOOLEAN, description: 'Ligar/desligar a integração Google Ads (ligue ao conectar o customer_id)' },
+          ga4_enabled:            { type: T.BOOLEAN, description: 'Ligar/desligar a integração GA4 (ligue ao conectar o property_id)' },
         },
         required: ['cliente_id'],
       },
@@ -296,12 +308,19 @@ export const TOOLS: Record<string, Tool> = {
       if (!id) throw new Error('cliente_id é obrigatório.')
       const atual = await ownCliente(ctx, id)
       const campos: Record<string, unknown> = {}
-      for (const k of ['nome', 'status', 'nicho', 'email', 'whatsapp', 'plano', 'website'] as const) {
+      for (const k of ['nome', 'status', 'nicho', 'email', 'whatsapp', 'plano', 'website', 'ga4_property_id'] as const) {
         if (str(args[k]) !== undefined) campos[k] = str(args[k])
       }
       for (const k of ['mrr', 'saldo_google'] as const) {
         if (num(args[k]) !== undefined) campos[k] = num(args[k])
       }
+      for (const k of ['google_ads_enabled', 'ga4_enabled'] as const) {
+        if (bool(args[k]) !== undefined) campos[k] = bool(args[k])
+      }
+      // Google Ads customer_id: a API usa só os 10 dígitos (sem hífens).
+      const adsId = str(args.google_ads_customer_id)
+      if (adsId !== undefined) campos.google_ads_customer_id = adsId.replace(/\D/g, '')
+
       if (!Object.keys(campos).length) throw new Error('Nenhum campo para atualizar.')
       const { error } = await ctx.db.from('clientes').update(campos).eq('id', id).eq('user_id', ctx.userId)
       if (error) throw new Error(error.message)
@@ -315,7 +334,12 @@ export const TOOLS: Record<string, Tool> = {
           metadata:   campos,
         })
       } catch { /* opcional */ }
-      return { ok: true, cliente: atual.nome, campos_atualizados: campos }
+      // Se conectou/ligou integração, seja honesta sobre o que falta p/ aparecer dado.
+      const mexeuIntegracao = ['google_ads_customer_id', 'ga4_property_id', 'google_ads_enabled', 'ga4_enabled'].some((k) => k in campos)
+      const dica = mexeuIntegracao
+        ? 'Integração ajustada no cadastro. O dado NÃO aparece na hora: é preciso rodar o sync (botão "Sincronizar" em /analytics ou o cron) e as credenciais Google da agência precisam estar configuradas nas env vars — hoje isso é uma lacuna conhecida, então pode não vir dado real ainda.'
+        : undefined
+      return { ok: true, cliente: atual.nome, campos_atualizados: campos, ...(dica ? { dica } : {}) }
     },
     resumo: () => 'Cliente atualizado',
   },

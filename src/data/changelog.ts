@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.42.0',
+    data:   '2026-06-27',
+    novidades: [
+      'A Gator agora conecta o Google Ads / GA4 de um cliente por você: é só pedir ("conecta o Google Ads do Fulano, ID 159-984-5807") que ela preenche o ID e liga a integração — antes ela não tinha esse campo na ferramenta e empurrava pra você fazer manual no cadastro',
+      'E ela parou de inventar processo que o Hub não tem: aprendeu que a conexão NÃO é por OAuth/login do cliente, e sim por ID da conta + as credenciais globais da agência (ideal pra quem usa MCC). Agora ela também te avisa, com honestidade, que o dado só aparece depois do sync — e que as credenciais Google do Hub ainda são uma pendência — em vez de prometer que "vai aparecer sozinho"',
+    ],
+  },
+  {
     versao: '0.41.1',
     data:   '2026-06-26',
     novidades: [
