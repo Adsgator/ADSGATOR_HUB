@@ -1116,6 +1116,10 @@ export const TOOLS: Record<string, Tool> = {
       for (const a of (assinRes.data ?? []) as Array<{ cliente_id: string; valor_mensal: number | null }>) {
         mrrPorCliente.set(a.cliente_id, (mrrPorCliente.get(a.cliente_id) ?? 0) + (a.valor_mensal ?? 0))
       }
+      // Quem tem cobrança VIVA. Atraso registrado sem assinatura viva = inconsistência
+      // (assinatura cancelada/deletada mas dias_atraso não zerou) — não é "suspensão
+      // iminente" nem dinheiro em risco; é dado a revisar / provável saída.
+      const temAssinaturaViva = new Set(mrrPorCliente.keys())
 
       // Tendência de performance: compara os 2 snapshots mais recentes por cliente+fonte.
       const ids = clientes.map((c) => c.id as string)
@@ -1161,13 +1165,18 @@ export const TOOLS: Record<string, Tool> = {
         const estagio = estagioInadimplencia(dias, limiares)
         let prazo: string | undefined
         if (estagio !== 'em_dia') {
-          const rotulo: Record<string, string> = { atencao: 'em atraso', suspensao: 'suspensão iminente (D+7)', grave: 'quebra de contrato (D+15)', critico: 'crítico (D+30)' }
-          motivos.push(`inadimplente ${dias}d — ${rotulo[estagio]}`)
-          if (estagio !== 'atencao') alto = true
-          const prox = dias < limiares.suspensao ? { d: limiares.suspensao, n: 'suspensão' }
-            : dias < limiares.grave ? { d: limiares.grave, n: 'quebra de contrato' }
-            : dias < limiares.critico ? { d: limiares.critico, n: 'estágio crítico' } : null
-          if (prox) prazo = `${prox.d - dias} dia(s) até ${prox.n}`
+          if (temAssinaturaViva.has(c.id as string)) {
+            const rotulo: Record<string, string> = { atencao: 'em atraso', suspensao: 'suspensão iminente (D+7)', grave: 'quebra de contrato (D+15)', critico: 'crítico (D+30)' }
+            motivos.push(`inadimplente ${dias}d — ${rotulo[estagio]}`)
+            if (estagio !== 'atencao') alto = true
+            const prox = dias < limiares.suspensao ? { d: limiares.suspensao, n: 'suspensão' }
+              : dias < limiares.grave ? { d: limiares.grave, n: 'quebra de contrato' }
+              : dias < limiares.critico ? { d: limiares.critico, n: 'estágio crítico' } : null
+            if (prox) prazo = `${prox.d - dias} dia(s) até ${prox.n}`
+          } else {
+            // Atraso sem cobrança viva: honestidade > alarme falso de "suspensão".
+            motivos.push(`atraso de ${dias}d registrado MAS sem assinatura viva (cancelada/deletada) — revisar: provável saída do cliente ou dado defasado, não há cobrança a suspender`)
+          }
         }
 
         // Saldo Google (mín por cliente, fallback global — mesma regra do alerta de saldo).

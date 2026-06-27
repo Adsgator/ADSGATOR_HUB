@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.42.1',
+    data:   '2026-06-27',
+    novidades: [
+      'O radar parou de dar alarme falso: se um cliente tem dias de atraso registrados MAS a assinatura dele já foi cancelada/deletada (não há cobrança viva), a Gator não diz mais "suspensão iminente / X dias até quebra de contrato" — ela aponta como "atraso registrado sem assinatura viva: revisar, provável saída ou dado defasado". Pega o caso real da Ana Julia (13 dias de atraso com assinatura deletada)',
+    ],
+  },
+  {
     versao: '0.42.0',
     data:   '2026-06-27',
     novidades: [
