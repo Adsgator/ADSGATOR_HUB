@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { MODELO_FLASH, MODELO_PRO } from '@/lib/vertex-ai'
+import { MODELO_FLASH, MODELO_PRO, MODELO_AUTO } from '@/lib/vertex-ai'
 
-const MODELOS_VALIDOS = new Set([MODELO_FLASH, MODELO_PRO])
+const MODELOS_VALIDOS = new Set([MODELO_FLASH, MODELO_PRO, MODELO_AUTO])
 
 // Salva o cérebro da Gator escolhido pelo Lucas: modelo (Flash/Pro) + thinking.
 export async function PUT(req: NextRequest) {

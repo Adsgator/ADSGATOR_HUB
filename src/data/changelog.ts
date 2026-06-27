@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.43.0',
+    data:   '2026-06-27',
+    novidades: [
+      'Novo cérebro "Auto" (recomendado): a Gator usa o Flash no dia a dia (barato) e SOBE pro Pro sozinha quando precisa — toda pergunta de análise/decisão/"como funciona" já começa no Pro (onde o Flash costuma confabular), e se ela travar no meio de uma tarefa (uma ferramenta falha, ela se repete ou a tarefa fica longa) o Pro assume o resto. Você tem a robustez do Pro pagando preço de Flash na maioria das vezes',
+      'Transparência pra você confiar/desconfiar com facilidade: quando ela responde com o Pro, aparece um selo roxo "Pro" na resposta (com o motivo de ter subido, ex.: "pergunta de análise") — você vê na hora quando o assunto foi tratado como mais sério. E o custo continua certo: a parte Flash e a parte Pro são cobradas cada uma ao seu preço no painel de Uso',
+    ],
+  },
+  {
     versao: '0.42.1',
     data:   '2026-06-27',
     novidades: [

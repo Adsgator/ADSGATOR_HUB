@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { Zap, Brain, ChevronDown, Check, Coins } from 'lucide-react'
+import { Zap, Brain, Sparkles, ChevronDown, Check, Coins } from 'lucide-react'
 import { useClickOutside } from '@/lib/hooks/useClickOutside'
 
 // ─── CONTROLES DO CHAT DA GATOR ───────────────────────────────────────────────
@@ -12,8 +12,9 @@ import { useClickOutside } from '@/lib/hooks/useClickOutside'
 interface ClienteOpcao { id: string; nome: string }
 
 const MODELOS = [
-  { id: 'gemini-2.5-flash', nome: 'Flash', icone: Zap,   custo: 'barato',  hint: 'Rápido e econômico. Ótimo pro dia a dia.' },
-  { id: 'gemini-2.5-pro',   nome: 'Pro',   icone: Brain, custo: '~4x',     hint: 'Mais inteligente, confabula menos. Pra análise e decisão fina.' },
+  { id: 'auto',             nome: 'Auto',  icone: Sparkles, custo: 'esperto', hint: 'Flash no dia a dia; sobe pro Pro sozinho quando precisa (análise, ou se ele travar). Melhor custo×confiança. Recomendado.' },
+  { id: 'gemini-2.5-flash', nome: 'Flash', icone: Zap,      custo: 'barato',  hint: 'Rápido e econômico. Sempre Flash, sem subir pro Pro.' },
+  { id: 'gemini-2.5-pro',   nome: 'Pro',   icone: Brain,    custo: '~4x',     hint: 'Mais inteligente, confabula menos. Sempre Pro — pra análise e decisão fina.' },
 ] as const
 
 const fmtBRL = (v: number) =>

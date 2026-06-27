@@ -30,6 +30,8 @@ export interface MensagemIA {
   custo_brl?:   number | null // custo estimado (R$) da resposta — só em mensagens do agente
   streaming?:   boolean       // true enquanto a resposta está chegando ao vivo
   sugestoes?:   string[]      // próximos passos clicáveis (chips) — só ao vivo, não persiste
+  modeloUsado?: 'flash' | 'pro' // cérebro que respondeu (modo Auto) — sinal de confiança
+  escalouMotivo?: string      // por que subiu pro Pro (ex.: "pergunta de análise")
   created_at:   string
 }
 
@@ -284,14 +286,22 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
                 return { ...m, ferramentas: fs }
               })
             }
+          } else if (ev.t === 'escalou') {
+            // Modo Auto subiu pro Pro — sinal de confiança visível na hora.
+            const motivo = String(ev.motivo ?? '')
+            patch((m) => ({ ...m, modeloUsado: 'pro', escalouMotivo: motivo || m.escalouMotivo }))
           } else if (ev.t === 'fim') {
             recebeuFim = true
             const finalMsg = ev.mensagem as MensagemIA | undefined
             const custoResp = Number(ev.custo_resposta ?? 0)
             const sugestoes = Array.isArray(ev.sugestoes) ? (ev.sugestoes as string[]) : []
+            const modeloUsado = ev.modelo_usado === 'pro' ? 'pro' : ev.modelo_usado === 'flash' ? 'flash' : undefined
+            const escalouMotivo = typeof ev.escalou_motivo === 'string' ? ev.escalou_motivo : undefined
             set({
               conversaId:     (ev.conversa_id as string) ?? get().conversaId,
-              mensagens:      get().mensagens.map((m) => (m.id === assistId ? { ...(finalMsg ?? m), sugestoes, streaming: false } : m)),
+              mensagens:      get().mensagens.map((m) => (m.id === assistId
+                ? { ...(finalMsg ?? m), sugestoes, modeloUsado: modeloUsado ?? m.modeloUsado, escalouMotivo: escalouMotivo ?? m.escalouMotivo, streaming: false }
+                : m)),
               enviando:       false,
               contextoTokens: (ev.contexto_tokens as number) ?? get().contextoTokens,
               custoConversa:  get().custoConversa + custoResp,

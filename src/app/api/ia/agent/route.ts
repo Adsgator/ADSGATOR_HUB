@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
-import { MODELO_FLASH, MODELO_PRO, criarVertexAI } from '@/lib/vertex-ai'
+import { MODELO_FLASH, MODELO_PRO, MODELO_LITE, MODELO_AUTO, criarVertexAI } from '@/lib/vertex-ai'
 import {
   FUNCTION_DECLARATIONS,
   executarFerramenta,
@@ -16,8 +16,8 @@ import {
   type ToolExecutada,
 } from '@/lib/ia/tools'
 import { montarHistoricoCompactado, type AnexoIA, type MensagemDb } from '@/lib/ia/compactacao'
-import type { Content, Part, GenerationConfig, GenerateContentResult } from '@google-cloud/vertexai'
-import { extrairUso, registrarUso, custoBRL } from '@/lib/ia/uso'
+import type { Content, Part, GenerationConfig, GenerateContentResult, VertexAI } from '@google-cloud/vertexai'
+import { extrairUso, registrarUso, custoBRL, type Uso } from '@/lib/ia/uso'
 
 // O loop pode encadear várias chamadas ao modelo + ferramentas
 export const maxDuration = 120
@@ -32,18 +32,55 @@ const TETO_CUSTO_RESPOSTA_BRL = 0.50 // guarda: pausa e devolve o controle se UM
 const MAX_ANEXO_BASE64   = 4 * 1024 * 1024 // ~3MB de imagem real
 const MAX_ARQUIVO_CHARS  = 30_000
 
-const MODELOS_VALIDOS = new Set([MODELO_FLASH, MODELO_PRO])
+const META_ITERACOES = Math.floor(MAX_ITERACOES / 2) // a partir daqui, tarefa "longa" no Auto escala p/ Pro
 
 /** Cérebro da Gator escolhido pelo Lucas em Configurações → Uso da IA. */
-async function resolverModelo(userId: string): Promise<{ modelo: string; thinking: boolean }> {
+async function resolverModelo(userId: string): Promise<{ modo: 'flash' | 'pro' | 'auto'; thinking: boolean }> {
   const { data } = await supabase
     .from('configuracoes_ia')
     .select('modelo, thinking')
     .eq('user_id', userId)
     .maybeSingle()
-  const modelo = typeof data?.modelo === 'string' && MODELOS_VALIDOS.has(data.modelo) ? data.modelo : MODELO_FLASH
+  const raw = typeof data?.modelo === 'string' ? data.modelo : MODELO_FLASH
+  const modo = raw === MODELO_PRO ? 'pro' : raw === MODELO_AUTO ? 'auto' : 'flash'
   const thinking = data?.thinking ?? false
-  return { modelo, thinking }
+  return { modo, thinking }
+}
+
+/**
+ * Roteador de entrada do modo Auto: um classificador BARATO (Flash-lite) decide se
+ * a mensagem pede o Pro de cara (análise/decisão/"como funciona" — onde o Flash
+ * confabula) ou se o Flash basta (trivial/operacional). À prova de falha: qualquer
+ * erro cai no Flash (a escalada reativa ainda cobre se ele tropeçar depois).
+ */
+async function rotearEntrada(
+  vertex: VertexAI,
+  mensagem: string,
+  temImagem: boolean,
+): Promise<{ inicial: string; motivo: string | null; uso: Uso }> {
+  const zero: Uso = { tokensEntrada: 0, tokensSaida: 0, tokensCache: 0 }
+  if (temImagem) return { inicial: MODELO_PRO, motivo: 'leitura de imagem', uso: zero }
+  if (!mensagem.trim()) return { inicial: MODELO_FLASH, motivo: null, uso: zero }
+  try {
+    const model = vertex.preview.getGenerativeModel({
+      model: MODELO_LITE,
+      generationConfig: { maxOutputTokens: 8, temperature: 0 } as GenerationConfig,
+    })
+    const prompt = `Classifique a intenção da mensagem do operador de uma agência de tráfego em UMA palavra:
+TRIVIAL = saudação, papo, agradecimento.
+OPERACIONAL = pedir um dado pontual ou executar uma ação (listar, criar, atualizar, cobrar, ver status).
+ANALISE = análise, diagnóstico, comparação, decisão, recomendação, estratégia, "o que você acha", "como funciona", "o que devo fazer", "por que".
+Responda só a palavra.
+
+Mensagem: "${mensagem.slice(0, 600)}"`
+    const r = await model.generateContent(prompt)
+    const txt = (r.response?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') ?? '').toUpperCase()
+    const uso = extrairUso(r)
+    if (txt.includes('ANALISE') || txt.includes('ANÁLISE')) return { inicial: MODELO_PRO, motivo: 'pergunta de análise', uso }
+    return { inicial: MODELO_FLASH, motivo: null, uso }
+  } catch {
+    return { inicial: MODELO_FLASH, motivo: null, uso: zero }
+  }
 }
 const MENSAGENS_COM_IMAGEM = 8 // só as N últimas mensagens reenviam imagens ao modelo
 
@@ -236,17 +273,16 @@ export async function POST(req: NextRequest) {
 
   // 4. Loop agêntico com STREAMING — emite eventos NDJSON conforme a Gator pensa,
   //    executa ferramentas e responde. O front consome e mostra ao vivo.
-  const { modelo, thinking } = await resolverModelo(user.id)
+  const { modo, thinking } = await resolverModelo(user.id)
 
   // thinkingConfig não é tipado no SDK 1.12, mas o Vertex aceita via generationConfig.
   // O Pro SEMPRE raciocina e REJEITA thinkingBudget 0 (erro 400) — então só
   // controlamos o budget no Flash (0 desliga, -1 dinâmico). No Pro, omitimos.
-  const ehPro = modelo === MODELO_PRO
-  const generationConfig = {
+  const genConfigPara = (m: string): GenerationConfig => ({
     maxOutputTokens: 8192,
     temperature: 0.7,
-    ...(ehPro ? {} : { thinkingConfig: { thinkingBudget: thinking ? -1 : 0 } }),
-  } as unknown as GenerationConfig
+    ...(m === MODELO_PRO ? {} : { thinkingConfig: { thinkingBudget: thinking ? -1 : 0 } }),
+  } as unknown as GenerationConfig)
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
@@ -254,12 +290,33 @@ export async function POST(req: NextRequest) {
       const envia = (ev: object) => controller.enqueue(encoder.encode(JSON.stringify(ev) + '\n'))
       try {
         const vertex = criarVertexAI()
-        const model  = vertex.preview.getGenerativeModel({
-          model:             modelo,
+        const criarModel = (m: string) => vertex.preview.getGenerativeModel({
+          model:             m,
           systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
           tools:             [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-          generationConfig,
+          generationConfig:  genConfigPara(m),
         })
+
+        // CÉREBRO DO MODO AUTO: roteador na entrada escolhe o modelo inicial (análise
+        // → Pro); durante o loop, escala Flash→Pro se o Flash tropeçar. Flash/Pro
+        // fixos não roteiam nem escalam. Transparente: emite 'escalou' ao subir.
+        let modeloAtual = modo === 'pro' ? MODELO_PRO : MODELO_FLASH
+        let motivoEscalada: string | null = null
+        let routerUso: Uso | null = null
+        if (modo === 'auto') {
+          const r = await rotearEntrada(vertex, mensagem, anexos.some((a) => a.tipo === 'imagem'))
+          modeloAtual = r.inicial
+          routerUso   = r.uso
+          if (r.inicial === MODELO_PRO) { motivoEscalada = r.motivo; envia({ t: 'escalou', modelo: 'pro', motivo: r.motivo }) }
+        }
+        let model = criarModel(modeloAtual)
+        const escalar = (motivo: string) => {
+          if (modo !== 'auto' || modeloAtual === MODELO_PRO) return
+          modeloAtual = MODELO_PRO
+          model = criarModel(MODELO_PRO)
+          motivoEscalada = motivo
+          envia({ t: 'escalou', modelo: 'pro', motivo })
+        }
 
         const executadas: ToolExecutada[] = []
         let conversaAtual: Content[] = contents
@@ -282,8 +339,18 @@ export async function POST(req: NextRequest) {
         }
 
         const inicio = Date.now()
-        let tokensEntrada = 0, tokensSaida = 0, tokensCache = 0, iteracoes = 0
-        let contextoTokens = 0
+        let iteracoes = 0, contextoTokens = 0
+        // Tokens por modelo: no Auto uma resposta pode misturar Flash + Pro; o custo
+        // é a soma de cada parte ao seu preço (não tudo a um preço só).
+        const tokens: Record<string, Uso> = {
+          [MODELO_FLASH]: { tokensEntrada: 0, tokensSaida: 0, tokensCache: 0 },
+          [MODELO_PRO]:   { tokensEntrada: 0, tokensSaida: 0, tokensCache: 0 },
+        }
+        const acumular = (m: string, u: Uso) => {
+          const b = tokens[m] ?? tokens[MODELO_FLASH]
+          b.tokensEntrada += u.tokensEntrada; b.tokensSaida += u.tokensSaida; b.tokensCache += u.tokensCache
+        }
+        const custoTotal = () => custoBRL(MODELO_FLASH, tokens[MODELO_FLASH]) + custoBRL(MODELO_PRO, tokens[MODELO_PRO])
         const ferramentasUsadas: string[] = []
 
         let interrompido: 'iteracoes' | 'custo' | null = null
@@ -301,9 +368,7 @@ export async function POST(req: NextRequest) {
           const agg = await streamResult.response
           const uso = extrairUso({ response: agg } as GenerateContentResult)
           if (i === 0) contextoTokens = uso.tokensEntrada
-          tokensEntrada += uso.tokensEntrada
-          tokensSaida   += uso.tokensSaida
-          tokensCache   += uso.tokensCache
+          acumular(modeloAtual, uso)
           iteracoes++
 
           const parts = agg.candidates?.[0]?.content?.parts ?? []
@@ -326,9 +391,14 @@ export async function POST(req: NextRequest) {
 
           conversaAtual = [...conversaAtual, { role: 'model', parts }, { role: 'user', parts: respostas }]
 
+          // Escalada reativa (modo Auto): o Flash tropeçou → o Pro assume o resto.
+          if (resultados.some(({ meta }) => meta.resumo.startsWith('Falhou:')))      escalar('uma ferramenta falhou')
+          else if (resultados.some(({ meta }) => meta.resumo.startsWith('(já feito)'))) escalar('repetição detectada')
+          else if (i >= META_ITERACOES)                                              escalar('tarefa longa')
+
           // Guarda de custo: numa tarefa longa, se UMA resposta já gastou demais,
           // pausa antes de mais uma rodada cara e devolve o controle ao Lucas.
-          if (custoBRL(modelo, { tokensEntrada, tokensSaida, tokensCache }) >= TETO_CUSTO_RESPOSTA_BRL) {
+          if (custoTotal() >= TETO_CUSTO_RESPOSTA_BRL) {
             interrompido = 'custo'
             break
           }
@@ -341,9 +411,9 @@ export async function POST(req: NextRequest) {
         if (interrompido) {
           try {
             const modelFechamento = vertex.preview.getGenerativeModel({
-              model:             modelo,
+              model:             modeloAtual,
               systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
-              generationConfig, // sem tools: esta chamada é só para escrever o fechamento
+              generationConfig:  genConfigPara(modeloAtual), // sem tools: só escreve o fechamento
             })
             const instrucao = interrompido === 'custo'
               ? 'Esta tarefa já consumiu bastante processamento numa única resposta. NÃO chame mais ferramentas. Em português e em poucas linhas, diga o que você JÁ executou até aqui, o que ainda falta, e pergunte ao Lucas se quer que você continue de onde parou.'
@@ -367,10 +437,7 @@ export async function POST(req: NextRequest) {
               const t = chunk.candidates?.[0]?.content?.parts?.filter((p) => p.text).map((p) => p.text).join('') ?? ''
               fluxoTexto(t)
             }
-            const usoClose = extrairUso({ response: await closeStream.response } as GenerateContentResult)
-            tokensEntrada += usoClose.tokensEntrada
-            tokensSaida   += usoClose.tokensSaida
-            tokensCache   += usoClose.tokensCache
+            acumular(modeloAtual, extrairUso({ response: await closeStream.response } as GenerateContentResult))
             iteracoes++
           } catch (err) {
             console.error('[ia/agent] falha no fechamento de limite:', err)
@@ -414,7 +481,7 @@ export async function POST(req: NextRequest) {
           envia({ t: 'texto', v: respostaFinal })
         }
 
-        const custoResposta = custoBRL(modelo, { tokensEntrada, tokensSaida, tokensCache })
+        const custoResposta = custoTotal()
 
         // Persiste a resposta + telemetria (igual antes; agora ao fim do stream).
         const { data: msgIa } = await supabase.from('ia_mensagens').insert({
@@ -428,11 +495,27 @@ export async function POST(req: NextRequest) {
 
         await supabase.from('ia_conversas').update({ updated_at: new Date().toISOString() }).eq('id', conversaId)
 
-        await registrarUso(supabase, {
-          userId: user.id, modelo, contexto: 'agente', conversaId,
-          tokensEntrada, tokensSaida, tokensCache,
-          duracaoMs: Date.now() - inicio, iteracoes, ferramentas: ferramentasUsadas,
-        })
+        // Telemetria por modelo que de fato rodou (custo certo no painel, mesmo no
+        // Auto que mistura Flash+Pro). O modelo FINAL carrega duração/iterações/
+        // ferramentas; o outro, só os tokens. O roteador (lite) vai numa linha à parte.
+        for (const m of [MODELO_FLASH, MODELO_PRO]) {
+          const b = tokens[m]
+          if (!b.tokensEntrada && !b.tokensSaida) continue
+          const principal = m === modeloAtual
+          await registrarUso(supabase, {
+            userId: user.id, modelo: m, contexto: 'agente', conversaId,
+            tokensEntrada: b.tokensEntrada, tokensSaida: b.tokensSaida, tokensCache: b.tokensCache,
+            duracaoMs: principal ? Date.now() - inicio : undefined,
+            iteracoes:  principal ? iteracoes : undefined,
+            ferramentas: principal ? ferramentasUsadas : undefined,
+          })
+        }
+        if (routerUso && (routerUso.tokensEntrada || routerUso.tokensSaida)) {
+          await registrarUso(supabase, {
+            userId: user.id, modelo: MODELO_LITE, contexto: 'roteador', conversaId,
+            tokensEntrada: routerUso.tokensEntrada, tokensSaida: routerUso.tokensSaida, tokensCache: routerUso.tokensCache,
+          })
+        }
 
         envia({
           t: 'fim',
@@ -440,6 +523,8 @@ export async function POST(req: NextRequest) {
           contexto_tokens: contextoTokens,
           custo_resposta:  custoResposta,
           sugestoes,
+          modelo_usado:    modeloAtual === MODELO_PRO ? 'pro' : 'flash',
+          escalou_motivo:  motivoEscalada,
           mensagem: msgIa ?? {
             id: crypto.randomUUID(), role: 'assistant', content: respostaFinal,
             ferramentas: executadas.length ? executadas : null, custo_brl: custoResposta,

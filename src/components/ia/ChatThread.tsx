@@ -1,7 +1,7 @@
 'use client'
 
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { ArrowRight, Bot, FileText, User, Volume2, Wrench, Square, Loader2, AlertTriangle } from 'lucide-react'
+import { ArrowRight, Bot, Brain, FileText, User, Volume2, Wrench, Square, Loader2, AlertTriangle } from 'lucide-react'
 import { Markdown } from './Markdown'
 import type { MensagemIA } from '@/lib/store/assistant-store'
 
@@ -132,9 +132,18 @@ export function ChatThread({ mensagens, enviando, vazio, onSugestao }: ChatThrea
               <span className="whitespace-pre-wrap leading-relaxed">{m.content}</span>
             )}
 
-            {/* Ações executadas + custo estimado da resposta */}
-            {(!!m.ferramentas?.length || (m.role === 'assistant' && !!m.custo_brl)) && (
+            {/* Ações executadas + cérebro (modo Auto) + custo estimado da resposta */}
+            {(!!m.ferramentas?.length || (m.role === 'assistant' && (!!m.custo_brl || m.modeloUsado === 'pro'))) && (
               <div className="flex flex-wrap items-center gap-[0.25rem] mt-[0.5rem] pt-[0.375rem] border-t border-surface-border/30">
+                {m.role === 'assistant' && m.modeloUsado === 'pro' && (
+                  <span
+                    title={m.escalouMotivo ? `Subiu pro Pro: ${m.escalouMotivo}` : 'Respondido com o Pro'}
+                    className="inline-flex items-center gap-[0.25rem] px-[0.375rem] py-[0.125rem] rounded-full text-[0.625rem] font-medium bg-status-purple/10 text-status-purple"
+                  >
+                    <Brain className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2.5} />
+                    Pro{m.escalouMotivo ? ` · ${m.escalouMotivo}` : ''}
+                  </span>
+                )}
                 {m.ferramentas?.map((f, i) => {
                   const rodando = f.status === 'rodando'
                   const erro    = f.status === 'erro'

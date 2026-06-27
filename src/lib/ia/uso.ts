@@ -20,7 +20,7 @@ const PRECO_PADRAO = { in: 0.30, out: 2.50 } // fallback = flash
 const FATOR_CACHE = 0.25 // tokens em cache custam 1/4 do preço de entrada
 const USD_BRL = 5.5 // estimativa; câmbio real varia
 
-export type ContextoUso = 'agente' | 'chat' | 'hashtags' | 'briefing' | 'copy' | 'relatorio' | 'resumo'
+export type ContextoUso = 'agente' | 'chat' | 'hashtags' | 'briefing' | 'copy' | 'relatorio' | 'resumo' | 'roteador'
 
 export interface Uso {
   tokensEntrada: number

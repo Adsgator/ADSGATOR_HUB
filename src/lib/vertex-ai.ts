@@ -53,6 +53,8 @@ export function criarVertexAI() {
 export const MODELO_PRO   = 'gemini-2.5-pro'
 export const MODELO_FLASH = 'gemini-2.5-flash'
 export const MODELO_LITE  = 'gemini-2.5-flash-lite'
+/** Cérebro "Auto": começa no Flash e escala p/ o Pro quando ele não dá conta. */
+export const MODELO_AUTO  = 'auto'
 
 // ─── GERAR COPY PARA LANDING PAGE ────────────────────────────────────────────
 
