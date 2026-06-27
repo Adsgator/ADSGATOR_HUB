@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.43.1',
+    data:   '2026-06-27',
+    novidades: [
+      'O cérebro "Auto" virou o padrão da Gator: quem não escolheu um modelo específico passa a usar o Auto (Flash no dia a dia, subindo pro Pro sozinho quando precisa). Você pode voltar pra Flash puro ou Pro fixo quando quiser, no menu do cérebro do chat',
+    ],
+  },
+  {
     versao: '0.43.0',
     data:   '2026-06-27',
     novidades: [

@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest) {
   if (authErr || !user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await req.json() as { modelo?: string; thinking?: boolean }
-  const modelo = typeof body.modelo === 'string' && MODELOS_VALIDOS.has(body.modelo) ? body.modelo : MODELO_FLASH
+  const modelo = typeof body.modelo === 'string' && MODELOS_VALIDOS.has(body.modelo) ? body.modelo : MODELO_AUTO
   const thinking = !!body.thinking
 
   const { error } = await supabase

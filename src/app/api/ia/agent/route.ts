@@ -41,8 +41,9 @@ async function resolverModelo(userId: string): Promise<{ modo: 'flash' | 'pro' |
     .select('modelo, thinking')
     .eq('user_id', userId)
     .maybeSingle()
-  const raw = typeof data?.modelo === 'string' ? data.modelo : MODELO_FLASH
-  const modo = raw === MODELO_PRO ? 'pro' : raw === MODELO_AUTO ? 'auto' : 'flash'
+  // Padrão = Auto (Flash + escalada). Só Flash/Pro explícitos saem do Auto.
+  const raw = typeof data?.modelo === 'string' ? data.modelo : MODELO_AUTO
+  const modo = raw === MODELO_PRO ? 'pro' : raw === MODELO_FLASH ? 'flash' : 'auto'
   const thinking = data?.thinking ?? false
   return { modo, thinking }
 }
