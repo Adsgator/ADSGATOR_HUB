@@ -5,7 +5,6 @@
 // NUNCA pode lançar e derrubar a feature que está medindo (try/catch interno).
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { GenerateContentResult } from '@google-cloud/vertexai'
 
 // ── Preços (USD por 1M tokens) ────────────────────────────────────────────────
 // Estimativa jun/2026 — o painel rotula o custo como "estimado". Ajustar aqui
@@ -28,13 +27,27 @@ export interface Uso {
   tokensCache:   number
 }
 
-/** Lê usageMetadata da resposta do SDK, à prova de resposta sem metadata. */
-export function extrairUso(result: GenerateContentResult): Uso {
-  // thoughtsTokenCount (tokens de raciocínio do thinking) não é tipado no SDK
-  // 1.12, mas vem em runtime no Gemini 2.5 e é cobrado como SAÍDA — somamos.
-  const m = result?.response?.usageMetadata as
-    | (typeof result.response.usageMetadata & { thoughtsTokenCount?: number })
-    | undefined
+// Os campos de usageMetadata são idênticos nos dois SDKs (mesmo spec REST do
+// Gemini). thoughtsTokenCount (tokens de raciocínio do thinking) é cobrado como
+// SAÍDA — somamos. No @google/genai todos vêm tipados.
+interface UsageMetadataLike {
+  promptTokenCount?:        number
+  candidatesTokenCount?:    number
+  cachedContentTokenCount?: number
+  thoughtsTokenCount?:      number
+}
+
+/**
+ * Lê usageMetadata da resposta do SDK, à prova de resposta sem metadata.
+ * Shim transitório: aceita o formato do @google/genai (`result.usageMetadata`)
+ * e o do @google-cloud/vertexai antigo (`result.response.usageMetadata`), ainda
+ * usado pelo agente até o Passo B. Removível quando só sobrar o SDK novo.
+ */
+export function extrairUso(result: {
+  usageMetadata?: UsageMetadataLike | null
+  response?:      { usageMetadata?: UsageMetadataLike | null } | null
+}): Uso {
+  const m = result?.usageMetadata ?? result?.response?.usageMetadata ?? undefined
   return {
     tokensEntrada: m?.promptTokenCount       ?? 0,
     tokensSaida:   (m?.candidatesTokenCount ?? 0) + (m?.thoughtsTokenCount ?? 0),

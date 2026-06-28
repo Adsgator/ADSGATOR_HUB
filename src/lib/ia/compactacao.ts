@@ -10,8 +10,7 @@
 // a conversa inteira, sem buraco e sem duplicata.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { GenerationConfig } from '@google-cloud/vertexai'
-import { MODELO_FLASH, criarVertexAI } from '@/lib/vertex-ai'
+import { MODELO_FLASH, criarGenAI } from '@/lib/vertex-ai'
 import { extrairUso, registrarUso } from '@/lib/ia/uso'
 
 export interface AnexoIA {
@@ -154,25 +153,23 @@ Produza um ÚNICO resumo atualizado em português, que SUBSTITUI o anterior, pre
 - assuntos em aberto / próximos passos pendentes.
 Seja conciso (bullets curtos), factual e NÃO invente nada que não esteja nas mensagens. Sem saudação nem preâmbulo — devolva só o resumo.`
 
-  const vertex = criarVertexAI()
-  const model  = vertex.preview.getGenerativeModel({
-    model: MODELO_FLASH,
-    generationConfig: {
+  const ai     = criarGenAI()
+  const inicio = Date.now()
+  const result = await ai.models.generateContent({
+    model:    MODELO_FLASH,
+    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    config: {
       maxOutputTokens: MAX_RESUMO_TOKENS,
       temperature:     0.3,
       thinkingConfig:  { thinkingBudget: 0 }, // resumo não precisa raciocinar — mais barato
-    } as unknown as GenerationConfig,
+    },
   })
-
-  const inicio = Date.now()
-  const result = await model.generateContent(prompt)
   await registrarUso(db, {
     userId, modelo: MODELO_FLASH, contexto: 'resumo', conversaId,
     duracaoMs: Date.now() - inicio, ...extrairUso(result),
   })
 
-  const texto = (result.response?.candidates?.[0]?.content?.parts ?? [])
-    .filter((p) => p.text).map((p) => p.text).join('').trim()
+  const texto = (result.text ?? '').trim()
   if (!texto) throw new Error('resumo vazio')
   return texto
 }

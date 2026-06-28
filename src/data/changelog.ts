@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.44.0',
+    data:   '2026-06-27',
+    novidades: [
+      'Manutenção nos bastidores (você não vê diferença, mas é importante): a parte da IA que gera textos pontuais — copy de landing, briefing matinal, hashtags e o resumo automático de conversas longas — passou a rodar sobre o SDK oficial e suportado do Google. Continua tudo na mesma Vertex AI, com as mesmas credenciais e o mesmo custo; só trocou a biblioteca por baixo, porque a antiga foi descontinuada pelo Google e podia quebrar numa atualização. Esta é a 1ª etapa; o assistente Gator em si migra na próxima',
+    ],
+  },
+  {
     versao: '0.43.1',
     data:   '2026-06-27',
     novidades: [

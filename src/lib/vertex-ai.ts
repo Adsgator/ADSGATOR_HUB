@@ -1,4 +1,5 @@
 import { VertexAI } from '@google-cloud/vertexai';
+import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 import { extrairUso, registrarUso } from '@/lib/ia/uso';
 
@@ -36,17 +37,33 @@ export interface AnaliseRelatorio {
 // ─── CLIENTE VERTEX AI ────────────────────────────────────────────────────────
 
 // VERTEX_AI_CREDENTIALS aceita caminho de arquivo (local) ou o JSON inteiro
-// da service account (Vercel, onde não há filesystem para credenciais).
-export function criarVertexAI() {
+// da service account (Vercel, onde não há filesystem para credenciais). A lógica
+// de auth é a mesma nos dois SDKs (googleAuthOptions: { credentials } | { keyFilename }).
+function googleAuthOptions() {
   const cred = process.env.VERTEX_AI_CREDENTIALS ?? '';
-  const googleAuthOptions = cred.trimStart().startsWith('{')
+  return cred.trimStart().startsWith('{')
     ? { credentials: JSON.parse(cred) }
     : { keyFilename: cred };
+}
 
+// SDK antigo (@google-cloud/vertexai) — deprecado, ainda usado pelo agente até o
+// Passo B da migração. Coexiste com criarGenAI durante a transição.
+export function criarVertexAI() {
   return new VertexAI({
     project:  process.env.VERTEX_AI_PROJECT_ID!,
     location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
-    googleAuthOptions,
+    googleAuthOptions: googleAuthOptions(),
+  });
+}
+
+// SDK novo (@google/genai) sobre o MESMO backend Vertex — mesmo projeto, mesmas
+// credenciais, mesmo billing. Só muda a biblioteca cliente e a forma de chamar.
+export function criarGenAI() {
+  return new GoogleGenAI({
+    vertexai: true,
+    project:  process.env.VERTEX_AI_PROJECT_ID!,
+    location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
+    googleAuthOptions: googleAuthOptions(),
   });
 }
 
@@ -85,15 +102,17 @@ Retorne APENAS um JSON válido com esta estrutura (sem markdown, sem explicaçõ
 }`;
 
   try {
-    const vertex  = criarVertexAI();
-    const model   = vertex.preview.getGenerativeModel({ model: MODELO_FLASH });
+    const ai      = criarGenAI();
     const inicio  = Date.now();
-    const result  = await model.generateContent(prompt);
+    const result  = await ai.models.generateContent({
+      model:    MODELO_FLASH,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    });
     await registrarUso(dbUso(), {
       userId: userId ?? null, modelo: MODELO_FLASH, contexto: 'copy',
       duracaoMs: Date.now() - inicio, ...extrairUso(result),
     });
-    const text    = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
+    const text    = result.text ?? '{}';
     return JSON.parse(text.trim()) as CopyGerada;
   } catch (error) {
     console.error('Erro ao gerar copy:', error);
@@ -145,15 +164,17 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações):
 }`;
 
   try {
-    const vertex  = criarVertexAI();
-    const model   = vertex.preview.getGenerativeModel({ model: MODELO_PRO });
+    const ai      = criarGenAI();
     const inicio  = Date.now();
-    const result  = await model.generateContent(prompt);
+    const result  = await ai.models.generateContent({
+      model:    MODELO_PRO,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    });
     await registrarUso(dbUso(), {
       userId: userId ?? null, modelo: MODELO_PRO, contexto: 'relatorio',
       duracaoMs: Date.now() - inicio, ...extrairUso(result),
     });
-    const text    = result.response?.candidates?.[0]?.content?.parts?.[0]?.text ?? '{}';
+    const text    = result.text ?? '{}';
     return JSON.parse(text.trim()) as AnaliseRelatorio;
   } catch (error) {
     console.error('Erro ao analisar relatório com IA:', error);

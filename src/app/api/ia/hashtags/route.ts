@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { MODELO_FLASH, criarVertexAI } from '@/lib/vertex-ai'
+import { MODELO_FLASH, criarGenAI } from '@/lib/vertex-ai'
 import { extrairUso, registrarUso }   from '@/lib/ia/uso'
 import { createClient }              from '@/lib/supabase/server'
 
@@ -29,17 +29,17 @@ export async function POST(req: NextRequest) {
 Retorne APENAS as hashtags separadas por espaço, sem explicações. Exemplo: #marketing #digital #ads`
 
   try {
-    const vertex = criarVertexAI()
-    const model  = vertex.preview.getGenerativeModel({ model: MODELO_FLASH })
+    const ai     = criarGenAI()
     const inicio = Date.now()
-    const result = await model.generateContent({
+    const result = await ai.models.generateContent({
+      model:    MODELO_FLASH,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     })
     await registrarUso(service, {
       userId: user.id, modelo: MODELO_FLASH, contexto: 'hashtags',
       duracaoMs: Date.now() - inicio, ...extrairUso(result),
     })
-    const raw      = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? ''
+    const raw      = result.text?.trim() ?? ''
     const hashtags = raw.match(/#[\w\u00C0-\u024F]+/g) ?? ['#marketing', '#digital', '#ads']
     return NextResponse.json({ hashtags })
   } catch (err) {
