@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient }              from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase/server'
-import { MODELO_FLASH, MODELO_PRO, MODELO_LITE, MODELO_AUTO, criarVertexAI } from '@/lib/vertex-ai'
+import { MODELO_FLASH, MODELO_PRO, MODELO_LITE, MODELO_AUTO, criarGenAI } from '@/lib/vertex-ai'
 import {
   FUNCTION_DECLARATIONS,
   executarFerramenta,
@@ -16,7 +16,13 @@ import {
   type ToolExecutada,
 } from '@/lib/ia/tools'
 import { montarHistoricoCompactado, type AnexoIA, type MensagemDb } from '@/lib/ia/compactacao'
-import type { Content, Part, GenerationConfig, GenerateContentResult, VertexAI } from '@google-cloud/vertexai'
+import type {
+  Content,
+  Part,
+  GenerateContentConfig,
+  GenerateContentResponseUsageMetadata,
+  GoogleGenAI,
+} from '@google/genai'
 import { extrairUso, registrarUso, custoBRL, type Uso } from '@/lib/ia/uso'
 
 // O loop pode encadear várias chamadas ao modelo + ferramentas
@@ -55,7 +61,7 @@ async function resolverModelo(userId: string): Promise<{ modo: 'flash' | 'pro' |
  * erro cai no Flash (a escalada reativa ainda cobre se ele tropeçar depois).
  */
 async function rotearEntrada(
-  vertex: VertexAI,
+  ai: GoogleGenAI,
   mensagem: string,
   temImagem: boolean,
 ): Promise<{ inicial: string; motivo: string | null; uso: Uso }> {
@@ -63,10 +69,6 @@ async function rotearEntrada(
   if (temImagem) return { inicial: MODELO_PRO, motivo: 'leitura de imagem', uso: zero }
   if (!mensagem.trim()) return { inicial: MODELO_FLASH, motivo: null, uso: zero }
   try {
-    const model = vertex.preview.getGenerativeModel({
-      model: MODELO_LITE,
-      generationConfig: { maxOutputTokens: 8, temperature: 0 } as GenerationConfig,
-    })
     const prompt = `Classifique a intenção da mensagem do operador de uma agência de tráfego em UMA palavra:
 TRIVIAL = saudação, papo, agradecimento.
 OPERACIONAL = pedir um dado pontual ou executar uma ação (listar, criar, atualizar, cobrar, ver status).
@@ -74,8 +76,12 @@ ANALISE = análise, diagnóstico, comparação, decisão, recomendação, estrat
 Responda só a palavra.
 
 Mensagem: "${mensagem.slice(0, 600)}"`
-    const r = await model.generateContent(prompt)
-    const txt = (r.response?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') ?? '').toUpperCase()
+    const r = await ai.models.generateContent({
+      model:    MODELO_LITE,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config:   { maxOutputTokens: 8, temperature: 0 },
+    })
+    const txt = (r.text ?? '').toUpperCase()
     const uso = extrairUso(r)
     if (txt.includes('ANALISE') || txt.includes('ANÁLISE')) return { inicial: MODELO_PRO, motivo: 'pergunta de análise', uso }
     return { inicial: MODELO_FLASH, motivo: null, uso }
@@ -276,27 +282,24 @@ export async function POST(req: NextRequest) {
   //    executa ferramentas e responde. O front consome e mostra ao vivo.
   const { modo, thinking } = await resolverModelo(user.id)
 
-  // thinkingConfig não é tipado no SDK 1.12, mas o Vertex aceita via generationConfig.
-  // O Pro SEMPRE raciocina e REJEITA thinkingBudget 0 (erro 400) — então só
-  // controlamos o budget no Flash (0 desliga, -1 dinâmico). No Pro, omitimos.
-  const genConfigPara = (m: string): GenerationConfig => ({
+  // Config por chamada (o @google/genai não tem handle de modelo): systemInstruction
+  // + tools entram aqui. tools só quando withTools (o fechamento de limite escreve
+  // sem ferramentas). O Pro SEMPRE raciocina e REJEITA thinkingBudget 0 (erro 400) —
+  // então só controlamos o budget no Flash (0 desliga, -1 dinâmico); no Pro, omitimos.
+  const configPara = (m: string, opts: { withTools: boolean }): GenerateContentConfig => ({
+    systemInstruction: systemPrompt,
+    ...(opts.withTools ? { tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }] } : {}),
     maxOutputTokens: 8192,
     temperature: 0.7,
     ...(m === MODELO_PRO ? {} : { thinkingConfig: { thinkingBudget: thinking ? -1 : 0 } }),
-  } as unknown as GenerationConfig)
+  })
 
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
       const envia = (ev: object) => controller.enqueue(encoder.encode(JSON.stringify(ev) + '\n'))
       try {
-        const vertex = criarVertexAI()
-        const criarModel = (m: string) => vertex.preview.getGenerativeModel({
-          model:             m,
-          systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
-          tools:             [{ functionDeclarations: FUNCTION_DECLARATIONS }],
-          generationConfig:  genConfigPara(m),
-        })
+        const ai = criarGenAI()
 
         // CÉREBRO DO MODO AUTO: roteador na entrada escolhe o modelo inicial (análise
         // → Pro); durante o loop, escala Flash→Pro se o Flash tropeçar. Flash/Pro
@@ -305,16 +308,18 @@ export async function POST(req: NextRequest) {
         let motivoEscalada: string | null = null
         let routerUso: Uso | null = null
         if (modo === 'auto') {
-          const r = await rotearEntrada(vertex, mensagem, anexos.some((a) => a.tipo === 'imagem'))
+          const r = await rotearEntrada(ai, mensagem, anexos.some((a) => a.tipo === 'imagem'))
           modeloAtual = r.inicial
           routerUso   = r.uso
           if (r.inicial === MODELO_PRO) { motivoEscalada = r.motivo; envia({ t: 'escalou', modelo: 'pro', motivo: r.motivo }) }
         }
-        let model = criarModel(modeloAtual)
+        // Sem handle de modelo (@google/genai): o modelo entra por chamada (model:
+        // modeloAtual) e o config é recomputado a cada iteração — preciso porque no
+        // Auto o modeloAtual pode escalar p/ Pro no meio do loop (e a regra do
+        // thinkingConfig depende disso). escalar() só troca modeloAtual.
         const escalar = (motivo: string) => {
           if (modo !== 'auto' || modeloAtual === MODELO_PRO) return
           modeloAtual = MODELO_PRO
-          model = criarModel(MODELO_PRO)
           motivoEscalada = motivo
           envia({ t: 'escalou', modelo: 'pro', motivo })
         }
@@ -357,40 +362,55 @@ export async function POST(req: NextRequest) {
         let interrompido: 'iteracoes' | 'custo' | null = null
         let i = 0
         for (; i < MAX_ITERACOES; i++) {
-          const streamResult = await model.generateContentStream({ contents: conversaAtual })
-
-          // Texto ao vivo: cada chunk vira um evento e acumula na resposta final.
-          for await (const chunk of streamResult.stream) {
-            const t = chunk.candidates?.[0]?.content?.parts?.filter((p) => p.text).map((p) => p.text).join('') ?? ''
-            fluxoTexto(t)
+          // O @google/genai não dá um agregado (.response) do stream — só os chunks.
+          // Reconstruímos: acumulamos o texto bruto, as parts com functionCall (na
+          // ordem, p/ reinjetar o turno 'model') e o último usageMetadata visto.
+          let textoIter = ''
+          const fcParts: Part[] = []
+          let usageFinal: GenerateContentResponseUsageMetadata | undefined
+          const streamResult = await ai.models.generateContentStream({
+            model:    modeloAtual,
+            contents: conversaAtual,
+            config:   configPara(modeloAtual, { withTools: true }),
+          })
+          for await (const chunk of streamResult) {
+            if (chunk.usageMetadata) usageFinal = chunk.usageMetadata // último não-nulo
+            // Lê as parts direto (não o getter chunk.text, que loga warning quando
+            // o chunk traz functionCall). Cada part é texto OU functionCall.
+            let t = ''
+            for (const p of chunk.candidates?.[0]?.content?.parts ?? []) {
+              if (p.functionCall) fcParts.push(p)
+              else if (p.text) t += p.text
+            }
+            if (t) { textoIter += t; fluxoTexto(t) }
           }
 
-          // Agregado: fonte autoritativa de tokens, parts e functionCalls.
-          const agg = await streamResult.response
-          const uso = extrairUso({ response: agg } as GenerateContentResult)
+          const uso = extrairUso({ usageMetadata: usageFinal })
           if (i === 0) contextoTokens = uso.tokensEntrada
           acumular(modeloAtual, uso)
           iteracoes++
 
-          const parts = agg.candidates?.[0]?.content?.parts ?? []
-          const calls = parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
+          const calls = fcParts.map((p) => p.functionCall!)
           if (!calls.length) break // resposta final natural — a Gator terminou
 
           // Ações ao vivo: avisa que vai executar, roda em PARALELO, avisa o resultado.
           for (const fc of calls) envia({ t: 'acao', nome: fc.name, status: 'rodando' })
           const resultados = await Promise.all(
-            calls.map((fc) => executarFerramenta(fc.name, (fc.args ?? {}) as Record<string, unknown>, toolCtx)),
+            calls.map((fc) => executarFerramenta(fc.name!, (fc.args ?? {}) as Record<string, unknown>, toolCtx)),
           )
           const respostas: Part[] = []
           resultados.forEach(({ resultado, meta }, idx) => {
             executadas.push(meta)
-            ferramentasUsadas.push(calls[idx].name)
+            ferramentasUsadas.push(calls[idx].name!)
             const falhou = meta.resumo.startsWith('Falhou:')
             envia({ t: 'acao', nome: calls[idx].name, resumo: meta.resumo, status: falhou ? 'erro' : 'ok' })
             respostas.push({ functionResponse: { name: calls[idx].name, response: { resultado } } })
           })
 
-          conversaAtual = [...conversaAtual, { role: 'model', parts }, { role: 'user', parts: respostas }]
+          // Turno 'model' reinjetado = texto bruto desta iteração + as parts de
+          // functionCall (mesma ordem que o agregado do SDK antigo entregava).
+          const modelParts: Part[] = [...(textoIter ? [{ text: textoIter }] : []), ...fcParts]
+          conversaAtual = [...conversaAtual, { role: 'model', parts: modelParts }, { role: 'user', parts: respostas }]
 
           // Escalada reativa (modo Auto): o Flash tropeçou → o Pro assume o resto.
           if (resultados.some(({ meta }) => meta.resumo.startsWith('Falhou:')))      escalar('uma ferramenta falhou')
@@ -411,11 +431,6 @@ export async function POST(req: NextRequest) {
         // fechamento honesto — o que já fez, o que falta e oferece continuar.
         if (interrompido) {
           try {
-            const modelFechamento = vertex.preview.getGenerativeModel({
-              model:             modeloAtual,
-              systemInstruction: { role: 'system', parts: [{ text: systemPrompt }] },
-              generationConfig:  genConfigPara(modeloAtual), // sem tools: só escreve o fechamento
-            })
             const instrucao = interrompido === 'custo'
               ? 'Esta tarefa já consumiu bastante processamento numa única resposta. NÃO chame mais ferramentas. Em português e em poucas linhas, diga o que você JÁ executou até aqui, o que ainda falta, e pergunte ao Lucas se quer que você continue de onde parou.'
               : 'Você atingiu o limite de passos para uma única resposta. NÃO chame mais ferramentas. Em português e em poucas linhas, diga o que você JÁ executou até aqui, o que ainda falta, e ofereça continuar de onde parou.'
@@ -433,12 +448,18 @@ export async function POST(req: NextRequest) {
             }
 
             if (respostaFinal.trim()) fluxoTexto('\n\n')
-            const closeStream = await modelFechamento.generateContentStream({ contents: fechamento })
-            for await (const chunk of closeStream.stream) {
+            let usageFech: GenerateContentResponseUsageMetadata | undefined
+            const closeStream = await ai.models.generateContentStream({
+              model:    modeloAtual,
+              contents: fechamento,
+              config:   configPara(modeloAtual, { withTools: false }), // sem tools: só escreve o fechamento
+            })
+            for await (const chunk of closeStream) {
+              if (chunk.usageMetadata) usageFech = chunk.usageMetadata
               const t = chunk.candidates?.[0]?.content?.parts?.filter((p) => p.text).map((p) => p.text).join('') ?? ''
-              fluxoTexto(t)
+              if (t) fluxoTexto(t)
             }
-            acumular(modeloAtual, extrairUso({ response: await closeStream.response } as GenerateContentResult))
+            acumular(modeloAtual, extrairUso({ usageMetadata: usageFech }))
             iteracoes++
           } catch (err) {
             console.error('[ia/agent] falha no fechamento de limite:', err)

@@ -5,8 +5,7 @@
 // role — por isso TODA query filtra/verifica por user_id.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { FunctionDeclaration } from '@google-cloud/vertexai'
-import { FunctionDeclarationSchemaType as T } from '@google-cloud/vertexai'
+import { Type as T, type FunctionDeclaration } from '@google/genai'
 import { estagioInadimplencia, carregarLimiaresAtraso } from '@/lib/cobranca'
 import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 import { SYSTEM_MAP } from '@/lib/ia/system-map'

@@ -1,4 +1,3 @@
-import { VertexAI } from '@google-cloud/vertexai';
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@supabase/supabase-js';
 import { extrairUso, registrarUso } from '@/lib/ia/uso';
@@ -36,34 +35,21 @@ export interface AnaliseRelatorio {
 
 // ─── CLIENTE VERTEX AI ────────────────────────────────────────────────────────
 
-// VERTEX_AI_CREDENTIALS aceita caminho de arquivo (local) ou o JSON inteiro
-// da service account (Vercel, onde não há filesystem para credenciais). A lógica
-// de auth é a mesma nos dois SDKs (googleAuthOptions: { credentials } | { keyFilename }).
-function googleAuthOptions() {
+// Client @google/genai sobre o backend Vertex — mesmo projeto, mesmas credenciais
+// e mesmo billing de sempre; só a biblioteca cliente é o SDK oficial suportado.
+// VERTEX_AI_CREDENTIALS aceita caminho de arquivo (local) ou o JSON inteiro da
+// service account (Vercel, onde não há filesystem para credenciais).
+export function criarGenAI() {
   const cred = process.env.VERTEX_AI_CREDENTIALS ?? '';
-  return cred.trimStart().startsWith('{')
+  const googleAuthOptions = cred.trimStart().startsWith('{')
     ? { credentials: JSON.parse(cred) }
     : { keyFilename: cred };
-}
 
-// SDK antigo (@google-cloud/vertexai) — deprecado, ainda usado pelo agente até o
-// Passo B da migração. Coexiste com criarGenAI durante a transição.
-export function criarVertexAI() {
-  return new VertexAI({
-    project:  process.env.VERTEX_AI_PROJECT_ID!,
-    location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
-    googleAuthOptions: googleAuthOptions(),
-  });
-}
-
-// SDK novo (@google/genai) sobre o MESMO backend Vertex — mesmo projeto, mesmas
-// credenciais, mesmo billing. Só muda a biblioteca cliente e a forma de chamar.
-export function criarGenAI() {
   return new GoogleGenAI({
     vertexai: true,
     project:  process.env.VERTEX_AI_PROJECT_ID!,
     location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
-    googleAuthOptions: googleAuthOptions(),
+    googleAuthOptions,
   });
 }
 

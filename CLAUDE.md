@@ -12,7 +12,7 @@ Frontend:  Next.js 15 + React 19 + TypeScript
 Styling:   Tailwind CSS 3 com design system customizado (rem-based)
 State:     Zustand 5 + Supabase Realtime
 Backend:   Supabase (PostgreSQL + Auth + Realtime + Storage)
-IA:        Vertex AI Gemini 2.5 (Flash, Pro) via @google-cloud/vertexai
+IA:        Vertex AI Gemini 2.5 (Flash, Pro) via @google/genai
 APIs:      Google Ads API, Google Analytics Data API, Asaas webhook
 Fontes:    Geist Sans + Geist Mono (via `geist` package)
 Icons:     lucide-react

@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.44.1',
+    data:   '2026-06-28',
+    novidades: [
+      'Migração de SDK concluída: agora a própria Gator (o assistente, com todas as ferramentas, streaming ao vivo e o cérebro Auto Flash↔Pro) também roda sobre o SDK oficial e suportado do Google, e a biblioteca antiga e descontinuada foi removida de vez. Continua tudo idêntico pra você — mesma Vertex AI, mesmas credenciais, mesmo custo, mesmo comportamento — só que sem mais a dívida técnica que podia quebrar numa atualização do Google',
+    ],
+  },
+  {
     versao: '0.44.0',
     data:   '2026-06-27',
     novidades: [

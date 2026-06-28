@@ -37,17 +37,9 @@ interface UsageMetadataLike {
   thoughtsTokenCount?:      number
 }
 
-/**
- * Lê usageMetadata da resposta do SDK, à prova de resposta sem metadata.
- * Shim transitório: aceita o formato do @google/genai (`result.usageMetadata`)
- * e o do @google-cloud/vertexai antigo (`result.response.usageMetadata`), ainda
- * usado pelo agente até o Passo B. Removível quando só sobrar o SDK novo.
- */
-export function extrairUso(result: {
-  usageMetadata?: UsageMetadataLike | null
-  response?:      { usageMetadata?: UsageMetadataLike | null } | null
-}): Uso {
-  const m = result?.usageMetadata ?? result?.response?.usageMetadata ?? undefined
+/** Lê usageMetadata da resposta do @google/genai, à prova de resposta sem metadata. */
+export function extrairUso(result: { usageMetadata?: UsageMetadataLike | null }): Uso {
+  const m = result?.usageMetadata ?? undefined
   return {
     tokensEntrada: m?.promptTokenCount       ?? 0,
     tokensSaida:   (m?.candidatesTokenCount ?? 0) + (m?.thoughtsTokenCount ?? 0),
