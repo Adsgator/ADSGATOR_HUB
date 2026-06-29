@@ -4,13 +4,16 @@
 
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { VertexAI }     from 'https://esm.sh/@google-cloud/vertexai@1'
+import { GoogleGenAI }  from 'https://esm.sh/@google/genai@2.10.0'
 import { TEST_MODE }    from '../_shared/test-mode.ts'
 
 const GEMINI_FLASH = 'gemini-2.5-flash'
 
-function criarVertexAI() {
-  return new VertexAI({
+// SDK oficial @google/genai sobre o backend Vertex (mesmo projeto/credenciais).
+// Substitui o @google-cloud/vertexai, deprecado pelo Google.
+function criarGenAI() {
+  return new GoogleGenAI({
+    vertexai: true,
     project:  Deno.env.get('VERTEX_AI_PROJECT_ID')!,
     location: Deno.env.get('VERTEX_AI_LOCATION') ?? 'us-central1',
     googleAuthOptions: { keyFilename: Deno.env.get('VERTEX_AI_CREDENTIALS') },
@@ -87,13 +90,13 @@ Gere o insight focando em: o que está bom, o que precisa atenção, e qual aç�
       });
     }
 
-    const vertex = criarVertexAI()
-    const model  = vertex.preview.getGenerativeModel({
-      model: GEMINI_FLASH,
-      generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
+    const ai     = criarGenAI()
+    const result = await ai.models.generateContent({
+      model:    GEMINI_FLASH,
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      config:   { maxOutputTokens: 200, temperature: 0.3 },
     })
-    const result = await model.generateContent(prompt)
-    const insight = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? 'Insight não disponível'
+    const insight = result.text?.trim() ?? 'Insight não disponível'
 
     // Salvar insight no snapshot
     await supabase
