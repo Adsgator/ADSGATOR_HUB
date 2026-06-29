@@ -47,8 +47,10 @@ export function criarGenAI() {
 
   return new GoogleGenAI({
     vertexai: true,
-    project:  process.env.VERTEX_AI_PROJECT_ID!,
-    location: process.env.VERTEX_AI_LOCATION ?? 'us-central1',
+    // trim(): o @google/genai concatena project/location direto na URL da Vertex —
+    // espaço/quebra no env gera "Invalid URL" (o SDK antigo tolerava).
+    project:  process.env.VERTEX_AI_PROJECT_ID!.trim(),
+    location: (process.env.VERTEX_AI_LOCATION ?? 'us-central1').trim(),
     googleAuthOptions,
   });
 }

@@ -4,7 +4,11 @@
 
 import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { GoogleGenAI }  from 'https://esm.sh/@google/genai@2.10.0'
+// Subpath /node (não o entry genérico): o @google/genai usa conditional exports
+// e, no runtime Deno via esm.sh, o entry genérico não detecta o ambiente e falha
+// com "An API Key must be set when running in an unspecified environment". A auth
+// por keyFilename (service account) é Node-style, então usamos o build /node.
+import { GoogleGenAI }  from 'https://esm.sh/@google/genai@2.10.0/node'
 import { TEST_MODE }    from '../_shared/test-mode.ts'
 
 const GEMINI_FLASH = 'gemini-2.5-flash'
@@ -12,11 +16,20 @@ const GEMINI_FLASH = 'gemini-2.5-flash'
 // SDK oficial @google/genai sobre o backend Vertex (mesmo projeto/credenciais).
 // Substitui o @google-cloud/vertexai, deprecado pelo Google.
 function criarGenAI() {
+  // VERTEX_AI_CREDENTIALS aqui é o JSON inteiro da service account (no runtime Deno
+  // não há filesystem p/ apontar um arquivo). Detecta JSON inline vs caminho, igual
+  // ao criarGenAI do app. trim() em project/location: o @google/genai concatena os
+  // dois direto na URL da Vertex, e espaço/quebra no secret gera "Invalid URL".
+  const cred = Deno.env.get('VERTEX_AI_CREDENTIALS') ?? ''
+  const googleAuthOptions = cred.trimStart().startsWith('{')
+    ? { credentials: JSON.parse(cred) }
+    : { keyFilename: cred }
+
   return new GoogleGenAI({
     vertexai: true,
-    project:  Deno.env.get('VERTEX_AI_PROJECT_ID')!,
-    location: Deno.env.get('VERTEX_AI_LOCATION') ?? 'us-central1',
-    googleAuthOptions: { keyFilename: Deno.env.get('VERTEX_AI_CREDENTIALS') },
+    project:  Deno.env.get('VERTEX_AI_PROJECT_ID')!.trim(),
+    location: (Deno.env.get('VERTEX_AI_LOCATION') ?? 'us-central1').trim(),
+    googleAuthOptions,
   })
 }
 
