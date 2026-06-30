@@ -358,7 +358,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       if ((err as { name?: string } | null)?.name === 'AbortError') {
         patch((m) => ({
           ...m, streaming: false, fase: undefined, demorando: false,
-          content: m.content ? `${m.content}\n\n_(interrompido por você)_` : '_(interrompido por você)_',
+          content: m.content ? `${m.content}\n\n*(interrompido por você)*` : '*(interrompido por você)*',
         }))
         set({ enviando: false })
         return
