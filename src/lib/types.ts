@@ -18,6 +18,10 @@ export type AssinaturaStatus =
   | 'atraso_7_dias'
   | 'atraso_15_dias'
   | 'cancelado_debito'
+  | 'cancelada'          // SUBSCRIPTION_INACTIVATED no Asaas
+  | 'deletada'           // SUBSCRIPTION_DELETED no Asaas
+  | 'pausada'            // régua D+7: suspensão dos serviços (recorrência pausada)
+  | 'cancelado_admin'    // régua D+15: cancelamento administrativo
 
 // ─── CHECKLIST ────────────────────────────────────────────────────────────────
 

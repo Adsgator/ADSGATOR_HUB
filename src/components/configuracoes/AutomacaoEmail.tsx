@@ -132,6 +132,44 @@ export function AutomacaoEmail() {
     }
   }
 
+  // Régua de inadimplência (D+7/D+15/D+28) é separada das automações de email.
+  const automacoesEmail = automacoes.filter((a) => a.tipo.startsWith('email_'))
+  const automacoesRegua = automacoes.filter((a) => a.tipo.startsWith('regua_'))
+
+  function renderToggle(aut: AutomacaoItem) {
+    return (
+      <div
+        key={aut.id}
+        className="flex items-start justify-between p-[1rem] bg-surface-card border border-surface-border rounded-lg"
+      >
+        <div className="flex-1">
+          <p className="text-ink-primary text-[0.875rem] font-medium">{aut.tipo.replace(/_/g, ' ').toUpperCase()}</p>
+          <p className="text-ink-secondary text-[0.75rem] mt-[0.25rem]">{aut.descricao}</p>
+          <p className="text-ink-muted text-[0.75rem] mt-[0.5rem] flex items-center gap-[0.25rem]">
+            <Clock className="w-[0.625rem] h-[0.625rem]" />
+            Último envio: {formatarData(aut.ultimo_envio)}
+          </p>
+        </div>
+        <button
+          onClick={() => toggleAutomacao(aut.id, !aut.ativa)}
+          disabled={atualizando === aut.id}
+          className={cn(
+            'relative w-[2.75rem] h-[1.5rem] rounded-full transition-colors flex-shrink-0 ml-[1rem]',
+            aut.ativa ? 'bg-ads-500' : 'bg-surface-hover border border-surface-border',
+            atualizando === aut.id && 'opacity-50 cursor-not-allowed'
+          )}
+        >
+          <span
+            className={cn(
+              'absolute top-[0.1875rem] left-[0.1875rem] w-[1.125rem] h-[1.125rem] rounded-full bg-white shadow transition-transform',
+              aut.ativa && 'translate-x-[1.25rem]'
+            )}
+          />
+        </button>
+      </div>
+    )
+  }
+
   if (carregando) {
     return (
       <div className="flex items-center justify-center h-[12rem]">
@@ -215,43 +253,32 @@ export function AutomacaoEmail() {
           Automações de Email
         </h3>
         <div className="space-y-[0.75rem]">
-          {automacoes.length === 0 ? (
+          {automacoesEmail.length === 0 ? (
             <p className="text-ink-secondary text-[0.875rem]">Nenhuma automação configurada.</p>
           ) : (
-            automacoes.map((aut) => (
-              <div
-                key={aut.id}
-                className="flex items-start justify-between p-[1rem] bg-surface-card border border-surface-border rounded-lg"
-              >
-                <div className="flex-1">
-                  <p className="text-ink-primary text-[0.875rem] font-medium">{aut.tipo.replace(/_/g, ' ').toUpperCase()}</p>
-                  <p className="text-ink-secondary text-[0.75rem] mt-[0.25rem]">{aut.descricao}</p>
-                  <p className="text-ink-muted text-[0.75rem] mt-[0.5rem] flex items-center gap-[0.25rem]">
-                    <Clock className="w-[0.625rem] h-[0.625rem]" />
-                    Último envio: {formatarData(aut.ultimo_envio)}
-                  </p>
-                </div>
-                <button
-                  onClick={() => toggleAutomacao(aut.id, !aut.ativa)}
-                  disabled={atualizando === aut.id}
-                  className={cn(
-                    'relative w-[2.75rem] h-[1.5rem] rounded-full transition-colors flex-shrink-0 ml-[1rem]',
-                    aut.ativa ? 'bg-ads-500' : 'bg-surface-hover border border-surface-border',
-                    atualizando === aut.id && 'opacity-50 cursor-not-allowed'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'absolute top-[0.1875rem] left-[0.1875rem] w-[1.125rem] h-[1.125rem] rounded-full bg-white shadow transition-transform',
-                      aut.ativa && 'translate-x-[1.25rem]'
-                    )}
-                  />
-                </button>
-              </div>
-            ))
+            automacoesEmail.map(renderToggle)
           )}
         </div>
       </div>
+
+      {/* SEÇÃO 1b: RÉGUA DE INADIMPLÊNCIA */}
+      {automacoesRegua.length > 0 && (
+        <div>
+          <h3 className="text-ink-primary text-[1rem] font-semibold mb-[0.5rem] flex items-center gap-[0.5rem]">
+            <AlertCircle className="w-[1.125rem] h-[1.125rem]" strokeWidth={2} />
+            Régua de inadimplência (D+7 / D+15 / D+28)
+          </h3>
+          <p className="text-ink-secondary text-[0.8125rem] mb-[1rem] leading-snug">
+            Ações alinhadas aos termos da agência. Tudo desligado por padrão — nada acontece
+            até você ligar. O <strong>D+7</strong> nunca age sozinho: ele pede sua autorização
+            no cliente. O <strong>D+15</strong> e o <strong>D+28</strong>, quando ligados, agem
+            automaticamente (o D+28 deleta a assinatura e as cobranças no Asaas).
+          </p>
+          <div className="space-y-[0.75rem]">
+            {automacoesRegua.map(renderToggle)}
+          </div>
+        </div>
+      )}
 
       {/* SEÇÃO 2: LOG DE EMAILS */}
       <div>

@@ -7,7 +7,7 @@ import {
   Phone, Mail, Globe, Calendar, DollarSign, AlertCircle,
   MessageCircle, Snowflake, Play, Pencil, Check, X as XIcon,
   FileText, Send, ChevronDown, ChevronUp, LogOut, Layout, Plus, Trash2, ExternalLink, Copy,
-  CreditCard, Repeat,
+  CreditCard, Repeat, PauseCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { labelMotivoInativacao } from '@/lib/cliente-status'
@@ -36,6 +36,7 @@ import {
 } from '@/lib/database'
 import type { Cliente, Estagio, HistoricoAcao, Assinatura } from '@/lib/types'
 import { diasAtrasoReais, statusInadimplencia } from '@/lib/cobranca'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 interface TimelineInstanceSummary {
@@ -154,6 +155,8 @@ export default function ClienteDetalhePage() {
   const [cliente,    setCliente]    = useState<Cliente | null>(null)
   const [estagio,    setEstagio]    = useState<Estagio | null>(null)
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null)
+  const [pendenciaD7, setPendenciaD7] = useState<{ id: string; mensagem: string } | null>(null)
+  const [reguaAgindo, setReguaAgindo] = useState(false)
   const [historico,  setHistorico]  = useState<HistoricoAcao[]>([])
   const [abaAtiva,  setAbaAtiva]  = useState<AbaId>('visao_geral')
   const [carregando, setCarregando] = useState(true)
@@ -353,6 +356,31 @@ export default function ClienteDetalhePage() {
     )
   }
 
+  async function buscarPendenciaD7(clienteId: string) {
+    const { data } = await supabase
+      .from('alertas')
+      .select('id, mensagem')
+      .eq('cliente_id', clienteId)
+      .eq('tipo_alerta', 'aprovacao_suspensao_d7')
+      .eq('resolvido', false)
+      .maybeSingle()
+    return (data as { id: string; mensagem: string } | null) ?? null
+  }
+
+  // Recarrega só assinatura + cliente + pendência (sem flicker da tela toda) —
+  // usado após as ações da régua.
+  async function recarregarReguaState() {
+    if (!id) return
+    const [c, a, pend] = await Promise.all([
+      obterCliente(id).catch(() => null),
+      obterAssinaturaCliente(id).catch(() => null),
+      buscarPendenciaD7(id),
+    ])
+    if (c) setCliente(c)
+    setAssinatura(a)
+    setPendenciaD7(pend)
+  }
+
   useEffect(() => {
     if (!id) return
     setCarregando(true)
@@ -361,15 +389,65 @@ export default function ClienteDetalhePage() {
       obterEstagioAtivo(id),
       obterHistoricoCliente(id),
       obterAssinaturaCliente(id).catch(() => null),
-    ]).then(([c, e, h, a]) => {
+      buscarPendenciaD7(id),
+    ]).then(([c, e, h, a, pend]) => {
       setCliente(c)
       setEstagio(e)
       setHistorico(h)
       setAssinatura(a)
+      setPendenciaD7(pend)
     }).catch(() => {
       toast.error('Erro ao carregar cliente')
     }).finally(() => setCarregando(false))
   }, [id])
+
+  async function handleReguaAcao(acao: 'autorizar_suspensao' | 'pausar' | 'reativar') {
+    if (!cliente || reguaAgindo) return
+    setReguaAgindo(true)
+    try {
+      const res = await fetch('/api/v1/regua/acao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clienteId: cliente.id, acao }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(json.error ?? 'Falha na ação')
+        return
+      }
+      const labels: Record<typeof acao, string> = {
+        autorizar_suspensao: 'Serviços suspensos e cliente notificado',
+        pausar:              'Assinatura pausada',
+        reativar:            'Assinatura reativada',
+      }
+      toast.success(labels[acao])
+      await recarregarReguaState()
+    } catch {
+      toast.error('Erro de conexão')
+    } finally {
+      setReguaAgindo(false)
+    }
+  }
+
+  function confirmarReguaAcao(acao: 'autorizar_suspensao' | 'pausar' | 'reativar') {
+    const openConfirm = useConfirmDialogStore.getState().openConfirm
+    const textos: Record<typeof acao, { titulo: string; msg: string }> = {
+      autorizar_suspensao: {
+        titulo: 'Autorizar suspensão por inadimplência',
+        msg: 'Isto vai PAUSAR a recorrência no Asaas, remover a próxima cobrança ainda não vencida (a vencida continua em aberto, é dívida real), marcar os serviços como suspensos e enviar o aviso de indisponibilidade ao cliente. Confirmar?',
+      },
+      pausar: {
+        titulo: 'Pausar assinatura',
+        msg: 'Pausa a recorrência no Asaas e remove a próxima cobrança não-vencida. Não envia email ao cliente. Confirmar?',
+      },
+      reativar: {
+        titulo: 'Reativar assinatura',
+        msg: 'Religa a assinatura no Asaas (com nova data de cobrança no próximo ciclo) e volta os serviços. Confirmar?',
+      },
+    }
+    const t = textos[acao]
+    openConfirm(t.titulo, t.msg, () => handleReguaAcao(acao))
+  }
 
   async function handleCongelar() {
     if (!cliente) return
@@ -631,6 +709,24 @@ export default function ClienteDetalhePage() {
           </div>
         </div>
 
+        {/* Banner D+7 — pendência de autorização de suspensão */}
+        {pendenciaD7 && (
+          <div className="bg-status-orange/10 border border-status-orange/30 rounded-xl p-[1.25rem] mb-[1.5rem] flex items-start gap-[0.75rem]">
+            <PauseCircle className="w-[1.25rem] h-[1.25rem] text-status-orange shrink-0 mt-[0.125rem]" strokeWidth={2} />
+            <div className="flex-1 min-w-0">
+              <p className="text-ink-primary font-semibold text-[0.9375rem]">Autorizar suspensão por inadimplência (D+7)</p>
+              <p className="text-ink-secondary text-[0.8125rem] mt-[0.25rem] leading-snug">{pendenciaD7.mensagem}</p>
+              <p className="text-ink-muted text-[0.75rem] mt-[0.5rem] leading-snug">
+                Ao autorizar: pausa a recorrência no Asaas, remove a próxima cobrança não-vencida
+                (a vencida fica em aberto, é dívida real), suspende os serviços e envia o aviso ao cliente.
+              </p>
+            </div>
+            <Button variant="primary" onClick={() => confirmarReguaAcao('autorizar_suspensao')} disabled={reguaAgindo}>
+              Autorizar suspensão
+            </Button>
+          </div>
+        )}
+
         {/* Assinatura */}
         <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] card-shadow mb-[1.5rem]">
           <div className="flex items-center gap-[0.5rem] mb-[1rem]">
@@ -638,6 +734,7 @@ export default function ClienteDetalhePage() {
             <h3 className="text-ink-primary text-[0.9375rem] font-semibold">Assinatura</h3>
           </div>
           {assinatura ? (
+            <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[1.25rem]">
               <div>
                 <p className="text-ink-muted text-[0.75rem] mb-[0.25rem]">Plano</p>
@@ -652,6 +749,23 @@ export default function ClienteDetalhePage() {
               <div>
                 <p className="text-ink-muted text-[0.75rem] mb-[0.25rem]">Situação</p>
                 {(() => {
+                  // Status próprio da assinatura (suspensa/cancelada) tem prioridade
+                  // sobre o estágio de inadimplência ao vivo.
+                  const STATUS_ASS: Record<string, { label: string; cor: string }> = {
+                    pausada:          { label: 'Suspensa',             cor: 'text-status-orange' },
+                    cancelado_admin:  { label: 'Cancel. administrativo', cor: 'text-status-red' },
+                    deletada:         { label: 'Excluída',             cor: 'text-status-red' },
+                    cancelada:        { label: 'Cancelada',            cor: 'text-status-red' },
+                    cancelado_debito: { label: 'Cancelada (débito)',   cor: 'text-status-red' },
+                  }
+                  const especial = STATUS_ASS[assinatura.status]
+                  if (especial) {
+                    return (
+                      <span className={cn('inline-flex items-center px-[0.5rem] py-[0.125rem] rounded-full text-xs font-medium bg-surface-hover', especial.cor)}>
+                        {especial.label}{diasAtraso > 0 ? ` · D+${diasAtraso}` : ''}
+                      </span>
+                    )
+                  }
                   const s = statusInadimplencia({ dias_atraso: diasAtraso })
                   return (
                     <span className={cn('inline-flex items-center px-[0.5rem] py-[0.125rem] rounded-full text-xs font-medium', s.color, 'bg-surface-hover')}>
@@ -677,6 +791,27 @@ export default function ClienteDetalhePage() {
                 </p>
               </div>
             </div>
+
+            {/* Ações manuais (Pausar / Reativar) */}
+            {assinatura.asaas_subscription_id && assinatura.status !== 'deletada' && (
+              <div className="flex items-center gap-[0.75rem] mt-[1.25rem] pt-[1.25rem] border-t border-surface-border">
+                {['pausada', 'cancelado_admin', 'cancelado_debito'].includes(assinatura.status) ? (
+                  <>
+                    <Button variant="secondary" onClick={() => confirmarReguaAcao('reativar')} disabled={reguaAgindo}>
+                      <Play className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Reativar assinatura
+                    </Button>
+                    {['pausada', 'cancelado_admin'].includes(assinatura.status) && (
+                      <span className="text-status-orange text-[0.75rem] font-medium">Serviços suspensos</span>
+                    )}
+                  </>
+                ) : (
+                  <Button variant="subtle" onClick={() => confirmarReguaAcao('pausar')} disabled={reguaAgindo}>
+                    <PauseCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} /> Pausar assinatura
+                  </Button>
+                )}
+              </div>
+            )}
+            </>
           ) : (
             <p className="text-ink-muted text-[0.8125rem]">
               Nenhuma assinatura vinculada. A assinatura é criada automaticamente quando o cliente assina um plano via Asaas.

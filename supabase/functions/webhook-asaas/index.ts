@@ -30,6 +30,21 @@ async function asaasGet(path: string) {
   return res.json();
 }
 
+// deno-lint-ignore no-explicit-any
+async function asaasRequest(method: 'PUT' | 'POST' | 'DELETE', path: string, body?: unknown): Promise<any> {
+  const res = await fetch(`${ASAAS_BASE}${path}`, {
+    method,
+    headers: { access_token: ASAAS_API_KEY, 'Content-Type': 'application/json' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = json?.errors?.[0]?.description ?? `HTTP ${res.status}`;
+    throw new Error(`Asaas ${method} ${path} → ${msg}`);
+  }
+  return json;
+}
+
 async function buscarOwnerUserId(): Promise<string | null> {
   const { data } = await supabase
     .from('clientes')
@@ -353,32 +368,76 @@ serve(async (req) => {
       }
 
       if (subscriptionId) {
-        // Zerar atraso e reativar assinatura
+        // Lê o status ANTES de religar, para detectar pausa/cancelamento da régua.
+        const { data: assAntes } = await supabase
+          .from('assinaturas')
+          .select('id, status')
+          .eq('asaas_subscription_id', subscriptionId)
+          .maybeSingle();
+        const reativarRegua = assAntes?.status === 'pausada' || assAntes?.status === 'cancelado_admin';
+        const nextDueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+        // Se a régua tinha pausado no Asaas (PUT INACTIVE), religa lá também —
+        // senão o Hub ficaria 'ativa' e o Asaas INACTIVE (divergência, sem gerar
+        // a próxima cobrança). nextDueDate é obrigatório ao reativar.
+        let religadoNoAsaas = false;
+        if (reativarRegua) {
+          try {
+            await asaasRequest('PUT', `/v3/subscriptions/${subscriptionId}`, { status: 'ACTIVE', nextDueDate });
+            religadoNoAsaas = true;
+          } catch (err) {
+            console.error(`[PAYMENT_RECEIVED] Falha ao reativar ${subscriptionId} no Asaas: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }
+
+        // Zerar atraso e reativar assinatura no Hub
         await supabase
           .from('assinaturas')
           .update({
             status:                'ativa',
             dias_atraso:           0,
-            data_proxima_cobranca: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            data_proxima_cobranca: new Date(`${nextDueDate}T12:00:00`).toISOString(),
             updated_at:            new Date().toISOString(),
           })
           .eq('asaas_subscription_id', subscriptionId);
 
-        // Reativar cliente cancelado e zerar atraso
+        // Reativar cliente arquivado (cancelado ou inativo por débito) e zerar atraso
         const { data: cliente } = await supabase
           .from('clientes')
-          .select('id, status, dias_atraso, data_vencimento')
+          .select('id, status, motivo_inativacao, dias_atraso, data_vencimento')
           .eq('id', garantia.clienteId)
           .single();
         if (cliente) {
           const updates: Record<string, unknown> = {};
-          if (['cancelado', 'cancelado_debito'].includes(cliente.status)) updates.status = 'ativo';
+          const arquivadoPorDebito = cliente.status === 'inativo' && cliente.motivo_inativacao === 'debito';
+          if (['cancelado', 'cancelado_debito'].includes(cliente.status) || arquivadoPorDebito) {
+            updates.status = 'ativo';
+            updates.motivo_inativacao = null;
+            updates.inativado_em = null;
+          }
           if ((cliente.dias_atraso ?? 0) > 0) updates.dias_atraso = 0;
           // Limpa o espelho do vencimento em aberto (D+N ao vivo zera)
           if (cliente.data_vencimento) updates.data_vencimento = null;
           if (Object.keys(updates).length > 0) {
             await supabase.from('clientes').update(updates).eq('id', cliente.id);
           }
+        }
+
+        // Reativação automática de uma suspensão da régua → avisa o Lucas.
+        if (reativarRegua) {
+          const { data: cliNome } = await supabase
+            .from('clientes').select('nome, user_id').eq('id', garantia.clienteId).maybeSingle();
+          await supabase.from('notificacoes').insert({
+            user_id:    cliNome?.user_id ?? null,
+            cliente_id: garantia.clienteId,
+            tipo:       'sucesso',
+            titulo:     `${cliNome?.nome ?? 'Cliente'} pagou — reativado automaticamente`,
+            mensagem:   religadoNoAsaas
+              ? 'Pagamento recebido. A assinatura foi religada no Asaas (nova cobrança no próximo ciclo) e os serviços voltaram.'
+              : 'Pagamento recebido e serviços religados no Hub, mas a reativação no Asaas falhou — reative manualmente na tela do cliente.',
+            acao_url:   `/clientes/${garantia.clienteId}`,
+            acao_label: 'Ver cliente',
+          });
         }
       }
 

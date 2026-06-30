@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { criarClienteServiceRole } from '@/lib/supabase'
 import { dispararEmailAutomatico, automacaoAtiva } from '@/lib/email-automation'
 import { estagioInadimplencia, carregarLimiaresAtraso, type LimiaresAtraso } from '@/lib/cobranca'
+import { processarReguaInadimplencia } from '@/lib/regua-inadimplencia'
 import { asaasGetAll, buscarLinkPagamento } from '@/lib/asaas'
 import type { EmailTemplateId } from '@/lib/types/email'
 
@@ -157,9 +158,14 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
   // email desligado, senão a inadimplência congela.
   const sync = await sincronizarAtrasos(supabase, limiares)
 
-  // Etapa 2: emails — curto-circuito se a automação está desligada.
+  // Etapa 1b: régua de inadimplência (D+7 suspender / D+15 cancelar / D+28
+  // excluir) — cada etapa atrás do seu toggle (default off); o D+7 só cria a
+  // pendência de aprovação. Independe do toggle de email de lembrete.
+  const regua = await processarReguaInadimplencia(supabase, limiares)
+
+  // Etapa 2: emails de lembrete — curto-circuito se a automação está desligada.
   if (!(await automacaoAtiva(supabase, 'email_cobranca_vencida'))) {
-    return { ativa: false, enviados: 0, resultados: [], sync_atrasos: sync }
+    return { ativa: false, enviados: 0, resultados: [], sync_atrasos: sync, regua }
   }
 
   const { data: clientes } = await supabase
@@ -194,7 +200,7 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
     resultados.push({ cliente: c.nome, estagio, enviado: r.enviado, motivo: r.motivo })
   }
 
-  return { ativa: true, enviados, resultados, sync_atrasos: sync }
+  return { ativa: true, enviados, resultados, sync_atrasos: sync, regua }
 }
 
 export async function GET(req: NextRequest) {

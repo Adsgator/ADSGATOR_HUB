@@ -27,7 +27,7 @@ export function AlertasCriticos() {
   const carregar = useCallback(async () => {
     const [{ data: clientes }, { data: alertasDb }, { data: config }] = await Promise.all([
       supabase.from('clientes').select('id, nome, dias_atraso, data_vencimento, saldo_google, whatsapp').in('status', ['ativo', 'onboarding', 'setup_trafego']),
-      supabase.from('alertas').select('id, tipo, mensagem, cliente_id').eq('resolvido', false).order('created_at', { ascending: false }).limit(5),
+      supabase.from('alertas').select('id, tipo_alerta, mensagem, cliente_id').eq('resolvido', false).order('created_at', { ascending: false }).limit(5),
       supabase.from('configuracoes_financeiras').select('saldo_google_ads_limite_alerta').eq('agencia_id', 'adsgator-main').single(),
     ])
 
@@ -47,12 +47,12 @@ export function AlertasCriticos() {
       }
     }
 
-    for (const a of (alertasDb ?? []) as { id: string; tipo: string; mensagem: string; cliente_id?: string }[]) {
-      const cfg = ALERT_TYPES[a.tipo]
+    for (const a of (alertasDb ?? []) as { id: string; tipo_alerta: string; mensagem: string; cliente_id?: string }[]) {
+      const cfg = ALERT_TYPES[a.tipo_alerta]
       itens.push({
         id: `alerta-${a.id}`,
         tipo: 'alerta',
-        label: cfg?.label ?? a.tipo,
+        label: cfg?.label ?? a.tipo_alerta,
         detalhe: a.mensagem || cfg?.description || '',
         href: a.cliente_id ? `/clientes/${a.cliente_id}` : undefined,
         urgente: cfg?.severity === 'critical',

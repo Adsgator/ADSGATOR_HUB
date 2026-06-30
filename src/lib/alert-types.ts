@@ -74,6 +74,13 @@ export const ALERT_TYPES: Record<string, AlertTypeConfig> = {
     icon:        'ClipboardList',
     color:       'text-status-purple',
   },
+  aprovacao_suspensao_d7: {
+    label:       'Autorizar suspensão (D+7)',
+    description: 'Cliente em atraso há 7+ dias. Autorize a suspensão dos serviços.',
+    severity:    'critical',
+    icon:        'PauseCircle',
+    color:       'text-status-orange',
+  },
 }
 
 export type AlertTypeId = keyof typeof ALERT_TYPES

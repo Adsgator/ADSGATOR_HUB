@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.48.0',
+    data:   '2026-06-30',
+    novidades: [
+      'A régua de inadimplência ganhou ação de verdade, alinhada aos seus termos e 100% no seu controle (Configurações → Comunicação → Automações, tudo desligado por padrão): no D+7 o sistema NÃO age sozinho — aparece um aviso "Autorizar suspensão" no cliente (e na lista de alertas); ao autorizar, ele pausa a recorrência no Asaas, remove a próxima cobrança ainda não vencida (a vencida fica em aberto, é dívida real), marca os serviços como suspensos e manda o aviso de indisponibilidade. No D+15 (se ligado) faz o cancelamento administrativo + email; no D+28 (se ligado) deleta a assinatura e as cobranças no Asaas, arquiva o cliente e te entrega um checklist do que remover manualmente do servidor',
+      'Pausar e Reativar a assinatura na mão, direto na tela do cliente: o "Reativar" religa a assinatura no Asaas já com a próxima data de cobrança e volta os serviços',
+      'Reativação automática ao pagar: se um cliente suspenso paga, o sistema religa a assinatura no Asaas sozinho (sem ficar Hub dizendo "ativo" e Asaas "inativo") e te avisa que reativou',
+      'Corrigido: o widget de Alertas Críticos do dashboard não estava lendo os alertas do banco (lia um campo errado) — agora mostra certo, incluindo os pedidos de autorização de suspensão',
+    ],
+  },
+  {
     versao: '0.47.0',
     data:   '2026-06-30',
     novidades: [

@@ -110,19 +110,25 @@ export interface RemocaoCobrancas {
 }
 
 /**
- * Remove as cobranças EM ABERTO de uma assinatura no Asaas — as não pagas
- * (PENDING / OVERDUE / AWAITING_RISK_ANALYSIS). Cobranças já pagas
- * (RECEIVED / CONFIRMED) são preservadas. Trata o retorno de CADA DELETE:
+ * Remove cobranças em aberto de uma assinatura no Asaas. Cobranças já pagas
+ * (RECEIVED / CONFIRMED) são sempre preservadas. Trata o retorno de CADA DELETE:
  * só conta como removida quando o Asaas devolve `deleted:true`; o resto vira
- * falha com motivo (não assume sucesso). Pensada para a régua: ao suspender
- * (D+7) tira a PRÓXIMA cobrança não-vencida que o Asaas adianta; ao excluir
- * (D+28) limpa o que sobrou antes de deletar a assinatura.
+ * falha com motivo (não assume sucesso).
  *
- * Nota: a cobrança VENCIDA é dívida real — quem decide removê-la é a etapa da
- * régua que chama isto; este helper remove tudo que estiver em aberto.
+ * `incluirVencidas` controla a etapa da régua:
+ *  - false (default): remove só as NÃO-VENCIDAS (PENDING / AWAITING_RISK_ANALYSIS)
+ *    — é o caso da SUSPENSÃO D+7, que tira a próxima cobrança que o Asaas
+ *    adianta mas PRESERVA a vencida (dívida real, não se apaga);
+ *  - true: inclui as OVERDUE — é o caso da EXCLUSÃO D+28, que limpa tudo antes
+ *    de deletar a assinatura.
  */
-export async function removerCobrancasEmAberto(subscriptionId: string): Promise<RemocaoCobrancas> {
-  const EM_ABERTO = ['PENDING', 'OVERDUE', 'AWAITING_RISK_ANALYSIS']
+export async function removerCobrancasEmAberto(
+  subscriptionId: string,
+  { incluirVencidas = false }: { incluirVencidas?: boolean } = {},
+): Promise<RemocaoCobrancas> {
+  const EM_ABERTO = incluirVencidas
+    ? ['PENDING', 'OVERDUE', 'AWAITING_RISK_ANALYSIS']
+    : ['PENDING', 'AWAITING_RISK_ANALYSIS']
   const pagamentos = await asaasGetAll<{ id: string; status: string; deleted?: boolean }>(
     `/v3/subscriptions/${subscriptionId}/payments`,
   )
