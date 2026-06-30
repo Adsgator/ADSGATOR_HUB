@@ -308,6 +308,7 @@ export function FloatingChat() {
         onEnviar={enviar}
         onAddArquivos={(files) => void store.adicionarArquivos(files)}
         onRemoverAnexo={store.removerAnexo}
+        onCancelar={store.cancelar}
         autoFocus
       />
     </>

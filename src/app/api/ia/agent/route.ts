@@ -64,6 +64,7 @@ async function rotearEntrada(
   ai: GoogleGenAI,
   mensagem: string,
   temImagem: boolean,
+  signal?: AbortSignal,
 ): Promise<{ inicial: string; motivo: string | null; uso: Uso }> {
   const zero: Uso = { tokensEntrada: 0, tokensSaida: 0, tokensCache: 0 }
   if (temImagem) return { inicial: MODELO_PRO, motivo: 'leitura de imagem', uso: zero }
@@ -79,7 +80,7 @@ Mensagem: "${mensagem.slice(0, 600)}"`
     const r = await ai.models.generateContent({
       model:    MODELO_LITE,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      config:   { maxOutputTokens: 8, temperature: 0 },
+      config:   { maxOutputTokens: 8, temperature: 0, abortSignal: signal },
     })
     const txt = (r.text ?? '').toUpperCase()
     const uso = extrairUso(r)
@@ -286,8 +287,12 @@ export async function POST(req: NextRequest) {
   // + tools entram aqui. tools só quando withTools (o fechamento de limite escreve
   // sem ferramentas). O Pro SEMPRE raciocina e REJEITA thinkingBudget 0 (erro 400) —
   // então só controlamos o budget no Flash (0 desliga, -1 dinâmico); no Pro, omitimos.
+  // abortSignal: req.signal dispara quando o cliente desconecta (botão Parar / fecha
+  // o painel) → interrompe a geração em curso na Vertex. Sem isto o cancelamento
+  // seria cosmético (o loop seguiria gastando e executando ferramentas).
   const configPara = (m: string, opts: { withTools: boolean }): GenerateContentConfig => ({
     systemInstruction: systemPrompt,
+    abortSignal: req.signal,
     ...(opts.withTools ? { tools: [{ functionDeclarations: FUNCTION_DECLARATIONS }] } : {}),
     maxOutputTokens: 8192,
     temperature: 0.7,
@@ -297,7 +302,11 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
-      const envia = (ev: object) => controller.enqueue(encoder.encode(JSON.stringify(ev) + '\n'))
+      // Não tenta emitir depois que o cliente saiu (enqueue num stream fechado lança).
+      const envia = (ev: object) => {
+        if (req.signal.aborted) return
+        try { controller.enqueue(encoder.encode(JSON.stringify(ev) + '\n')) } catch { /* stream já fechado */ }
+      }
       try {
         const ai = criarGenAI()
 
@@ -308,7 +317,7 @@ export async function POST(req: NextRequest) {
         let motivoEscalada: string | null = null
         let routerUso: Uso | null = null
         if (modo === 'auto') {
-          const r = await rotearEntrada(ai, mensagem, anexos.some((a) => a.tipo === 'imagem'))
+          const r = await rotearEntrada(ai, mensagem, anexos.some((a) => a.tipo === 'imagem'), req.signal)
           modeloAtual = r.inicial
           routerUso   = r.uso
           if (r.inicial === MODELO_PRO) { motivoEscalada = r.motivo; envia({ t: 'escalou', modelo: 'pro', motivo: r.motivo }) }
@@ -359,30 +368,67 @@ export async function POST(req: NextRequest) {
         const custoTotal = () => custoBRL(MODELO_FLASH, tokens[MODELO_FLASH]) + custoBRL(MODELO_PRO, tokens[MODELO_PRO])
         const ferramentasUsadas: string[] = []
 
+        // Telemetria por modelo que de fato rodou (custo certo no painel, mesmo no Auto
+        // que mistura Flash+Pro). O modelo FINAL carrega duração/iterações/ferramentas;
+        // o outro, só os tokens; o roteador (lite) vai numa linha à parte. Chamada no
+        // fim normal E no cancelamento (custo honesto do que rodou até parar).
+        const persistirUso = async () => {
+          for (const m of [MODELO_FLASH, MODELO_PRO]) {
+            const b = tokens[m]
+            if (!b.tokensEntrada && !b.tokensSaida) continue
+            const principal = m === modeloAtual
+            await registrarUso(supabase, {
+              userId: user.id, modelo: m, contexto: 'agente', conversaId,
+              tokensEntrada: b.tokensEntrada, tokensSaida: b.tokensSaida, tokensCache: b.tokensCache,
+              duracaoMs: principal ? Date.now() - inicio : undefined,
+              iteracoes:  principal ? iteracoes : undefined,
+              ferramentas: principal ? ferramentasUsadas : undefined,
+            })
+          }
+          if (routerUso && (routerUso.tokensEntrada || routerUso.tokensSaida)) {
+            await registrarUso(supabase, {
+              userId: user.id, modelo: MODELO_LITE, contexto: 'roteador', conversaId,
+              tokensEntrada: routerUso.tokensEntrada, tokensSaida: routerUso.tokensSaida, tokensCache: routerUso.tokensCache,
+            })
+          }
+        }
+
         let interrompido: 'iteracoes' | 'custo' | null = null
+        let cancelado = false
         let i = 0
         for (; i < MAX_ITERACOES; i++) {
+          // Cliente desconectou (botão Parar / fechou o painel): não inicia nova rodada.
+          if (req.signal.aborted) { cancelado = true; break }
+          // Mostra ao vivo que está processando, antes do 1º token/ação desta iteração.
+          envia({ t: 'fase', v: 'pensando' })
+
           // O @google/genai não dá um agregado (.response) do stream — só os chunks.
           // Reconstruímos: acumulamos o texto bruto, as parts com functionCall (na
           // ordem, p/ reinjetar o turno 'model') e o último usageMetadata visto.
           let textoIter = ''
           const fcParts: Part[] = []
           let usageFinal: GenerateContentResponseUsageMetadata | undefined
-          const streamResult = await ai.models.generateContentStream({
-            model:    modeloAtual,
-            contents: conversaAtual,
-            config:   configPara(modeloAtual, { withTools: true }),
-          })
-          for await (const chunk of streamResult) {
-            if (chunk.usageMetadata) usageFinal = chunk.usageMetadata // último não-nulo
-            // Lê as parts direto (não o getter chunk.text, que loga warning quando
-            // o chunk traz functionCall). Cada part é texto OU functionCall.
-            let t = ''
-            for (const p of chunk.candidates?.[0]?.content?.parts ?? []) {
-              if (p.functionCall) fcParts.push(p)
-              else if (p.text) t += p.text
+          try {
+            const streamResult = await ai.models.generateContentStream({
+              model:    modeloAtual,
+              contents: conversaAtual,
+              config:   configPara(modeloAtual, { withTools: true }),
+            })
+            for await (const chunk of streamResult) {
+              if (chunk.usageMetadata) usageFinal = chunk.usageMetadata // último não-nulo
+              // Lê as parts direto (não o getter chunk.text, que loga warning quando
+              // o chunk traz functionCall). Cada part é texto OU functionCall.
+              let t = ''
+              for (const p of chunk.candidates?.[0]?.content?.parts ?? []) {
+                if (p.functionCall) fcParts.push(p)
+                else if (p.text) t += p.text
+              }
+              if (t) { textoIter += t; fluxoTexto(t) }
             }
-            if (t) { textoIter += t; fluxoTexto(t) }
+          } catch (err) {
+            // abortSignal disparou no meio da geração → cancelamento limpo, não erro.
+            if ((err as { name?: string } | null)?.name === 'AbortError' || req.signal.aborted) { cancelado = true; break }
+            throw err
           }
 
           const uso = extrairUso({ usageMetadata: usageFinal })
@@ -425,6 +471,17 @@ export async function POST(req: NextRequest) {
           }
         }
         if (i >= MAX_ITERACOES) interrompido = 'iteracoes'
+        if (req.signal.aborted) cancelado = true
+
+        // Cliente cancelou (botão Parar): registra só o uso do que JÁ rodou (custo
+        // honesto, menor que o completo) e encerra — sem fechamento, sem persistir
+        // resposta pela metade, sem 'fim' (ele já saiu). Impede gasto/ação fantasma
+        // das próximas rodadas, que nem chegaram a começar.
+        if (cancelado) {
+          await persistirUso()
+          try { controller.close() } catch { /* já fechado */ }
+          return
+        }
 
         // Parou no meio de uma tarefa (estourou passos ou custo) sem fechar a
         // resposta: em vez de uma mensagem genérica, a própria Gator faz um
@@ -517,27 +574,7 @@ export async function POST(req: NextRequest) {
 
         await supabase.from('ia_conversas').update({ updated_at: new Date().toISOString() }).eq('id', conversaId)
 
-        // Telemetria por modelo que de fato rodou (custo certo no painel, mesmo no
-        // Auto que mistura Flash+Pro). O modelo FINAL carrega duração/iterações/
-        // ferramentas; o outro, só os tokens. O roteador (lite) vai numa linha à parte.
-        for (const m of [MODELO_FLASH, MODELO_PRO]) {
-          const b = tokens[m]
-          if (!b.tokensEntrada && !b.tokensSaida) continue
-          const principal = m === modeloAtual
-          await registrarUso(supabase, {
-            userId: user.id, modelo: m, contexto: 'agente', conversaId,
-            tokensEntrada: b.tokensEntrada, tokensSaida: b.tokensSaida, tokensCache: b.tokensCache,
-            duracaoMs: principal ? Date.now() - inicio : undefined,
-            iteracoes:  principal ? iteracoes : undefined,
-            ferramentas: principal ? ferramentasUsadas : undefined,
-          })
-        }
-        if (routerUso && (routerUso.tokensEntrada || routerUso.tokensSaida)) {
-          await registrarUso(supabase, {
-            userId: user.id, modelo: MODELO_LITE, contexto: 'roteador', conversaId,
-            tokensEntrada: routerUso.tokensEntrada, tokensSaida: routerUso.tokensSaida, tokensCache: routerUso.tokensCache,
-          })
-        }
+        await persistirUso()
 
         envia({
           t: 'fim',

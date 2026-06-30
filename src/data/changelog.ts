@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.45.0',
+    data:   '2026-06-28',
+    novidades: [
+      'Agora você acompanha a Gator trabalhando ao vivo, em vez de só ver uma bolinha piscando: ela mostra a fase em que está ("Pensando…", "Raciocinando…" quando sobe pro Pro) e, quando usa uma ferramenta, diz o que está fazendo em português ("Cruzando os riscos da agência…", "Criando a tarefa…", "Lendo o panorama…") — fim do silêncio sem saber o que acontece',
+      'Botão Parar: se uma resposta travar ou você mudar de ideia no meio, é só clicar no quadradinho vermelho (no lugar do enviar) que ela interrompe DE VERDADE — para de processar no servidor na hora, não cria nada pela metade e ainda economiza, já que uma resposta interrompida custa menos. E se ela ficar muito tempo sem dar sinal, aparece um aviso de que está demorando, pra você não ficar no escuro',
+      'Nada disso aumenta o custo da IA: é tudo informação que o sistema já tinha, só não mostrava',
+    ],
+  },
+  {
     versao: '0.44.1',
     data:   '2026-06-28',
     novidades: [

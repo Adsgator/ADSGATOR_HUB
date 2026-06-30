@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { FileText, Mic, Paperclip, Send, X } from 'lucide-react'
+import { FileText, Mic, Paperclip, Send, Square, X } from 'lucide-react'
 import type { AnexoIA } from '@/lib/store/assistant-store'
 
 // Tipagem mínima da Web Speech API (não existe em lib.dom para todos os targets)
@@ -33,10 +33,11 @@ interface ComposerProps {
   onEnviar:      (texto: string) => void
   onAddArquivos: (files: File[]) => void
   onRemoverAnexo: (index: number) => void
+  onCancelar?:   () => void // interrompe a resposta em andamento (botão Parar)
   autoFocus?:    boolean
 }
 
-export function Composer({ enviando, anexos, onEnviar, onAddArquivos, onRemoverAnexo, autoFocus }: ComposerProps) {
+export function Composer({ enviando, anexos, onEnviar, onAddArquivos, onRemoverAnexo, onCancelar, autoFocus }: ComposerProps) {
   const [texto, setTexto] = useState('')
   const [ouvindo, setOuvindo] = useState(false)
   const [temVoz, setTemVoz] = useState(false)
@@ -179,13 +180,23 @@ export function Composer({ enviando, anexos, onEnviar, onAddArquivos, onRemoverA
           className="flex-1 min-h-[2rem] px-[0.625rem] py-[0.4375rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-ads-500/30 focus:border-ads-500/50 transition-colors disabled:opacity-50 resize-none leading-snug"
         />
 
-        <button
-          onClick={enviar}
-          disabled={(!texto.trim() && !anexos.length) || enviando}
-          className="w-[2rem] h-[2rem] rounded-lg bg-ads-500 hover:bg-ads-600 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-        >
-          <Send className="w-[0.75rem] h-[0.75rem] text-white" strokeWidth={2} />
-        </button>
+        {enviando && onCancelar ? (
+          <button
+            onClick={onCancelar}
+            title="Parar a resposta"
+            className="w-[2rem] h-[2rem] rounded-lg bg-status-red hover:bg-status-red/85 flex items-center justify-center transition-colors shrink-0"
+          >
+            <Square className="w-[0.6875rem] h-[0.6875rem] text-white" strokeWidth={2.5} fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            onClick={enviar}
+            disabled={(!texto.trim() && !anexos.length) || enviando}
+            className="w-[2rem] h-[2rem] rounded-lg bg-ads-500 hover:bg-ads-600 flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          >
+            <Send className="w-[0.75rem] h-[0.75rem] text-white" strokeWidth={2} />
+          </button>
+        )}
       </div>
     </div>
   )

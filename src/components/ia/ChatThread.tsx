@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import { ArrowRight, Bot, Brain, FileText, User, Volume2, Wrench, Square, Loader2, AlertTriangle } from 'lucide-react'
 import { Markdown } from './Markdown'
+import { labelFerramenta } from '@/lib/ia/labels'
 import type { MensagemIA } from '@/lib/store/assistant-store'
 
 interface ChatThreadProps {
@@ -113,23 +114,33 @@ export function ChatThread({ mensagens, enviando, vazio, onSugestao }: ChatThrea
             )}
 
             {m.role === 'assistant' ? (
-              m.streaming && !m.content && !m.ferramentas?.length ? (
-                // Esperando o 1º token — dots dentro da própria bolha
-                <div className="flex gap-[0.25rem] items-center h-[0.875rem] py-[0.125rem]">
-                  {[0, 120, 240].map((d) => (
-                    <div key={d} className="w-[0.3125rem] h-[0.3125rem] rounded-full bg-ink-muted animate-bounce" style={{ animationDelay: `${d}ms` }} />
-                  ))}
-                </div>
-              ) : (
+              m.content ? (
                 <span>
                   <Markdown texto={m.content} />
-                  {m.streaming && m.content && (
+                  {m.streaming && (
                     <span className="inline-block w-[0.4rem] h-[0.85rem] align-text-bottom bg-ads-500 ml-[0.125rem] animate-pulse rounded-[0.0625rem]" />
                   )}
                 </span>
-              )
+              ) : m.streaming ? (
+                // Sem texto ainda: mostra a FASE (pensando/raciocinando) com spinner.
+                // Se uma ferramenta está rodando, o chip dela (abaixo) já é o indicador.
+                m.ferramentas?.some((f) => f.status === 'rodando') ? null : (
+                  <span className="inline-flex items-center gap-[0.375rem] text-ink-muted text-[0.75rem] py-[0.125rem]">
+                    <Loader2 className="w-[0.75rem] h-[0.75rem] animate-spin" strokeWidth={2} />
+                    {m.modeloUsado === 'pro' ? 'Raciocinando…' : 'Pensando…'}
+                  </span>
+                )
+              ) : null
             ) : (
               <span className="whitespace-pre-wrap leading-relaxed">{m.content}</span>
+            )}
+
+            {/* Travamento: streaming sem nenhum evento há muito tempo (watchdog na store) */}
+            {m.role === 'assistant' && m.streaming && m.demorando && (
+              <div className="flex items-start gap-[0.375rem] mt-[0.375rem] text-[0.6875rem] text-status-orange leading-snug">
+                <AlertTriangle className="w-[0.6875rem] h-[0.6875rem] mt-[0.0625rem] shrink-0" strokeWidth={2} />
+                <span>Está demorando mais que o normal — pode ser uma tarefa pesada ou instabilidade. Você pode aguardar ou clicar em Parar.</span>
+              </div>
             )}
 
             {/* Ações executadas + cérebro (modo Auto) + custo estimado da resposta */}
@@ -157,7 +168,7 @@ export function ChatThread({ mensagens, enviando, vazio, onSugestao }: ChatThrea
                       {rodando ? <Loader2 className="w-[0.5625rem] h-[0.5625rem] animate-spin" strokeWidth={2.5} />
                         : erro  ? <AlertTriangle className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2.5} />
                         :         <Wrench className="w-[0.5625rem] h-[0.5625rem]" strokeWidth={2.5} />}
-                      {rodando ? `${f.nome.replace(/_/g, ' ')}…` : f.resumo}
+                      {rodando ? `${labelFerramenta(f.nome)}…` : f.resumo}
                     </span>
                   )
                 })}

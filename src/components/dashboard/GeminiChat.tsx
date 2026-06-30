@@ -71,6 +71,7 @@ export function GeminiChat() {
             onEnviar={(texto) => void useAssistantStore.getState().enviar(texto, pathname ?? undefined)}
             onAddArquivos={(files) => void useAssistantStore.getState().adicionarArquivos(files)}
             onRemoverAnexo={useAssistantStore.getState().removerAnexo}
+            onCancelar={() => useAssistantStore.getState().cancelar()}
           />
         </div>
       )}

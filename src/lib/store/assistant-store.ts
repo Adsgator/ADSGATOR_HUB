@@ -29,6 +29,8 @@ export interface MensagemIA {
   ferramentas?: FerramentaExecutada[] | null
   custo_brl?:   number | null // custo estimado (R$) da resposta — só em mensagens do agente
   streaming?:   boolean       // true enquanto a resposta está chegando ao vivo
+  fase?:        string        // fase atual enquanto streaming (ex.: 'pensando') — só ao vivo
+  demorando?:   boolean       // streaming sem evento há muito tempo — possível travamento
   sugestoes?:   string[]      // próximos passos clicáveis (chips) — só ao vivo, não persiste
   modeloUsado?: 'flash' | 'pro' // cérebro que respondeu (modo Auto) — sinal de confiança
   escalouMotivo?: string      // por que subiu pro Pro (ex.: "pergunta de análise")
@@ -108,8 +110,15 @@ interface AssistantStore {
   adicionarArquivos:  (files: File[]) => Promise<void>
   removerAnexo:       (index: number) => void
   enviar:             (texto: string, pagina?: string) => Promise<void>
+  cancelar:           () => void
   exportarMarkdown:   () => void
 }
+
+// Controle do stream ativo (1 por vez — o gate `enviando` garante): permite
+// cancelar (AbortController) e detectar travamento (watchdog sem eventos).
+let streamAbort: AbortController | null = null
+let watchdog: ReturnType<typeof setTimeout> | null = null
+const WATCHDOG_MS = 20_000 // sem nenhum evento por este tempo → avisa "demorando"
 
 export const useAssistantStore = create<AssistantStore>((set, get) => ({
   conversas:         [],
@@ -234,10 +243,25 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     const patch = (fn: (m: MensagemIA) => MensagemIA) =>
       set({ mensagens: get().mensagens.map((m) => (m.id === assistId ? fn(m) : m)) })
 
+    // Cancelamento (botão Parar) + watchdog de travamento (ver topo do arquivo).
+    const controller = new AbortController()
+    streamAbort = controller
+    const pararWatchdog = () => { if (watchdog) { clearTimeout(watchdog); watchdog = null } }
+    const armarWatchdog = () => {
+      pararWatchdog()
+      // Limpa o aviso "demorando" só se estava ligado (evita re-render à toa no streaming).
+      if (get().mensagens.find((m) => m.id === assistId)?.demorando) {
+        patch((m) => ({ ...m, demorando: false }))
+      }
+      watchdog = setTimeout(() => patch((m) => ({ ...m, demorando: true })), WATCHDOG_MS)
+    }
+
     try {
+      armarWatchdog()
       const res = await fetch('/api/ia/agent', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal:  controller.signal,
         body: JSON.stringify({
           conversa_id:         conversaId ?? undefined,
           mensagem,
@@ -268,15 +292,20 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           if (!linha.trim()) continue
           let ev: Record<string, unknown>
           try { ev = JSON.parse(linha) } catch { continue }
+          armarWatchdog() // chegou evento → reinicia a contagem de travamento
 
           if (ev.t === 'texto') {
             const delta = String(ev.v ?? '')
-            patch((m) => ({ ...m, content: m.content + delta }))
+            patch((m) => ({ ...m, content: m.content + delta, fase: undefined }))
+          } else if (ev.t === 'fase') {
+            // Fase atual da Gator (ex.: 'pensando') — mostra "o que está acontecendo".
+            const fase = String(ev.v ?? '')
+            patch((m) => ({ ...m, fase }))
           } else if (ev.t === 'acao') {
             const nome = String(ev.nome ?? '')
             const status = ev.status as FerramentaExecutada['status']
             if (status === 'rodando') {
-              patch((m) => ({ ...m, ferramentas: [...(m.ferramentas ?? []), { nome, resumo: '', status: 'rodando' }] }))
+              patch((m) => ({ ...m, fase: undefined, ferramentas: [...(m.ferramentas ?? []), { nome, resumo: '', status: 'rodando' }] }))
             } else {
               // Finaliza a 1ª ferramenta 'rodando' com esse nome.
               patch((m) => {
@@ -291,6 +320,8 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
             const motivo = String(ev.motivo ?? '')
             patch((m) => ({ ...m, modeloUsado: 'pro', escalouMotivo: motivo || m.escalouMotivo }))
           } else if (ev.t === 'fim') {
+            pararWatchdog()
+            streamAbort = null
             recebeuFim = true
             const finalMsg = ev.mensagem as MensagemIA | undefined
             const custoResp = Number(ev.custo_resposta ?? 0)
@@ -300,7 +331,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
             set({
               conversaId:     (ev.conversa_id as string) ?? get().conversaId,
               mensagens:      get().mensagens.map((m) => (m.id === assistId
-                ? { ...(finalMsg ?? m), sugestoes, modeloUsado: modeloUsado ?? m.modeloUsado, escalouMotivo: escalouMotivo ?? m.escalouMotivo, streaming: false }
+                ? { ...(finalMsg ?? m), sugestoes, modeloUsado: modeloUsado ?? m.modeloUsado, escalouMotivo: escalouMotivo ?? m.escalouMotivo, streaming: false, fase: undefined, demorando: false }
                 : m)),
               enviando:       false,
               contextoTokens: (ev.contexto_tokens as number) ?? get().contextoTokens,
@@ -315,14 +346,31 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
       // Stream terminou sem 'fim' (ex.: queda de conexão) — finaliza o que veio.
       if (!recebeuFim) {
-        patch((m) => ({ ...m, streaming: false, content: m.content || '⚠️ Conexão interrompida antes de concluir a resposta.' }))
+        pararWatchdog()
+        streamAbort = null
+        patch((m) => ({ ...m, streaming: false, fase: undefined, demorando: false, content: m.content || '⚠️ Conexão interrompida antes de concluir a resposta.' }))
         set({ enviando: false })
       }
     } catch (err) {
+      pararWatchdog()
+      streamAbort = null
+      // Cancelamento pelo usuário (botão Parar) — não é erro.
+      if ((err as { name?: string } | null)?.name === 'AbortError') {
+        patch((m) => ({
+          ...m, streaming: false, fase: undefined, demorando: false,
+          content: m.content ? `${m.content}\n\n_(interrompido por você)_` : '_(interrompido por você)_',
+        }))
+        set({ enviando: false })
+        return
+      }
       const msg = err instanceof Error ? err.message : 'Sem conexão com o agente'
-      patch((m) => ({ ...m, streaming: false, content: m.content || `⚠️ ${msg}` }))
+      patch((m) => ({ ...m, streaming: false, fase: undefined, demorando: false, content: m.content || `⚠️ ${msg}` }))
       set({ enviando: false, erro: msg })
     }
+  },
+
+  cancelar: () => {
+    streamAbort?.abort()
   },
 
   exportarMarkdown: () => {
