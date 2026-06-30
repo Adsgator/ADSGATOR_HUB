@@ -102,6 +102,7 @@ export default function RelatoriosPage() {
     setLoading(true)
     try {
       const res  = await fetch(`/api/analytics/${clienteSel}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json() as { relatorios: RelatorioMensal[] }
       const lista = json.relatorios ?? []
       setRelatorios(lista)
@@ -109,6 +110,7 @@ export default function RelatoriosPage() {
       setSelecionado(match)
     } catch (e) {
       console.error(e)
+      toast.error('Erro ao carregar os relatórios deste cliente')
     } finally {
       setLoading(false)
     }

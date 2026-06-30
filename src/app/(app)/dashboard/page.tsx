@@ -49,6 +49,7 @@ import { carregarDashboardLayout, salvarDashboardLayout, type Layouts as Layouts
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 import { estagioInadimplencia } from '@/lib/cobranca'
+import { gerarLinkWhatsApp } from '@/lib/whatsapp'
 
 type Urgencia = 'critica' | 'atencao' | 'review'
 
@@ -529,13 +530,13 @@ export default function DashboardPage() {
       const dias           = cliente.dias_atraso ?? 0
       const nivelCobranca  = estagioInadimplencia(dias)
       if (nivelCobranca === 'critico' || nivelCobranca === 'grave') {
-        acoes.push({ cliente, estagio, urgencia: 'critica', descricao: `${dias} dias sem pagamento — envie notificação de rescisão`, acaoLabel: '#COBRANÇA', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}. Em razão do atraso de ${dias} dias, comunicamos a rescisão contratual.`)}` : undefined })
+        acoes.push({ cliente, estagio, urgencia: 'critica', descricao: `${dias} dias sem pagamento — envie notificação de rescisão`, acaoLabel: '#COBRANÇA', whatsapp: cliente.whatsapp ? gerarLinkWhatsApp(`Olá ${cliente.nome.split(' ')[0]}. Em razão do atraso de ${dias} dias, comunicamos a rescisão contratual.`, cliente.whatsapp) : undefined })
       } else if (nivelCobranca === 'suspensao') {
-        acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: `${dias} dias em atraso — campanha em risco de suspensão`, acaoLabel: '#ALERTA D+7', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Seu pagamento está em atraso há ${dias} dias.`)}` : undefined })
+        acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: `${dias} dias em atraso — campanha em risco de suspensão`, acaoLabel: '#ALERTA D+7', whatsapp: cliente.whatsapp ? gerarLinkWhatsApp(`Olá ${cliente.nome.split(' ')[0]}! Seu pagamento está em atraso há ${dias} dias.`, cliente.whatsapp) : undefined })
       } else if (cliente.status === 'recebido') {
-        acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: 'Novo cliente — envie o #BOASVINDAS agora', acaoLabel: '#BOASVINDAS', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent('Olá! Seja bem-vindo(a) à Adsgator!')}` : undefined })
+        acoes.push({ cliente, estagio, urgencia: 'atencao', descricao: 'Novo cliente — envie o #BOASVINDAS agora', acaoLabel: '#BOASVINDAS', whatsapp: cliente.whatsapp ? gerarLinkWhatsApp('Olá! Seja bem-vindo(a) à Adsgator!', cliente.whatsapp) : undefined })
       } else if (cliente.status === 'congelado') {
-        acoes.push({ cliente, estagio, urgencia: 'review', descricao: 'Cliente retido — envie lembrete de retorno', acaoLabel: 'Lembrete', whatsapp: cliente.whatsapp ? `https://wa.me/${cliente.whatsapp}?text=${encodeURIComponent(`Olá ${cliente.nome.split(' ')[0]}! Ainda aguardamos seu retorno.`)}` : undefined })
+        acoes.push({ cliente, estagio, urgencia: 'review', descricao: 'Cliente retido — envie lembrete de retorno', acaoLabel: 'Lembrete', whatsapp: cliente.whatsapp ? gerarLinkWhatsApp(`Olá ${cliente.nome.split(' ')[0]}! Ainda aguardamos seu retorno.`, cliente.whatsapp) : undefined })
       }
     })
     const ORDEM: Record<string, number> = { critica: 0, atencao: 1, review: 2 }
@@ -576,10 +577,14 @@ export default function DashboardPage() {
       >
         <RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading ? 'animate-spin' : ''}`} strokeWidth={1.75} />
       </button>
-      <button className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-ads-500 text-white text-[0.8125rem] font-medium hover:bg-ads-600 transition-colors">
+      <Link
+        href="/configuracoes?tab=integracoes"
+        title="Importar clientes do Asaas"
+        className="flex items-center gap-[0.375rem] h-[2rem] px-[0.75rem] rounded-[0.375rem] bg-ads-500 text-white text-[0.8125rem] font-medium hover:bg-ads-600 transition-colors"
+      >
         <Download className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />
         <span className="hidden sm:inline">Importar</span>
-      </button>
+      </Link>
     </div>
   )
 
@@ -734,7 +739,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex items-center gap-[0.25rem] opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                           {cliente.whatsapp && (
-                            <a href={`https://wa.me/${cliente.whatsapp}`} target="_blank" rel="noreferrer"
+                            <a href={gerarLinkWhatsApp('', cliente.whatsapp)} target="_blank" rel="noreferrer"
                               className="w-[1.625rem] h-[1.625rem] flex items-center justify-center rounded-md bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors">
                               <MessageCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
                             </a>
@@ -831,7 +836,7 @@ export default function DashboardPage() {
                             <div className="flex gap-[0.25rem] mt-auto">
                               {c.whatsapp && (
                                 <a
-                                  href={`https://wa.me/55${c.whatsapp.replace(/\D/g, '')}`}
+                                  href={gerarLinkWhatsApp('', c.whatsapp)}
                                   target="_blank" rel="noreferrer"
                                   title="WhatsApp"
                                   className="w-[1.5rem] h-[1.5rem] flex items-center justify-center rounded-md bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors"

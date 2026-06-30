@@ -17,6 +17,7 @@ import { Tooltip }    from '@/components/ui/Tooltip'
 import { ContextMenu } from '@/components/ui/ContextMenu'
 import { cn }         from '@/lib/utils'
 import { supabase }   from '@/lib/supabase'
+import { toast }      from 'sonner'
 import type { Tarefa, TarefaPrioridade } from '@/lib/types'
 import { useRightSidebarStore }           from '@/lib/store/right-sidebar-store'
 import { useConfirmDialogStore }          from '@/lib/hooks/useConfirmDialog'
@@ -474,14 +475,16 @@ export default function TarefasPage() {
   }
 
   async function bulkConcluir() {
-    await supabase.from('tarefas').update({ status: 'feito' }).in('id', [...selectedIds])
+    const { error } = await supabase.from('tarefas').update({ status: 'feito' }).in('id', [...selectedIds])
+    if (error) { toast.error('Erro ao concluir as tarefas'); return }
     setSelectedIds(new Set())
     carregar()
   }
 
   async function bulkAdiar() {
     const novoPrazo = new Date(Date.now() + 86400000).toISOString()
-    await supabase.from('tarefas').update({ data_prazo: novoPrazo }).in('id', [...selectedIds])
+    const { error } = await supabase.from('tarefas').update({ data_prazo: novoPrazo }).in('id', [...selectedIds])
+    if (error) { toast.error('Erro ao adiar as tarefas'); return }
     setSelectedIds(new Set())
     carregar()
   }
@@ -492,7 +495,8 @@ export default function TarefasPage() {
       'Deletar Tarefas',
       `Você está prestes a deletar ${selectedIds.size} tarefa(s). Esta ação não pode ser desfeita.`,
       async () => {
-        await supabase.from('tarefas').delete().in('id', [...selectedIds])
+        const { error } = await supabase.from('tarefas').delete().in('id', [...selectedIds])
+        if (error) { toast.error('Erro ao deletar as tarefas'); return }
         setSelectedIds(new Set())
         carregar()
       }
@@ -527,25 +531,39 @@ export default function TarefasPage() {
     if (viewMode === 'kanban') {
       if (source.droppableId === destination.droppableId && source.index === destination.index) return
       const newStatus = destination.droppableId
-      await supabase.from('tarefas').update({ status: newStatus }).eq('id', draggableId)
+      const anterior = kanbanTarefas
+      // otimista
       setKanbanTarefas((prev) =>
         prev.map((t) => t.id === draggableId ? { ...t, status: newStatus as Tarefa['status'] } : t),
       )
+      const { error } = await supabase.from('tarefas').update({ status: newStatus }).eq('id', draggableId)
+      if (error) {
+        setKanbanTarefas(anterior) // rollback
+        toast.error('Erro ao mover a tarefa')
+      }
       return
     }
 
     /* ── List: reordenar ── */
     if (source.index === destination.index) return
+    const anterior = tarefas
     const lista = [...filtradas]
     const [moved] = lista.splice(source.index, 1)
     lista.splice(destination.index, 0, moved)
     setTarefas(lista)
     const items = lista.map((t, idx) => ({ id: t.id, posicao: idx }))
-    fetch('/api/v1/tarefas/reorder', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
-    }).catch(console.error)
+    try {
+      const res = await fetch('/api/v1/tarefas/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    } catch (err) {
+      console.error(err)
+      setTarefas(anterior) // rollback
+      toast.error('Erro ao salvar a nova ordem')
+    }
   }
 
   return (

@@ -263,7 +263,7 @@ export default function ClientesPage() {
           <p className="text-status-orange text-[0.875rem] font-medium">
             {metricas.inadimplentes} cliente{metricas.inadimplentes > 1 ? 's' : ''} com pagamento em atraso
           </p>
-          <Button variant="ghost" size="sm" onClick={() => setFiltro('cancelado_debito')} className="ml-auto text-status-orange hover:text-status-orange">
+          <Button variant="ghost" size="sm" onClick={() => setFiltroPag('inadimplente')} className="ml-auto text-status-orange hover:text-status-orange">
             Filtrar
           </Button>
         </div>

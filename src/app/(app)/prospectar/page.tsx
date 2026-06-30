@@ -12,6 +12,7 @@ import {
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button } from '@/components/ui/Button'
 import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { FLUXO_OPERACIONAL, ORDEM_ESTAGIOS_PREVENDA } from '@/lib/fluxo-operacional'
 
@@ -354,16 +355,13 @@ export default function ProspectarPage() {
     if (!form.nome.trim()) return
     setSaving(true)
 
-    if (editing) {
-      await supabase
-        .from('prospects')
-        .update(form)
-        .eq('id', editing.id)
-    } else {
-      await supabase.from('prospects').insert(form)
-    }
+    const { error } = editing
+      ? await supabase.from('prospects').update(form).eq('id', editing.id)
+      : await supabase.from('prospects').insert(form)
 
     setSaving(false)
+    if (error) { toast.error('Erro ao salvar prospect'); return }
+    toast.success(editing ? 'Prospect atualizado' : 'Prospect criado')
     setModalOpen(false)
     setEditing(null)
     await loadProspects()
@@ -373,7 +371,9 @@ export default function ProspectarPage() {
 
   async function handleDelete() {
     if (!editing) return
-    await supabase.from('prospects').delete().eq('id', editing.id)
+    const { error } = await supabase.from('prospects').delete().eq('id', editing.id)
+    if (error) { toast.error('Erro ao excluir prospect'); return }
+    toast.success('Prospect excluído')
     setModalOpen(false)
     setEditing(null)
     await loadProspects()
@@ -386,11 +386,12 @@ export default function ProspectarPage() {
     const nextEstagio = ORDEM_ESTAGIOS_PREVENDA[currentIndex + 1]
     if (!nextEstagio) return
 
-    await supabase
+    const { error } = await supabase
       .from('prospects')
       .update({ estagio: nextEstagio })
       .eq('id', prospect.id)
 
+    if (error) { toast.error('Erro ao avançar estágio'); return }
     await loadProspects()
   }
 

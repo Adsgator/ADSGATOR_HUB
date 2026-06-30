@@ -10,6 +10,7 @@ import {
 import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
+import { toast }      from 'sonner'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
 import { useTheme } from '@/providers/ThemeProvider'
 import { AuditLogViewer } from '@/components/configuracoes/AuditLogViewer'
@@ -434,10 +435,11 @@ function AbaFinanceiro() {
   async function salvarLimiares(e: React.FormEvent) {
     e.preventDefault()
     setSalvandoLimiares(true)
-    await supabase.from('configuracoes_financeiras')
+    const { error } = await supabase.from('configuracoes_financeiras')
       .update({ limiares_atraso: limiares } as Record<string, unknown>)
       .eq('agencia_id', 'adsgator-main')
     setSalvandoLimiares(false)
+    if (error) { toast.error('Erro ao salvar limiares de atraso'); return }
     setSalvoLimiares(true)
     setTimeout(() => setSalvoLimiares(false), 3000)
   }
@@ -454,10 +456,11 @@ function AbaFinanceiro() {
   async function salvarRegua(e: React.FormEvent) {
     e.preventDefault()
     setSalvandoRegua(true)
-    await supabase.from('configuracoes_financeiras')
+    const { error } = await supabase.from('configuracoes_financeiras')
       .update({ regua_cobranca: etapas } as Record<string, unknown>)
       .eq('agencia_id', 'adsgator-main')
     setSalvandoRegua(false)
+    if (error) { toast.error('Erro ao salvar régua de cobrança'); return }
     setSalvoRegua(true)
     setTimeout(() => setSalvoRegua(false), 3000)
   }
@@ -849,17 +852,19 @@ function AbaSaude() {
   async function salvarSaude(e: React.FormEvent) {
     e.preventDefault()
     setSalvandoSaude(true)
-    await supabase.from('configuracoes_operacional')
+    const { error } = await supabase.from('configuracoes_operacional')
       .upsert({ agencia_id: 'adsgator-main', health_regras: regras } as Record<string, unknown>, { onConflict: 'agencia_id' })
     setSalvandoSaude(false)
+    if (error) { toast.error('Erro ao salvar regras de health score'); return }
     setOkSaude(true); setTimeout(() => setOkSaude(false), 3000)
   }
 
   async function salvarNichos() {
     setSalvandoNichos(true)
-    await supabase.from('configuracoes_operacional')
+    const { error } = await supabase.from('configuracoes_operacional')
       .upsert({ agencia_id: 'adsgator-main', nichos_sugeridos: nichos } as Record<string, unknown>, { onConflict: 'agencia_id' })
     setSalvandoNichos(false)
+    if (error) { toast.error('Erro ao salvar nichos sugeridos'); return }
     setOkNichos(true); setTimeout(() => setOkNichos(false), 3000)
   }
 
