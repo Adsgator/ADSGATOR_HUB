@@ -69,6 +69,79 @@ export async function buscarLinkPagamento(
   return ''
 }
 
+/**
+ * Escrita no Asaas (PUT/POST/DELETE). Mesma base/credencial/timeout do GET.
+ * Lança em HTTP não-ok com a descrição de erro do Asaas (a rota trata/loga) —
+ * nunca assume sucesso cego. Usada pela régua de inadimplência (pausar/reativar
+ * assinatura, remover cobrança).
+ */
+export async function asaasRequest<T>(
+  method: 'PUT' | 'POST' | 'DELETE',
+  path: string,
+  body?: unknown,
+): Promise<T> {
+  const base = asaasBaseUrl()
+  const res = await fetch(`${base}${path}`, {
+    method,
+    headers: {
+      access_token: process.env.ASAAS_API_KEY!,
+      'Content-Type': 'application/json',
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(15000),
+  })
+  const texto = await res.text()
+  let json: Record<string, unknown> = {}
+  try { json = texto ? JSON.parse(texto) as Record<string, unknown> : {} } catch { /* corpo não-JSON */ }
+  if (!res.ok) {
+    const erros = json.errors as { description?: string }[] | undefined
+    throw new Error(`Asaas ${method} ${path} → ${erros?.[0]?.description ?? `HTTP ${res.status}`}`)
+  }
+  return json as T
+}
+
+export interface RemocaoCobrancas {
+  /** ids das cobranças efetivamente removidas (Asaas confirmou deleted:true) */
+  removidas: string[]
+  /** cobranças que o Asaas recusou remover, com o motivo */
+  falhas: { id: string; motivo: string }[]
+  /** total de cobranças em aberto encontradas (alvo da remoção) */
+  total: number
+}
+
+/**
+ * Remove as cobranças EM ABERTO de uma assinatura no Asaas — as não pagas
+ * (PENDING / OVERDUE / AWAITING_RISK_ANALYSIS). Cobranças já pagas
+ * (RECEIVED / CONFIRMED) são preservadas. Trata o retorno de CADA DELETE:
+ * só conta como removida quando o Asaas devolve `deleted:true`; o resto vira
+ * falha com motivo (não assume sucesso). Pensada para a régua: ao suspender
+ * (D+7) tira a PRÓXIMA cobrança não-vencida que o Asaas adianta; ao excluir
+ * (D+28) limpa o que sobrou antes de deletar a assinatura.
+ *
+ * Nota: a cobrança VENCIDA é dívida real — quem decide removê-la é a etapa da
+ * régua que chama isto; este helper remove tudo que estiver em aberto.
+ */
+export async function removerCobrancasEmAberto(subscriptionId: string): Promise<RemocaoCobrancas> {
+  const EM_ABERTO = ['PENDING', 'OVERDUE', 'AWAITING_RISK_ANALYSIS']
+  const pagamentos = await asaasGetAll<{ id: string; status: string; deleted?: boolean }>(
+    `/v3/subscriptions/${subscriptionId}/payments`,
+  )
+  const alvos = pagamentos.filter((p) => !p.deleted && EM_ABERTO.includes(p.status))
+
+  const removidas: string[] = []
+  const falhas: { id: string; motivo: string }[] = []
+  for (const p of alvos) {
+    try {
+      const r = await asaasRequest<{ deleted?: boolean }>('DELETE', `/v3/payments/${p.id}`)
+      if (r.deleted) removidas.push(p.id)
+      else falhas.push({ id: p.id, motivo: 'Asaas não confirmou a remoção (deleted≠true)' })
+    } catch (err) {
+      falhas.push({ id: p.id, motivo: err instanceof Error ? err.message : String(err) })
+    }
+  }
+  return { removidas, falhas, total: alvos.length }
+}
+
 /** GET paginado — percorre todas as páginas de uma listagem. */
 export async function asaasGetAll<T>(path: string): Promise<T[]> {
   const base = asaasBaseUrl()

@@ -23,6 +23,16 @@ export type TipoAutomacao =
   | 'email_onboarding'
   | 'email_saldo_ads'
 
+/**
+ * Toggles da régua de inadimplência (mesmo mecanismo dos emails:
+ * automation_settings.ativa, default off). Cada etapa só age com o seu toggle
+ * ligado: D+7 cria a pendência de aprovação; D+15/D+28 executam automaticamente.
+ */
+export type TipoReguaInadimplencia = 'regua_d7' | 'regua_d15' | 'regua_d28'
+
+/** Qualquer chave de automation_settings (emails + régua). */
+export type AutomacaoKey = TipoAutomacao | TipoReguaInadimplencia
+
 interface DispararParams {
   tipo: TipoAutomacao
   templateId: EmailTemplateId
@@ -175,10 +185,10 @@ export async function enviarEmailManual(
   }
 }
 
-/** Uma automação está ligada? */
+/** Uma automação está ligada? (emails ou etapas da régua — default off) */
 export async function automacaoAtiva(
   supabase: SupabaseClient,
-  tipo: TipoAutomacao,
+  tipo: AutomacaoKey,
 ): Promise<boolean> {
   const { data } = await supabase
     .from('automation_settings')

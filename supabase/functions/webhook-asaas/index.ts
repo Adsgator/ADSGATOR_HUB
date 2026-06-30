@@ -787,27 +787,34 @@ serve(async (req) => {
       if (subId) {
         const { data: ass } = await supabase
           .from('assinaturas')
-          .select('id, cliente_id, clientes(nome, user_id)')
+          .select('id, cliente_id, status, clientes(nome, user_id)')
           .eq('asaas_subscription_id', subId)
           .maybeSingle()
         if (ass) {
-          const cli = ass.clientes as { nome: string; user_id: string } | null
-          await supabase.from('assinaturas').update({ status: 'cancelada' }).eq('id', ass.id)
-          await supabase.from('historico_acoes').insert({
-            cliente_id: ass.cliente_id,
-            tipo_acao:  'assinatura_inativada',
-            descricao:  '🚫 Assinatura inativada no Asaas.',
-            metadata:   { event: evento },
-          })
-          await supabase.from('notificacoes').insert({
-            user_id:    cli?.user_id,
-            cliente_id: ass.cliente_id,
-            tipo:       'urgente',
-            titulo:     `${cli?.nome} — Assinatura inativada`,
-            mensagem:   'Assinatura inativada no Asaas. Verifique a situação do cliente.',
-            acao_url:   `/clientes/${ass.cliente_id}`,
-            acao_label: 'Ver cliente',
-          })
+          // Pausa/cancelamento INTENCIONAL nosso (régua D+7/D+15 fez PUT INACTIVE):
+          // o Asaas dispara este evento de volta, mas NÃO devemos marcar 'cancelada'
+          // por cima nem alarmar o operador — a régua já registrou a ação.
+          if (ass.status === 'pausada' || ass.status === 'cancelado_admin') {
+            console.log(`[SUBSCRIPTION_INACTIVATED] ${subId} em '${ass.status}' (ação da régua) — status preservado`)
+          } else {
+            const cli = ass.clientes as { nome: string; user_id: string } | null
+            await supabase.from('assinaturas').update({ status: 'cancelada' }).eq('id', ass.id)
+            await supabase.from('historico_acoes').insert({
+              cliente_id: ass.cliente_id,
+              tipo_acao:  'assinatura_inativada',
+              descricao:  '🚫 Assinatura inativada no Asaas.',
+              metadata:   { event: evento },
+            })
+            await supabase.from('notificacoes').insert({
+              user_id:    cli?.user_id,
+              cliente_id: ass.cliente_id,
+              tipo:       'urgente',
+              titulo:     `${cli?.nome} — Assinatura inativada`,
+              mensagem:   'Assinatura inativada no Asaas. Verifique a situação do cliente.',
+              acao_url:   `/clientes/${ass.cliente_id}`,
+              acao_label: 'Ver cliente',
+            })
+          }
         }
       }
     }
