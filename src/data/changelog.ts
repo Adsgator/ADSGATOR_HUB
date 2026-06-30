@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.46.0',
+    data:   '2026-06-30',
+    novidades: [
+      'O "D+N" de atraso agora é calculado ao vivo pela data de vencimento da assinatura, em vez de mostrar um número congelado: antes ele só mudava quando a régua de cobrança rodava (ou quando o Asaas avisava), então um cliente vencido em 05/06 podia continuar marcando "D+13" mesmo já estando há 25 dias em atraso. Na página do cliente o número agora confere todo dia, sozinho',
+      'Nova seção "Assinatura" na página do cliente: você vê num só lugar o plano, o valor mensal, a situação (em dia / D+N com o estágio da régua), a próxima cobrança e o ID da assinatura no Asaas — antes não havia onde consultar o vínculo financeiro do cliente',
+    ],
+  },
+  {
     versao: '0.45.0',
     data:   '2026-06-28',
     novidades: [

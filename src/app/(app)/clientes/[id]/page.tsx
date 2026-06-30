@@ -7,6 +7,7 @@ import {
   Phone, Mail, Globe, Calendar, DollarSign, AlertCircle,
   MessageCircle, Snowflake, Play, Pencil, Check, X as XIcon,
   FileText, Send, ChevronDown, ChevronUp, LogOut, Layout, Plus, Trash2, ExternalLink, Copy,
+  CreditCard, Repeat,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { labelMotivoInativacao } from '@/lib/cliente-status'
@@ -28,11 +29,13 @@ import {
   obterCliente,
   obterEstagioAtivo,
   obterHistoricoCliente,
+  obterAssinaturaCliente,
   congelarCliente,
   descongelarCliente,
   atualizarCliente,
 } from '@/lib/database'
-import type { Cliente, Estagio, HistoricoAcao } from '@/lib/types'
+import type { Cliente, Estagio, HistoricoAcao, Assinatura } from '@/lib/types'
+import { diasAtrasoReais, statusInadimplencia } from '@/lib/cobranca'
 import { toast } from 'sonner'
 
 interface TimelineInstanceSummary {
@@ -148,9 +151,10 @@ export default function ClienteDetalhePage() {
   const { id }  = useParams<{ id: string }>()
   const router  = useRouter()
 
-  const [cliente,   setCliente]   = useState<Cliente | null>(null)
-  const [estagio,   setEstagio]   = useState<Estagio | null>(null)
-  const [historico, setHistorico] = useState<HistoricoAcao[]>([])
+  const [cliente,    setCliente]    = useState<Cliente | null>(null)
+  const [estagio,    setEstagio]    = useState<Estagio | null>(null)
+  const [assinatura, setAssinatura] = useState<Assinatura | null>(null)
+  const [historico,  setHistorico]  = useState<HistoricoAcao[]>([])
   const [abaAtiva,  setAbaAtiva]  = useState<AbaId>('visao_geral')
   const [carregando, setCarregando] = useState(true)
   const [whatsappOpen,   setWhatsappOpen]   = useState(false)
@@ -356,10 +360,12 @@ export default function ClienteDetalhePage() {
       obterCliente(id),
       obterEstagioAtivo(id),
       obterHistoricoCliente(id),
-    ]).then(([c, e, h]) => {
+      obterAssinaturaCliente(id).catch(() => null),
+    ]).then(([c, e, h, a]) => {
       setCliente(c)
       setEstagio(e)
       setHistorico(h)
+      setAssinatura(a)
     }).catch(() => {
       toast.error('Erro ao carregar cliente')
     }).finally(() => setCarregando(false))
@@ -443,6 +449,12 @@ export default function ClienteDetalhePage() {
       </MainLayout>
     )
   }
+
+  // Atraso "ao vivo": calculado da data de vencimento em aberto (próxima
+  // cobrança da assinatura ou data_vencimento do cliente), com fallback no
+  // dias_atraso gravado. Evita o número congelado quando o cron não rodou.
+  const vencimentoEmAberto = assinatura?.data_proxima_cobranca ?? cliente.data_vencimento ?? null
+  const diasAtraso = diasAtrasoReais(cliente, vencimentoEmAberto)
 
   const actions = (
     <div className="flex items-center gap-[0.5rem]">
@@ -565,14 +577,14 @@ export default function ClienteDetalhePage() {
                   </div>
                 </div>
               )}
-              {cliente.dias_atraso > 0 && (
+              {diasAtraso > 0 && (
                 <div className="text-right">
                   <div className="flex items-center gap-[0.25rem] text-status-red text-[0.75rem]">
                     <AlertCircle className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} />
                     Atraso
                   </div>
                   <div className="text-status-red text-[1rem] font-semibold">
-                    D+{cliente.dias_atraso}
+                    D+{diasAtraso}
                   </div>
                 </div>
               )}
@@ -617,6 +629,59 @@ export default function ClienteDetalhePage() {
               </span>
             )}
           </div>
+        </div>
+
+        {/* Assinatura */}
+        <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] card-shadow mb-[1.5rem]">
+          <div className="flex items-center gap-[0.5rem] mb-[1rem]">
+            <CreditCard className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+            <h3 className="text-ink-primary text-[0.9375rem] font-semibold">Assinatura</h3>
+          </div>
+          {assinatura ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-[1.25rem]">
+              <div>
+                <p className="text-ink-muted text-[0.75rem] mb-[0.25rem]">Plano</p>
+                <p className="text-ink-primary text-[0.875rem] font-medium">{assinatura.plano_nome}</p>
+              </div>
+              <div>
+                <p className="text-ink-muted text-[0.75rem] mb-[0.25rem]">Valor mensal</p>
+                <p className="text-ink-primary text-[0.875rem] font-medium">
+                  R$ {assinatura.valor_mensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <div>
+                <p className="text-ink-muted text-[0.75rem] mb-[0.25rem]">Situação</p>
+                {(() => {
+                  const s = statusInadimplencia({ dias_atraso: diasAtraso })
+                  return (
+                    <span className={cn('inline-flex items-center px-[0.5rem] py-[0.125rem] rounded-full text-xs font-medium', s.color, 'bg-surface-hover')}>
+                      {diasAtraso > 0 ? `${s.label} · D+${diasAtraso}` : 'Em dia'}
+                    </span>
+                  )
+                })()}
+              </div>
+              <div>
+                <p className="text-ink-muted text-[0.75rem] mb-[0.25rem] flex items-center gap-[0.25rem]">
+                  <Repeat className="w-[0.75rem] h-[0.75rem]" strokeWidth={2} /> Próxima cobrança
+                </p>
+                <p className="text-ink-primary text-[0.875rem] font-medium">
+                  {assinatura.data_proxima_cobranca
+                    ? new Date(assinatura.data_proxima_cobranca).toLocaleDateString('pt-BR')
+                    : '—'}
+                </p>
+              </div>
+              <div>
+                <p className="text-ink-muted text-[0.75rem] mb-[0.25rem]">ID Asaas</p>
+                <p className="text-ink-secondary text-[0.8125rem] font-mono truncate" title={assinatura.asaas_subscription_id ?? ''}>
+                  {assinatura.asaas_subscription_id ?? '—'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-ink-muted text-[0.8125rem]">
+              Nenhuma assinatura vinculada. A assinatura é criada automaticamente quando o cliente assina um plano via Asaas.
+            </p>
+          )}
         </div>
 
         {/* Tabs */}

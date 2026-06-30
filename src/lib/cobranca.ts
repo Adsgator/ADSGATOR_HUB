@@ -123,3 +123,38 @@ export function statusInadimplencia(
 export function isInadimplente(cliente: Pick<Cliente, 'dias_atraso'>): boolean {
   return (cliente.dias_atraso ?? 0) > 0
 }
+
+/**
+ * Dias de atraso "ao vivo", calculados pela data de vencimento (hoje − venc.),
+ * com fallback no `dias_atraso` gravado no banco.
+ *
+ * Motivação: `clientes.dias_atraso` é uma coluna fixa, atualizada só pelo
+ * webhook do Asaas (1x no vencimento) e pelo cron diário de cobrança. Entre
+ * uma atualização e outra — ou quando o cron não roda — o número congela e a
+ * UI mostra um atraso menor do que o real. Quando temos a data de vencimento
+ * em aberto, o atraso correto é sempre derivado dela.
+ *
+ * `vencimento`: data da cobrança vencida em aberto — em geral a
+ * `data_proxima_cobranca` da assinatura (que, estando atrasada, aponta para a
+ * fatura vencida) ou `clientes.data_vencimento`. Aceita `Date` ou ISO string.
+ *
+ * Sem data válida, retorna o `dias_atraso` gravado (`?? 0`).
+ * O atraso por data nunca é negativo (vencimento no futuro ⇒ 0).
+ */
+export function diasAtrasoReais(
+  cliente: Pick<Cliente, 'dias_atraso'>,
+  vencimento?: string | Date | null,
+): number {
+  if (vencimento) {
+    const venc = vencimento instanceof Date ? vencimento : new Date(vencimento)
+    if (!Number.isNaN(venc.getTime())) {
+      // Compara só a parte de data (zera horas) para não contar fração de dia.
+      const hoje0 = new Date()
+      hoje0.setHours(0, 0, 0, 0)
+      const venc0 = new Date(venc)
+      venc0.setHours(0, 0, 0, 0)
+      return Math.max(0, Math.floor((hoje0.getTime() - venc0.getTime()) / 86_400_000))
+    }
+  }
+  return cliente.dias_atraso ?? 0
+}
