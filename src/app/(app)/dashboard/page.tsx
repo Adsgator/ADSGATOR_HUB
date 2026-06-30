@@ -48,7 +48,7 @@ import { supabase }              from '@/lib/supabase'
 import { carregarDashboardLayout, salvarDashboardLayout, type Layouts as LayoutsType } from '@/lib/database'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
-import { estagioInadimplencia } from '@/lib/cobranca'
+import { estagioInadimplencia, diasAtrasoCliente } from '@/lib/cobranca'
 import { gerarLinkWhatsApp } from '@/lib/whatsapp'
 
 type Urgencia = 'critica' | 'atencao' | 'review'
@@ -527,7 +527,7 @@ export default function DashboardPage() {
   const acoesDoDia = useMemo(() => {
     const acoes: AcaoItem[] = []
     dados.forEach(({ cliente, estagio }) => {
-      const dias           = cliente.dias_atraso ?? 0
+      const dias           = diasAtrasoCliente(cliente)
       const nivelCobranca  = estagioInadimplencia(dias)
       if (nivelCobranca === 'critico' || nivelCobranca === 'grave') {
         acoes.push({ cliente, estagio, urgencia: 'critica', descricao: `${dias} dias sem pagamento — envie notificação de rescisão`, acaoLabel: '#COBRANÇA', whatsapp: cliente.whatsapp ? gerarLinkWhatsApp(`Olá ${cliente.nome.split(' ')[0]}. Em razão do atraso de ${dias} dias, comunicamos a rescisão contratual.`, cliente.whatsapp) : undefined })
@@ -714,7 +714,7 @@ export default function DashboardPage() {
                 <div className="flex flex-col overflow-y-auto h-full">
                   {progresso.slice(0, 10).map(({ cliente }) => {
                     const iniciais = cliente.nome.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
-                    const diasAtraso = cliente.dias_atraso ?? 0
+                    const diasAtraso = diasAtrasoCliente(cliente)
                     const STATUS_DOT: Record<string, string> = {
                       ativo: 'bg-status-green', recebido: 'bg-status-blue',
                       onboarding: 'bg-ads-500',  setup_trafego: 'bg-status-orange',
@@ -786,9 +786,9 @@ export default function DashboardPage() {
           <div key="clientes-foco">
             {(() => {
               const emFoco = dados
-                .map(({ cliente }) => cliente)
-                .filter((c) => (c.dias_atraso ?? 0) > 0 || c.status === 'congelado')
-                .sort((a, b) => (b.dias_atraso ?? 0) - (a.dias_atraso ?? 0))
+                .map(({ cliente }) => ({ cliente, dias: diasAtrasoCliente(cliente) }))
+                .filter(({ cliente, dias }) => dias > 0 || cliente.status === 'congelado')
+                .sort((a, b) => b.dias - a.dias)
                 .slice(0, 5)
               return (
                 <BentoCard
@@ -812,9 +812,9 @@ export default function DashboardPage() {
                     </div>
                   ) : (
                     <div className="flex gap-[0.75rem] overflow-x-auto pb-[0.25rem]">
-                      {emFoco.map((c) => {
+                      {emFoco.map(({ cliente: c, dias }) => {
                         const iniciais = c.nome.split(' ').slice(0, 2).map((n: string) => n[0]).join('').toUpperCase()
-                        const estagioAtraso = estagioInadimplencia(c.dias_atraso)
+                        const estagioAtraso = estagioInadimplencia(dias)
                         const urgencia = estagioAtraso === 'critico' ? 'critica' : estagioAtraso !== 'em_dia' ? 'atencao' : 'congelado'
                         const corBorda = urgencia === 'critica' ? 'border-status-red/40' : urgencia === 'atencao' ? 'border-status-orange/40' : 'border-status-blue/40'
                         const corBg    = urgencia === 'critica' ? 'bg-status-red/5'   : urgencia === 'atencao' ? 'bg-status-orange/5'   : 'bg-status-blue/5'
@@ -831,7 +831,7 @@ export default function DashboardPage() {
                               <span className="text-ink-muted text-[0.6875rem] truncate">{c.nicho}</span>
                             )}
                             <span className={`self-start text-[0.625rem] font-semibold px-[0.375rem] py-[0.125rem] rounded-full ${corTag}`}>
-                              {urgencia === 'critica' ? `${c.dias_atraso}d atraso` : urgencia === 'atencao' ? `${c.dias_atraso}d atraso` : 'Congelado'}
+                              {urgencia === 'critica' ? `${dias}d atraso` : urgencia === 'atencao' ? `${dias}d atraso` : 'Congelado'}
                             </span>
                             <div className="flex gap-[0.25rem] mt-auto">
                               {c.whatsapp && (

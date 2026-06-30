@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { X, MessageCircle, CheckCircle, Bell, ExternalLink, CreditCard, Clock, PauseCircle, AlertTriangle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
-import { estagioInadimplencia, statusInadimplencia } from '@/lib/cobranca'
+import { estagioInadimplencia, statusInadimplencia, diasAtrasoCliente } from '@/lib/cobranca'
 
 type Severidade = 'critica' | 'atencao' | 'leve'
 type TipoAlerta = 'inadimplencia' | 'saldo_baixo' | 'onboarding_parado' | 'congelado'
@@ -27,6 +27,7 @@ interface ClienteRow {
   nome:               string
   status:             string
   dias_atraso:        number | null
+  data_vencimento:    string | null
   whatsapp:           string | null
   saldo_google:       number | null
   google_ads_enabled: boolean | null
@@ -71,7 +72,7 @@ function construirAlertas(clientes: ClienteRow[]): AlertaItem[] {
   const primeiroNome = (n: string) => n.split(' ')[0]
 
   for (const c of clientes) {
-    const dias = c.dias_atraso ?? 0
+    const dias = diasAtrasoCliente(c)
 
     // 1 — Inadimplência
     if (dias > 0) {
@@ -141,7 +142,7 @@ export function NotificationDrawer({ open, onClose }: NotificationDrawerProps) {
     Promise.all([
       supabase
         .from('clientes')
-        .select('id, nome, status, dias_atraso, whatsapp, saldo_google, google_ads_enabled, data_atualizacao')
+        .select('id, nome, status, dias_atraso, data_vencimento, whatsapp, saldo_google, google_ads_enabled, data_atualizacao')
         .not('status', 'in', '(cancelado,cancelado_debito,inativo)'),
       supabase
         .from('notificacoes')

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { estagioInadimplencia } from '@/lib/cobranca'
+import { estagioInadimplencia, diasAtrasoCliente } from '@/lib/cobranca'
 
 interface Cliente {
   id: string
@@ -13,6 +13,7 @@ interface Cliente {
   nicho: string
   status: string
   dias_atraso: number
+  data_vencimento: string | null
   mrr: number
 }
 
@@ -20,7 +21,7 @@ type RiskLevel = 'Alto' | 'Médio' | 'Baixo'
 
 function getRisk(c: Cliente): RiskLevel {
   // 'suspensao' (D+7) ou pior conta como risco alto, conforme política de cobrança.
-  const estagio = estagioInadimplencia(c.dias_atraso)
+  const estagio = estagioInadimplencia(diasAtrasoCliente(c))
   if (estagio === 'suspensao' || estagio === 'grave' || estagio === 'critico') return 'Alto'
   if (estagio === 'atencao' || c.status === 'congelado') return 'Médio'
   return 'Baixo'
@@ -44,7 +45,7 @@ export function ChurnRisk() {
   useEffect(() => {
     supabase
       .from('clientes')
-      .select('id, nome, nicho, status, dias_atraso, mrr')
+      .select('id, nome, nicho, status, dias_atraso, data_vencimento, mrr')
       .or('dias_atraso.gt.0,status.eq.congelado')
       .neq('status', 'inativo')
       .order('dias_atraso', { ascending: false })

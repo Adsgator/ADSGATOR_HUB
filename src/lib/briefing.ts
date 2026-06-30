@@ -7,6 +7,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { MODELO_PRO, criarGenAI } from '@/lib/vertex-ai'
 import { extrairUso, registrarUso } from '@/lib/ia/uso'
 import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
+import { diasAtrasoCliente } from '@/lib/cobranca'
 
 export type FiltroModo = 'completo' | 'urgencias' | 'resumido'
 
@@ -60,7 +61,7 @@ export async function gerarBriefing(
 
   const { data: clientesData } = await db
     .from('clientes')
-    .select('id, nome, status, dias_atraso, mrr, nicho, saldo_google, google_ads_enabled')
+    .select('id, nome, status, dias_atraso, data_vencimento, mrr, nicho, saldo_google, google_ads_enabled')
     .eq('user_id', userId)
     .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido'])
 
@@ -114,7 +115,7 @@ export async function gerarBriefing(
   const limiteSaldo = configRes.data?.saldo_google_ads_limite_alerta ?? 50
 
   const mrrTotal      = calcularMRR(assinaturasRes.data ?? [])
-  const inadimplentes = clientes.filter((c) => (c.dias_atraso ?? 0) > 0)
+  const inadimplentes = clientes.filter((c) => diasAtrasoCliente(c) > 0)
   const saldoBaixo    = clientes.filter(
     (c) => c.google_ads_enabled && (c.saldo_google ?? 0) > 0 && (c.saldo_google ?? 0) <= limiteSaldo,
   )

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { ExternalLink, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { diasAtrasoCliente } from '@/lib/cobranca'
 import type { NewsClienteData } from '@/lib/types/news'
 
 interface NewsClienteCardProps {
@@ -66,6 +67,8 @@ function SaldoBar({ saldo }: { saldo: number }) {
 
 export function NewsClienteCard({ cliente }: NewsClienteCardProps) {
   const router = useRouter()
+
+  const diasAtraso = diasAtrasoCliente(cliente)
 
   const googleAdsUrl = cliente.dominio
     ? `https://ads.google.com/`
@@ -145,10 +148,10 @@ export function NewsClienteCard({ cliente }: NewsClienteCardProps) {
           <span className="text-[0.55rem] text-ink-muted uppercase tracking-wide leading-none mb-[0.125rem]">Sessões</span>
           <span className="text-xs font-semibold text-ink-primary">{formatNumber(cliente.sessoes)}</span>
         </div>
-        {cliente.dias_atraso > 0 && (
+        {diasAtraso > 0 && (
           <div className="flex flex-col ml-auto">
             <span className="text-[0.55rem] text-status-red uppercase tracking-wide leading-none mb-[0.125rem]">Atraso</span>
-            <span className="text-xs font-semibold text-status-red">{cliente.dias_atraso}d</span>
+            <span className="text-xs font-semibold text-status-red">{diasAtraso}d</span>
           </div>
         )}
       </div>

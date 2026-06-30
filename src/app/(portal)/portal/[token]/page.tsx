@@ -1,5 +1,6 @@
 import { criarClienteServiceRole } from '@/lib/supabase'
 import type { Cliente, Estagio, RelatorioMensal } from '@/lib/types'
+import { diasAtrasoCliente } from '@/lib/cobranca'
 import { Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 
 type StatusBadgeColor = 'green' | 'orange' | 'red' | 'blue' | 'gray'
@@ -71,7 +72,7 @@ export default async function PortalPage({ params }: PageParams) {
   try {
     const { data } = await supabase
       .from('clientes')
-      .select('id, nome, email, whatsapp, dominio, nicho, status, mrr, dias_atraso')
+      .select('id, nome, email, whatsapp, dominio, nicho, status, mrr, dias_atraso, data_vencimento')
       .eq('portal_token', token)
       .single()
 
@@ -158,7 +159,7 @@ export default async function PortalPage({ params }: PageParams) {
             </div>
             <div className="bg-surface-base border border-surface-border rounded-lg p-[1rem]">
               <p className="text-xs text-ink-muted mb-[0.25rem]">Dias em Atraso</p>
-              <p className="text-2xl font-bold text-ink-primary">{cliente.dias_atraso ?? 0}</p>
+              <p className="text-2xl font-bold text-ink-primary">{diasAtrasoCliente(cliente)}</p>
             </div>
           </div>
         </div>

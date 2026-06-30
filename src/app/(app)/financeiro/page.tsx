@@ -17,7 +17,7 @@ import { ContextMenu } from '@/components/ui/ContextMenu'
 import { supabase }    from '@/lib/supabase'
 import { useRightSidebarStore } from '@/lib/store/right-sidebar-store'
 import { useConfirmDialogStore } from '@/lib/hooks/useConfirmDialog'
-import { estagioInadimplencia } from '@/lib/cobranca'
+import { estagioInadimplencia, diasAtrasoCliente } from '@/lib/cobranca'
 import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
 import type { FinanceiroLancamento, Cliente } from '@/lib/types'
 
@@ -755,7 +755,10 @@ export default function FinanceiroPage() {
                 </tr>
               </thead>
               <tbody>
-                {atrasados.map((c) => (
+                {atrasados.map((c) => {
+                  const dias = diasAtrasoCliente(c)
+                  const estagio = estagioInadimplencia(dias)
+                  return (
                   <tr key={c.id} className="border-b border-surface-border hover:bg-surface-hover transition-colors">
                     <td className="py-[0.875rem]">
                       <p className="text-ink-primary font-medium text-[0.875rem]">{c.nome}</p>
@@ -763,12 +766,12 @@ export default function FinanceiroPage() {
                     </td>
                     <td className="py-[0.875rem]">
                       <span className={`inline-flex items-center text-[0.75rem] font-bold px-[0.5rem] py-[0.125rem] rounded ${
-                        estagioInadimplencia(c.dias_atraso) === 'critico' ? 'bg-status-red/15 text-status-red'
-                        : estagioInadimplencia(c.dias_atraso) === 'grave' ? 'bg-status-red/15 text-status-red'
-                        : estagioInadimplencia(c.dias_atraso) === 'suspensao' ? 'bg-status-orange/15 text-status-orange'
+                        estagio === 'critico' ? 'bg-status-red/15 text-status-red'
+                        : estagio === 'grave' ? 'bg-status-red/15 text-status-red'
+                        : estagio === 'suspensao' ? 'bg-status-orange/15 text-status-orange'
                         : 'bg-yellow-500/15 text-yellow-500'
                       }`}>
-                        {c.dias_atraso}d
+                        {dias}d
                       </span>
                     </td>
                     <td className="py-[0.875rem] text-ink-primary font-semibold text-[0.875rem]">
@@ -788,7 +791,8 @@ export default function FinanceiroPage() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>

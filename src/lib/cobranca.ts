@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Cliente } from './types'
 
 /**
  * Política de cobrança da agência — fonte única de verdade.
@@ -104,12 +103,26 @@ export function estagioInadimplencia(
   return 'em_dia'
 }
 
-/** Status completo de inadimplência de um cliente, com metadados de UI. */
+/**
+ * Mínimo necessário para derivar a inadimplência de um cliente. Tolerante a
+ * `null` porque ambos os campos podem vir nulos do banco (queries parciais,
+ * cliente sem vencimento em aberto). Um `Cliente` completo satisfaz o tipo.
+ */
+export type ClienteAtraso = {
+  dias_atraso?: number | null
+  data_vencimento?: string | null
+}
+
+/**
+ * Status completo de inadimplência de um cliente, com metadados de UI.
+ * Usa o atraso ao vivo (`diasAtrasoCliente`): quando o cliente tem
+ * `data_vencimento`, o número é derivado dela; senão cai no `dias_atraso`.
+ */
 export function statusInadimplencia(
-  cliente: Pick<Cliente, 'dias_atraso'>,
+  cliente: ClienteAtraso,
   limiares: LimiaresAtraso = LIMIARES_ATRASO,
 ): StatusInadimplencia {
-  const dias = cliente.dias_atraso ?? 0
+  const dias = diasAtrasoCliente(cliente)
   const estagio = estagioInadimplencia(dias, limiares)
   return {
     estagio,
@@ -119,9 +132,9 @@ export function statusInadimplencia(
   }
 }
 
-/** Atalho: o cliente tem qualquer atraso? */
-export function isInadimplente(cliente: Pick<Cliente, 'dias_atraso'>): boolean {
-  return (cliente.dias_atraso ?? 0) > 0
+/** Atalho: o cliente tem qualquer atraso (ao vivo)? */
+export function isInadimplente(cliente: ClienteAtraso): boolean {
+  return diasAtrasoCliente(cliente) > 0
 }
 
 /**
@@ -142,11 +155,16 @@ export function isInadimplente(cliente: Pick<Cliente, 'dias_atraso'>): boolean {
  * O atraso por data nunca é negativo (vencimento no futuro ⇒ 0).
  */
 export function diasAtrasoReais(
-  cliente: Pick<Cliente, 'dias_atraso'>,
+  cliente: ClienteAtraso,
   vencimento?: string | Date | null,
 ): number {
   if (vencimento) {
-    const venc = vencimento instanceof Date ? vencimento : new Date(vencimento)
+    // Datas só-data (`YYYY-MM-DD`, ex.: clientes.data_vencimento que é DATE no
+    // banco) seriam parseadas como meia-noite UTC e, em BRT (-3), voltariam um
+    // dia ao zerar as horas localmente → atraso +1. Ancorar ao meio-dia evita.
+    const venc = vencimento instanceof Date
+      ? vencimento
+      : new Date(/^\d{4}-\d{2}-\d{2}$/.test(vencimento) ? `${vencimento}T12:00:00` : vencimento)
     if (!Number.isNaN(venc.getTime())) {
       // Compara só a parte de data (zera horas) para não contar fração de dia.
       const hoje0 = new Date()
@@ -157,4 +175,16 @@ export function diasAtrasoReais(
     }
   }
   return cliente.dias_atraso ?? 0
+}
+
+/**
+ * Atraso ao vivo de um cliente, derivado de `clientes.data_vencimento` — o
+ * espelho do vencimento em aberto, gravado pelo cron de cobrança e pelo
+ * webhook do Asaas. É o atalho padrão da UI: substitui a leitura crua de
+ * `cliente.dias_atraso` (coluna fixa que congela entre atualizações),
+ * garantindo o mesmo D+N em todas as telas. Sem `data_vencimento`, cai no
+ * `dias_atraso` gravado.
+ */
+export function diasAtrasoCliente(cliente: ClienteAtraso): number {
+  return diasAtrasoReais(cliente, cliente.data_vencimento ?? null)
 }

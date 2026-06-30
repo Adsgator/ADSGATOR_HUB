@@ -13,7 +13,7 @@ export async function GET() {
   // Buscar clientes ativos do user (sem limit, mostra todos que qualificam)
   const { data: clientes, error: clientesError } = await supabase
     .from('clientes')
-    .select('id, nome, status, nicho, saldo_google, dominio, website, dias_atraso, mrr')
+    .select('id, nome, status, nicho, saldo_google, dominio, website, dias_atraso, data_vencimento, mrr')
     .eq('user_id', user.id)
     .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido'])
     .order('mrr', { ascending: false })
@@ -83,6 +83,7 @@ export async function GET() {
       dominio: cliente.dominio,
       website: cliente.website,
       dias_atraso: cliente.dias_atraso ?? 0,
+      data_vencimento: cliente.data_vencimento ?? null,
       mrr: cliente.mrr ?? 0,
       ultima_atualizacao: snap?.created_at,
     }

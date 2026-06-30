@@ -367,13 +367,15 @@ serve(async (req) => {
         // Reativar cliente cancelado e zerar atraso
         const { data: cliente } = await supabase
           .from('clientes')
-          .select('id, status, dias_atraso')
+          .select('id, status, dias_atraso, data_vencimento')
           .eq('id', garantia.clienteId)
           .single();
         if (cliente) {
           const updates: Record<string, unknown> = {};
           if (['cancelado', 'cancelado_debito'].includes(cliente.status)) updates.status = 'ativo';
           if ((cliente.dias_atraso ?? 0) > 0) updates.dias_atraso = 0;
+          // Limpa o espelho do vencimento em aberto (D+N ao vivo zera)
+          if (cliente.data_vencimento) updates.data_vencimento = null;
           if (Object.keys(updates).length > 0) {
             await supabase.from('clientes').update(updates).eq('id', cliente.id);
           }
@@ -430,6 +432,23 @@ serve(async (req) => {
 
       if (!assinatura) {
         return new Response(JSON.stringify({ ignored: true }), { status: 200, headers: corsHeaders });
+      }
+
+      // Espelha o vencimento em aberto no cliente (D+N ao vivo na UI — ver
+      // diasAtrasoCliente). Mantém o mais antigo: só grava se ainda não há
+      // data ou se esta cobrança venceu antes. O cron diário recalcula o
+      // vencimento mais antigo com precisão; aqui é o reflexo imediato.
+      const vencEvento = pagamento.dueDate as string | undefined;
+      if (vencEvento) {
+        const { data: cli } = await supabase
+          .from('clientes')
+          .select('data_vencimento')
+          .eq('id', assinatura.cliente_id)
+          .maybeSingle();
+        const atual = cli?.data_vencimento as string | null | undefined;
+        if (!atual || vencEvento < atual) {
+          await supabase.from('clientes').update({ data_vencimento: vencEvento }).eq('id', assinatura.cliente_id);
+        }
       }
 
       // Processar apenas se o nível de atraso subiu (evita re-processamento)

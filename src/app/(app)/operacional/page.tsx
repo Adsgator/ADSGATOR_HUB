@@ -10,6 +10,7 @@ import { MainLayout } from '@/components/layout/MainLayout'
 import { Button }     from '@/components/ui/Button'
 import { supabase }   from '@/lib/supabase'
 import { cn }         from '@/lib/utils'
+import { diasAtrasoCliente } from '@/lib/cobranca'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ interface ClienteRow {
   mrr: number | null
   status: string
   dias_atraso: number | null
+  data_vencimento: string | null
 }
 
 // ─── Column definitions ────────────────────────────────────────────────────────
@@ -69,7 +71,8 @@ function ClienteCard({
   color: string
   onClick: () => void
 }) {
-  const atrasado = (cliente.dias_atraso ?? 0) > 0
+  const diasAtraso = diasAtrasoCliente(cliente)
+  const atrasado = diasAtraso > 0
 
   return (
     <button
@@ -91,7 +94,7 @@ function ClienteCard({
         {atrasado && (
           <span className="flex items-center gap-[0.1875rem] text-[0.6875rem] font-semibold text-status-orange bg-status-orange/10 border border-status-orange/25 rounded-full px-[0.5rem] py-[0.0625rem]">
             <AlertTriangle className="w-[0.625rem] h-[0.625rem]" strokeWidth={2.5} />
-            D+{cliente.dias_atraso}
+            D+{diasAtraso}
           </span>
         )}
       </div>
@@ -160,7 +163,7 @@ export default function OperacionalPage() {
     setLoading(true)
     const { data } = await supabase
       .from('clientes')
-      .select('id, nome, nicho, mrr, status, dias_atraso')
+      .select('id, nome, nicho, mrr, status, dias_atraso, data_vencimento')
       .neq('status', 'inativo')
       .order('nome')
     setClientes((data as ClienteRow[]) ?? [])
@@ -181,7 +184,7 @@ export default function OperacionalPage() {
   )
 
   const totalInadimplentes = useMemo(
-    () => clientes.filter((c) => (c.dias_atraso ?? 0) > 0).length,
+    () => clientes.filter((c) => diasAtrasoCliente(c) > 0).length,
     [clientes],
   )
 

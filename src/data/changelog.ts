@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.46.1',
+    data:   '2026-06-30',
+    novidades: [
+      'O "D+N" de atraso ao vivo, que já estava na página do cliente, agora vale no sistema inteiro: lista de clientes, dashboard (ações do dia, clientes em foco, central de comando, risco de churn, próximas cobranças), financeiro (inadimplentes), operacional, alertas, painel de notificações, o briefing da manhã e o portal do cliente mostram todos o MESMO número — sempre "hoje menos o vencimento", sem depender da régua ter rodado. Antes cada tela podia exibir um D+N diferente e congelado',
+      'De quebra, corrigimos um deslize de fuso horário que fazia o atraso aparecer 1 dia a mais do que o real em algumas telas',
+    ],
+  },
+  {
     versao: '0.46.0',
     data:   '2026-06-30',
     novidades: [

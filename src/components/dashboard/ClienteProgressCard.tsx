@@ -9,6 +9,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { diasAtrasoCliente } from '@/lib/cobranca'
 import { calcularHealthScore, type HealthRegras } from '@/lib/health-score'
 import { calcularCompletude } from '@/lib/cliente-completude'
 import { toast } from 'sonner'
@@ -70,7 +71,7 @@ export function ClienteProgressCard({
     .toUpperCase()
 
   const mrr = cliente.mrr ?? 0
-  const diasAtraso = cliente.dias_atraso ?? 0
+  const diasAtraso = diasAtrasoCliente(cliente)
   const ultimaInteracao = diasDesde(cliente.updated_at)
   const health = calcularHealthScore(cliente, estagio, healthRegras)
   const completude = calcularCompletude(cliente)

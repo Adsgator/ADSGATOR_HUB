@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation'
 import { Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { diasAtrasoCliente } from '@/lib/cobranca'
 
 interface Cliente {
   id: string
   nome: string
   mrr: number
   dias_atraso: number
+  data_vencimento: string | null
   status: string
 }
 
@@ -26,7 +28,7 @@ export function ProximasCobrancas() {
   useEffect(() => {
     supabase
       .from('clientes')
-      .select('id, nome, mrr, dias_atraso, status')
+      .select('id, nome, mrr, dias_atraso, data_vencimento, status')
       .neq('status', 'cancelado')
       .neq('status', 'inativo')
       .gt('mrr', 0)
@@ -39,7 +41,7 @@ export function ProximasCobrancas() {
   }, [])
 
   const mrrAtrasado = clientes
-    .filter((c) => c.dias_atraso > 0)
+    .filter((c) => diasAtrasoCliente(c) > 0)
     .reduce((sum, c) => sum + c.mrr, 0)
 
   return (
@@ -61,7 +63,9 @@ export function ProximasCobrancas() {
         </div>
       ) : (
         <ul className="flex-1 flex flex-col gap-[0.5rem] overflow-hidden">
-          {clientes.map((c) => (
+          {clientes.map((c) => {
+            const dias = diasAtrasoCliente(c)
+            return (
             <li
               key={c.id}
               onClick={() => router.push(`/clientes/${c.id}`)}
@@ -76,15 +80,16 @@ export function ProximasCobrancas() {
               <span
                 className={cn(
                   'px-[0.5rem] py-[0.125rem] rounded-full text-[0.6875rem] font-semibold shrink-0',
-                  c.dias_atraso > 0
+                  dias > 0
                     ? 'bg-status-red/10 text-status-red'
                     : 'bg-status-green/10 text-status-green'
                 )}
               >
-                {c.dias_atraso > 0 ? `${c.dias_atraso}d atraso` : 'em dia'}
+                {dias > 0 ? `${dias}d atraso` : 'em dia'}
               </span>
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
 

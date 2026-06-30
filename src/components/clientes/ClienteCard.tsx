@@ -8,7 +8,7 @@ import {
   Globe, BarChart2, Pencil, Trash2, Copy, Archive,
 } from 'lucide-react';
 import type { Cliente, Estagio } from '@/lib/types';
-import { isInadimplente } from '@/lib/cobranca';
+import { diasAtrasoCliente } from '@/lib/cobranca';
 import { FLUXO_OPERACIONAL } from '@/lib/fluxo-operacional';
 import { gerarLinkWhatsApp } from '@/lib/whatsapp';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -57,7 +57,8 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
   const IconeStatus = ICONES_ESTAGIO[cliente.status as keyof typeof ICONES_ESTAGIO] ?? TrendingUp;
   const badgeCor    = BADGE_CORES[cliente.status] ?? 'bg-surface-hover text-ink-secondary';
   const borderCor   = STATUS_BORDER[cliente.status] ?? 'border-l-surface-border';
-  const temAtraso   = isInadimplente(cliente);
+  const diasAtraso  = diasAtrasoCliente(cliente);
+  const temAtraso   = diasAtraso > 0;
 
   const contextItems = [
     {
@@ -97,7 +98,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
         {/* Alerta atraso */}
         {temAtraso && (
           <div className="absolute top-0 right-0 px-[0.5rem] py-[0.1875rem] bg-status-red/10 border-b border-l border-status-red/20 rounded-bl-lg">
-            <span className="text-status-red text-[0.625rem] font-bold">D+{cliente.dias_atraso}</span>
+            <span className="text-status-red text-[0.625rem] font-bold">D+{diasAtraso}</span>
           </div>
         )}
 

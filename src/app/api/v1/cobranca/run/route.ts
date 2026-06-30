@@ -55,13 +55,19 @@ async function sincronizarAtrasos(
     return { ok: false, motivo: err instanceof Error ? err.message : String(err) }
   }
 
-  // Dias de atraso por assinatura = vencimento mais antigo em aberto
+  // Dias de atraso por assinatura = vencimento mais antigo em aberto.
+  // Guardamos também a data desse vencimento, que vira o espelho ao vivo em
+  // clientes.data_vencimento (a UI deriva D+N dela — ver diasAtrasoCliente).
   const hoje = Date.now()
   const atrasoPorSub = new Map<string, number>()
+  const vencimentoPorSub = new Map<string, string>()
   for (const p of vencidos) {
     if (!p.subscription || p.deleted || !p.dueDate) continue
     const dias = Math.max(0, Math.floor((hoje - new Date(`${p.dueDate}T12:00:00`).getTime()) / 86_400_000))
-    if (dias > (atrasoPorSub.get(p.subscription) ?? -1)) atrasoPorSub.set(p.subscription, dias)
+    if (dias > (atrasoPorSub.get(p.subscription) ?? -1)) {
+      atrasoPorSub.set(p.subscription, dias)
+      vencimentoPorSub.set(p.subscription, p.dueDate)
+    }
   }
 
   const { data: assinaturas } = await supabase
@@ -70,6 +76,7 @@ async function sincronizarAtrasos(
     .not('asaas_subscription_id', 'is', null)
 
   const atrasoPorCliente = new Map<string, number>()
+  const vencimentoPorCliente = new Map<string, string | null>()
   let atualizadas = 0
 
   for (const a of assinaturas ?? []) {
@@ -77,6 +84,7 @@ async function sincronizarAtrasos(
     if (['cancelada', 'deletada'].includes(a.status)) continue
 
     const novoAtraso = atrasoPorSub.get(a.asaas_subscription_id) ?? 0
+    const novoVencimento = vencimentoPorSub.get(a.asaas_subscription_id) ?? null
     const novoStatus = STATUS_ASSINATURA_POR_ESTAGIO[estagioInadimplencia(novoAtraso, limiares)]
 
     if (novoAtraso !== (a.dias_atraso ?? 0) || novoStatus !== a.status) {
@@ -86,10 +94,12 @@ async function sincronizarAtrasos(
         .eq('id', a.id)
       atualizadas++
     }
-    atrasoPorCliente.set(
-      a.cliente_id,
-      Math.max(atrasoPorCliente.get(a.cliente_id) ?? 0, novoAtraso),
-    )
+    // Cliente = a assinatura com maior atraso (e a data desse vencimento).
+    const atualMax = atrasoPorCliente.get(a.cliente_id)
+    if (atualMax === undefined || novoAtraso > atualMax) {
+      atrasoPorCliente.set(a.cliente_id, novoAtraso)
+      vencimentoPorCliente.set(a.cliente_id, novoVencimento)
+    }
   }
 
   // Reflete no cliente (UI, alertas e esta régua leem clientes.dias_atraso)
@@ -97,13 +107,16 @@ async function sincronizarAtrasos(
   for (const [clienteId, dias] of atrasoPorCliente) {
     const { data: cliente } = await supabase
       .from('clientes')
-      .select('id, dias_atraso, status')
+      .select('id, dias_atraso, data_vencimento, status')
       .eq('id', clienteId)
       .maybeSingle()
     if (!cliente) continue
 
+    const venc = vencimentoPorCliente.get(clienteId) ?? null
     const updates: Record<string, unknown> = {}
     if ((cliente.dias_atraso ?? 0) !== dias) updates.dias_atraso = dias
+    // Espelho ao vivo do vencimento em aberto; null quando não há mais OVERDUE.
+    if ((cliente.data_vencimento ?? null) !== venc) updates.data_vencimento = venc
     if (estagioInadimplencia(dias, limiares) === 'critico' && cliente.status === 'ativo') {
       // perdido por inadimplência → arquiva como inativo + motivo (lib/cliente-status.ts)
       updates.status = 'inativo'

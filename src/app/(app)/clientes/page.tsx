@@ -14,7 +14,7 @@ import { carregarHealthRegras, HEALTH_REGRAS_PADRAO, type HealthRegras } from '@
 import { WhatsAppTemplateModal }     from '@/components/clientes/WhatsAppTemplateModal'
 import { ContextMenu }               from '@/components/ui/ContextMenu'
 import { useClientes }               from '@/lib/hooks/useClientes'
-import { isInadimplente }            from '@/lib/cobranca'
+import { isInadimplente, diasAtrasoCliente } from '@/lib/cobranca'
 import { supabase }                  from '@/lib/supabase'
 import { toast }                     from 'sonner'
 import type { Cliente }              from '@/lib/types'
@@ -67,7 +67,7 @@ function exportarCSV(clientes: Cliente[]) {
     c.nicho ?? '',
     STATUS_LABEL[c.status] ?? c.status,
     (c.mrr ?? 0).toFixed(2).replace('.', ','),
-    String(c.dias_atraso ?? 0),
+    String(diasAtrasoCliente(c)),
   ])
   const csv  = [header, ...rows].map((r) => r.join(';')).join('\n')
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
@@ -500,7 +500,8 @@ export default function ClientesPage() {
             </thead>
             <tbody>
               {visiveis.map(({ cliente: c }) => {
-                const temAlerta = (c.dias_atraso ?? 0) > 0
+                const diasAtraso = diasAtrasoCliente(c)
+                const temAlerta = diasAtraso > 0
                 const sel = selecionados.has(c.id)
                 const tableCtxItems = [
                   {
@@ -565,8 +566,8 @@ export default function ClientesPage() {
                       {c.mrr ? `R$ ${c.mrr.toLocaleString('pt-BR')}` : '—'}
                     </td>
                     <td className="px-[1rem] py-[0.75rem]">
-                      {(c.dias_atraso ?? 0) > 0
-                        ? <span className="text-status-orange font-semibold">D+{c.dias_atraso}</span>
+                      {diasAtraso > 0
+                        ? <span className="text-status-orange font-semibold">D+{diasAtraso}</span>
                         : <span className="text-ink-muted">—</span>
                       }
                     </td>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { AlertTriangle, Clock, CreditCard, Zap, MessageCircle, ExternalLink, CheckCircle2, ClipboardList } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { estagioInadimplencia } from '@/lib/cobranca'
+import { estagioInadimplencia, diasAtrasoCliente } from '@/lib/cobranca'
 import { ALERT_TYPES } from '@/lib/alert-types'
 import { TaskModal } from '@/components/ui/TaskModal'
 import { toast } from 'sonner'
@@ -26,7 +26,7 @@ export function AlertasCriticos() {
 
   const carregar = useCallback(async () => {
     const [{ data: clientes }, { data: alertasDb }, { data: config }] = await Promise.all([
-      supabase.from('clientes').select('id, nome, dias_atraso, saldo_google, whatsapp').in('status', ['ativo', 'onboarding', 'setup_trafego']),
+      supabase.from('clientes').select('id, nome, dias_atraso, data_vencimento, saldo_google, whatsapp').in('status', ['ativo', 'onboarding', 'setup_trafego']),
       supabase.from('alertas').select('id, tipo, mensagem, cliente_id').eq('resolvido', false).order('created_at', { ascending: false }).limit(5),
       supabase.from('configuracoes_financeiras').select('saldo_google_ads_limite_alerta').eq('agencia_id', 'adsgator-main').single(),
     ])
@@ -34,12 +34,13 @@ export function AlertasCriticos() {
     const limite = (config as { saldo_google_ads_limite_alerta?: number } | null)?.saldo_google_ads_limite_alerta ?? 50
     const itens: AlertaItem[] = []
 
-    for (const c of (clientes ?? []) as { id: string; nome: string; dias_atraso?: number; saldo_google?: number; whatsapp?: string }[]) {
-      const estagio = estagioInadimplencia(c.dias_atraso)
+    for (const c of (clientes ?? []) as { id: string; nome: string; dias_atraso?: number; data_vencimento?: string | null; saldo_google?: number; whatsapp?: string }[]) {
+      const dias = diasAtrasoCliente(c)
+      const estagio = estagioInadimplencia(dias)
       if (estagio === 'grave' || estagio === 'critico') {
-        itens.push({ id: `ina-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — quebra de contrato`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
+        itens.push({ id: `ina-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${dias}d em atraso — quebra de contrato`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
       } else if (estagio === 'suspensao') {
-        itens.push({ id: `ina7-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${c.dias_atraso}d em atraso — suspensão iminente`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
+        itens.push({ id: `ina7-${c.id}`, tipo: 'inadimplente', label: c.nome, detalhe: `${dias}d em atraso — suspensão iminente`, href: `/clientes/${c.id}`, urgente: true, whatsapp: c.whatsapp })
       }
       if ((c.saldo_google ?? Infinity) < limite) {
         itens.push({ id: `saldo-${c.id}`, tipo: 'saldo', label: c.nome, detalhe: `Saldo Google Ads: R$ ${(c.saldo_google ?? 0).toLocaleString('pt-BR')}`, href: `/clientes/${c.id}`, urgente: false })

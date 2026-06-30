@@ -24,6 +24,7 @@ export interface NewsClienteData {
 
   // Status financeiro
   dias_atraso: number
+  data_vencimento?: string | null
   mrr: number
 
   // Metadata

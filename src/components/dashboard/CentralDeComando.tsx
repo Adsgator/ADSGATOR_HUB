@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { CheckSquare, DollarSign, Megaphone, Bell, ChevronDown, CheckCircle2, ExternalLink } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { diasAtrasoCliente } from '@/lib/cobranca'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,7 @@ interface Cliente {
   id: string
   nome: string
   dias_atraso: number
+  data_vencimento: string | null
   whatsapp: string | null
 }
 
@@ -169,7 +171,7 @@ export function CentralDeComando() {
           .neq('status', 'feito'),
         supabase
           .from('clientes')
-          .select('id, nome, dias_atraso, whatsapp')
+          .select('id, nome, dias_atraso, data_vencimento, whatsapp')
           .gt('dias_atraso', 0),
         supabase
           .from('posts_marketing')
@@ -287,7 +289,7 @@ export function CentralDeComando() {
                   onClick={() => router.push('/clientes')}
                   className="text-xs font-medium px-[0.4rem] py-[0.1rem] rounded-full bg-[color:var(--status-red)]/10 text-[color:var(--status-red)] shrink-0"
                 >
-                  {c.dias_atraso}d atraso
+                  {diasAtrasoCliente(c)}d atraso
                 </span>
                 {c.whatsapp && (
                   <a
