@@ -17,20 +17,24 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 export interface LimiaresAtraso {
   /** 1+ dias — lembrete amigável */
   atencao: number
-  /** suspensão de campanha iminente (#ALERTA D+7) */
+  /** D+7 — suspensão dos serviços (régua autoriza com o Lucas) */
   suspensao: number
-  /** quebra de contrato */
+  /** D+15 — cancelamento administrativo do contrato */
   grave: number
-  /** situação crítica */
+  /** D+28 — exclusão total (remoção de assets/dados, conforme termos) */
   critico: number
 }
 
-/** Limiares de dias em atraso (inclusivos no piso) — defaults da agência. */
+/**
+ * Limiares de dias em atraso (inclusivos no piso) — defaults da agência,
+ * alinhados aos termos de serviço (adsgator.com.br/termos-de-servico):
+ * D+7 suspensão, D+15 cancelamento administrativo, D+28 exclusão total.
+ */
 export const LIMIARES_ATRASO: LimiaresAtraso = {
   atencao: 1,
   suspensao: 7,
   grave: 15,
-  critico: 30,
+  critico: 28,
 }
 
 /**
@@ -80,11 +84,11 @@ export interface StatusInadimplencia {
 }
 
 const META: Record<EstagioInadimplencia, Pick<StatusInadimplencia, 'label' | 'detalhe' | 'color'>> = {
-  em_dia:    { label: 'Em dia',        detalhe: 'Pagamento em dia',                          color: 'text-status-green' },
-  atencao:   { label: 'Atenção',       detalhe: 'Pagamento em atraso',                       color: 'text-status-yellow' },
-  suspensao: { label: 'Suspensão D+7', detalhe: 'Suspensão de campanha iminente',            color: 'text-status-orange' },
-  grave:     { label: 'Grave D+15',    detalhe: 'Quebra de contrato',                        color: 'text-status-red' },
-  critico:   { label: 'Crítico D+30',  detalhe: 'Situação crítica — risco de cancelamento',  color: 'text-status-red' },
+  em_dia:    { label: 'Em dia',               detalhe: 'Pagamento em dia',                       color: 'text-status-green' },
+  atencao:   { label: 'Atenção',              detalhe: 'Pagamento em atraso',                    color: 'text-status-yellow' },
+  suspensao: { label: 'Suspensão D+7',        detalhe: 'Suspensão dos serviços',                 color: 'text-status-orange' },
+  grave:     { label: 'Cancel. adm. D+15',    detalhe: 'Cancelamento administrativo do contrato', color: 'text-status-red' },
+  critico:   { label: 'Exclusão D+28',        detalhe: 'Exclusão total — assets e dados removidos', color: 'text-status-red' },
 }
 
 /**

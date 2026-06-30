@@ -388,13 +388,13 @@ interface EtapaRegua {
 // Limiares de inadimplência (consequências por estágio). As "etapas" abaixo são
 // as MENSAGENS da régua; estes são os DIAS em que cada consequência entra em
 // vigor (lib/cobranca.ts). Mantidos separados de propósito.
-const LIMIARES_PADRAO: LimiaresAtraso = { atencao: 1, suspensao: 7, grave: 15, critico: 30 }
+const LIMIARES_PADRAO: LimiaresAtraso = { atencao: 1, suspensao: 7, grave: 15, critico: 28 }
 
 const LIMIARES_CAMPOS: { key: keyof LimiaresAtraso; label: string; hint: string }[] = [
   { key: 'atencao',   label: 'Atenção',        hint: 'lembrete amigável' },
-  { key: 'suspensao', label: 'Suspensão',      hint: 'risco de pausar campanhas' },
-  { key: 'grave',     label: 'Grave',          hint: 'quebra de contrato' },
-  { key: 'critico',   label: 'Crítico',        hint: 'risco de cancelamento' },
+  { key: 'suspensao', label: 'Suspensão',      hint: 'suspensão dos serviços (D+7 nos termos)' },
+  { key: 'grave',     label: 'Cancel. admin.', hint: 'cancelamento administrativo (D+15)' },
+  { key: 'critico',   label: 'Exclusão',       hint: 'exclusão total — assets/dados (D+28)' },
 ]
 
 const ETAPAS_PADRAO: EtapaRegua[] = [

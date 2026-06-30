@@ -32,12 +32,15 @@ interface AsaasOverduePayment {
   deleted:      boolean
 }
 
+// O cron só sincroniza o NÍVEL de atraso da assinatura; ele não cancela. Por
+// isso o crítico (D+28) também para em 'atraso_15_dias' — quem marca os status
+// terminais (pausada/cancelado_admin/deletada) é a régua por etapa, com toggle.
 const STATUS_ASSINATURA_POR_ESTAGIO: Record<string, string> = {
   em_dia:    'ativa',
   atencao:   'ativa',
   suspensao: 'atraso_7_dias',
   grave:     'atraso_15_dias',
-  critico:   'cancelado_debito',
+  critico:   'atraso_15_dias',
 }
 
 async function sincronizarAtrasos(
@@ -80,8 +83,9 @@ async function sincronizarAtrasos(
   let atualizadas = 0
 
   for (const a of assinaturas ?? []) {
-    // Assinaturas encerradas não voltam para a régua
-    if (['cancelada', 'deletada'].includes(a.status)) continue
+    // Assinaturas encerradas não voltam para a régua (inclui o legado
+    // 'cancelado_debito', que o cron não deve ressuscitar para 'atraso_15_dias')
+    if (['cancelada', 'deletada', 'cancelado_debito'].includes(a.status)) continue
 
     const novoAtraso = atrasoPorSub.get(a.asaas_subscription_id) ?? 0
     const novoVencimento = vencimentoPorSub.get(a.asaas_subscription_id) ?? null
@@ -117,12 +121,9 @@ async function sincronizarAtrasos(
     if ((cliente.dias_atraso ?? 0) !== dias) updates.dias_atraso = dias
     // Espelho ao vivo do vencimento em aberto; null quando não há mais OVERDUE.
     if ((cliente.data_vencimento ?? null) !== venc) updates.data_vencimento = venc
-    if (estagioInadimplencia(dias, limiares) === 'critico' && cliente.status === 'ativo') {
-      // perdido por inadimplência → arquiva como inativo + motivo (lib/cliente-status.ts)
-      updates.status = 'inativo'
-      updates.motivo_inativacao = 'debito'
-      updates.inativado_em = new Date().toISOString()
-    }
+    // NÃO arquiva mais o cliente sozinho no crítico: ações graves (suspender,
+    // cancelar, excluir) são da régua por etapa, atrás de toggle e — no D+7 —
+    // com autorização do Lucas. Aqui o cron só sincroniza o atraso.
     if (Object.keys(updates).length > 0) {
       await supabase.from('clientes').update(updates).eq('id', clienteId)
       clientesAtualizados++

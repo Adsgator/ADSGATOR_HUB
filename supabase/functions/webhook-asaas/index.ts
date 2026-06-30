@@ -481,15 +481,17 @@ serve(async (req) => {
       }
 
       if (diasAtraso >= LIMIARES_ATRASO.critico && assinatura.dias_atraso < LIMIARES_ATRASO.critico) {
-        await supabase.from('assinaturas').update({ dias_atraso: LIMIARES_ATRASO.critico, status: 'cancelado_debito' }).eq('id', assinatura.id);
-        // cliente perdido por inadimplência → arquiva como inativo + motivo (lib/cliente-status.ts)
-        await supabase.from('clientes').update({ status: 'inativo', motivo_inativacao: 'debito', inativado_em: new Date().toISOString() }).eq('id', assinatura.cliente_id);
+        // NÃO cancela mais sozinho: a exclusão D+28 (remover cobranças/assinatura
+        // no Asaas + arquivar o cliente) é AÇÃO DA RÉGUA, atrás de toggle e exibida
+        // para o Lucas. Aqui só registramos o atraso crítico; a assinatura segue
+        // como dívida viva ('atraso_15_dias'), sem arquivar o cliente.
+        await supabase.from('assinaturas').update({ dias_atraso: LIMIARES_ATRASO.critico, status: 'atraso_15_dias' }).eq('id', assinatura.id);
         await supabase.from('historico_acoes').insert({
           cliente_id:      assinatura.cliente_id,
-          tipo_acao:       'cancelamento_automatico_30_dias',
-          descricao:       '❌ Assinatura cancelada. 30+ dias de atraso. Ação necessária: remover LP e assets do Storage.',
+          tipo_acao:       'alerta_atraso_critico',
+          descricao:       '❗ Pagamento com 28+ dias de atraso. Elegível à exclusão pela régua (D+28) — ação controlada por toggle.',
           valor_impactado: assinatura.valor_mensal,
-          metadata:        { dias_atraso: LIMIARES_ATRASO.critico, status_final: 'cancelado_debito' },
+          metadata:        { dias_atraso: LIMIARES_ATRASO.critico, marcador: 'vermelho' },
         });
       }
     }

@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.47.0',
+    data:   '2026-06-30',
+    novidades: [
+      'A régua de inadimplência agora segue exatamente os seus termos de serviço: D+7 (suspensão dos serviços), D+15 (cancelamento administrativo) e D+28 (exclusão total) — antes o sistema usava D+30 no estágio final, fora do que está no contrato. Os limiares continuam editáveis em Configurações → Financeiro',
+      'O sistema PAROU de cancelar cliente sozinho: até hoje, ao bater o atraso final, o cliente era arquivado como inativo automaticamente. Isso saiu — ações graves (suspender, cancelar, excluir) passam a ser decisão sua, pela régua por etapa que estamos montando (tudo atrás de liga/desliga, e o D+7 só age com a sua autorização). Por enquanto o sistema apenas registra o atraso e te avisa; nada destrutivo acontece sozinho',
+    ],
+  },
+  {
     versao: '0.46.1',
     data:   '2026-06-30',
     novidades: [

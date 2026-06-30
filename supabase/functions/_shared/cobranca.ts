@@ -8,7 +8,7 @@ export const LIMIARES_ATRASO = {
   atencao:  1,
   suspensao: 7,
   grave:    15,
-  critico:  30,
+  critico:  28,
 } as const
 
 export type EstagioInadimplencia = 'em_dia' | 'atencao' | 'suspensao' | 'grave' | 'critico'
