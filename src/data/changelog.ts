@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.48.4',
+    data:   '2026-06-30',
+    novidades: [
+      'Corrigido o "atraso fantasma": clientes que apareciam com D+N mesmo sem dívida viva (assinatura cancelada/deletada, ou cliente que já pagou mas cujo número não tinha sido reconciliado) ficavam com o número congelado para sempre. Agora a sincronização diária de cobrança zera esses casos — o D+N só aparece quando existe cobrança realmente vencida no Asaas',
+    ],
+  },
+  {
     versao: '0.48.3',
     data:   '2026-06-30',
     novidades: [

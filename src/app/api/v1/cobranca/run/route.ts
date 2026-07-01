@@ -131,7 +131,23 @@ async function sincronizarAtrasos(
     }
   }
 
-  return { ok: true, assinaturas_atualizadas: atualizadas, clientes_atualizados: clientesAtualizados, vencidos_no_asaas: vencidos.length }
+  // Limpa atraso FANTASMA: clientes com dias_atraso > 0 que a reconciliação por
+  // OVERDUE não cobriu — ou seja, sem nenhuma assinatura viva ligada ao Asaas
+  // (assinatura deletada/cancelada, ou sem asaas_subscription_id). Sem isto o
+  // número congela para sempre (o loop de assinaturas pula os status terminais),
+  // e a UI mostra um D+N residual que não existe mais.
+  let fantasmasZerados = 0
+  const { data: comAtrasoGravado } = await supabase
+    .from('clientes')
+    .select('id')
+    .gt('dias_atraso', 0)
+  for (const c of comAtrasoGravado ?? []) {
+    if (atrasoPorCliente.has(c.id)) continue // já reconciliado pela cobrança OVERDUE
+    await supabase.from('clientes').update({ dias_atraso: 0, data_vencimento: null }).eq('id', c.id)
+    fantasmasZerados++
+  }
+
+  return { ok: true, assinaturas_atualizadas: atualizadas, clientes_atualizados: clientesAtualizados, fantasmas_zerados: fantasmasZerados, vencidos_no_asaas: vencidos.length }
 }
 
 const TEMPLATE_POR_ESTAGIO: Record<string, EmailTemplateId | null> = {
