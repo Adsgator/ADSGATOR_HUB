@@ -94,8 +94,9 @@ async function sincronizarAtrasos(
     } catch { /* customer inacessível: ignora, cliente fica não-verificável */ }
   }
 
-  // Caminho oficial: assinaturas com asaas_subscription_id. Pode estar vazio em
-  // bases antigas — por isso o fallback por customer/e-mail abaixo.
+  // Caminho oficial: assinaturas com asaas_subscription_id (import do Asaas).
+  // O fallback por customer/e-mail abaixo cobre só clientes SEM assinatura
+  // (ex.: compra única) que por algum motivo tenham cobrança avulsa vencida.
   const { data: assinaturas } = await supabase
     .from('assinaturas')
     .select('id, cliente_id, dias_atraso, status, asaas_subscription_id')
@@ -103,7 +104,12 @@ async function sincronizarAtrasos(
 
   let atualizadas = 0
   const atrasoDeSubPorCliente = new Map<string, AtrasoInfo>()
+  // Todo cliente com assinatura ligada ao Asaas é VERIFICÁVEL: sabemos consultar
+  // o atraso real dele (0 se a assinatura não tem cobrança vencida). É o que
+  // permite zerar quem pagou (assinatura viva, sem OVERDUE) sem chute.
+  const clientesComAssinatura = new Set<string>()
   for (const a of assinaturas ?? []) {
+    clientesComAssinatura.add(a.cliente_id)
     const info = atrasoPorSub.get(a.asaas_subscription_id) ?? null
     const dias = info?.dias ?? 0
     const terminal = ['cancelada', 'deletada', 'cancelado_debito'].includes(a.status)
@@ -151,7 +157,7 @@ async function sincronizarAtrasos(
     const info =
       atrasoDeSubPorCliente.get(c.id) ??
       (custId ? atrasoPorCust.get(custId) ?? null : null)
-    const verificavel = !!custId || atrasoDeSubPorCliente.has(c.id)
+    const verificavel = clientesComAssinatura.has(c.id) || !!custId
 
     const updates: Record<string, unknown> = {}
     if (info) {
