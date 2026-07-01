@@ -20,9 +20,11 @@ const supabase = createClient(
 // PAYMENT_CREATED, não apenas no PAYMENT_RECEIVED.
 
 const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY') ?? '';
+// Produção: api.asaas.com/v3 | Sandbox: api-sandbox.asaas.com/v3. O host antigo
+// sandbox.asaas.com (sem /api) servia o web app, não a API REST.
 const ASAAS_BASE = ASAAS_API_KEY.startsWith('$aact_prod_')
   ? 'https://api.asaas.com'
-  : 'https://sandbox.asaas.com';
+  : 'https://api-sandbox.asaas.com';
 
 async function asaasGet(path: string) {
   const res = await fetch(`${ASAAS_BASE}${path}`, { headers: { access_token: ASAAS_API_KEY } });

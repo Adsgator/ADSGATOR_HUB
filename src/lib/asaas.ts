@@ -5,7 +5,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 
 export function asaasBaseUrl(): string {
   const key = process.env.ASAAS_API_KEY ?? ''
-  return key.startsWith('$aact_prod_') ? 'https://api.asaas.com' : 'https://sandbox.asaas.com'
+  // Produção: api.asaas.com/v3 | Sandbox: api-sandbox.asaas.com/v3 (as duas
+  // recebem os paths /v3/... abaixo). O host antigo sandbox.asaas.com sem /api
+  // servia o web app, não a API.
+  return key.startsWith('$aact_prod_') ? 'https://api.asaas.com' : 'https://api-sandbox.asaas.com'
 }
 
 interface AsaasPayment {
