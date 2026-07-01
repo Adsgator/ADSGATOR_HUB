@@ -48,17 +48,25 @@ async function asaasRequest(method: 'PUT' | 'POST' | 'DELETE', path: string, bod
 }
 
 async function buscarOwnerUserId(): Promise<string | null> {
-  const { data } = await supabase
+  // Dono do Hub (agência single-operator). A escolha PRECISA ser determinística:
+  // um `limit(1)` sem ordem podia devolver um cliente de conta secundária/demo e
+  // atribuir o cliente novo à conta errada (ele "sumia" do Hub do operador real).
+  // Preferência: env explícita > conta com MAIS clientes (o operador real) >
+  // primeiro usuário do auth (banco vazio).
+  const envOwner = Deno.env.get('HUB_OWNER_USER_ID');
+  if (envOwner) return envOwner;
+
+  const { data: linhas } = await supabase
     .from('clientes')
     .select('user_id')
-    .not('user_id', 'is', null)
-    .limit(1)
-    .maybeSingle();
-  if (data?.user_id) return data.user_id;
+    .not('user_id', 'is', null);
+  if (linhas && linhas.length > 0) {
+    const contagem = new Map<string, number>();
+    for (const l of linhas) contagem.set(l.user_id as string, (contagem.get(l.user_id as string) ?? 0) + 1);
+    return [...contagem.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }
 
-  // Banco sem clientes (ex: após limpeza): cai para o primeiro usuário do
-  // auth — agência single-operator. Sem isso, clientes nasceriam órfãos
-  // (user_id null) e o RLS os esconderia da interface.
+  // Banco sem clientes (ex: após limpeza): cai para o primeiro usuário do auth.
   const { data: lista } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
   return lista?.users?.[0]?.id ?? null;
 }

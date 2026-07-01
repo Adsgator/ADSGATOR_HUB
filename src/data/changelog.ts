@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.49.1',
+    data:   '2026-07-01',
+    novidades: [
+      'Correção: cliente novo vindo do checkout podia ser criado na conta errada (quando há mais de uma conta no sistema), sumindo do seu Hub. Agora a conta dona é escolhida de forma determinística — o operador real (conta com mais clientes), ou uma conta definida explicitamente por configuração. Requer redeploy do webhook para valer',
+    ],
+  },
+  {
     versao: '0.49.0',
     data:   '2026-07-01',
     novidades: [
