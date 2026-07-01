@@ -5,3 +5,6 @@ node_modules
 credentials/
 tsconfig.tsbuildinfo
 *.tsbuildinfo
+
+# Supabase CLI — estado local por máquina (link/versões), não versionar
+supabase/.temp/
