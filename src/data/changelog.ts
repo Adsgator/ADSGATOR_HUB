@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.48.6',
+    data:   '2026-07-01',
+    novidades: [
+      'A importação do Asaas agora traz junto a receita já recebida do cliente (não só o cadastro): cada pagamento pago vira um lançamento no financeiro, ligado ao cliente, sem duplicar. Antes, importar um cliente trazia o cadastro mas deixava o faturamento dele de fora do DRE',
+      'Faturamento de 2026 reconciliado com o Asaas: os pagamentos recebidos no ano que ainda não estavam no financeiro foram lançados (inclusive cobranças avulsas/pagamento único, que antes só criavam o cliente, sem a receita)',
+    ],
+  },
+  {
     versao: '0.48.5',
     data:   '2026-07-01',
     novidades: [

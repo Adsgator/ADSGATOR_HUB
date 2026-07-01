@@ -62,6 +62,7 @@ interface PlanoItem {
   valor_mensal:          number
   plano_nome:            string
   asaas_subscription_id: string
+  asaas_customer_id:     string
   data_proxima_cobranca: string | null
 }
 
@@ -195,6 +196,7 @@ async function executarImportacao(opts: OpcoesImportacao) {
       valor_mensal:          sub.value,
       plano_nome:            sub.description || 'Plano Adsgator',
       asaas_subscription_id: sub.id,
+      asaas_customer_id:     sub.customer,
       data_proxima_cobranca: sub.nextDueDate,
     })
   }
@@ -261,6 +263,40 @@ async function executarImportacao(opts: OpcoesImportacao) {
 
   const resultados: { nome: string; ok: boolean; erro?: string }[] = []
 
+  // Backfill de receita: lança no financeiro os pagamentos RECEBIDOS de cada
+  // cliente importado (dedup por asaas_payment_id), para o DRE já refletir o
+  // faturamento real — não só as cobranças futuras que o webhook cria.
+  const RECEBIDO = new Set(['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'])
+  const recebidosPorCustomer = new Map<string, AsaasPayment[]>()
+  for (const p of payments) {
+    if (!RECEBIDO.has(p.status)) continue
+    const arr = recebidosPorCustomer.get(p.customer) ?? []
+    arr.push(p)
+    recebidosPorCustomer.set(p.customer, arr)
+  }
+  const { data: lancExist } = await supabaseAdmin
+    .from('financeiro_lancamentos')
+    .select('asaas_payment_id')
+  const idsLancados = new Set((lancExist ?? []).map((l) => l.asaas_payment_id).filter(Boolean))
+
+  async function lancarReceitasRecebidas(clienteId: string, ownerUserId: string, customerId: string) {
+    const pays = (recebidosPorCustomer.get(customerId) ?? []).filter((p) => !idsLancados.has(p.id))
+    if (pays.length === 0) return
+    const rows = pays.map((p) => ({
+      user_id:          ownerUserId,
+      cliente_id:       clienteId,
+      tipo:             'receita',
+      categoria:        p.subscription ? 'mensalidade' : 'projeto',
+      descricao:        `Pagamento recebido via Asaas — R$ ${p.value.toFixed(2)} (importado)`,
+      valor:            p.value,
+      data:             (p.paymentDate ?? p.dueDate ?? new Date().toISOString()).slice(0, 10),
+      asaas_payment_id: p.id,
+      status:           'confirmado',
+    }))
+    const { error } = await supabaseAdmin.from('financeiro_lancamentos').insert(rows)
+    if (!error) pays.forEach((p) => idsLancados.add(p.id))
+  }
+
   for (const item of aImportar) {
     try {
       // Reusa cliente existente com mesmo email; senão cria
@@ -309,6 +345,8 @@ async function executarImportacao(opts: OpcoesImportacao) {
         descricao:  `Cliente importado do Asaas (assinatura ${item.asaas_subscription_id}, R$ ${item.valor_mensal}/mês).`,
         metadata:   { asaas_subscription_id: item.asaas_subscription_id },
       })
+
+      await lancarReceitasRecebidas(clienteId, userId, item.asaas_customer_id)
 
       resultados.push({ nome: item.nome, ok: true })
     } catch (err) {
@@ -364,6 +402,8 @@ async function executarImportacao(opts: OpcoesImportacao) {
         valor_impactado: item.valor,
         metadata:        { asaas_customer_id: item.asaas_customer_id, compra_unica: true },
       })
+
+      await lancarReceitasRecebidas(novo.id as string, userId, item.asaas_customer_id)
 
       resultados.push({ nome: item.nome, ok: true })
     } catch (err) {
