@@ -448,6 +448,19 @@ export default function ClienteDetalhePage() {
     }
   }
 
+  async function toggleReguaIsento() {
+    if (!cliente) return
+    const novo = !cliente.regua_isento
+    setCliente((prev) => prev ? { ...prev, regua_isento: novo } : prev)  // otimista
+    try {
+      await atualizarCliente(cliente.id, { regua_isento: novo } as Partial<Cliente>)
+      toast.success(novo ? 'Cliente isento da régua automática' : 'Cliente voltou para a régua')
+    } catch {
+      setCliente((prev) => prev ? { ...prev, regua_isento: !novo } : prev)  // reverte
+      toast.error('Erro ao atualizar a isenção')
+    }
+  }
+
   function confirmarReguaAcao(acao: ReguaAcao) {
     const openConfirm = useConfirmDialogStore.getState().openConfirm
     const textos: Record<ReguaAcao, { titulo: string; msg: string }> = {
@@ -839,6 +852,29 @@ export default function ClienteDetalhePage() {
                 )}
               </div>
             )}
+
+            {/* Isenção da régua automática */}
+            <div className="flex items-center justify-between gap-[1rem] mt-[1rem] pt-[1rem] border-t border-surface-border">
+              <div className="min-w-0">
+                <p className="text-ink-secondary text-[0.8125rem] font-medium">Isento da régua de inadimplência</p>
+                <p className="text-ink-muted text-[0.75rem] leading-snug">
+                  Quando ligado, a régua automática (D+7 / D+15 / D+28) nunca age neste cliente — para contratos especiais / acordos por fora. Você ainda pode pausar e reativar na mão.
+                </p>
+              </div>
+              <button
+                onClick={toggleReguaIsento}
+                className={cn(
+                  'relative w-[2.75rem] h-[1.5rem] rounded-full transition-colors flex-shrink-0',
+                  cliente.regua_isento ? 'bg-ads-500' : 'bg-surface-hover border border-surface-border',
+                )}
+                aria-label="Isentar cliente da régua"
+              >
+                <span className={cn(
+                  'absolute top-[0.1875rem] left-[0.1875rem] w-[1.125rem] h-[1.125rem] rounded-full bg-white shadow transition-transform',
+                  cliente.regua_isento && 'translate-x-[1.25rem]',
+                )} />
+              </button>
+            </div>
             </>
           ) : avulsas.length > 0 ? (
             <p className="text-ink-muted text-[0.8125rem]">

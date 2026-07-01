@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.48.3',
+    data:   '2026-06-30',
+    novidades: [
+      'Novo controle "Isento da régua de inadimplência" na tela do cliente: ligando, a régua automática (D+7/D+15/D+28) nunca age naquele cliente — para contratos especiais ou acordos feitos por fora. Você continua podendo pausar/reativar a assinatura na mão quando quiser',
+    ],
+  },
+  {
     versao: '0.48.2',
     data:   '2026-06-30',
     novidades: [

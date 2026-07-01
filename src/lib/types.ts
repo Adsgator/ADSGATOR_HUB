@@ -51,6 +51,8 @@ export interface Cliente {
   asaas_id?:       string
   dias_atraso:     number
   data_vencimento?: string
+  /** true = isento da régua automática de inadimplência (D+7/15/28) */
+  regua_isento?:   boolean
   // Google Ads
   google_ads_id?:  string
   google_ads_customer_id?: string | null

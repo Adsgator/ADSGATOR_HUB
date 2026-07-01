@@ -415,6 +415,7 @@ export async function processarReguaInadimplencia(
     .select('id, nome, email, dias_atraso, data_vencimento, status')
     .gt('dias_atraso', 0)
     .neq('status', 'inativo')
+    .neq('regua_isento', true)   // contratos especiais isentos da régua automática
 
   for (const c of (clientes ?? []) as ClienteRow[]) {
     const dias = diasAtrasoCliente(c)
