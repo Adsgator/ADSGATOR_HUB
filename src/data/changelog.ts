@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.48.1',
+    data:   '2026-06-30',
+    novidades: [
+      'Cliente de pagamento único (LP avulsa etc.) agora mostra as cobranças avulsas na própria tela — descrição, data, valor e status (pago/pendente/cancelado) —, deixando claro que são pagamento único, fora do MRR e da régua de inadimplência. Antes só aparecia "nenhuma assinatura vinculada"',
+    ],
+  },
+  {
     versao: '0.48.0',
     data:   '2026-06-30',
     novidades: [

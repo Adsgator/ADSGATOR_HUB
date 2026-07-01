@@ -157,6 +157,7 @@ export default function ClienteDetalhePage() {
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null)
   const [pendenciaD7, setPendenciaD7] = useState<{ id: string; mensagem: string } | null>(null)
   const [reguaAgindo, setReguaAgindo] = useState(false)
+  const [avulsas, setAvulsas] = useState<{ id: string; descricao: string; valor: number; data: string; status: string }[]>([])
   const [historico,  setHistorico]  = useState<HistoricoAcao[]>([])
   const [abaAtiva,  setAbaAtiva]  = useState<AbaId>('visao_geral')
   const [carregando, setCarregando] = useState(true)
@@ -381,6 +382,19 @@ export default function ClienteDetalhePage() {
     setPendenciaD7(pend)
   }
 
+  async function buscarAvulsas(clienteId: string) {
+    // Cobranças de pagamento único (LP avulsa etc.): categoria 'projeto',
+    // separadas da recorrência (mensalidade/assinatura) e da régua.
+    const { data } = await supabase
+      .from('financeiro_lancamentos')
+      .select('id, descricao, valor, data, status')
+      .eq('cliente_id', clienteId)
+      .eq('tipo', 'receita')
+      .eq('categoria', 'projeto')
+      .order('data', { ascending: false })
+    return (data as { id: string; descricao: string; valor: number; data: string; status: string }[] | null) ?? []
+  }
+
   useEffect(() => {
     if (!id) return
     setCarregando(true)
@@ -390,12 +404,14 @@ export default function ClienteDetalhePage() {
       obterHistoricoCliente(id),
       obterAssinaturaCliente(id).catch(() => null),
       buscarPendenciaD7(id),
-    ]).then(([c, e, h, a, pend]) => {
+      buscarAvulsas(id),
+    ]).then(([c, e, h, a, pend, avl]) => {
       setCliente(c)
       setEstagio(e)
       setHistorico(h)
       setAssinatura(a)
       setPendenciaD7(pend)
+      setAvulsas(avl)
     }).catch(() => {
       toast.error('Erro ao carregar cliente')
     }).finally(() => setCarregando(false))
@@ -812,12 +828,58 @@ export default function ClienteDetalhePage() {
               </div>
             )}
             </>
+          ) : avulsas.length > 0 ? (
+            <p className="text-ink-muted text-[0.8125rem]">
+              Cliente de <span className="text-ink-secondary font-medium">pagamento único</span> (sem assinatura recorrente).
+              As cobranças avulsas aparecem abaixo — elas não entram no MRR nem na régua de inadimplência.
+            </p>
           ) : (
             <p className="text-ink-muted text-[0.8125rem]">
               Nenhuma assinatura vinculada. A assinatura é criada automaticamente quando o cliente assina um plano via Asaas.
             </p>
           )}
         </div>
+
+        {/* Cobranças avulsas (pagamento único) */}
+        {avulsas.length > 0 && (
+          <div className="bg-surface-card border border-surface-border rounded-xl p-[1.5rem] card-shadow mb-[1.5rem]">
+            <div className="flex items-center gap-[0.5rem] mb-[1rem]">
+              <DollarSign className="w-[1rem] h-[1rem] text-ads-500" strokeWidth={2} />
+              <h3 className="text-ink-primary text-[0.9375rem] font-semibold">Cobranças avulsas</h3>
+              <span className="text-ink-muted text-[0.75rem]">(pagamento único — fora do MRR e da régua)</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-[0.8125rem]">
+                <thead>
+                  <tr className="border-b border-surface-border text-ink-muted">
+                    <th className="text-left font-medium pb-[0.5rem]">Descrição</th>
+                    <th className="text-left font-medium pb-[0.5rem]">Data</th>
+                    <th className="text-right font-medium pb-[0.5rem]">Valor</th>
+                    <th className="text-left font-medium pb-[0.5rem] pl-[1rem]">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {avulsas.map((a) => {
+                    const cor = a.status === 'confirmado' ? 'text-status-green'
+                      : a.status === 'cancelado' ? 'text-ink-muted' : 'text-status-orange'
+                    const label = a.status === 'confirmado' ? 'Pago'
+                      : a.status === 'cancelado' ? 'Cancelado' : 'Pendente'
+                    return (
+                      <tr key={a.id} className="border-b border-surface-border/40 last:border-0">
+                        <td className="py-[0.625rem] text-ink-primary">{a.descricao}</td>
+                        <td className="py-[0.625rem] text-ink-secondary">{new Date(`${a.data}T12:00:00`).toLocaleDateString('pt-BR')}</td>
+                        <td className="py-[0.625rem] text-right text-ink-primary font-medium">
+                          R$ {a.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className={cn('py-[0.625rem] pl-[1rem] font-medium', cor)}>{label}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex items-center gap-[0.25rem] mb-[1.5rem] border-b border-surface-border">
