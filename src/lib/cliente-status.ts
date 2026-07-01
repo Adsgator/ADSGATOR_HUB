@@ -27,11 +27,13 @@ export type MotivoInativacao =
   | 'debito'                 // perdido no D+30 (inadimplência)
   | 'cancelado'              // encerramento a pedido
   | 'congelamento_expirado'  // congelado por mais que o limite (default 60d)
+  | 'nao_convertido'         // fechou no checkout mas nunca pagou o 1º pagamento
 
 const MOTIVO_LABEL: Record<MotivoInativacao, string> = {
   debito:                'Cancelado por inadimplência',
   cancelado:             'Cancelado a pedido',
   congelamento_expirado: 'Congelamento expirado',
+  nao_convertido:        'Fechou e não pagou',
 }
 
 /** Rótulo amigável do motivo de inativação, para badges/UI. */

@@ -4,6 +4,7 @@ import { criarClienteServiceRole } from '@/lib/supabase'
 import { dispararEmailAutomatico, automacaoAtiva } from '@/lib/email-automation'
 import { estagioInadimplencia, carregarLimiaresAtraso, type LimiaresAtraso } from '@/lib/cobranca'
 import { processarReguaInadimplencia } from '@/lib/regua-inadimplencia'
+import { processarNaoConversao } from '@/lib/nao-conversao'
 import { asaasGet, asaasGetAll, buscarLinkPagamento } from '@/lib/asaas'
 import type { EmailTemplateId } from '@/lib/types/email'
 
@@ -209,9 +210,15 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
   // pendência de aprovação. Independe do toggle de email de lembrete.
   const regua = await processarReguaInadimplencia(supabase, limiares)
 
+  // Etapa 1c: não-conversão — quem fechou no checkout e nunca pagou (passou do
+  // prazo, sem assinatura viva e sem nenhum pagamento no Hub/Asaas) é arquivado
+  // como 'nao_convertido' e tem o onboarding limpo; quem pagar depois é reativado.
+  // Higiene de pipeline — não envia email, independe de toggle.
+  const nao_conversao = await processarNaoConversao(supabase)
+
   // Etapa 2: emails de lembrete — curto-circuito se a automação está desligada.
   if (!(await automacaoAtiva(supabase, 'email_cobranca_vencida'))) {
-    return { ativa: false, enviados: 0, resultados: [], sync_atrasos: sync, regua }
+    return { ativa: false, enviados: 0, resultados: [], sync_atrasos: sync, regua, nao_conversao }
   }
 
   const { data: clientes } = await supabase
@@ -246,7 +253,7 @@ async function executar(supabase: Parameters<typeof dispararEmailAutomatico>[0])
     resultados.push({ cliente: c.nome, estagio, enviado: r.enviado, motivo: r.motivo })
   }
 
-  return { ativa: true, enviados, resultados, sync_atrasos: sync, regua }
+  return { ativa: true, enviados, resultados, sync_atrasos: sync, regua, nao_conversao }
 }
 
 export async function GET(req: NextRequest) {

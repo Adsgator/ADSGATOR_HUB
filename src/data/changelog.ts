@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.49.0',
+    data:   '2026-07-01',
+    novidades: [
+      'Cliente que fecha no checkout mas NÃO paga o 1º pagamento agora é tratado sozinho: passado o prazo (5 dias) sem nenhum pagamento e sem assinatura ativa, o sistema arquiva ele como "Fechou e não pagou", limpa o onboarding/tarefa de setup que tinham sido criados, e te manda uma notificação com botão de WhatsApp pra tentar recuperar o lead. Antes ele ficava parado como cliente novo, poluindo suas listas',
+      'Separação clara entre "não converteu" (fechou e nunca pagou — lead perdido) e "cancelou" (era cliente pagante e saiu — continua no histórico com a receita no DRE). Quem já pagou alguma vez nunca é marcado como não convertido',
+      'Recuperação automática: se o lead marcado como "não convertido" pagar depois, ele volta sozinho para a operação com o onboarding reativado',
+    ],
+  },
+  {
     versao: '0.48.6',
     data:   '2026-07-01',
     novidades: [
