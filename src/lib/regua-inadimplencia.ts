@@ -103,7 +103,7 @@ async function enviarEmailRegua(
   db: SupabaseClient,
   cli: ClienteRow,
   venc: string | null,
-  templateId: 'aviso-indisponibilidade' | 'cancelamento-notice',
+  templateId: 'aviso-indisponibilidade' | 'cancelamento-notice' | 'exclusao-notice',
   extraVars: Record<string, string> = {},
 ): Promise<{ enviado: boolean; erro?: string }> {
   if (!cli.email) return { enviado: false, erro: 'cliente sem email cadastrado' }
@@ -259,7 +259,7 @@ export async function excluirAssinatura(db: SupabaseClient, clienteId: string): 
 
   if (cli) {
     const venc = cli.data_vencimento ?? ass.data_proxima_cobranca ?? null
-    const e = await enviarEmailRegua(db, cli, venc, 'cancelamento-notice', { data_desativacao: fmtData(venc) })
+    const e = await enviarEmailRegua(db, cli, venc, 'exclusao-notice')
     r.emailEnviado = e.enviado
     r.emailErro = e.erro
 
@@ -353,14 +353,28 @@ export interface ResumoRegua {
  * a cada run do cron. O Lucas autoriza pelo banner do detalhe / aba Alertas.
  */
 async function garantirPendenciaD7(db: SupabaseClient, c: ClienteRow, dias: number): Promise<boolean> {
-  const { data: existente } = await db
+  // Assinatura já tratada (suspensa/cancelada/deletada) → o D+7 já foi resolvido
+  // (pela régua ou manualmente via Pausar) — não pede autorização de novo.
+  const { data: ass } = await db.from('assinaturas').select('status').eq('cliente_id', c.id).maybeSingle()
+  if (ass && STATUS_TERMINAIS.concat('pausada', 'cancelado_admin').includes((ass as { status: string }).status)) return false
+
+  // Já existe pendência DESTE ciclo de dívida — aberta OU já dispensada/autorizada
+  // após o vencimento atual? Não recria (respeita o "Autorizar"/"Dispensar"
+  // manual). Se o cliente pagar e voltar a atrasar (vencimento novo), aí sim cria.
+  const { data: ult } = await db
     .from('alertas')
-    .select('id')
+    .select('resolvido, created_at')
     .eq('cliente_id', c.id)
     .eq('tipo_alerta', TIPO_PENDENCIA_D7)
-    .eq('resolvido', false)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
-  if (existente) return false
+  if (ult) {
+    const u = ult as { resolvido: boolean; created_at: string }
+    if (!u.resolvido) return false
+    if (c.data_vencimento && new Date(u.created_at).getTime() >= new Date(`${c.data_vencimento}T00:00:00`).getTime()) return false
+  }
+
   await db.from('alertas').insert({
     cliente_id:  c.id,
     tipo_alerta: TIPO_PENDENCIA_D7,
@@ -442,5 +456,27 @@ export async function autorizarSuspensaoD7(db: SupabaseClient, clienteId: string
       .eq('tipo_alerta', TIPO_PENDENCIA_D7)
       .eq('resolvido', false)
   }
+  return r
+}
+
+/**
+ * Dispensa a pendência D+7 SEM agir (o Lucas tratou por fora — falou com o
+ * cliente, combinou pagamento etc.). Só marca a pendência como resolvida; a
+ * régua não recria enquanto esta dívida seguir em aberto (se o cliente pagar e
+ * voltar a atrasar, uma nova é criada). Não toca no Asaas nem suspende.
+ */
+export async function dispensarSuspensaoD7(db: SupabaseClient, clienteId: string): Promise<ResultadoEtapa> {
+  const r: ResultadoEtapa = { ok: false, clienteId, etapa: 'suspender' }
+  const { data: pend } = await db.from('alertas')
+    .update({ resolvido: true, disparado: true, data_disparo: new Date().toISOString() })
+    .eq('cliente_id', clienteId)
+    .eq('tipo_alerta', TIPO_PENDENCIA_D7)
+    .eq('resolvido', false)
+    .select('id')
+  if (!pend || pend.length === 0) { r.motivo = 'nenhuma pendência D+7 aberta'; return r }
+  await historico(db, clienteId, 'regua_d7_dispensada',
+    '☑️ Aviso de suspensão (D+7) dispensado manualmente — tratado por fora da régua.', null, {})
+  r.ok = true
+  r.jaEstava = true
   return r
 }

@@ -11,6 +11,7 @@ export type EmailTemplateId =
   | 'alert-performance'
   | 'payment-followup'
   | 'cancelamento-notice'
+  | 'exclusao-notice'
   | 'aviso-indisponibilidade'
   | 'encerramento'
   | 'reativacao'

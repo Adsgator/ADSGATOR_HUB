@@ -417,7 +417,9 @@ export default function ClienteDetalhePage() {
     }).finally(() => setCarregando(false))
   }, [id])
 
-  async function handleReguaAcao(acao: 'autorizar_suspensao' | 'pausar' | 'reativar') {
+  type ReguaAcao = 'autorizar_suspensao' | 'dispensar_suspensao' | 'pausar' | 'reativar'
+
+  async function handleReguaAcao(acao: ReguaAcao) {
     if (!cliente || reguaAgindo) return
     setReguaAgindo(true)
     try {
@@ -431,8 +433,9 @@ export default function ClienteDetalhePage() {
         toast.error(json.error ?? 'Falha na ação')
         return
       }
-      const labels: Record<typeof acao, string> = {
+      const labels: Record<ReguaAcao, string> = {
         autorizar_suspensao: 'Serviços suspensos e cliente notificado',
+        dispensar_suspensao: 'Aviso dispensado',
         pausar:              'Assinatura pausada',
         reativar:            'Assinatura reativada',
       }
@@ -445,12 +448,16 @@ export default function ClienteDetalhePage() {
     }
   }
 
-  function confirmarReguaAcao(acao: 'autorizar_suspensao' | 'pausar' | 'reativar') {
+  function confirmarReguaAcao(acao: ReguaAcao) {
     const openConfirm = useConfirmDialogStore.getState().openConfirm
-    const textos: Record<typeof acao, { titulo: string; msg: string }> = {
+    const textos: Record<ReguaAcao, { titulo: string; msg: string }> = {
       autorizar_suspensao: {
         titulo: 'Autorizar suspensão por inadimplência',
         msg: 'Isto vai PAUSAR a recorrência no Asaas, remover a próxima cobrança ainda não vencida (a vencida continua em aberto, é dívida real), marcar os serviços como suspensos e enviar o aviso de indisponibilidade ao cliente. Confirmar?',
+      },
+      dispensar_suspensao: {
+        titulo: 'Dispensar aviso de suspensão',
+        msg: 'Marca este aviso como tratado, sem suspender nada. Use quando você já resolveu por fora (falou com o cliente, combinou pagamento). A régua não pede de novo enquanto esta dívida seguir em aberto. Confirmar?',
       },
       pausar: {
         titulo: 'Pausar assinatura',
@@ -737,9 +744,14 @@ export default function ClienteDetalhePage() {
                 (a vencida fica em aberto, é dívida real), suspende os serviços e envia o aviso ao cliente.
               </p>
             </div>
-            <Button variant="primary" onClick={() => confirmarReguaAcao('autorizar_suspensao')} disabled={reguaAgindo}>
-              Autorizar suspensão
-            </Button>
+            <div className="flex flex-col gap-[0.5rem] shrink-0">
+              <Button variant="primary" onClick={() => confirmarReguaAcao('autorizar_suspensao')} disabled={reguaAgindo}>
+                Autorizar suspensão
+              </Button>
+              <Button variant="ghost" onClick={() => confirmarReguaAcao('dispensar_suspensao')} disabled={reguaAgindo}>
+                Dispensar
+              </Button>
+            </div>
           </div>
         )}
 

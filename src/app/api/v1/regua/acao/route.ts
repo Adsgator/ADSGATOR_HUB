@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { criarClienteServiceRole } from '@/lib/supabase'
 import {
   autorizarSuspensaoD7,
+  dispensarSuspensaoD7,
   suspenderAssinatura,
   reativarAssinatura,
   type ResultadoEtapa,
@@ -44,6 +45,9 @@ export async function POST(req: NextRequest) {
   switch (acao) {
     case 'autorizar_suspensao':
       resultado = await autorizarSuspensaoD7(db, clienteId)
+      break
+    case 'dispensar_suspensao':
+      resultado = await dispensarSuspensaoD7(db, clienteId)
       break
     case 'pausar':
       resultado = await suspenderAssinatura(db, clienteId, { enviarEmail: false, origem: 'manual' })

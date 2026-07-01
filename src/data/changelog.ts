@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.48.2',
+    data:   '2026-06-30',
+    novidades: [
+      'O e-mail do D+28 (exclusão) agora é diferente do D+15 (cancelamento): o do D+15 avisa que o plano foi cancelado e ainda dá prazo para migrar dados/reverter; o do D+28 comunica a remoção definitiva da estrutura e que a dívida continua devida. Antes os dois usavam o mesmo texto',
+      'Novo botão "Dispensar" no aviso de suspensão (D+7): quando você já resolveu o caso por fora (falou com o cliente, combinou pagamento), dispensa o aviso sem suspender nada — e a régua não pede de novo enquanto aquela dívida seguir em aberto (se o cliente pagar e voltar a atrasar, o aviso volta)',
+      'A régua parou de pedir autorização de suspensão para cliente que já está pausado/cancelado (antes o aviso podia reaparecer mesmo com a assinatura já tratada)',
+    ],
+  },
+  {
     versao: '0.48.1',
     data:   '2026-06-30',
     novidades: [

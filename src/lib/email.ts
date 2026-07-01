@@ -334,6 +334,24 @@ export const EMAIL_TEMPLATES: Record<EmailTemplateId, { subject: string; buildHt
     ),
   },
 
+  'exclusao-notice': {
+    subject: '{{nome_cliente}}, seus dados e sua estrutura foram removidos',
+    buildHtml: (v) => wrapEmailHtml(
+      'Encerramento definitivo por inadimplência',
+      `${p(`Olá, ${v.nome_cliente}. A mensalidade com vencimento em ${v.data_vencimento ?? '[informar data de vencimento]'} permaneceu em aberto mesmo após a pausa dos serviços e o cancelamento do plano. Como o prazo final foi atingido, sua estrutura foi <strong>removida definitivamente</strong> dos nossos servidores, conforme nossos <a href="https://adsgator.com.br/termos-de-servico/" target="_blank" style="color:#2969b0;">Termos de Serviço</a> (atraso acima de 28 dias).`)}
+       ${sectionTitle('O que foi removido')}
+       <ul style="margin:0 0 16px 0; padding-left:20px;">
+         <li style="margin-bottom:8px;"><strong>Site e Landing Page:</strong> removidos da hospedagem.</li>
+         <li style="margin-bottom:8px;"><strong>Google Ads:</strong> campanhas encerradas.</li>
+         <li style="margin-bottom:8px;"><strong>Arquivos e dados:</strong> excluídos do nosso servidor — não é mais possível recuperá-los.</li>
+       </ul>
+       ${sectionTitle('A dívida em aberto permanece')}
+       ${p('O encerramento dos serviços não quita o valor em atraso. A pendência segue devida e pode ser regularizada pelo link abaixo.')}
+       ${btn('{{pagamento_url}}', 'Quitar o valor em aberto', true)}
+       ${p('Quer voltar a trabalhar com a gente no futuro? É só chamar — recomeçamos a estrutura do zero quando você quiser.')}`,
+    ),
+  },
+
   'aviso-indisponibilidade': {
     subject: '{{nome_cliente}}, seus serviços foram pausados (veja como reativar)',
     buildHtml: (v) => wrapEmailHtml(
@@ -458,6 +476,7 @@ export const EMAIL_TEMPLATE_META: Record<EmailTemplateId, { categoria: EmailTemp
   'encerramento':            { categoria: 'ciclo-vida', variaveis: ['nome_cliente'] },
   'aviso-indisponibilidade': { categoria: 'cobranca',   variaveis: ['nome_cliente', 'data_vencimento', 'pagamento_url'] },
   'cancelamento-notice':     { categoria: 'cobranca',   variaveis: ['nome_cliente', 'data_vencimento', 'data_desativacao', 'pagamento_url'] },
+  'exclusao-notice':         { categoria: 'cobranca',   variaveis: ['nome_cliente', 'data_vencimento', 'pagamento_url'] },
   'payment-reminder':        { categoria: 'cobranca',   variaveis: ['nome_cliente', 'dias_atraso', 'valor', 'pagamento_url'] },
   'payment-followup':        { categoria: 'cobranca',   variaveis: ['nome_cliente', 'dias_atraso', 'valor', 'pagamento_url'] },
   'alert-saldo-baixo':       { categoria: 'alertas',    variaveis: ['nome_cliente', 'saldo_atual'] },
