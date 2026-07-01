@@ -14,8 +14,10 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { asaasGetAll, asaasRequest } from './asaas'
 import { provisionarClienteNovo } from './cliente-provisioning'
 
-/** Dias após a criação, sem pagamento, para considerar não-conversão (vencimento D+3 + 1). */
-const DIAS_ATE_NAO_CONVERSAO = 4
+/** Só checa no Asaas quem já pode ter vencido (evita consultar cadastro novo demais). */
+const DIAS_MIN_PARA_CHECAR = 3
+/** Fallback: cobrança já sumiu do Asaas (apagada) e o lead nunca pagou → abandono. */
+const DIAS_ABANDONO = 4
 
 /** Status "em conversão": entrou, mas ainda não é cliente pagante consolidado. */
 const STATUS_EM_CONVERSAO = ['recebido', 'onboarding', 'setup_trafego']
@@ -55,16 +57,21 @@ async function resolverCustomerId(c: ClienteLead): Promise<string | null> {
 }
 
 /**
- * O customer tem ALGUM pagamento recebido no Asaas? (fonte da verdade, anti-engano)
- * LANÇA em erro de rede/credencial — quem chama decide o lado seguro conforme o
- * passo (não arquivar em A; não recuperar em B).
+ * Situação de pagamento do customer no Asaas (1 consulta). LANÇA em erro de
+ * rede/credencial — quem chama decide o lado seguro conforme o passo.
+ *  - pagou:       tem cobrança RECEBIDA → nunca marca não-convertido (é churn/real)
+ *  - temOverdue:  tem cobrança VENCIDA (o Asaas marca OVERDUE no dia SEGUINTE ao
+ *                 vencimento) → é o gatilho preciso do "1 dia após o vencimento"
+ *  - temPendente: tem cobrança a vencer (ainda dentro do prazo) → não arquiva
  */
-async function asaasTemRecebido(customerId: string): Promise<boolean> {
-  for (const status of ASAAS_RECEBIDO) {
-    const pays = await asaasGetAll<{ id: string }>(`/v3/payments?customer=${customerId}&status=${status}`)
-    if (pays.length > 0) return true
+export async function situacaoAsaas(customerId: string): Promise<{ pagou: boolean; temOverdue: boolean; temPendente: boolean }> {
+  const pays = await asaasGetAll<{ status: string; deleted?: boolean }>(`/v3/payments?customer=${customerId}`)
+  const ativos = pays.filter((p) => !p.deleted)
+  return {
+    pagou:       ativos.some((p) => ASAAS_RECEBIDO.includes(p.status)),
+    temOverdue:  ativos.some((p) => p.status === 'OVERDUE'),
+    temPendente: ativos.some((p) => p.status === 'PENDING' || p.status === 'AWAITING_RISK_ANALYSIS'),
   }
-  return false
 }
 
 /**
@@ -72,7 +79,7 @@ async function asaasTemRecebido(customerId: string): Promise<boolean> {
  * confirmado antes de chegar aqui). Só toca em não-pagas; recebida o Asaas nem
  * deixaria apagar. Retorna quantas removeu. Não lança (falha não trava o arquivo).
  */
-async function excluirCobrancasAbertas(customerId: string): Promise<number> {
+export async function excluirCobrancasAbertas(customerId: string): Promise<number> {
   let removidas = 0
   for (const status of ['PENDING', 'OVERDUE', 'AWAITING_RISK_ANALYSIS']) {
     let pays: { id: string; deleted?: boolean }[]
@@ -168,23 +175,29 @@ async function recuperarCliente(supabase: SupabaseClient, c: ClienteLead): Promi
  */
 export async function processarNaoConversao(
   supabase: SupabaseClient,
-  opts: { dryRun?: boolean } = {},
+  opts: { dryRun?: boolean; clienteId?: string } = {},
 ): Promise<ResultadoNaoConversao> {
   const dryRun = opts.dryRun ?? false
+  const soCliente = opts.clienteId ?? null // limita a varredura a 1 cliente (teste/reprocesso)
   const arquivados: { id: string; nome: string }[] = []
   const recuperados: { id: string; nome: string }[] = []
 
   // ── PASSO A: arquivar quem fechou e não pagou ───────────────────────────────
-  const cutoff = new Date(Date.now() - DIAS_ATE_NAO_CONVERSAO * 86_400_000).toISOString()
-  const { data: candidatos } = await supabase
+  // Gatilho preciso: a cobrança está VENCIDA no Asaas (OVERDUE = dia seguinte ao
+  // vencimento). Pré-filtra por idade só para não consultar cadastro novo demais.
+  const cutoff = new Date(Date.now() - DIAS_MIN_PARA_CHECAR * 86_400_000).toISOString()
+  const abandonoCutoff = new Date(Date.now() - DIAS_ABANDONO * 86_400_000).toISOString()
+  let queryCandidatos = supabase
     .from('clientes')
     .select('id, nome, email, whatsapp, asaas_id, user_id, data_criacao, created_at')
     .in('status', STATUS_EM_CONVERSAO)
+  if (soCliente) queryCandidatos = queryCandidatos.eq('id', soCliente)
+  const { data: candidatos } = await queryCandidatos
 
   const emConversao = ((candidatos ?? []) as (ClienteLead & { data_criacao: string | null; created_at: string | null })[])
     .filter((c) => {
       const criado = c.data_criacao ?? c.created_at
-      return criado != null && criado < cutoff // passou do prazo do checkout
+      return criado != null && criado < cutoff // já pode ter vencido
     })
 
   if (emConversao.length > 0) {
@@ -209,13 +222,25 @@ export async function processarNaoConversao(
     for (const c of emConversao) {
       if (comAssinaturaViva.has(c.id)) continue // tem plano vivo → não é lead perdido
       if (pagou.has(c.id)) continue             // já pagou (Hub) → churn, não não-conversão
-      // Corrobora no Asaas; erro na consulta → NÃO arquiva (lado seguro).
+
+      const criado = c.data_criacao ?? c.created_at
+      const abandonoHaTempo = criado != null && criado < abandonoCutoff
+
       const customerId = await resolverCustomerId(c)
+      let arquivar: boolean
       if (customerId) {
-        let recebeuNoAsaas: boolean
-        try { recebeuNoAsaas = await asaasTemRecebido(customerId) } catch { recebeuNoAsaas = true }
-        if (recebeuNoAsaas) continue // já pagou (Asaas)
+        // Erro na consulta ao Asaas → NÃO arquiva (lado seguro).
+        let sit: { pagou: boolean; temOverdue: boolean; temPendente: boolean }
+        try { sit = await situacaoAsaas(customerId) } catch { continue }
+        if (sit.pagou) continue                     // já pagou → churn/real
+        if (sit.temOverdue) arquivar = true         // venceu e não pagou (D+4) → não convertido
+        else if (sit.temPendente) arquivar = false  // ainda dentro do prazo (≤ vencimento)
+        else arquivar = abandonoHaTempo             // cobrança sumiu do Asaas → abandono após N dias
+      } else {
+        // Sem vínculo no Asaas para checar: só o sinal do Hub (nunca pagou) + tempo.
+        arquivar = abandonoHaTempo
       }
+      if (!arquivar) continue
 
       arquivados.push({ id: c.id, nome: c.nome })
       if (!dryRun) await marcarNaoConvertido(supabase, c, customerId)
@@ -223,11 +248,13 @@ export async function processarNaoConversao(
   }
 
   // ── PASSO B: recuperar quem pagou depois ────────────────────────────────────
-  const { data: perdidos } = await supabase
+  let queryPerdidos = supabase
     .from('clientes')
     .select('id, nome, email, whatsapp, asaas_id, user_id')
     .eq('status', 'inativo')
     .eq('motivo_inativacao', 'nao_convertido')
+  if (soCliente) queryPerdidos = queryPerdidos.eq('id', soCliente)
+  const { data: perdidos } = await queryPerdidos
 
   for (const c of (perdidos ?? []) as ClienteLead[]) {
     const { data: lanc } = await supabase
@@ -239,7 +266,7 @@ export async function processarNaoConversao(
       // Fallback no Asaas; erro na consulta → NÃO recupera (lado seguro).
       const customerId = await resolverCustomerId(c)
       if (customerId) {
-        try { pagou = await asaasTemRecebido(customerId) } catch { pagou = false }
+        try { pagou = (await situacaoAsaas(customerId)).pagou } catch { pagou = false }
       }
     }
     if (!pagou) continue

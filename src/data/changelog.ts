@@ -18,7 +18,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     versao: '0.49.0',
     data:   '2026-07-01',
     novidades: [
-      'Cliente que fecha no checkout mas NÃO paga o 1º pagamento agora é tratado sozinho: passado o prazo (4 dias, logo após o vencimento D+3) sem nenhum pagamento e sem assinatura ativa, o sistema cancela a cobrança em aberto no Asaas, arquiva ele como "Fechou e não pagou", limpa o onboarding/tarefa de setup que tinham sido criados, e te manda uma notificação com botão de WhatsApp pra tentar recuperar o lead. Antes você fazia tudo isso na mão e ele ficava parado poluindo suas listas',
+      'Cliente que fecha no checkout mas NÃO paga o 1º pagamento agora é tratado sozinho: quando a cobrança vence e não é paga (1 dia após o vencimento), o sistema cancela a cobrança em aberto no Asaas, arquiva ele como "Fechou e não pagou", limpa o onboarding/tarefa de setup que tinham sido criados, e te manda uma notificação com botão de WhatsApp pra tentar recuperar o lead. O gatilho é o vencimento real da cobrança no Asaas (não um contador fixo). Antes você fazia tudo isso na mão e ele ficava parado poluindo suas listas',
       'Separação clara entre "não converteu" (fechou e nunca pagou — lead perdido) e "cancelou" (era cliente pagante e saiu — continua no histórico com a receita no DRE). Quem já pagou alguma vez nunca é marcado como não convertido',
       'Recuperação automática: se o lead marcado como "não convertido" pagar depois, ele volta sozinho para a operação com o onboarding reativado',
     ],
