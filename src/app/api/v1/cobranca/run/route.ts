@@ -4,7 +4,7 @@ import { criarClienteServiceRole } from '@/lib/supabase'
 import { dispararEmailAutomatico, automacaoAtiva } from '@/lib/email-automation'
 import { estagioInadimplencia, carregarLimiaresAtraso, type LimiaresAtraso } from '@/lib/cobranca'
 import { processarReguaInadimplencia } from '@/lib/regua-inadimplencia'
-import { asaasGetAll, buscarLinkPagamento } from '@/lib/asaas'
+import { asaasGet, asaasGetAll, buscarLinkPagamento } from '@/lib/asaas'
 import type { EmailTemplateId } from '@/lib/types/email'
 
 export const dynamic = 'force-dynamic'
@@ -29,6 +29,7 @@ export const maxDuration = 120
 
 interface AsaasOverduePayment {
   subscription: string | null
+  customer:     string | null
   dueDate:      string | null
   deleted:      boolean
 }
@@ -43,6 +44,8 @@ const STATUS_ASSINATURA_POR_ESTAGIO: Record<string, string> = {
   grave:     'atraso_15_dias',
   critico:   'atraso_15_dias',
 }
+
+interface AtrasoInfo { dias: number; venc: string }
 
 async function sincronizarAtrasos(
   supabase: Parameters<typeof dispararEmailAutomatico>[0],
@@ -59,95 +62,116 @@ async function sincronizarAtrasos(
     return { ok: false, motivo: err instanceof Error ? err.message : String(err) }
   }
 
-  // Dias de atraso por assinatura = vencimento mais antigo em aberto.
-  // Guardamos também a data desse vencimento, que vira o espelho ao vivo em
-  // clientes.data_vencimento (a UI deriva D+N dela — ver diasAtrasoCliente).
+  // Atraso (dias desde o vencimento mais antigo em aberto + a data desse
+  // vencimento) indexado por assinatura E por customer do Asaas. A data vira o
+  // espelho ao vivo em clientes.data_vencimento (a UI deriva D+N — ver
+  // diasAtrasoCliente). Duas chaves porque nem todo cliente tem assinatura
+  // gravada: histórico criado à mão liga ao Asaas só pelo customer/e-mail.
   const hoje = Date.now()
-  const atrasoPorSub = new Map<string, number>()
-  const vencimentoPorSub = new Map<string, string>()
+  const diasDe = (due: string) => Math.max(0, Math.floor((hoje - new Date(`${due}T12:00:00`).getTime()) / 86_400_000))
+  const bump = (m: Map<string, AtrasoInfo>, k: string, dias: number, venc: string) => {
+    const cur = m.get(k)
+    if (!cur || dias > cur.dias) m.set(k, { dias, venc })
+  }
+  const atrasoPorSub = new Map<string, AtrasoInfo>()
+  const atrasoPorCust = new Map<string, AtrasoInfo>()
   for (const p of vencidos) {
-    if (!p.subscription || p.deleted || !p.dueDate) continue
-    const dias = Math.max(0, Math.floor((hoje - new Date(`${p.dueDate}T12:00:00`).getTime()) / 86_400_000))
-    if (dias > (atrasoPorSub.get(p.subscription) ?? -1)) {
-      atrasoPorSub.set(p.subscription, dias)
-      vencimentoPorSub.set(p.subscription, p.dueDate)
-    }
+    if (p.deleted || !p.dueDate) continue
+    const dias = diasDe(p.dueDate)
+    if (p.subscription) bump(atrasoPorSub, p.subscription, dias, p.dueDate)
+    if (p.customer) bump(atrasoPorCust, p.customer, dias, p.dueDate)
   }
 
+  // Resolve o e-mail dos customers com atraso, para casar clientes que ainda
+  // não têm asaas_id gravado (nasceram fora do webhook). Poucos customers em
+  // atraso → poucas chamadas extras.
+  const emailToCust = new Map<string, string>()
+  for (const custId of atrasoPorCust.keys()) {
+    try {
+      const cu = await asaasGet<{ email?: string | null }>(`/v3/customers/${custId}`)
+      const em = (cu.email ?? '').toLowerCase().trim()
+      if (em) emailToCust.set(em, custId)
+    } catch { /* customer inacessível: ignora, cliente fica não-verificável */ }
+  }
+
+  // Caminho oficial: assinaturas com asaas_subscription_id. Pode estar vazio em
+  // bases antigas — por isso o fallback por customer/e-mail abaixo.
   const { data: assinaturas } = await supabase
     .from('assinaturas')
     .select('id, cliente_id, dias_atraso, status, asaas_subscription_id')
     .not('asaas_subscription_id', 'is', null)
 
-  const atrasoPorCliente = new Map<string, number>()
-  const vencimentoPorCliente = new Map<string, string | null>()
   let atualizadas = 0
-
+  const atrasoDeSubPorCliente = new Map<string, AtrasoInfo>()
   for (const a of assinaturas ?? []) {
-    // Assinaturas encerradas não voltam para a régua (inclui o legado
-    // 'cancelado_debito', que o cron não deve ressuscitar para 'atraso_15_dias')
-    if (['cancelada', 'deletada', 'cancelado_debito'].includes(a.status)) continue
-
-    const novoAtraso = atrasoPorSub.get(a.asaas_subscription_id) ?? 0
-    const novoVencimento = vencimentoPorSub.get(a.asaas_subscription_id) ?? null
-    const novoStatus = STATUS_ASSINATURA_POR_ESTAGIO[estagioInadimplencia(novoAtraso, limiares)]
-
-    if (novoAtraso !== (a.dias_atraso ?? 0) || novoStatus !== a.status) {
-      await supabase
-        .from('assinaturas')
-        .update({ dias_atraso: novoAtraso, status: novoStatus, updated_at: new Date().toISOString() })
-        .eq('id', a.id)
-      atualizadas++
+    const info = atrasoPorSub.get(a.asaas_subscription_id) ?? null
+    const dias = info?.dias ?? 0
+    const terminal = ['cancelada', 'deletada', 'cancelado_debito'].includes(a.status)
+    // Atualiza o NÍVEL/STATUS só de assinaturas vivas — não ressuscita terminais
+    // para 'atraso_15_dias' (quem marca status terminal é a régua por etapa).
+    if (!terminal) {
+      const novoStatus = STATUS_ASSINATURA_POR_ESTAGIO[estagioInadimplencia(dias, limiares)]
+      if (dias !== (a.dias_atraso ?? 0) || novoStatus !== a.status) {
+        await supabase
+          .from('assinaturas')
+          .update({ dias_atraso: dias, status: novoStatus, updated_at: new Date().toISOString() })
+          .eq('id', a.id)
+        atualizadas++
+      }
     }
-    // Cliente = a assinatura com maior atraso (e a data desse vencimento).
-    const atualMax = atrasoPorCliente.get(a.cliente_id)
-    if (atualMax === undefined || novoAtraso > atualMax) {
-      atrasoPorCliente.set(a.cliente_id, novoAtraso)
-      vencimentoPorCliente.set(a.cliente_id, novoVencimento)
-    }
-  }
-
-  // Reflete no cliente (UI, alertas e esta régua leem clientes.dias_atraso)
-  let clientesAtualizados = 0
-  for (const [clienteId, dias] of atrasoPorCliente) {
-    const { data: cliente } = await supabase
-      .from('clientes')
-      .select('id, dias_atraso, data_vencimento, status')
-      .eq('id', clienteId)
-      .maybeSingle()
-    if (!cliente) continue
-
-    const venc = vencimentoPorCliente.get(clienteId) ?? null
-    const updates: Record<string, unknown> = {}
-    if ((cliente.dias_atraso ?? 0) !== dias) updates.dias_atraso = dias
-    // Espelho ao vivo do vencimento em aberto; null quando não há mais OVERDUE.
-    if ((cliente.data_vencimento ?? null) !== venc) updates.data_vencimento = venc
-    // NÃO arquiva mais o cliente sozinho no crítico: ações graves (suspender,
-    // cancelar, excluir) são da régua por etapa, atrás de toggle e — no D+7 —
-    // com autorização do Lucas. Aqui o cron só sincroniza o atraso.
-    if (Object.keys(updates).length > 0) {
-      await supabase.from('clientes').update(updates).eq('id', clienteId)
-      clientesAtualizados++
+    // A dívida conta para o cliente mesmo em assinatura terminal: cancelar a
+    // recorrência não apaga a fatura já vencida no Asaas.
+    if (info) {
+      const cur = atrasoDeSubPorCliente.get(a.cliente_id)
+      if (!cur || info.dias > cur.dias) atrasoDeSubPorCliente.set(a.cliente_id, info)
     }
   }
 
-  // Limpa atraso FANTASMA: clientes com dias_atraso > 0 que a reconciliação por
-  // OVERDUE não cobriu — ou seja, sem nenhuma assinatura viva ligada ao Asaas
-  // (assinatura deletada/cancelada, ou sem asaas_subscription_id). Sem isto o
-  // número congela para sempre (o loop de assinaturas pula os status terminais),
-  // e a UI mostra um D+N residual que não existe mais.
-  let fantasmasZerados = 0
-  const { data: comAtrasoGravado } = await supabase
+  // Reconcilia os CLIENTES. Vínculo, em ordem: assinatura → asaas_id → e-mail do
+  // customer (com backfill do asaas_id quando casa por e-mail). Só zeramos quem é
+  // VERIFICÁVEL (tem vínculo com o Asaas e está sem cobrança vencida). Cliente
+  // sem vínculo algum NÃO é tocado — não dá para afirmar que está em dia, e zerar
+  // às cegas apagaria dívida real (foi o bug do "fantasma").
+  const { data: clientes } = await supabase
     .from('clientes')
-    .select('id')
-    .gt('dias_atraso', 0)
-  for (const c of comAtrasoGravado ?? []) {
-    if (atrasoPorCliente.has(c.id)) continue // já reconciliado pela cobrança OVERDUE
-    await supabase.from('clientes').update({ dias_atraso: 0, data_vencimento: null }).eq('id', c.id)
-    fantasmasZerados++
+    .select('id, email, asaas_id, dias_atraso, data_vencimento')
+
+  let clientesAtualizados = 0
+  let backfills = 0
+  let fantasmasZerados = 0
+  for (const c of (clientes ?? []) as Array<{ id: string; email: string | null; asaas_id: string | null; dias_atraso: number | null; data_vencimento: string | null }>) {
+    const email = (c.email ?? '').toLowerCase().trim()
+    let custId: string | null = c.asaas_id ?? null
+    let matchedByEmail = false
+    if (!custId && email && emailToCust.has(email)) {
+      custId = emailToCust.get(email)!
+      matchedByEmail = true
+    }
+
+    const info =
+      atrasoDeSubPorCliente.get(c.id) ??
+      (custId ? atrasoPorCust.get(custId) ?? null : null)
+    const verificavel = !!custId || atrasoDeSubPorCliente.has(c.id)
+
+    const updates: Record<string, unknown> = {}
+    if (info) {
+      if ((c.dias_atraso ?? 0) !== info.dias) updates.dias_atraso = info.dias
+      if ((c.data_vencimento ?? null) !== info.venc) updates.data_vencimento = info.venc
+    } else if (verificavel) {
+      // Ligado ao Asaas e SEM cobrança vencida → em dia. Zera resíduo.
+      if ((c.dias_atraso ?? 0) !== 0) { updates.dias_atraso = 0; fantasmasZerados++ }
+      if (c.data_vencimento != null) updates.data_vencimento = null
+    }
+    // Grava o vínculo descoberto por e-mail, para o webhook/cron futuros.
+    if (matchedByEmail && custId) { updates.asaas_id = custId; backfills++ }
+
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('clientes').update(updates).eq('id', c.id)
+      if ('dias_atraso' in updates || 'data_vencimento' in updates) clientesAtualizados++
+    }
   }
 
-  return { ok: true, assinaturas_atualizadas: atualizadas, clientes_atualizados: clientesAtualizados, fantasmas_zerados: fantasmasZerados, vencidos_no_asaas: vencidos.length }
+  return { ok: true, assinaturas_atualizadas: atualizadas, clientes_atualizados: clientesAtualizados, asaas_id_backfills: backfills, fantasmas_zerados: fantasmasZerados, vencidos_no_asaas: vencidos.length }
 }
 
 const TEMPLATE_POR_ESTAGIO: Record<string, EmailTemplateId | null> = {

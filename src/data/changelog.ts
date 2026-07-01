@@ -8,10 +8,11 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    versao: '0.48.4',
-    data:   '2026-06-30',
+    versao: '0.48.5',
+    data:   '2026-07-01',
     novidades: [
-      'Corrigido o "atraso fantasma": clientes que apareciam com D+N mesmo sem dívida viva (assinatura cancelada/deletada, ou cliente que já pagou mas cujo número não tinha sido reconciliado) ficavam com o número congelado para sempre. Agora a sincronização diária de cobrança zera esses casos — o D+N só aparece quando existe cobrança realmente vencida no Asaas',
+      'A sincronização de cobrança agora liga cada cliente do Hub à conta dele no Asaas pelo e-mail (gravando o vínculo), além do caminho por assinatura. Isso conserta clientes que existiam nos dois lugares mas não estavam conectados — o D+N passa a refletir a cobrança vencida real, mesmo com a assinatura já cancelada (cancelar a recorrência não apaga a fatura em aberto)',
+      'Corrigido em definitivo o zeramento indevido de atraso: o sistema só zera o D+N de quem consegue conferir no Asaas e está sem cobrança vencida. Cliente sem vínculo com o Asaas não é mais tocado às cegas — antes, a limpeza de "fantasma" podia apagar uma dívida real (foi o que zerou por engano uma cliente que tinha cobrança vencida de verdade)',
     ],
   },
   {

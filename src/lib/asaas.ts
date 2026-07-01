@@ -151,6 +151,17 @@ export async function removerCobrancasEmAberto(
   return { removidas, falhas, total: alvos.length }
 }
 
+/** GET de um único recurso do Asaas (ex.: /v3/customers/{id}). Lança em não-ok. */
+export async function asaasGet<T>(path: string): Promise<T> {
+  const base = asaasBaseUrl()
+  const res = await fetch(`${base}${path}`, {
+    headers: { access_token: process.env.ASAAS_API_KEY! },
+    signal: AbortSignal.timeout(15000),
+  })
+  if (!res.ok) throw new Error(`Asaas ${path} respondeu HTTP ${res.status}`)
+  return res.json() as Promise<T>
+}
+
 /** GET paginado — percorre todas as páginas de uma listagem. */
 export async function asaasGetAll<T>(path: string): Promise<T[]> {
   const base = asaasBaseUrl()
