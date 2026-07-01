@@ -11,11 +11,11 @@
 // marcado não-convertido (é cliente real que saiu — tem receita no DRE/histórico).
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { asaasGetAll } from './asaas'
+import { asaasGetAll, asaasRequest } from './asaas'
 import { provisionarClienteNovo } from './cliente-provisioning'
 
-/** Dias após a criação, sem pagamento, para considerar não-conversão (> D+3 do checkout). */
-const DIAS_ATE_NAO_CONVERSAO = 5
+/** Dias após a criação, sem pagamento, para considerar não-conversão (vencimento D+3 + 1). */
+const DIAS_ATE_NAO_CONVERSAO = 4
 
 /** Status "em conversão": entrou, mas ainda não é cliente pagante consolidado. */
 const STATUS_EM_CONVERSAO = ['recebido', 'onboarding', 'setup_trafego']
@@ -67,8 +67,34 @@ async function asaasTemRecebido(customerId: string): Promise<boolean> {
   return false
 }
 
-/** Arquiva o lead como não-convertido, limpa o onboarding e notifica p/ recuperar. */
-async function marcarNaoConvertido(supabase: SupabaseClient, c: ClienteLead): Promise<void> {
+/**
+ * Exclui no Asaas as cobranças EM ABERTO do customer (não pagou nada — já
+ * confirmado antes de chegar aqui). Só toca em não-pagas; recebida o Asaas nem
+ * deixaria apagar. Retorna quantas removeu. Não lança (falha não trava o arquivo).
+ */
+async function excluirCobrancasAbertas(customerId: string): Promise<number> {
+  let removidas = 0
+  for (const status of ['PENDING', 'OVERDUE', 'AWAITING_RISK_ANALYSIS']) {
+    let pays: { id: string; deleted?: boolean }[]
+    try {
+      pays = await asaasGetAll<{ id: string; deleted?: boolean }>(`/v3/payments?customer=${customerId}&status=${status}`)
+    } catch { continue }
+    for (const p of pays) {
+      if (p.deleted) continue
+      try {
+        const r = await asaasRequest<{ deleted?: boolean }>('DELETE', `/v3/payments/${p.id}`)
+        if (r.deleted) removidas++
+      } catch { /* cobrança que o Asaas recusou apagar — ignora */ }
+    }
+  }
+  return removidas
+}
+
+/** Arquiva o lead como não-convertido, exclui a cobrança no Asaas, limpa o onboarding e notifica p/ recuperar. */
+async function marcarNaoConvertido(supabase: SupabaseClient, c: ClienteLead, customerId: string | null): Promise<void> {
+  // Cancela a cobrança em aberto no Asaas (o Lucas fazia isso na mão).
+  const cobrancasRemovidas = customerId ? await excluirCobrancasAbertas(customerId) : 0
+
   await supabase.from('clientes').update({
     status:            'inativo',
     motivo_inativacao: 'nao_convertido',
@@ -85,7 +111,7 @@ async function marcarNaoConvertido(supabase: SupabaseClient, c: ClienteLead): Pr
   await supabase.from('historico_acoes').insert({
     cliente_id: c.id,
     tipo_acao:  'nao_convertido',
-    descricao:  '🚫 Fechou no checkout mas não pagou o 1º pagamento — arquivado como não convertido.',
+    descricao:  `🚫 Fechou no checkout mas não pagou o 1º pagamento — arquivado como não convertido${cobrancasRemovidas > 0 ? ` (${cobrancasRemovidas} cobrança(s) cancelada(s) no Asaas)` : ''}.`,
   })
 
   const whats = (c.whatsapp ?? '').replace(/\D/g, '')
@@ -94,7 +120,7 @@ async function marcarNaoConvertido(supabase: SupabaseClient, c: ClienteLead): Pr
     cliente_id: c.id,
     tipo:       'urgente',
     titulo:     `🔔 ${c.nome} fechou mas não pagou`,
-    mensagem:   'Não converteu (não pagou o 1º pagamento). Lead quente — vale chamar no WhatsApp para recuperar.',
+    mensagem:   'Não converteu (não pagou o 1º pagamento). Cancelei a cobrança em aberto no Asaas. Lead quente — vale chamar no WhatsApp para recuperar.',
     acao_url:   whats ? `https://wa.me/${whats}` : `/clientes/${c.id}`,
     acao_label: whats ? 'Chamar no WhatsApp' : 'Ver cliente',
   })
@@ -192,7 +218,7 @@ export async function processarNaoConversao(
       }
 
       arquivados.push({ id: c.id, nome: c.nome })
-      if (!dryRun) await marcarNaoConvertido(supabase, c)
+      if (!dryRun) await marcarNaoConvertido(supabase, c, customerId)
     }
   }
 
