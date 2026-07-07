@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { NewsClienteData } from '@/lib/types/news'
+import { ehSnapshotSemanal } from '@/lib/analytics-snapshots'
 
 export async function GET() {
   const supabase = await createClient()
@@ -35,15 +36,17 @@ export async function GET() {
 
   const { data: snapshots } = await supabase
     .from('analytics_snapshots')
-    .select('cliente_id, investimento, impressoes, cliques, ctr, conversoes, cpa, roas, sessoes, usuarios, created_at')
+    .select('cliente_id, periodo_inicio, periodo_fim, investimento, impressoes, cliques, ctr, conversoes, cpa, roas, sessoes, usuarios, created_at')
     .in('cliente_id', clienteIds)
-    .order('created_at', { ascending: false })
+    .order('periodo_fim', { ascending: false })
 
-  // Agrupar: pegar apenas o snapshot mais recente por cliente
-  type SnapshotRow = { cliente_id: string; investimento: number; impressoes: number; cliques: number; ctr: number; conversoes: number; cpa: number; roas: number; sessoes: number; usuarios: number; created_at: string }
+  // Agrupar: pegar apenas o snapshot MENSAL mais recente por cliente
+  // (os semanais existem para o relatório semanal; aqui mostrariam número menor)
+  type SnapshotRow = { cliente_id: string; periodo_inicio: string; periodo_fim: string; investimento: number; impressoes: number; cliques: number; ctr: number; conversoes: number; cpa: number; roas: number; sessoes: number; usuarios: number; created_at: string }
   const latestByCliente = new Map<string, SnapshotRow>()
   if (snapshots) {
-    for (const snap of snapshots) {
+    for (const snap of snapshots as SnapshotRow[]) {
+      if (ehSnapshotSemanal(snap.periodo_inicio, snap.periodo_fim)) continue
       if (!latestByCliente.has(snap.cliente_id)) {
         latestByCliente.set(snap.cliente_id, snap)
       }

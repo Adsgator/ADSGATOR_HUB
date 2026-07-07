@@ -65,6 +65,7 @@ export interface Cliente {
   looker_url?:      string
   google_ads_perfil_url?: string | null  // link do perfil/conta Google Ads do cliente
   saldo_google?:    number
+  saldo_google_atualizado_em?: string | null  // quando o saldo foi atualizado (sync automático ou manual)
   // Alerta de saldo Google Ads (lib/saldo-ads.ts)
   saldo_minimo_alerta?:  number | null   // R$ abaixo do qual dispara "saldo baixo"; null = mínimo global
   saldo_alertas_ativos?: boolean         // false = não dispara nenhum alerta de saldo (a pedido / cancelamento)

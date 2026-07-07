@@ -56,12 +56,15 @@ export async function POST(
         import('@/lib/relatorio-generator'),
       ]);
 
+      const { intervaloMes } = await import('@/lib/analytics-sync');
+      const { inicio, fim } = intervaloMes(body.mesAno);
+
       const [campanhas, keywords, ga4, paginas, fontes] = await Promise.all([
-        obterDadosCampanhasAds(cliente.google_ads_customer_id, body.mesAno),
-        obterPalavrasChavePerformance(cliente.google_ads_customer_id, body.mesAno),
-        obterDadosGA4(cliente.ga4_property_id, body.mesAno),
-        obterPaginasTopPerformance(cliente.ga4_property_id, body.mesAno),
-        obterFontesTrafego(cliente.ga4_property_id, body.mesAno),
+        obterDadosCampanhasAds(cliente.google_ads_customer_id, inicio, fim),
+        obterPalavrasChavePerformance(cliente.google_ads_customer_id, inicio, fim),
+        obterDadosGA4(cliente.ga4_property_id, inicio, fim),
+        obterPaginasTopPerformance(cliente.ga4_property_id, inicio, fim),
+        obterFontesTrafego(cliente.ga4_property_id, inicio, fim),
       ]);
 
       await gerarRelatorioMensal(

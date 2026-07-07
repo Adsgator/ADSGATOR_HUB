@@ -8,6 +8,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { Type as T, type FunctionDeclaration } from '@google/genai'
 import { estagioInadimplencia, carregarLimiaresAtraso } from '@/lib/cobranca'
 import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
+import { ehSnapshotSemanal } from '@/lib/analytics-snapshots'
 import { SYSTEM_MAP } from '@/lib/ia/system-map'
 import { computarSetupChecklist } from '@/lib/setup-checklist'
 import { enviarEmailManual } from '@/lib/email-automation'
@@ -1126,12 +1127,14 @@ export const TOOLS: Record<string, Tool> = {
       let temAnalytics = false
       if (ids.length) {
         const { data: snaps } = await ctx.db.from('analytics_snapshots')
-          .select('cliente_id, fonte, periodo_fim, conversoes, cpa')
+          .select('cliente_id, fonte, periodo_inicio, periodo_fim, conversoes, cpa')
           .in('cliente_id', ids)
           .order('periodo_fim', { ascending: false })
           .limit(300)
         const porChave = new Map<string, Array<{ conversoes: number | null; cpa: number | null }>>()
-        for (const s of (snaps ?? []) as Array<{ cliente_id: string; fonte: string; conversoes: number | null; cpa: number | null }>) {
+        for (const s of (snaps ?? []) as Array<{ cliente_id: string; fonte: string; periodo_inicio: string; periodo_fim: string; conversoes: number | null; cpa: number | null }>) {
+          // Tendência compara mês vs mês — snapshots semanais ficam de fora.
+          if (ehSnapshotSemanal(s.periodo_inicio, s.periodo_fim)) continue
           const k = `${s.cliente_id}|${s.fonte}`
           const arr = porChave.get(k) ?? []
           if (arr.length < 2) { arr.push({ conversoes: s.conversoes, cpa: s.cpa }); porChave.set(k, arr) }

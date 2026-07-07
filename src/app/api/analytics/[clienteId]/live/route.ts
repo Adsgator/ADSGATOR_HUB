@@ -49,83 +49,75 @@ export async function GET(
   const { searchParams } = new URL(request.url);
   const periodo = searchParams.get('periodo') || '30d';
   
-  // Calcular datas baseado no período
+  // Intervalo real do período pedido (antes virava o mês da data inicial —
+  // no começo do mês mostrava o mês anterior inteiro).
+  const dias = periodo === '7d' ? 7 : periodo === '90d' ? 90 : 30;
   const hoje = new Date();
-  let dataInicio: Date;
-  
-  switch (periodo) {
-    case '7d':
-      dataInicio = new Date(hoje.getTime() - 7 * 24 * 60 * 60 * 1000);
-      break;
-    case '30d':
-      dataInicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
-      break;
-    case '90d':
-      dataInicio = new Date(hoje.getTime() - 90 * 24 * 60 * 60 * 1000);
-      break;
-    default:
-      dataInicio = new Date(hoje.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-  
-  const mesAno = `${dataInicio.getFullYear()}-${String(dataInicio.getMonth() + 1).padStart(2, '0')}`;
+  const fmtData = (d: Date) => d.toISOString().slice(0, 10);
+  const dataFim = fmtData(hoje);
+  const dataInicio = fmtData(new Date(hoje.getTime() - dias * 24 * 60 * 60 * 1000));
 
   try {
     // Buscar dados em paralelo
-    const [
-      campanhas,
-      termosPesquisa,
-      demografia,
-      geografia,
-      deviceAds,
-      horario,
-      ga4Dados,
-      paginasTop,
-      fontesTrafego,
-      geoGA4,
-      deviceGA4,
-      leilao,
-      eventosGA4,
-    ] = await Promise.allSettled([
+    const nomesFontes = [
+      'campanhas', 'termosPesquisa', 'demografia', 'geografia', 'deviceAds',
+      'horario', 'ga4Dados', 'paginasTop', 'fontesTrafego', 'geoGA4',
+      'deviceGA4', 'leilao', 'eventosGA4',
+    ];
+    const settled = await Promise.allSettled([
       cliente.google_ads_enabled && cliente.google_ads_customer_id
-        ? obterDadosCampanhasAds(cliente.google_ads_customer_id, mesAno)
+        ? obterDadosCampanhasAds(cliente.google_ads_customer_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.google_ads_enabled && cliente.google_ads_customer_id
-        ? obterTermosPesquisa(cliente.google_ads_customer_id, mesAno)
+        ? obterTermosPesquisa(cliente.google_ads_customer_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.google_ads_enabled && cliente.google_ads_customer_id
-        ? obterDemografia(cliente.google_ads_customer_id, mesAno)
+        ? obterDemografia(cliente.google_ads_customer_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.google_ads_enabled && cliente.google_ads_customer_id
-        ? obterGeografia(cliente.google_ads_customer_id, mesAno)
+        ? obterGeografia(cliente.google_ads_customer_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.google_ads_enabled && cliente.google_ads_customer_id
-        ? obterDevice(cliente.google_ads_customer_id, mesAno)
+        ? obterDevice(cliente.google_ads_customer_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.google_ads_enabled && cliente.google_ads_customer_id
-        ? obterHorario(cliente.google_ads_customer_id, mesAno)
+        ? obterHorario(cliente.google_ads_customer_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.ga4_enabled && cliente.ga4_property_id
-        ? obterDadosGA4(cliente.ga4_property_id, mesAno)
+        ? obterDadosGA4(cliente.ga4_property_id, dataInicio, dataFim)
         : Promise.resolve(null),
       cliente.ga4_enabled && cliente.ga4_property_id
-        ? obterPaginasTopPerformance(cliente.ga4_property_id, mesAno)
+        ? obterPaginasTopPerformance(cliente.ga4_property_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.ga4_enabled && cliente.ga4_property_id
-        ? obterFontesTrafego(cliente.ga4_property_id, mesAno)
+        ? obterFontesTrafego(cliente.ga4_property_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.ga4_enabled && cliente.ga4_property_id
-        ? obterGeoGA4(cliente.ga4_property_id, mesAno)
+        ? obterGeoGA4(cliente.ga4_property_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.ga4_enabled && cliente.ga4_property_id
-        ? obterDeviceGA4(cliente.ga4_property_id, mesAno)
+        ? obterDeviceGA4(cliente.ga4_property_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.google_ads_enabled && cliente.google_ads_customer_id
-        ? obterLeilao(cliente.google_ads_customer_id, mesAno)
+        ? obterLeilao(cliente.google_ads_customer_id, dataInicio, dataFim)
         : Promise.resolve([]),
       cliente.ga4_enabled && cliente.ga4_property_id
-        ? obterEventosGA4(cliente.ga4_property_id, mesAno)
+        ? obterEventosGA4(cliente.ga4_property_id, dataInicio, dataFim)
         : Promise.resolve([]),
     ]);
+
+    // Falha de uma fonte não derruba a resposta, mas fica registrada no log
+    // (antes morria em silêncio e a tela mostrava tudo zerado sem pista).
+    settled.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        console.error(`[analytics/live] ${nomesFontes[i]} falhou:`, r.reason);
+      }
+    });
+
+    const [
+      campanhas, termosPesquisa, demografia, geografia, deviceAds, horario,
+      ga4Dados, paginasTop, fontesTrafego, geoGA4, deviceGA4, leilao, eventosGA4,
+    ] = settled;
 
     // Consolidar resultados
     const resultado = {

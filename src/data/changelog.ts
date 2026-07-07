@@ -8,6 +8,17 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.50.0',
+    data:   '2026-07-07',
+    novidades: [
+      'Analytics destravado de verdade: os dados de Google Ads e GA4 agora fluem para o Hub (o Customer ID com hífen era rejeitado pela API do Google em silêncio — o sistema normaliza o formato sozinho, cole como vier)',
+      'Erro de API não vira mais zero disfarçado: se uma fonte falhar no sync, o cliente fica marcado com erro em vez de gravar métricas zeradas como se fosse dado real',
+      'Períodos 7/30/90 dias do Analytics ao vivo agora batem com o intervalo real (antes, no começo do mês, mostravam o mês anterior inteiro)',
+      'Saldo do Google Ads com fonte de verdade: contas pré-pagas (boleto) têm o saldo buscado automaticamente no sync diário; contas pós-pagas ganham campo manual em Integrações. O card de alerta mostra quando o saldo foi atualizado pela última vez',
+      'Sync diário também grava a última semana fechada (seg–dom) — o relatório semanal, quando for ligado, compara semana vs semana em vez de mês parcial vs mês inteiro',
+    ],
+  },
+  {
     versao: '0.49.1',
     data:   '2026-07-01',
     novidades: [

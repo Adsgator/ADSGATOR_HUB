@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { dispararEmailAutomatico } from '@/lib/email-automation'
+import { ehSnapshotSemanal } from '@/lib/analytics-snapshots'
 
 /**
  * Relatório semanal (F3) — resumo curto das campanhas ao cliente.
@@ -8,9 +9,9 @@ import { dispararEmailAutomatico } from '@/lib/email-automation'
  * (atual vs anterior) e monta os KPIs com a variação percentual. Dispara o
  * template `report-weekly-kpi` via toggle `email_relatorio_semanal`.
  *
- * Nota: a granularidade dos snapshots hoje é mensal (o sync roda por mês). Quando
- * existir snapshot semanal, a comparação passa a ser semana vs semana sem mudar
- * este código. Clientes sem ao menos um snapshot Google Ads são PULADOS — não
+ * Usa apenas snapshots SEMANAIS (seg–dom, gravados pelo sync diário) — comparar
+ * mês corrente parcial vs mês passado inteiro mostraria variações absurdas.
+ * Clientes sem ao menos um snapshot semanal Google Ads são PULADOS — não
  * enviamos email sem números.
  */
 
@@ -19,6 +20,7 @@ interface SnapshotAds {
   conversoes: number | null
   investimento: number | null
   periodo_inicio: string
+  periodo_fim: string
 }
 
 interface ClienteRel {
@@ -60,13 +62,15 @@ export async function enviarRelatoriosSemanais(supabase: SupabaseClient): Promis
 
     const { data: snaps } = await supabase
       .from('analytics_snapshots')
-      .select('cliques, conversoes, investimento, periodo_inicio')
+      .select('cliques, conversoes, investimento, periodo_inicio, periodo_fim')
       .eq('cliente_id', c.id)
       .eq('fonte', 'google_ads')
       .order('periodo_inicio', { ascending: false })
-      .limit(2)
+      .limit(30)
 
-    const lista = (snaps ?? []) as SnapshotAds[]
+    const lista = ((snaps ?? []) as SnapshotAds[])
+      .filter((s) => ehSnapshotSemanal(s.periodo_inicio, s.periodo_fim))
+      .slice(0, 2)
     if (lista.length === 0) { pulados++; resultados.push({ cliente: c.nome, enviado: false, motivo: 'sem_dados' }); continue }
 
     const atual = lista[0]

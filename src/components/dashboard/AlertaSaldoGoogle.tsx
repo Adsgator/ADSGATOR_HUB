@@ -15,7 +15,8 @@ interface SaldoAlert {
   saldo_atual: number
   saldo_minimo: number
   status: 'alerta' | 'critico'
-  atualizado_em: string
+  /** Quando o saldo foi de fato atualizado (sync ou manual) — null = nunca */
+  atualizado_em: string | null
 }
 
 export function AlertaSaldoGoogle() {
@@ -38,7 +39,7 @@ export function AlertaSaldoGoogle() {
       // Clientes com Google Ads ativado e alertas de saldo NÃO desativados
       const { data: clientes, error } = await supabase
         .from('clientes')
-        .select('id, nome, google_ads_customer_id, saldo_google, saldo_minimo_alerta, saldo_alertas_ativos')
+        .select('id, nome, google_ads_customer_id, saldo_google, saldo_google_atualizado_em, saldo_minimo_alerta, saldo_alertas_ativos')
         .eq('google_ads_enabled', true)
         .not('google_ads_customer_id', 'is', null)
 
@@ -74,7 +75,7 @@ export function AlertaSaldoGoogle() {
           saldo_atual: saldoAtual,
           saldo_minimo: saldoMinimo,
           status,
-          atualizado_em: new Date().toISOString(),
+          atualizado_em: cliente.saldo_google_atualizado_em ?? null,
         })
       }
 
@@ -216,6 +217,11 @@ export function AlertaSaldoGoogle() {
                 {alerta.status === 'critico'
                   ? 'saldo zerado'
                   : `mín. R$ ${alerta.saldo_minimo.toLocaleString('pt-BR')}`}
+              </p>
+              <p className="text-xs text-ink-muted">
+                {alerta.atualizado_em
+                  ? `atualizado ${new Date(alerta.atualizado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`
+                  : 'saldo nunca atualizado'}
               </p>
             </div>
           </div>

@@ -17,6 +17,7 @@ import { Button }      from '@/components/ui/Button'
 import { supabase }    from '@/lib/supabase'
 import { toast } from 'sonner'
 import type { AnalyticsSnapshot, Cliente } from '@/lib/types'
+import { ehSnapshotSemanal } from '@/lib/analytics-snapshots'
 
 // Novos componentes analytics
 import { AdsOverviewKpis } from '@/components/analytics/AdsOverviewKpis'
@@ -165,7 +166,10 @@ export default function AnalyticsPage() {
     ])
 
     const cl    = (clientes ?? []) as Cliente[]
-    const snAll = (snaps    ?? []) as AnalyticsSnapshot[]
+    // Só snapshots mensais — os semanais (seg–dom) alimentam o relatório
+    // semanal e poluiriam este histórico com números "menores".
+    const snAll = ((snaps ?? []) as AnalyticsSnapshot[])
+      .filter((s) => !ehSnapshotSemanal(s.periodo_inicio, s.periodo_fim))
 
     const resultado: ClienteSnap[] = cl.map((c) => {
       const csn = snAll.filter((s) => s.cliente_id === c.id).sort((a, b) => b.periodo_fim.localeCompare(a.periodo_fim))

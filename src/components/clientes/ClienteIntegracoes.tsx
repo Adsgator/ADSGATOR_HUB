@@ -113,24 +113,33 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
     dominio: cliente.dominio || '',
     saldo_minimo_alerta: cliente.saldo_minimo_alerta != null ? String(cliente.saldo_minimo_alerta) : '',
     saldo_alertas_ativos: cliente.saldo_alertas_ativos ?? true,
+    saldo_google: cliente.saldo_google != null ? String(cliente.saldo_google) : '',
   })
 
   const handleSave = async () => {
     setSaving(true)
     try {
+      // Saldo manual: só grava (com carimbo de data) se o valor realmente mudou —
+      // fallback para contas pós-pagas, onde o sync não consegue derivar o saldo.
+      const saldoTexto = formData.saldo_google.trim()
+      const saldoNovo = saldoTexto ? parseFloat(saldoTexto) : null
+      const saldoMudou = saldoNovo != null && saldoNovo !== (cliente.saldo_google ?? null)
+
       const { data, error } = await supabase
         .from('clientes')
         .update({
-          google_ads_customer_id: formData.google_ads_customer_id || null,
+          // IDs do Google chegam colados com espaço/hífen — normaliza aqui.
+          google_ads_customer_id: formData.google_ads_customer_id.replace(/\D/g, '') || null,
           google_ads_enabled: formData.google_ads_enabled,
-          ga4_property_id: formData.ga4_property_id || null,
+          ga4_property_id: formData.ga4_property_id.trim() || null,
           ga4_enabled: formData.ga4_enabled,
-          gmb_id: formData.gmb_id || null,
-          looker_url: formData.looker_url || null,
-          website: formData.website || null,
-          dominio: formData.dominio || null,
+          gmb_id: formData.gmb_id.trim() || null,
+          looker_url: formData.looker_url.trim() || null,
+          website: formData.website.trim() || null,
+          dominio: formData.dominio.trim() || null,
           saldo_minimo_alerta: formData.saldo_minimo_alerta.trim() ? parseFloat(formData.saldo_minimo_alerta) : null,
           saldo_alertas_ativos: formData.saldo_alertas_ativos,
+          ...(saldoMudou ? { saldo_google: saldoNovo, saldo_google_atualizado_em: new Date().toISOString() } : {}),
           data_atualizacao: new Date().toISOString(),
         })
         .eq('id', cliente.id)
@@ -164,6 +173,7 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
       dominio: cliente.dominio || '',
       saldo_minimo_alerta: cliente.saldo_minimo_alerta != null ? String(cliente.saldo_minimo_alerta) : '',
       saldo_alertas_ativos: cliente.saldo_alertas_ativos ?? true,
+      saldo_google: cliente.saldo_google != null ? String(cliente.saldo_google) : '',
     })
     setEditing(false)
   }
@@ -307,24 +317,54 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
             </button>
           </div>
           {editing ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-ink-secondary shrink-0">Avisar abaixo de R$</span>
-              <input
-                type="number" min="0" step="1"
-                value={formData.saldo_minimo_alerta}
-                onChange={(e) => setFormData({ ...formData, saldo_minimo_alerta: e.target.value })}
-                placeholder="mínimo global"
-                className="w-28 px-2 py-1.5 text-sm bg-surface-base border border-surface-border rounded-md focus:outline-none focus:border-ads-500 text-ink-primary"
-              />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <label className="flex items-center gap-2">
+                <span className="text-sm text-ink-secondary shrink-0">Saldo atual R$</span>
+                <input
+                  type="number" min="0" step="0.01"
+                  value={formData.saldo_google}
+                  onChange={(e) => setFormData({ ...formData, saldo_google: e.target.value })}
+                  placeholder="0,00"
+                  className="w-28 px-2 py-1.5 text-sm bg-surface-base border border-surface-border rounded-md focus:outline-none focus:border-ads-500 text-ink-primary"
+                />
+              </label>
+              <label className="flex items-center gap-2">
+                <span className="text-sm text-ink-secondary shrink-0">Avisar abaixo de R$</span>
+                <input
+                  type="number" min="0" step="1"
+                  value={formData.saldo_minimo_alerta}
+                  onChange={(e) => setFormData({ ...formData, saldo_minimo_alerta: e.target.value })}
+                  placeholder="mínimo global"
+                  className="w-28 px-2 py-1.5 text-sm bg-surface-base border border-surface-border rounded-md focus:outline-none focus:border-ads-500 text-ink-primary"
+                />
+              </label>
+              <p className="w-full text-xs opacity-70">
+                Contas pré-pagas (boleto) têm o saldo buscado automaticamente no sync diário;
+                em contas pós-pagas, informe o saldo aqui quando recarregar.
+              </p>
             </div>
           ) : (
-            <p className="text-sm">
-              {formData.saldo_alertas_ativos
-                ? formData.saldo_minimo_alerta.trim()
-                  ? `Avisa quando o saldo cair abaixo de R$ ${formData.saldo_minimo_alerta}`
-                  : 'Avisa pelo mínimo global (Configurações → Operacional)'
-                : 'Alertas de saldo desativados para este cliente'}
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm">
+                {cliente.saldo_google != null ? (
+                  <>
+                    Saldo atual: <strong>R$ {Number(cliente.saldo_google).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                    {cliente.saldo_google_atualizado_em
+                      ? ` — atualizado em ${new Date(cliente.saldo_google_atualizado_em).toLocaleDateString('pt-BR')}`
+                      : ''}
+                  </>
+                ) : (
+                  'Saldo ainda não informado — o sync busca automaticamente em contas pré-pagas'
+                )}
+              </p>
+              <p className="text-sm">
+                {formData.saldo_alertas_ativos
+                  ? formData.saldo_minimo_alerta.trim()
+                    ? `Avisa quando o saldo cair abaixo de R$ ${formData.saldo_minimo_alerta}`
+                    : 'Avisa pelo mínimo global (Configurações → Operacional)'
+                  : 'Alertas de saldo desativados para este cliente'}
+              </p>
+            </div>
           )}
         </div>
       </div>

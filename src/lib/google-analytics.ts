@@ -44,28 +44,18 @@ function criarClienteGA4() {
   return new BetaAnalyticsDataClient();
 }
 
-function intervaloMes(mesAno: string): { startDate: string; endDate: string } {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const ultimoDia  = new Date(ano, mes, 0).getDate();
-  return {
-    startDate: `${ano}-${String(mes).padStart(2, '0')}-01`,
-    endDate:   `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`,
-  };
-}
-
 // ─── MÉTRICAS GA4 ────────────────────────────────────────────────────────────
 
 export async function obterDadosGA4(
   propertyId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<DadosGA4> {
-  const { startDate, endDate } = intervaloMes(mesAno);
-
   try {
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate }],
+      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
       metrics: [
         { name: 'sessions'             },
         { name: 'newUsers'             },
@@ -93,11 +83,7 @@ export async function obterDadosGA4(
     };
   } catch (error) {
     console.error('Erro ao obter dados GA4:', error);
-    return {
-      sessoes: 0, usuarios_novos: 0, visualizacoes_pagina: 0,
-      taxa_engajamento: 0, duracao_media_sessao: 0,
-      taxa_rejeicao: 0, conversoes: 0, valor_conversao_total: 0,
-    };
+    throw error;
   }
 }
 
@@ -105,15 +91,14 @@ export async function obterDadosGA4(
 
 export async function obterPaginasTopPerformance(
   propertyId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<PaginaPerformance[]> {
-  const { startDate, endDate } = intervaloMes(mesAno);
-
   try {
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate }],
+      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
       dimensions: [{ name: 'pagePath' }],
       metrics: [
         { name: 'screenPageViews'        },
@@ -140,7 +125,7 @@ export async function obterPaginasTopPerformance(
     }));
   } catch (error) {
     console.error('Erro ao obter páginas GA4:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -148,15 +133,14 @@ export async function obterPaginasTopPerformance(
 
 export async function obterFontesTrafego(
   propertyId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<FonteTrafego[]> {
-  const { startDate, endDate } = intervaloMes(mesAno);
-
   try {
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate }],
+      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
       dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }],
       metrics: [
         { name: 'sessions'    },
@@ -179,7 +163,7 @@ export async function obterFontesTrafego(
     });
   } catch (error) {
     console.error('Erro ao obter fontes GA4:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -200,15 +184,14 @@ export interface GeoGA4 {
 
 export async function obterGeoGA4(
   propertyId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<GeoGA4[]> {
-  const { startDate, endDate } = intervaloMes(mesAno);
-
   try {
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate }],
+      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
       dimensions: [
         { name: 'country'   },
         { name: 'region'    },
@@ -233,7 +216,7 @@ export async function obterGeoGA4(
     }));
   } catch (error) {
     console.error('Erro ao obter geo GA4:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -249,15 +232,14 @@ export interface DeviceGA4 {
 
 export async function obterDeviceGA4(
   propertyId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<DeviceGA4[]> {
-  const { startDate, endDate } = intervaloMes(mesAno);
-
   try {
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate }],
+      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
       dimensions: [
         { name: 'deviceCategory' },
         { name: 'operatingSystem' },
@@ -280,7 +262,7 @@ export async function obterDeviceGA4(
     }));
   } catch (error) {
     console.error('Erro ao obter device GA4:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -294,15 +276,14 @@ export interface EventoGA4 {
 
 export async function obterEventosGA4(
   propertyId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<EventoGA4[]> {
-  const { startDate, endDate } = intervaloMes(mesAno);
-
   try {
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate, endDate }],
+      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
       dimensions: [{ name: 'eventName' }],
       metrics: [
         { name: 'eventCount'  },
@@ -319,7 +300,7 @@ export async function obterEventosGA4(
     }));
   } catch (error) {
     console.error('Erro ao obter eventos GA4:', error);
-    return [];
+    throw error;
   }
 }
 

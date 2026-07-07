@@ -35,24 +35,26 @@ function criarClienteAds() {
   });
 }
 
+// A API rejeita IDs com hífen/espaço ("Invalid customer ID '123-456-7890'"),
+// então normaliza para só dígitos aqui na borda — aceita o formato que vier.
+function criarCustomer(customerId: string) {
+  const client = criarClienteAds();
+  return client.Customer({
+    customer_id:       customerId.replace(/\D/g, ''),
+    refresh_token:     process.env.GOOGLE_ADS_REFRESH_TOKEN!,
+    login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
+  });
+}
+
 // ─── OBTER DADOS DE CAMPANHAS ─────────────────────────────────────────────────
 
 export async function obterDadosCampanhasAds(
   customerId:  string,
-  mesAno:      string,  // formato: YYYY-MM
+  dataInicio:  string,  // YYYY-MM-DD
+  dataFim:     string,  // YYYY-MM-DD
 ): Promise<DadosCampanhaAds[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia   = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -66,7 +68,7 @@ export async function obterDadosCampanhasAds(
         metrics.conversions,
         metrics.cost_per_conversion
       FROM campaign
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
         AND campaign.status != 'REMOVED'
     `);
 
@@ -91,7 +93,7 @@ export async function obterDadosCampanhasAds(
     });
   } catch (error) {
     console.error('Erro ao obter campanhas Google Ads:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -99,20 +101,11 @@ export async function obterDadosCampanhasAds(
 
 export async function obterPalavrasChavePerformance(
   customerId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<PalavraChavePerformance[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia    = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -124,7 +117,7 @@ export async function obterPalavrasChavePerformance(
         metrics.conversions,
         metrics.cost_micros
       FROM keyword_view
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
         AND ad_group_criterion.status != 'REMOVED'
       ORDER BY metrics.clicks DESC
       LIMIT 20
@@ -141,7 +134,7 @@ export async function obterPalavrasChavePerformance(
     }));
   } catch (error) {
     console.error('Erro ao obter palavras-chave:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -162,20 +155,11 @@ export interface TermoPesquisa {
 
 export async function obterTermosPesquisa(
   customerId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<TermoPesquisa[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia    = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -186,7 +170,7 @@ export async function obterTermosPesquisa(
         metrics.conversions,
         metrics.cost_micros
       FROM search_term_view
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
       ORDER BY metrics.clicks DESC
       LIMIT 50
     `);
@@ -201,7 +185,7 @@ export async function obterTermosPesquisa(
     }));
   } catch (error) {
     console.error('Erro ao obter termos de pesquisa:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -218,20 +202,11 @@ export interface DemografiaDados {
 
 export async function obterDemografia(
   customerId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<DemografiaDados[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia    = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -242,7 +217,7 @@ export async function obterDemografia(
         metrics.conversions,
         metrics.cost_micros
       FROM age_range_view
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
     `);
 
     return results.map((r: Record<string, any>) => ({
@@ -255,7 +230,7 @@ export async function obterDemografia(
     }));
   } catch (error) {
     console.error('Erro ao obter demografia:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -273,20 +248,11 @@ export interface GeografiaDados {
 
 export async function obterGeografia(
   customerId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<GeografiaDados[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia    = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -297,7 +263,7 @@ export async function obterGeografia(
         metrics.conversions,
         metrics.cost_micros
       FROM geographic_view
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
       ORDER BY metrics.clicks DESC
       LIMIT 20
     `);
@@ -313,7 +279,7 @@ export async function obterGeografia(
     }));
   } catch (error) {
     console.error('Erro ao obter geografia:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -330,20 +296,11 @@ export interface DeviceDados {
 
 export async function obterDevice(
   customerId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<DeviceDados[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia    = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -354,7 +311,7 @@ export async function obterDevice(
         metrics.conversions,
         metrics.cost_micros
       FROM campaign
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
     `);
 
     const agrupado = new Map<string, { impressoes: number; cliques: number; conversoes: number; custo: number }>();
@@ -380,7 +337,7 @@ export async function obterDevice(
     }));
   } catch (error) {
     console.error('Erro ao obter dispositivos:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -397,20 +354,11 @@ export interface HorarioDados {
 
 export async function obterHorario(
   customerId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<HorarioDados[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia    = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -421,7 +369,7 @@ export async function obterHorario(
         metrics.conversions,
         metrics.cost_micros
       FROM campaign
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
     `);
 
     const agrupado = new Map<string, { impressoes: number; cliques: number; conversoes: number; custo: number }>();
@@ -450,7 +398,7 @@ export async function obterHorario(
     });
   } catch (error) {
     console.error('Erro ao obter horário:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -466,20 +414,11 @@ export interface LeilaoDados {
 
 export async function obterLeilao(
   customerId: string,
-  mesAno:     string,
+  dataInicio: string, // YYYY-MM-DD
+  dataFim:    string, // YYYY-MM-DD
 ): Promise<LeilaoDados[]> {
-  const [ano, mes] = mesAno.split('-').map(Number);
-  const primeiroDia  = `${ano}-${String(mes).padStart(2, '0')}-01`;
-  const ultimoDia    = new Date(ano, mes, 0);
-  const ultimoDiaStr = `${ano}-${String(mes).padStart(2, '0')}-${String(ultimoDia.getDate()).padStart(2, '0')}`;
-
   try {
-    const client   = criarClienteAds();
-    const customer = client.Customer({
-      customer_id:   customerId,
-      refresh_token: process.env.GOOGLE_ADS_REFRESH_TOKEN!,
-      login_customer_id: process.env.GOOGLE_ADS_MANAGER_ID,
-    });
+    const customer = criarCustomer(customerId);
 
     const results = await customer.query(`
       SELECT
@@ -489,7 +428,7 @@ export async function obterLeilao(
         metrics.search_top_impression_share,
         metrics.search_overlap_rate
       FROM auction_insight
-      WHERE segments.date BETWEEN '${primeiroDia}' AND '${ultimoDiaStr}'
+      WHERE segments.date BETWEEN '${dataInicio}' AND '${dataFim}'
       ORDER BY metrics.search_impression_share DESC
       LIMIT 20
     `);
@@ -503,6 +442,40 @@ export async function obterLeilao(
     }));
   } catch (error) {
     console.error('Erro ao obter leilão:', error);
-    return [];
+    throw error;
   }
+}
+
+// ─── 7. SALDO DA CONTA (contas pré-pagas / boleto) ───────────────────────────
+// Deriva o saldo restante dos orçamentos aprovados da conta (account_budget):
+// soma dos limites aprovados menos o total já servido. Contas pós-pagas têm
+// orçamento sem limite — não dá para derivar saldo, retorna null e o valor
+// passa a ser o campo manual em clientes.saldo_google.
+
+export async function obterSaldoConta(customerId: string): Promise<number | null> {
+  const customer = criarCustomer(customerId);
+
+  const results = await customer.query(`
+    SELECT
+      account_budget.status,
+      account_budget.approved_spending_limit_micros,
+      account_budget.amount_served_micros
+    FROM account_budget
+    WHERE account_budget.status = 'APPROVED'
+  `);
+
+  let temLimite = false;
+  let limite    = 0;
+  let servido   = 0;
+
+  for (const r of results as Array<Record<string, any>>) {
+    const lim = r.account_budget?.approved_spending_limit_micros;
+    if (lim == null) continue; // orçamento ilimitado (conta pós-paga)
+    temLimite = true;
+    limite  += Number(lim);
+    servido += Number(r.account_budget?.amount_served_micros ?? 0);
+  }
+
+  if (!temLimite) return null;
+  return (limite - servido) / 1_000_000;
 }
