@@ -44,6 +44,15 @@ function criarClienteGA4() {
   return new BetaAnalyticsDataClient();
 }
 
+// O GA4 rejeita intervalo com fim no FUTURO quando a query tem conversão de
+// moeda (totalRevenue): "Future currency exchange rate not exist". Como não
+// existe dado futuro, pedir até hoje é equivalente — o fim canônico do
+// período (ex.: último dia do mês) fica só na chave do snapshot.
+function clampFim(dataFim: string): string {
+  const hoje = new Date().toISOString().slice(0, 10);
+  return dataFim > hoje ? hoje : dataFim;
+}
+
 // ─── TESTE DE CONEXÃO ────────────────────────────────────────────────────────
 // runReport mínimo só para validar property ID + permissão da service account.
 
@@ -68,7 +77,7 @@ export async function obterDadosGA4(
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property: `properties/${propertyId}`,
-      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
+      dateRanges: [{ startDate: dataInicio, endDate: clampFim(dataFim) }],
       metrics: [
         { name: 'sessions'             },
         { name: 'newUsers'             },
@@ -111,7 +120,7 @@ export async function obterPaginasTopPerformance(
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
+      dateRanges: [{ startDate: dataInicio, endDate: clampFim(dataFim) }],
       dimensions: [{ name: 'pagePath' }],
       metrics: [
         { name: 'screenPageViews'        },
@@ -153,7 +162,7 @@ export async function obterFontesTrafego(
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
+      dateRanges: [{ startDate: dataInicio, endDate: clampFim(dataFim) }],
       dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }],
       metrics: [
         { name: 'sessions'    },
@@ -204,7 +213,7 @@ export async function obterGeoGA4(
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
+      dateRanges: [{ startDate: dataInicio, endDate: clampFim(dataFim) }],
       dimensions: [
         { name: 'country'   },
         { name: 'region'    },
@@ -252,7 +261,7 @@ export async function obterDeviceGA4(
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
+      dateRanges: [{ startDate: dataInicio, endDate: clampFim(dataFim) }],
       dimensions: [
         { name: 'deviceCategory' },
         { name: 'operatingSystem' },
@@ -296,7 +305,7 @@ export async function obterEventosGA4(
     const client = criarClienteGA4();
     const [response] = await client.runReport({
       property:   `properties/${propertyId}`,
-      dateRanges: [{ startDate: dataInicio, endDate: dataFim }],
+      dateRanges: [{ startDate: dataInicio, endDate: clampFim(dataFim) }],
       dimensions: [{ name: 'eventName' }],
       metrics: [
         { name: 'eventCount'  },
