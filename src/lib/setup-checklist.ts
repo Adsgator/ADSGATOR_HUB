@@ -42,7 +42,9 @@ export async function computarSetupChecklist(
       .select('id', { count: 'exact', head: true })
       .eq('user_id', userId)
       .in('status', ['ativo', 'onboarding', 'setup_trafego'])
-      .or('google_ads_customer_id.is.null,ga4_property_id.is.null'),
+      // Pendente = falta ID OU o ID existe mas a integração está desligada
+      // (toggle off era invisível: o cliente parecia configurado e nunca sincronizava).
+      .or('google_ads_customer_id.is.null,ga4_property_id.is.null,google_ads_enabled.not.is.true,ga4_enabled.not.is.true'),
   ])
 
   const itens: SetupItem[] = []
@@ -151,19 +153,20 @@ export async function computarSetupChecklist(
     ],
   })
 
-  // ── Clientes sem IDs de integração ──
+  // ── Clientes com integração Google pendente (sem ID ou toggle desligado) ──
   const semIds = clientesPendentes.count ?? 0
   itens.push({
     id:      'clientes_pendentes',
-    label:   'Clientes com IDs Google preenchidos',
+    label:   'Clientes com Google Ads/GA4 conectados',
     status:  semIds === 0 ? 'ok' : 'pendente',
     detalhe: semIds === 0
-      ? 'Todos os clientes ativos têm Google Ads customer ID e GA4 property ID'
-      : `${semIds} cliente(s) ativo(s) sem Google Ads customer ID ou GA4 property ID — analytics não sincroniza para eles`,
+      ? 'Todos os clientes ativos têm IDs preenchidos E integrações ligadas'
+      : `${semIds} cliente(s) ativo(s) com integração pendente (ID faltando ou integração desligada) — analytics não sincroniza para eles`,
     passos: [
       'Gere as tarefas de setup para os clientes pendentes (botão ao lado)',
       'Em cada cliente, preencha os IDs na seção Integrações da página de detalhe',
-      'Marque google_ads_enabled / ga4_enabled quando os IDs estiverem válidos',
+      'LIGUE os toggles das integrações — ID preenchido com toggle desligado não sincroniza',
+      'Use o botão Testar conexão para validar o ID antes de ligar',
     ],
     acao: semIds > 0
       ? { label: `Gerar tarefas para ${semIds} cliente(s)`, tipo: 'provisionar' }

@@ -8,6 +8,17 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.51.0',
+    data:   '2026-07-07',
+    novidades: [
+      'Botão "Testar conexão" na seção Integrações do cliente: valida o Customer ID e a property GA4 na hora, com mensagem clara do que está errado (ID inválido, conta fora do MCC, service account sem permissão). Acabou o ID errado aceito em silêncio',
+      'Última sincronização visível por cliente (na página Analytics e no card de Integrações): quando rodou e se deu OK ou ERRO — com a mensagem do erro',
+      'Qualquer rotina automática que falhar (sync, cobrança, importação Asaas, briefing, alertas…) agora vira notificação no sino — antes a falha morria num JSON que ninguém lê. 1 aviso por rotina por dia',
+      'Novo widget "Saúde do Sistema" no dashboard: integrações Google por cliente (OK / pendente / erro) + as 9 rotinas do robô com o último run de cada uma. Visão única do que está rodando e do que está pendente',
+      'Checklist de setup agora acusa cliente com ID preenchido mas integração DESLIGADA (caso que ficava invisível e não sincronizava), e o card de Integrações mostra aviso quando isso acontece',
+    ],
+  },
+  {
     versao: '0.50.0',
     data:   '2026-07-07',
     novidades: [

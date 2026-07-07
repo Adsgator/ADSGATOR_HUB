@@ -446,6 +446,15 @@ export async function obterLeilao(
   }
 }
 
+// ─── TESTE DE CONEXÃO ────────────────────────────────────────────────────────
+// Query mínima só para validar customer ID + acesso via MCC + credenciais.
+// Lança com a mensagem crua da API — a rota de teste traduz para o usuário.
+
+export async function testarConexaoAds(customerId: string): Promise<void> {
+  const customer = criarCustomer(customerId);
+  await customer.query(`SELECT customer.id FROM customer LIMIT 1`);
+}
+
 // ─── 7. SALDO DA CONTA (contas pré-pagas / boleto) ───────────────────────────
 // Deriva o saldo restante dos orçamentos aprovados da conta (account_budget):
 // soma dos limites aprovados menos o total já servido. Contas pós-pagas têm

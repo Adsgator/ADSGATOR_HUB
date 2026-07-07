@@ -40,6 +40,7 @@ import { TopPerformers }         from '@/components/dashboard/TopPerformers'
 import { CentralDeComando }      from '@/components/dashboard/CentralDeComando'
 import { GoalsCard }             from '@/components/dashboard/GoalsCard'
 import { AlertaSaldoGoogle }     from '@/components/dashboard/AlertaSaldoGoogle'
+import { SaudeDoSistema }        from '@/components/dashboard/SaudeDoSistema'
 import { RecentTransactions }    from '@/components/dashboard/RecentTransactions'
 import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
@@ -88,6 +89,7 @@ const CARD_DESCRIPTIONS: Record<string, string> = {
   'goals-card': 'Metas da agência com barras de progresso: MRR, número de clientes, taxa de conversão e outras métricas configuradas. Gerencie em Configurações.',
   'alerta-saldo-google': 'Alerta preditivo de saldo Google Ads: cruza o saldo atual de cada cliente com o gasto médio diário dos últimos snapshots para estimar em quantos dias a verba acaba. Mostra apenas clientes em alerta (≤7 dias) ou crítico (≤3 dias).',
   'recent-transactions': 'Últimos lançamentos financeiros da agência (receitas e despesas) em tempo real, direto da tabela financeiro_lancamentos. Receitas em verde, custos em vermelho. Clique em "Ver todas" para o módulo Financeiro completo.',
+  'saude-sistema': 'Saúde do Sistema — visão única do que está funcionando e do que está pendente: integrações Google por cliente (sincronizando OK, pendência de setup, erro no último sync) e as rotinas automáticas do robô (cron) com o último run de cada uma.',
 }
 const BREAKPOINTS = { xl: 1400, lg: 1024, md: 768, sm: 480 }
 const COLS        = { xl: 12,   lg: 10,   md: 6,   sm: 2   }
@@ -220,6 +222,12 @@ const CARD_SIZE_PRESETS: Record<string, SizePreset[]> = {
     { id: 'large', sizes: { xl: { w: 5, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 6 } } },
     { id: 'max', sizes: { xl: { w: 7, h: 7 }, lg: { w: 6, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 7 } } },
   ],
+  'saude-sistema': [
+    { id: 'compact', sizes: { xl: { w: 3, h: 4 }, lg: { w: 3, h: 4 }, md: { w: 3, h: 4 }, sm: { w: 2, h: 4 } } },
+    { id: 'normal', sizes: { xl: { w: 4, h: 5 }, lg: { w: 4, h: 5 }, md: { w: 6, h: 5 }, sm: { w: 2, h: 5 } } },
+    { id: 'large', sizes: { xl: { w: 6, h: 6 }, lg: { w: 5, h: 6 }, md: { w: 6, h: 6 }, sm: { w: 2, h: 6 } } },
+    { id: 'max', sizes: { xl: { w: 8, h: 7 }, lg: { w: 7, h: 7 }, md: { w: 6, h: 7 }, sm: { w: 2, h: 7 } } },
+  ],
 }
 
 const fmt = (v: number) =>
@@ -259,6 +267,7 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'goals-card',          x: 8, y: 31, w: 4, h: 6, minW: 3, minH: 4 },
     { i: 'alerta-saldo-google', x: 0, y: 37, w: 4, h: 5, minW: 3, minH: 3 },
     { i: 'recent-transactions', x: 4, y: 37, w: 4, h: 5, minW: 3, minH: 4 },
+    { i: 'saude-sistema',       x: 8, y: 37, w: 4, h: 5, minW: 3, minH: 4 },
   ],
   lg: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 6 },
@@ -283,7 +292,8 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'central-comando',     x: 0, y: 36, w: 7, h: 6 },
     { i: 'goals-card',          x: 7, y: 36, w: 3, h: 6 },
     { i: 'alerta-saldo-google', x: 0, y: 42, w: 4, h: 5 },
-    { i: 'recent-transactions', x: 4, y: 42, w: 4, h: 5 },
+    { i: 'recent-transactions', x: 4, y: 42, w: 3, h: 5 },
+    { i: 'saude-sistema',       x: 7, y: 42, w: 3, h: 5 },
   ],
   md: [
     { i: 'dre-sparkline',     x: 0,  y: 0,  w: 6,  h: 5 },
@@ -309,6 +319,7 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'goals-card',          x: 0, y: 72, w: 6, h: 5 },
     { i: 'alerta-saldo-google', x: 0, y: 77, w: 6, h: 5 },
     { i: 'recent-transactions', x: 0, y: 82, w: 6, h: 5 },
+    { i: 'saude-sistema',       x: 0, y: 87, w: 6, h: 5 },
   ],
   sm: [
     { i: 'dre-sparkline',     x: 0, y: 0,  w: 2, h: 5 },
@@ -334,6 +345,7 @@ const DEFAULT_LAYOUTS: LayoutsType = {
     { i: 'goals-card',          x: 0, y: 87, w: 2, h: 5 },
     { i: 'alerta-saldo-google', x: 0, y: 92, w: 2, h: 5 },
     { i: 'recent-transactions', x: 0, y: 97, w: 2, h: 5 },
+    { i: 'saude-sistema',       x: 0, y: 102, w: 2, h: 5 },
   ],
 }
 
@@ -945,6 +957,13 @@ export default function DashboardPage() {
           <div key="recent-transactions" data-grid={{ x: 4, y: 92, w: 4, h: 5, minW: 3, minH: 4 }}>
             <BentoCard editMode={editMode} cardId="recent-transactions" onSizeChange={makeCardResizer('recent-transactions')} noPadding description={CARD_DESCRIPTIONS['recent-transactions']} onEnterEdit={enterEdit}>
               <RecentTransactions />
+            </BentoCard>
+          </div>
+
+          {/* ── SAÚDE DO SISTEMA ─────────────────────── */}
+          <div key="saude-sistema" data-grid={{ x: 8, y: 92, w: 4, h: 5, minW: 3, minH: 4 }}>
+            <BentoCard editMode={editMode} cardId="saude-sistema" onSizeChange={makeCardResizer('saude-sistema')} noPadding description={CARD_DESCRIPTIONS['saude-sistema']} onEnterEdit={enterEdit}>
+              <SaudeDoSistema />
             </BentoCard>
           </div>
         </RGLResponsive>

@@ -22,6 +22,20 @@ export const CRON_TIPOS = [
 
 export type CronTipo = (typeof CRON_TIPOS)[number]
 
+/** Nome legível de cada job — usado em notificações de falha e no widget
+ *  Saúde do Sistema (fallback quando cron_settings.nome não está à mão). */
+export const CRON_LABELS: Record<CronTipo, string> = {
+  analytics_sync:      'Sincronização de analytics',
+  briefing:            'Briefing matinal',
+  asaas_import:        'Importação do Asaas',
+  alertas:             'Alertas críticos',
+  cobranca:            'Cobrança / inadimplência',
+  arquivar_congelados: 'Arquivar congelados',
+  onboarding_lembretes:'Lembretes de onboarding',
+  relatorio_semanal:   'Relatório semanal',
+  saldo_baixo:         'Alerta de saldo Google Ads',
+}
+
 export interface CronSetting {
   tipo:       CronTipo
   nome:       string

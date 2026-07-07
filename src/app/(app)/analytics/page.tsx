@@ -418,6 +418,23 @@ export default function AnalyticsPage() {
                 Evolução — {selData.cliente.nome}
               </h2>
               <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">{periodoLabel[periodo]}</p>
+              {(selData.cliente.google_ads_enabled || selData.cliente.ga4_enabled) && (
+                <p className="text-[0.6875rem] mt-[0.25rem]">
+                  {selData.cliente.ultimo_sync_at ? (
+                    <span className={
+                      selData.cliente.ultimo_sync_status === 'ok' ? 'text-status-green'
+                        : selData.cliente.ultimo_sync_status === 'parcial' ? 'text-status-orange'
+                        : 'text-status-red'
+                    }>
+                      Última sincronização: {new Date(selData.cliente.ultimo_sync_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}{' '}
+                      {new Date(selData.cliente.ultimo_sync_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                      {selData.cliente.ultimo_sync_status === 'ok' ? ' — OK' : ` — ERRO: ${selData.cliente.ultimo_sync_erro ?? 'falha desconhecida'}`}
+                    </span>
+                  ) : (
+                    <span className="text-ink-muted">Snapshot ainda não sincronizado — use o botão Sincronizar</span>
+                  )}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-[0.75rem]">
               <button

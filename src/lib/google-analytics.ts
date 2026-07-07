@@ -44,6 +44,19 @@ function criarClienteGA4() {
   return new BetaAnalyticsDataClient();
 }
 
+// ─── TESTE DE CONEXÃO ────────────────────────────────────────────────────────
+// runReport mínimo só para validar property ID + permissão da service account.
+
+export async function testarConexaoGA4(propertyId: string): Promise<void> {
+  const client = criarClienteGA4();
+  await client.runReport({
+    property: `properties/${propertyId}`,
+    dateRanges: [{ startDate: 'yesterday', endDate: 'yesterday' }],
+    metrics: [{ name: 'sessions' }],
+    limit: 1,
+  });
+}
+
 // ─── MÉTRICAS GA4 ────────────────────────────────────────────────────────────
 
 export async function obterDadosGA4(

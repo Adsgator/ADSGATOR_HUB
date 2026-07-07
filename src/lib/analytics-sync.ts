@@ -167,6 +167,24 @@ export async function sincronizarCliente(
     }
   }
 
+  // Status visível do sync no próprio cliente ("Última sincronização: ...").
+  // Falha aqui não derruba o sync — a coluna pode ainda não existir
+  // (migration 20260707b) e o resultado continua indo no retorno da rota.
+  const tentadas = [resultado.google_ads, resultado.ga4].filter((s) => s !== 'pulado')
+  if (tentadas.length > 0) {
+    const status = tentadas.every((s) => s === 'ok') ? 'ok'
+      : tentadas.every((s) => s === 'erro') ? 'erro' : 'parcial'
+    const { error: errStatus } = await supabase
+      .from('clientes')
+      .update({
+        ultimo_sync_at: new Date().toISOString(),
+        ultimo_sync_status: status,
+        ultimo_sync_erro: status === 'ok' ? null : resultado.erro ?? null,
+      })
+      .eq('id', cliente.id)
+    if (errStatus) console.error(`[sync] gravar status de ${cliente.nome}:`, errStatus.message)
+  }
+
   return resultado
 }
 

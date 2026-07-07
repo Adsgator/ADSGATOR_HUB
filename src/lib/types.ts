@@ -66,6 +66,10 @@ export interface Cliente {
   google_ads_perfil_url?: string | null  // link do perfil/conta Google Ads do cliente
   saldo_google?:    number
   saldo_google_atualizado_em?: string | null  // quando o saldo foi atualizado (sync automático ou manual)
+  // Status da última sincronização de analytics (lib/analytics-sync.ts)
+  ultimo_sync_at?:     string | null
+  ultimo_sync_status?: 'ok' | 'parcial' | 'erro' | null
+  ultimo_sync_erro?:   string | null
   // Alerta de saldo Google Ads (lib/saldo-ads.ts)
   saldo_minimo_alerta?:  number | null   // R$ abaixo do qual dispara "saldo baixo"; null = mínimo global
   saldo_alertas_ativos?: boolean         // false = não dispara nenhum alerta de saldo (a pedido / cancelamento)

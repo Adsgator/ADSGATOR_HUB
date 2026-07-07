@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { criarClienteServiceRole } from '@/lib/supabase'
-import { CRON_TIPOS, deveRodarAgora, marcarExecucao, type CronTipo } from '@/lib/cron-settings'
+import { CRON_TIPOS, CRON_LABELS, deveRodarAgora, marcarExecucao, type CronTipo } from '@/lib/cron-settings'
 import { sincronizarTodos, mesAtual } from '@/lib/analytics-sync'
 import { gerarBriefing, salvarBriefing } from '@/lib/briefing'
 import { arquivarCongelados, DIAS_CONGELAMENTO_PADRAO } from '@/lib/arquivar-congelados'
@@ -113,9 +113,44 @@ export async function GET(req: NextRequest) {
       await marcarExecucao(db, tipo)
       executados.push(tipo)
     } catch (err) {
-      falhas.push({ tipo, erro: err instanceof Error ? err.message : String(err) })
+      const erro = err instanceof Error ? err.message : String(err)
+      falhas.push({ tipo, erro })
+      // Falha de rotina vira notificação no sino — antes morria neste JSON
+      // que ninguém lê. 1 aviso por job por dia (o dispatcher roda a cada
+      // 30 min e re-tentaria; sem o dedupe seria spam).
+      await notificarFalhaJob(db, ownerId, tipo, erro)
     }
   }
 
   return NextResponse.json({ executados, pulados, falhas })
+}
+
+async function notificarFalhaJob(
+  db: ReturnType<typeof criarClienteServiceRole>,
+  ownerId: string,
+  tipo: CronTipo,
+  erro: string,
+) {
+  try {
+    const titulo = `🤖 Rotina falhou: ${CRON_LABELS[tipo]}`
+    const hojeInicio = new Date(); hojeInicio.setHours(0, 0, 0, 0)
+    const { data: jaAvisou } = await db
+      .from('notificacoes')
+      .select('id')
+      .eq('user_id', ownerId)
+      .eq('titulo', titulo)
+      .gte('created_at', hojeInicio.toISOString())
+      .limit(1)
+    if (jaAvisou && jaAvisou.length > 0) return
+
+    await db.from('notificacoes').insert({
+      user_id:  ownerId,
+      tipo:     'alerta',
+      titulo,
+      mensagem: `O job ${tipo} falhou hoje: ${erro}\n\nO robô tenta de novo na próxima janela de 30 min. Se o aviso se repetir amanhã, confira Configurações → Automações → Agendamentos.`,
+      lida:     false,
+    })
+  } catch (notifErr) {
+    console.error(`[dispatch] falha ao notificar erro do job ${tipo}:`, notifErr)
+  }
 }

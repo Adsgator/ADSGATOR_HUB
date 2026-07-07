@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState } from 'react'
-import { ExternalLink, BarChart3, LineChart, MapPin, FileSpreadsheet, Globe, Save, Pencil, X, Check, Wallet } from 'lucide-react'
+import { ExternalLink, BarChart3, LineChart, MapPin, FileSpreadsheet, Globe, Save, Pencil, X, Check, Wallet, PlugZap, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
@@ -99,9 +99,16 @@ const LinkItem = ({
   )
 }
 
+interface ResultadoTeste {
+  status:   'ok' | 'erro' | 'nao_configurado'
+  mensagem: string
+}
+
 export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProps) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [testando, setTestando] = useState(false)
+  const [teste, setTeste] = useState<{ google_ads: ResultadoTeste; ga4: ResultadoTeste } | null>(null)
   const [formData, setFormData] = useState({
     google_ads_customer_id: cliente.google_ads_customer_id || '',
     google_ads_enabled: cliente.google_ads_enabled || false,
@@ -161,6 +168,27 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
     }
   }
 
+  const handleTestar = async () => {
+    setTestando(true)
+    setTeste(null)
+    try {
+      const res = await fetch(`/api/v1/clientes/${cliente.id}/testar-integracao`, { method: 'POST' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json() as { google_ads: ResultadoTeste; ga4: ResultadoTeste }
+      setTeste(data)
+      if (data.google_ads.status === 'erro' || data.ga4.status === 'erro') {
+        toast.error('Alguma integração falhou — detalhes no card')
+      } else {
+        toast.success('Teste de conexão concluído')
+      }
+    } catch (error) {
+      console.error('Erro ao testar integrações:', error)
+      toast.error('Não consegui rodar o teste de conexão')
+    } finally {
+      setTestando(false)
+    }
+  }
+
   const handleCancel = () => {
     setFormData({
       google_ads_customer_id: cliente.google_ads_customer_id || '',
@@ -209,15 +237,53 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
             </button>
           </div>
         ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1 px-3 py-1.5 text-sm text-ink-secondary hover:text-ink-primary hover:bg-surface-hover rounded-md transition-colors"
-          >
-            <Pencil className="w-4 h-4" strokeWidth={2} />
-            Editar
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleTestar}
+              disabled={testando}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-ink-secondary hover:text-ink-primary hover:bg-surface-hover rounded-md transition-colors disabled:opacity-50"
+            >
+              {testando ? (
+                <div className="w-4 h-4 border-2 border-ink-muted border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <PlugZap className="w-4 h-4" strokeWidth={2} />
+              )}
+              Testar conexão
+            </button>
+            <button
+              onClick={() => setEditing(true)}
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-ink-secondary hover:text-ink-primary hover:bg-surface-hover rounded-md transition-colors"
+            >
+              <Pencil className="w-4 h-4" strokeWidth={2} />
+              Editar
+            </button>
+          </div>
         )}
       </div>
+
+      {/* Última sincronização — status gravado pelo sync diário */}
+      {(cliente.google_ads_enabled || cliente.ga4_enabled) && (
+        <div className="px-4 pt-3 text-xs">
+          {cliente.ultimo_sync_at ? (
+            <span className={cn(
+              cliente.ultimo_sync_status === 'ok' ? 'text-status-green'
+                : cliente.ultimo_sync_status === 'parcial' ? 'text-status-orange'
+                : 'text-status-red'
+            )}>
+              Última sincronização: {new Date(cliente.ultimo_sync_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}{' '}
+              {new Date(cliente.ultimo_sync_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+              {' — '}
+              {cliente.ultimo_sync_status === 'ok' ? 'OK'
+                : cliente.ultimo_sync_status === 'parcial' ? `PARCIAL: ${cliente.ultimo_sync_erro ?? 'uma das fontes falhou'}`
+                : `ERRO: ${cliente.ultimo_sync_erro ?? 'falha desconhecida'}`}
+            </span>
+          ) : (
+            <span className="text-ink-muted">
+              Ainda não sincronizou — roda no ciclo diário ou dispare em Analytics → Sincronizar
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Google Ads */}
@@ -290,6 +356,47 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
           editing={editing}
         />
       </div>
+
+      {/* Aviso: ID preenchido mas integração desligada — não sincroniza */}
+      {!editing && ((formData.google_ads_customer_id.trim() && !formData.google_ads_enabled) ||
+        (formData.ga4_property_id.trim() && !formData.ga4_enabled)) && (
+        <div className="px-4 pb-3">
+          <div className="flex items-start gap-2 rounded-xl border border-status-orange/20 bg-status-orange/10 text-status-orange p-3 text-sm">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />
+            <span>
+              {formData.google_ads_customer_id.trim() && !formData.google_ads_enabled && 'Google Ads tem ID preenchido mas está DESLIGADO. '}
+              {formData.ga4_property_id.trim() && !formData.ga4_enabled && 'GA4 tem ID preenchido mas está DESLIGADO. '}
+              Integração desligada não sincroniza — clique em Editar, ligue o toggle e salve.
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Resultado do teste de conexão */}
+      {teste && (
+        <div className="px-4 pb-3 space-y-2">
+          {([['Google Ads', teste.google_ads], ['GA4', teste.ga4]] as const).map(([nome, r]) => (
+            <div
+              key={nome}
+              className={cn(
+                'flex items-start gap-2 rounded-xl border p-3 text-sm',
+                r.status === 'ok' ? 'border-status-green/20 bg-status-green/10 text-status-green'
+                  : r.status === 'erro' ? 'border-status-red/20 bg-status-red/10 text-status-red'
+                  : 'border-surface-border bg-surface-hover/50 text-ink-muted'
+              )}
+            >
+              {r.status === 'ok' ? (
+                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />
+              ) : r.status === 'erro' ? (
+                <XCircle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />
+              ) : (
+                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />
+              )}
+              <span><strong>{nome}:</strong> {r.mensagem}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Alerta de saldo Google Ads */}
       <div className="px-4 pb-4">
