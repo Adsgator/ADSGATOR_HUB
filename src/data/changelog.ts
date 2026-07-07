@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.52.0',
+    data:   '2026-07-07',
+    novidades: [
+      'Gator ganhou memória histórica de Google Ads: nova ferramenta ads_historico consulta a base diária no BigQuery (alimentada automaticamente pelo Data Transfer do Google, nível MCC — toda conta nova entra sozinha). Dá para perguntar performance por campanha, por dia ou por keyword em qualquer intervalo, e comparar dois períodos ("este mês vs mês passado") — inclusive de campanhas já removidas',
+      'Infra BigQuery criada no free tier (custo esperado R$ 0): dataset google_ads na região US, service account do produto com acesso de leitura',
+    ],
+  },
+  {
     versao: '0.51.0',
     data:   '2026-07-07',
     novidades: [

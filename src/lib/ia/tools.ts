@@ -1060,6 +1060,75 @@ export const TOOLS: Record<string, Tool> = {
     resumo: () => 'Consultou Google Ads ao vivo',
   },
 
+  ads_historico: {
+    declaration: {
+      name: 'ads_historico',
+      description: 'HISTÓRICO GRANULAR do Google Ads via BigQuery (base diária alimentada pelo Data Transfer do MCC, com backfill de meses): performance por campanha, por dia (série temporal) ou por keyword em QUALQUER intervalo de datas — inclusive campanhas já removidas. Aceita um segundo período opcional para comparativo (ex.: este mês vs mês passado). Use para análises históricas/comparativas que o ads_ao_vivo (foto atual) não cobre.',
+      parameters: {
+        type: T.OBJECT,
+        properties: {
+          cliente_id:   { type: T.STRING },
+          data_inicio:  { type: T.STRING, description: 'YYYY-MM-DD' },
+          data_fim:     { type: T.STRING, description: 'YYYY-MM-DD' },
+          dimensao:     { type: T.STRING, description: 'campanha (default), dia ou keyword' },
+          data_inicio2: { type: T.STRING, description: 'opcional — início do 2º período p/ comparativo' },
+          data_fim2:    { type: T.STRING, description: 'opcional — fim do 2º período p/ comparativo' },
+        },
+        required: ['cliente_id', 'data_inicio', 'data_fim'],
+      },
+    },
+    execute: async (args, ctx) => {
+      const id = str(args.cliente_id)
+      if (!id) throw new Error('cliente_id é obrigatório.')
+      const cliente = await ownCliente(ctx, id, 'id, nome, google_ads_customer_id')
+      const customerId = cliente.google_ads_customer_id as string | null
+      if (!customerId) throw new Error(`${cliente.nome} não tem Google Ads customer ID configurado.`)
+
+      const inicio = str(args.data_inicio)
+      const fim = str(args.data_fim)
+      if (!inicio || !fim || !/^\d{4}-\d{2}-\d{2}$/.test(inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fim)) {
+        throw new Error('data_inicio e data_fim são obrigatórias no formato YYYY-MM-DD.')
+      }
+      const dim = (str(args.dimensao) ?? 'campanha') as 'campanha' | 'dia' | 'keyword'
+      const dimensao = ['campanha', 'dia', 'keyword'].includes(dim) ? dim : 'campanha'
+
+      const { desempenhoHistorico, totaisPeriodo } = await import('@/lib/bigquery')
+      const linhas = await desempenhoHistorico(customerId, inicio, fim, dimensao, MAX_LISTA)
+
+      const resultado: Record<string, unknown> = {
+        cliente: cliente.nome,
+        periodo: { inicio, fim },
+        dimensao,
+        total_linhas: linhas.length,
+        linhas,
+      }
+
+      // Comparativo opcional: totais dos dois períodos + variação %.
+      const inicio2 = str(args.data_inicio2)
+      const fim2 = str(args.data_fim2)
+      if (inicio2 && fim2 && /^\d{4}-\d{2}-\d{2}$/.test(inicio2) && /^\d{4}-\d{2}-\d{2}$/.test(fim2)) {
+        const [t1, t2] = await Promise.all([
+          totaisPeriodo(customerId, inicio, fim),
+          totaisPeriodo(customerId, inicio2, fim2),
+        ])
+        const varPct = (a: number, b: number) => (b > 0 ? Math.round(((a - b) / b) * 100) : null)
+        resultado.comparativo = {
+          periodo_1: { inicio, fim, ...t1 },
+          periodo_2: { inicio: inicio2, fim: fim2, ...t2 },
+          variacao_pct: {
+            impressoes: varPct(t1.impressoes, t2.impressoes),
+            cliques:    varPct(t1.cliques, t2.cliques),
+            custo:      varPct(t1.custo, t2.custo),
+            conversoes: varPct(t1.conversoes, t2.conversoes),
+          },
+        }
+      }
+
+      return resultado
+    },
+    resumo: () => 'Consultou histórico BigQuery do Google Ads',
+  },
+
   historico_cliente: {
     declaration: {
       name: 'historico_cliente',
