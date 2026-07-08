@@ -14,6 +14,7 @@ State:     Zustand 5 + Supabase Realtime
 Backend:   Supabase (PostgreSQL + Auth + Realtime + Storage)
 IA:        Vertex AI Gemini 2.5 (Flash, Pro) via @google/genai
 APIs:      Google Ads API, Google Analytics Data API, Asaas webhook
+Dados:     BigQuery — Data Transfer nativo do Google Ads no MCC → dataset google_ads (US, free tier)
 Fontes:    Geist Sans + Geist Mono (via `geist` package)
 Icons:     lucide-react
 Toasts:    sonner
@@ -68,6 +69,8 @@ src/
 │   ├── database.ts       # Queries tipadas
 │   ├── cobranca.ts       # Política de inadimplência (D+7/D+15/D+30) — fonte única
 │   ├── health-score.ts   # Cálculo de health score do cliente (0–100)
+│   ├── bigquery.ts       # Histórico Google Ads no BigQuery (tool ads_historico + relatório mensal)
+│   ├── analytics-snapshots.ts # Helpers puros de snapshots (ehSnapshotSemanal)
 │   └── *.ts
 └── providers/
     └── ThemeProvider.tsx
@@ -348,6 +351,25 @@ que **não funcionam em Deno** — por isso o sync é uma rota Next.js, não Edg
 - **Lógica:** `lib/analytics-sync.ts` (`sincronizarCliente`, `sincronizarTodos`) —
   agrega Google Ads + GA4 e faz upsert idempotente em `analytics_snapshots`
   (1 linha por fonte/período; constraint única via migration `20260606_*`).
+  Grava DOIS períodos por fonte: mês corrente + última semana fechada seg–dom
+  (base do relatório semanal). Leitores separam com `ehSnapshotSemanal`
+  (`lib/analytics-snapshots.ts`) — nunca comparar mês vs semana. O sync também
+  atualiza `clientes.saldo_google` (pré-pagas, GAQL `account_budget`) e o status
+  `clientes.ultimo_sync_at/status/erro` (exibido na UI).
+- **Regras que já quebraram produção (não regredir):**
+  - Customer ID vai **sem hífen** para a API (`google-ads.ts` normaliza na
+    borda; a API rejeita `123-456-7890`).
+  - GA4 **nunca** recebe fim de período no futuro (`clampFim` em
+    `google-analytics.ts` — com `totalRevenue`, o Google falha com
+    "Future currency exchange rate not exist").
+  - Falha de API **lança** exceção e o sync marca `erro` — retornar `[]`/zeros
+    no catch mascarou semanas de snapshots vazios.
+- **Histórico granular (BigQuery):** Data Transfer nativo do Google Ads no
+  nível do MCC → dataset `google_ads` (tabelas `ads_*_<CID>`, diário + backfill;
+  conta nova no MCC entra sozinha). `lib/bigquery.ts` consulta
+  (campanha/dia/keyword, comparativos) — usado pela tool `ads_historico` da
+  Gator e pelo relatório mensal auto-preenchido (`/api/v1/relatorios/generate`,
+  fallback na API ao vivo enquanto a conta não carrega no BQ).
 - **Rota:** `POST /api/v1/analytics/sync` (botão "Sincronizar" na UI, sessão) e
   `GET` (Vercel Cron, header `Authorization: Bearer $CRON_SECRET`).
 - **Agendamento:** dispatcher `/api/v1/cron/dispatch` (GitHub Actions a cada 30 min + fallback diário no `vercel.json`), horário configurável em Configurações → Automações. Requer env `CRON_SECRET`.
@@ -475,7 +497,7 @@ O `ConfirmDialog` é renderizado globalmente no `MainLayout` — não precisa im
 
 - [x] ~~`/api/ia/hashtags`~~ — **existe e está conectada** ao botão "Gerar Hashtags" em Marketing.
 - [x] ~~Drag/drop persistente em Tarefas~~ — API `/api/v1/tarefas/reorder` existe e **persiste** (destravada com o fix de auth).
-- [x] ~~Analytics — integração real~~ — dados ao vivo (`/api/analytics/[id]/live`) e sync histórico prontos. Falta apenas **configurar as credenciais** Google Ads/GA4 nas env vars e marcar `google_ads_enabled`/`ga4_enabled` no cliente.
+- [x] ~~Analytics — integração real~~ — **EM PRODUÇÃO com dados reais desde 07/07/2026** (credenciais OK local e Vercel). Conectar cliente novo = preencher IDs + ligar toggles + validar com o botão "Testar conexão" no detalhe do cliente.
 - [x] ~~analytics_snapshots vazio~~ — sync implementado: `lib/analytics-sync.ts` + `POST/GET /api/v1/analytics/sync`. Roda pelo botão "Sincronizar" na página Analytics (manual) e pelo dispatcher de agendamentos (GitHub Actions a cada 30 min + fallback diário no `vercel.json`; horário configurável em Configurações → Automações). Requer env `CRON_SECRET`.
 - [ ] Notificações WhatsApp — hoje o envio é via `wa.me` (link manual). Automação de envio fora de escopo por ora.
 - [x] ~~Notificações Email automáticas~~ — implementadas e **desativadas por padrão** (toggles em Configurações → automação). Templates editáveis em Configurações → Templates de Email. 3 fluxos: relatório pronto→cliente, régua de cobrança→cliente, alertas→operador. Falta só `RESEND_API_KEY` + ligar os toggles. Ver seção "Automação de Email" abaixo.

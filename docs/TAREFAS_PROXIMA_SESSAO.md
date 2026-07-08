@@ -131,3 +131,20 @@ Salvar via PATCH com toast (`sonner`). Nota no rodapé: "O dispatcher verifica a
 2. **Filtro do briefing do cron**: hoje fixo em 'completo' — virar coluna em `cron_settings`
    ou preferência do usuário.
 3. **Nichos sugeridos** (`NICHOS_SUGERIDOS` no form de cliente) → editável em Configurações → Operacional.
+
+---
+
+## Backlog do plano Dados/BigQuery (registrado 07/07/2026 — nao implementar sem pedir)
+
+1. **Export GA4 -> BigQuery por property** (Fase 6 do plano docs/PLANO_DADOS_BIGQUERY.md):
+   diario e gratuito, exige vinculo criado no admin de cada property GA4 (papel Editor
+   so no momento de criar; depois pode rebaixar a Leitor). Quando os datasets
+   `analytics_<property_id>` chegarem, estender `lib/bigquery.ts` com tool irma
+   `site_historico` (eventos/conversoes granulares do site).
+2. **Pagina de performance no Portal do Cliente**: o portal (`/portal/[token]`) ja existe;
+   snapshots + BigQuery alimentariam graficos para o cliente final — diferencial comercial.
+3. **Meta Ads no mesmo molde**: transfer/API + tool, quando houver contas Meta relevantes.
+4. **Validar schema BigQuery pos-transfer**: as queries de `lib/bigquery.ts` seguem o schema
+   documentado do Google Ads Data Transfer (`ads_Campaign_*`, `ads_CampaignBasicStats_*`,
+   `ads_Keyword_*`, `ads_KeywordBasicStats_*`); conferir nomes de colunas contra as tabelas
+   reais quando o backfill carregar (usar Data Agent Kit) e ajustar se necessario.

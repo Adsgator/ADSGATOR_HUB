@@ -860,11 +860,18 @@ CREATE POLICY "Users can see own clients"
 - `GeographyBreakdown` — Por país/região
 - `AnalyticsMap` — Mapa interativo (Leaflet)
 
-**Data Source:**
-- Google Ads API (via `/api/analytics/[clienteId]`)
-- Google Analytics Data API (via `/api/analytics/[clienteId]`)
+**Data Source (3 camadas):**
+- **Ao vivo:** Google Ads API + GA4 Data API (`/api/analytics/[clienteId]/live`, períodos 7/30/90d reais)
+- **Snapshots persistidos:** `analytics_snapshots` — sync diário (`lib/analytics-sync.ts`) grava mês corrente + última semana fechada (seg–dom) por fonte; separa-se semanal de mensal com `lib/analytics-snapshots.ts` (`ehSnapshotSemanal`)
+- **Histórico granular:** BigQuery Data Transfer nativo do Google Ads no nível do MCC → dataset `google_ads` (região US, free tier); tabelas `ads_*_<CID>` por conta, consultadas por `lib/bigquery.ts` (tool `ads_historico` da Gator e relatório mensal auto-preenchido em `/api/v1/relatorios/generate`, com fallback na API ao vivo)
 
-**Status:** UI pronta, credenciais não configuradas (pendente)
+**Regras importantes:**
+- Customer ID é normalizado **sem hífen** na borda (`google-ads.ts` — a API rejeita `123-456-7890`)
+- GA4 nunca recebe fim de período no futuro (`clampFim` — o "Future currency exchange rate" quebrava o mês corrente)
+- Falha de API **lança** exceção (sync marca `erro` em `clientes.ultimo_sync_*`); nunca grava zeros como dado
+- Saldo Google Ads: contas pré-pagas via GAQL `account_budget` no sync; pós-pagas via campo manual (carimbo `saldo_google_atualizado_em`)
+
+**Status:** ✅ produção com dados reais desde 07/07/2026 (credenciais globais nas envs; conectar cliente = IDs + toggles + "Testar conexão")
 
 ---
 
@@ -1605,7 +1612,7 @@ Visualizável em Configurações → Auditoria
 
 | Lacuna | Descrição | Impacto | Prioridade |
 |--------|-----------|--------|-----------|
-| Analytics — sync de dados | `analytics_snapshots` só é lida, nunca populada; falta pipeline Google Ads + GA4 | Métricas zeradas em Analytics/NewsContainer | Alta |
+| ~~Analytics — sync de dados~~ | ✅ Resolvido 07/07/2026 — sync diário populando snapshots (mês + semana), erros visíveis, BigQuery p/ histórico | — | — |
 | Notificações Email | Resend wired em `lib/email.ts`; falta `RESEND_API_KEY` + cron | Relatórios não enviam por email | Média |
 | RBAC/RLS por usuário | `usePermissoes` pronto mas não ligado; isolamento hoje por `user_id` na aplicação | Acesso não granular | Média |
 | Meta API | Publicação real de posts | Posts não publicam em rede | Média |

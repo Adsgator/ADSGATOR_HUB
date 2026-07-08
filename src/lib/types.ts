@@ -54,7 +54,6 @@ export interface Cliente {
   /** true = isento da régua automática de inadimplência (D+7/15/28) */
   regua_isento?:   boolean
   // Google Ads
-  google_ads_id?:  string
   google_ads_customer_id?: string | null
   google_ads_enabled?:     boolean
   // GA4
