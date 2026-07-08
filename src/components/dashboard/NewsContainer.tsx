@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, RefreshCw, BarChart3 } from 'lucide-react'
 import { NewsClienteCard } from './NewsClienteCard'
 import { EmptyStateConfig } from './EmptyStateConfig'
 import { cn } from '@/lib/utils'
-import type { NewsClienteData } from '@/lib/types/news'
+import type { NewsCardData } from '@/lib/types/news'
 
 function SkeletonCard() {
   return (
@@ -31,27 +31,30 @@ function SkeletonCard() {
 
 export function NewsContainer() {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [clientes, setClientes] = useState<NewsClienteData[]>([])
+  const [cards, setCards] = useState<NewsCardData[]>([])
   const [loading, setLoading] = useState(true)
+  // 'conectados' (default) = só quem tem integração ligada; 'todos' inclui
+  // os não conectados como CTA de conexão.
+  const [filtro, setFiltro] = useState<'conectados' | 'todos'>('conectados')
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/v1/news')
+      const res = await fetch(`/api/v1/news?filtro=${filtro}`)
       if (!res.ok) {
         setLoading(false)
         return
       }
       const json = await res.json()
-      setClientes(json.data ?? [])
+      setCards(json.data ?? [])
     } catch (err) {
       console.error('NewsContainer fetch error:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [filtro])
 
   useEffect(() => {
     fetchData()
@@ -75,7 +78,7 @@ export function NewsContainer() {
       el.removeEventListener('scroll', updateScrollState)
       ro.disconnect()
     }
-  }, [updateScrollState, clientes])
+  }, [updateScrollState, cards])
 
   const scroll = (dir: 'left' | 'right') => {
     const el = scrollRef.current
@@ -84,14 +87,14 @@ export function NewsContainer() {
     el.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' })
   }
 
-  // Vazio = falta de config (snapshots ainda não sincronizam): explica em vez de sumir
-  if (!loading && clientes.length === 0) {
+  // Vazio = nenhum cliente conectado ainda: explica em vez de sumir
+  if (!loading && cards.length === 0) {
     return (
       <div className="mb-[1rem] bg-surface-card border border-surface-border rounded-xl card-shadow animate-fade-up">
         <EmptyStateConfig
           icon={BarChart3}
-          titulo="Monitoramento sem dados"
-          motivo="Sem snapshots de analytics para exibir — configure as credenciais Google (Ads/GA4) e a sincronização para acompanhar os clientes aqui."
+          titulo="Monitoramento sem clientes conectados"
+          motivo="Nenhum cliente com Google Ads ou GA4 ligado — preencha os IDs na página do cliente, ligue os toggles e valide com o botão Testar conexão."
           compacto
         />
       </div>
@@ -131,7 +134,7 @@ export function NewsContainer() {
         <style>{`.news-scroll::-webkit-scrollbar { display: none; }`}</style>
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-          : clientes.map(c => <NewsClienteCard key={c.cliente_id} cliente={c} />)
+          : cards.map(c => <NewsClienteCard key={`${c.cliente_id}-${c.tipo}`} cliente={c} />)
         }
       </div>
 
@@ -153,15 +156,33 @@ export function NewsContainer() {
         <ChevronRight className="w-[0.875rem] h-[0.875rem]" />
       </button>
 
-      {/* Refresh button — top right */}
-      <button
-        onClick={fetchData}
-        disabled={loading}
-        className="absolute -top-[1.75rem] right-0 flex items-center gap-[0.25rem] text-[0.625rem] text-ink-muted hover:text-ink-primary transition-colors"
-      >
-        <RefreshCw className={cn('w-[0.625rem] h-[0.625rem]', loading && 'animate-spin')} />
-        Monitoramento
-      </button>
+      {/* Filtro + refresh — top right */}
+      <div className="absolute -top-[1.75rem] right-0 flex items-center gap-[0.75rem]">
+        <div className="flex items-center gap-[0.125rem] text-[0.625rem]">
+          {(['conectados', 'todos'] as const).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFiltro(f)}
+              className={cn(
+                'px-[0.5rem] py-[0.125rem] rounded-full transition-colors',
+                filtro === f
+                  ? 'bg-ads-500/15 text-ads-500 font-semibold'
+                  : 'text-ink-muted hover:text-ink-primary'
+              )}
+            >
+              {f === 'conectados' ? 'Conectados' : 'Todos'}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={fetchData}
+          disabled={loading}
+          className="flex items-center gap-[0.25rem] text-[0.625rem] text-ink-muted hover:text-ink-primary transition-colors"
+        >
+          <RefreshCw className={cn('w-[0.625rem] h-[0.625rem]', loading && 'animate-spin')} />
+          Monitoramento
+        </button>
+      </div>
     </div>
   )
 }

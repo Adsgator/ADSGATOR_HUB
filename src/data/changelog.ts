@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.56.0',
+    data:   '2026-07-08',
+    novidades: [
+      'Monitoramento do dashboard reformulado: agora é um card POR SERVIÇO — cliente de tráfego (Google Ads: gasto, conversões, CPA, CTR, CPC, saldo) e cliente de site (GA4: sessões, usuários, conversões, taxa) têm cards separados; quem tem os dois serviços aparece nos dois',
+      'Fim dos cards zerados enganosos: por padrão só aparecem clientes com integração LIGADA; o filtro "Todos" mostra os demais como aviso de conexão pendente (com atalho para conectar). Cliente conectado mas ainda sem sync aparece como "aguardando 1ª sincronização"',
+      'Saldo Google no card: "não informado" para conta pós-paga sem valor (antes mostrava R$ 0 vermelho, que parecia verba esgotada)',
+    ],
+  },
+  {
     versao: '0.55.0',
     data:   '2026-07-08',
     novidades: [

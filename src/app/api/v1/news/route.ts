@@ -1,9 +1,57 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import type { NewsClienteData } from '@/lib/types/news'
+import type { NewsCardData } from '@/lib/types/news'
 import { ehSnapshotSemanal } from '@/lib/analytics-snapshots'
 
-export async function GET() {
+export const dynamic = 'force-dynamic'
+
+/**
+ * GET /api/v1/news?filtro=conectados|todos
+ *
+ * Cards do monitoramento do dashboard — um card POR SERVIÇO:
+ * tráfego (Google Ads) e site (GA4); cliente com os dois aparece nos dois.
+ *
+ * Filtros:
+ *  - conectados (default): só clientes com alguma integração LIGADA — sem
+ *    cards zerados de quem nunca foi conectado.
+ *  - todos: todos os clientes em operação; quem não está conectado aparece
+ *    com CTA de conexão (aponta o que falta em vez de mostrar zeros).
+ */
+
+interface ClienteRow {
+  id: string
+  nome: string
+  status: string
+  nicho?: string
+  saldo_google: number | null
+  saldo_google_atualizado_em: string | null
+  dominio?: string
+  website?: string
+  dias_atraso: number | null
+  data_vencimento: string | null
+  mrr: number | null
+  google_ads_enabled: boolean | null
+  ga4_enabled: boolean | null
+}
+
+interface SnapshotRow {
+  cliente_id: string
+  fonte: string
+  periodo_inicio: string
+  periodo_fim: string
+  investimento: number | null
+  impressoes: number | null
+  cliques: number | null
+  ctr: number | null
+  conversoes: number | null
+  cpa: number | null
+  sessoes: number | null
+  usuarios: number | null
+  taxa_conversao: number | null
+  created_at: string
+}
+
+export async function GET(req: NextRequest) {
   const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -11,87 +59,102 @@ export async function GET() {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
-  // Buscar clientes ativos do user (sem limit, mostra todos que qualificam)
-  const { data: clientes, error: clientesError } = await supabase
+  const filtro = req.nextUrl.searchParams.get('filtro') === 'todos' ? 'todos' : 'conectados'
+
+  let query = supabase
     .from('clientes')
-    .select('id, nome, status, nicho, saldo_google, dominio, website, dias_atraso, data_vencimento, mrr')
+    .select('id, nome, status, nicho, saldo_google, saldo_google_atualizado_em, dominio, website, dias_atraso, data_vencimento, mrr, google_ads_enabled, ga4_enabled')
     .eq('user_id', user.id)
     .in('status', ['ativo', 'onboarding', 'setup_trafego', 'recebido'])
     .order('mrr', { ascending: false })
-    .limit(20)
+    .limit(30)
 
+  if (filtro === 'conectados') {
+    query = query.or('google_ads_enabled.eq.true,ga4_enabled.eq.true')
+  }
+
+  const { data: clientes, error: clientesError } = await query
   if (clientesError) {
     return NextResponse.json({ error: clientesError.message }, { status: 500 })
   }
-
   if (!clientes || clientes.length === 0) {
-    console.log('[/api/v1/news] Nenhum cliente ativo encontrado')
     return NextResponse.json({ data: [] })
   }
 
-  console.log(`[/api/v1/news] ${clientes.length} clientes encontrados`)
-
-  // Para cada cliente, buscar o último snapshot de analytics
-  const clienteIds = clientes.map(c => c.id)
+  const clienteIds = clientes.map((c) => c.id)
 
   const { data: snapshots } = await supabase
     .from('analytics_snapshots')
-    .select('cliente_id, periodo_inicio, periodo_fim, investimento, impressoes, cliques, ctr, conversoes, cpa, roas, sessoes, usuarios, created_at')
+    .select('cliente_id, fonte, periodo_inicio, periodo_fim, investimento, impressoes, cliques, ctr, conversoes, cpa, sessoes, usuarios, taxa_conversao, created_at')
     .in('cliente_id', clienteIds)
     .order('periodo_fim', { ascending: false })
 
-  // Agrupar: pegar apenas o snapshot MENSAL mais recente por cliente
-  // (os semanais existem para o relatório semanal; aqui mostrariam número menor)
-  type SnapshotRow = { cliente_id: string; periodo_inicio: string; periodo_fim: string; investimento: number; impressoes: number; cliques: number; ctr: number; conversoes: number; cpa: number; roas: number; sessoes: number; usuarios: number; created_at: string }
-  const latestByCliente = new Map<string, SnapshotRow>()
-  if (snapshots) {
-    for (const snap of snapshots as SnapshotRow[]) {
-      if (ehSnapshotSemanal(snap.periodo_inicio, snap.periodo_fim)) continue
-      if (!latestByCliente.has(snap.cliente_id)) {
-        latestByCliente.set(snap.cliente_id, snap)
-      }
-    }
+  // Snapshot MENSAL mais recente por cliente+fonte (semanais são do relatório)
+  const latest = new Map<string, SnapshotRow>()
+  for (const snap of (snapshots ?? []) as SnapshotRow[]) {
+    if (ehSnapshotSemanal(snap.periodo_inicio, snap.periodo_fim)) continue
+    const chave = `${snap.cliente_id}|${snap.fonte}`
+    if (!latest.has(chave)) latest.set(chave, snap)
   }
 
-  const newsData: NewsClienteData[] = clientes.map(cliente => {
-    const snap = latestByCliente.get(cliente.id)
+  const cards: NewsCardData[] = []
 
-    // Se há snapshot, usa dados reais; senão usa defaults (0)
-    const investimento = snap?.investimento ?? 0
-    const cliques = snap?.cliques ?? 0
-    const impressoes = snap?.impressoes ?? 0
-    const conversoes = snap?.conversoes ?? 0
-    const cpa = snap?.cpa ?? 0
-    const ctr = snap?.ctr ?? 0
-    const sessoes = snap?.sessoes ?? 0
-
-    const cpc_medio = cliques > 0 ? investimento / cliques : 0
-    const visualizacoes_pagina = Math.round(sessoes * 1.5)
-
-    return {
+  for (const cliente of clientes as ClienteRow[]) {
+    const base = {
       cliente_id: cliente.id,
       nome: cliente.nome,
       status: cliente.status,
       nicho: cliente.nicho,
-      investimento,
-      impressoes,
-      cliques,
-      cpc_medio,
-      conversoes,
-      ctr,
-      cpa,
-      saldo_google: cliente.saldo_google ?? 0,
-      sessoes,
-      visualizacoes_pagina,
       dominio: cliente.dominio,
       website: cliente.website,
       dias_atraso: cliente.dias_atraso ?? 0,
       data_vencimento: cliente.data_vencimento ?? null,
       mrr: cliente.mrr ?? 0,
-      ultima_atualizacao: snap?.created_at,
     }
-  })
 
-  // Retorna sempre com dados — mesmo que vazio, para não desaparecer
-  return NextResponse.json({ data: newsData })
+    const snapAds = latest.get(`${cliente.id}|google_ads`)
+    const snapGa4 = latest.get(`${cliente.id}|ga4`)
+
+    if (cliente.google_ads_enabled) {
+      const investimento = snapAds?.investimento ?? 0
+      const cliques = snapAds?.cliques ?? 0
+      cards.push({
+        ...base,
+        tipo: 'trafego',
+        conectado: true,
+        tem_dados: !!snapAds,
+        investimento,
+        impressoes: snapAds?.impressoes ?? 0,
+        cliques,
+        cpc_medio: cliques > 0 ? investimento / cliques : 0,
+        conversoes: snapAds?.conversoes ?? 0,
+        ctr: snapAds?.ctr ?? 0,
+        cpa: snapAds?.cpa ?? 0,
+        saldo_google: cliente.saldo_google,
+        saldo_atualizado_em: cliente.saldo_google_atualizado_em,
+        ultima_atualizacao: snapAds?.created_at,
+      })
+    }
+
+    if (cliente.ga4_enabled) {
+      cards.push({
+        ...base,
+        tipo: 'site',
+        conectado: true,
+        tem_dados: !!snapGa4,
+        sessoes: snapGa4?.sessoes ?? 0,
+        usuarios: snapGa4?.usuarios ?? 0,
+        conversoes: snapGa4?.conversoes ?? 0,
+        taxa_conversao: snapGa4?.taxa_conversao ?? 0,
+        ultima_atualizacao: snapGa4?.created_at,
+      })
+    }
+
+    // Modo "todos": quem não tem nada conectado vira CTA de conexão
+    if (!cliente.google_ads_enabled && !cliente.ga4_enabled && filtro === 'todos') {
+      cards.push({ ...base, tipo: 'trafego', conectado: false, tem_dados: false })
+    }
+  }
+
+  return NextResponse.json({ data: cards, filtro })
 }
