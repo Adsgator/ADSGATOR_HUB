@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.55.0',
+    data:   '2026-07-08',
+    novidades: [
+      'Agrupar clientes direto da lista: selecione os cadastros (checkbox) e use "Agrupar em…" na barra de ações — vincula a um grupo existente ou cria um novo na hora. É agrupar, não fundir: cada CNPJ mantém cobrança, integrações e histórico próprios; o grupo dá a visão consolidada',
+    ],
+  },
+  {
     versao: '0.54.0',
     data:   '2026-07-07',
     novidades: [

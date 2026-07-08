@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Plus, Search, Users, AlertTriangle, Snowflake,
   LayoutGrid, List, MessageCircle, CheckSquare, Square,
-  Download, Tag, X as XIcon, Eye, Copy, FileText,
+  Download, Tag, X as XIcon, Eye, Copy, FileText, Users2,
 } from 'lucide-react'
 import { MainLayout }                from '@/components/layout/MainLayout'
 import { Button }                    from '@/components/ui/Button'
@@ -211,6 +211,45 @@ export default function ClientesPage() {
       .map(({ cliente: c }) => c)
     exportarCSV(clientesSel)
     toast.success(`${clientesSel.length} clientes exportados`)
+  }
+
+  // ── Agrupar em lote (multi-CNPJ): seleciona clientes e agrupa em 1 clique.
+  // AGRUPA, não mescla: cada CNPJ mantém cadastro/cobrança/IDs próprios — o
+  // grupo só consolida a visão (fundir registros quebraria Asaas e integrações).
+  const [agrupando, setAgrupando] = useState(false)
+  const [nomeGrupo, setNomeGrupo] = useState('')
+
+  async function handleVincularGrupoBatch(grupoId: string) {
+    setSalvandoBatch(true)
+    const ids = Array.from(selecionados)
+    const { error } = await supabase.from('clientes').update({ grupo_id: grupoId }).in('id', ids)
+    setSalvandoBatch(false)
+    if (error) { toast.error('Erro ao agrupar — a migration de grupos já foi aplicada?'); return }
+    toast.success(`${ids.length} cliente(s) agrupados em "${gruposMap.get(grupoId)}"`)
+    limparSelecao()
+    recarregar()
+  }
+
+  async function handleCriarGrupoBatch() {
+    const nome = nomeGrupo.trim()
+    if (!nome) { toast.error('Dê um nome ao grupo'); return }
+    setSalvandoBatch(true)
+    const { data: g, error } = await supabase.from('cliente_grupos').insert({ nome }).select().single()
+    if (error || !g) {
+      setSalvandoBatch(false)
+      toast.error('Erro ao criar grupo — a migration de grupos já foi aplicada?')
+      return
+    }
+    const ids = Array.from(selecionados)
+    const { error: errVinculo } = await supabase.from('clientes').update({ grupo_id: g.id }).in('id', ids)
+    setSalvandoBatch(false)
+    if (errVinculo) { toast.error('Grupo criado, mas falhou vincular os clientes'); return }
+    setGruposMap((prev) => new Map(prev).set(g.id, nome))
+    setAgrupando(false)
+    setNomeGrupo('')
+    toast.success(`Grupo "${nome}" criado com ${ids.length} cliente(s)`)
+    limparSelecao()
+    recarregar()
   }
 
   async function handleMudarStatusBatch() {
@@ -447,6 +486,50 @@ export default function ClientesPage() {
                 >
                   Aplicar
                 </Button>
+              )}
+            </div>
+
+            {/* Agrupar em lote (cliente com vários CNPJs) */}
+            <div className="flex items-center gap-[0.375rem]">
+              {agrupando ? (
+                <>
+                  <input
+                    autoFocus
+                    value={nomeGrupo}
+                    onChange={(e) => setNomeGrupo(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCriarGrupoBatch()
+                      if (e.key === 'Escape') { setAgrupando(false); setNomeGrupo('') }
+                    }}
+                    placeholder="Nome do grupo (ex: Paulo Alexandre)"
+                    className="h-[2rem] w-[14rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-primary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 transition-colors"
+                  />
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Users2 className="w-[0.875rem] h-[0.875rem]" strokeWidth={2} />}
+                    loading={salvandoBatch}
+                    onClick={handleCriarGrupoBatch}
+                  >
+                    Criar grupo
+                  </Button>
+                </>
+              ) : (
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v === '__novo__') setAgrupando(true)
+                    else if (v) handleVincularGrupoBatch(v)
+                  }}
+                  className="h-[2rem] px-[0.5rem] rounded-lg bg-surface-hover border border-surface-border/40 text-ink-secondary text-[0.8125rem] focus:outline-none focus:ring-2 focus:ring-ads-500/20 transition-colors"
+                >
+                  <option value="">Agrupar em…</option>
+                  {Array.from(gruposMap).map(([id, nome]) => (
+                    <option key={id} value={id}>{nome}</option>
+                  ))}
+                  <option value="__novo__">+ Novo grupo</option>
+                </select>
               )}
             </div>
 
