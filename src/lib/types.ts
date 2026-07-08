@@ -74,6 +74,8 @@ export interface Cliente {
   saldo_minimo_alerta?:  number | null   // R$ abaixo do qual dispara "saldo baixo"; null = mínimo global
   saldo_alertas_ativos?: boolean         // false = não dispara nenhum alerta de saldo (a pedido / cancelamento)
   congelado_em?:    string
+  // Grupo de cliente (1 cliente real com vários CNPJs — migration 20260707c)
+  grupo_id?:        string | null
   // Inativação (ver lib/cliente-status.ts): motivo da saída + quando arquivou
   motivo_inativacao?: 'debito' | 'cancelado' | 'congelamento_expirado' | null
   inativado_em?:    string | null

@@ -99,6 +99,15 @@ export default function ClientesPage() {
     carregarHealthRegras(supabase).then(setHealthRegras)
   }, [])
 
+  // Grupos de cliente (multi-CNPJ): id → nome, para badge e adjacência.
+  // Tabela pode não existir ainda (migration 20260707c) — aí fica vazio.
+  const [gruposMap, setGruposMap] = useState<Map<string, string>>(new Map())
+  useEffect(() => {
+    supabase.from('cliente_grupos').select('id, nome').then(({ data }) => {
+      if (data) setGruposMap(new Map(data.map((g: { id: string; nome: string }) => [g.id, g.nome])))
+    })
+  }, [])
+
   useEffect(() => {
     setContextActions([
       {
@@ -147,6 +156,29 @@ export default function ClientesPage() {
     }),
     [dados, filtro, filtroNicho, filtroPag, busca]
   )
+
+  // Membros do mesmo grupo aparecem adjacentes (mantendo a ordem geral por
+  // recência: o grupo inteiro entra na posição do primeiro membro visível).
+  const visiveisAgrupados = useMemo(() => {
+    if (gruposMap.size === 0) return visiveis
+    const emitidos = new Set<string>()
+    const resultado: typeof visiveis = []
+    for (const item of visiveis) {
+      if (emitidos.has(item.cliente.id)) continue
+      resultado.push(item)
+      emitidos.add(item.cliente.id)
+      const gid = item.cliente.grupo_id
+      if (gid) {
+        for (const outro of visiveis) {
+          if (outro.cliente.grupo_id === gid && !emitidos.has(outro.cliente.id)) {
+            resultado.push(outro)
+            emitidos.add(outro.cliente.id)
+          }
+        }
+      }
+    }
+    return resultado
+  }, [visiveis, gruposMap])
 
   // ids visíveis para "selecionar todos"
   const idsVisiveis = useMemo(() => visiveis.map(({ cliente: c }) => c.id), [visiveis])
@@ -499,7 +531,7 @@ export default function ClientesPage() {
               </tr>
             </thead>
             <tbody>
-              {visiveis.map(({ cliente: c }) => {
+              {visiveisAgrupados.map(({ cliente: c }) => {
                 const diasAtraso = diasAtrasoCliente(c)
                 const temAlerta = diasAtraso > 0
                 const sel = selecionados.has(c.id)
@@ -554,6 +586,11 @@ export default function ClientesPage() {
                       <div className="flex items-center gap-[0.5rem]">
                         {temAlerta && <AlertTriangle className="w-[0.75rem] h-[0.75rem] text-status-orange shrink-0" strokeWidth={2} />}
                         <a href={`/clientes/${c.id}`} className="text-ink-primary font-medium hover:text-ads-500 transition-colors">{c.nome}</a>
+                        {c.grupo_id && gruposMap.has(c.grupo_id) && (
+                          <span className="px-[0.5rem] py-[0.125rem] rounded-full text-[0.625rem] font-medium bg-status-purple/10 text-status-purple shrink-0">
+                            {gruposMap.get(c.grupo_id)}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-[1rem] py-[0.75rem] text-ink-secondary">{c.nicho ?? '—'}</td>
@@ -597,7 +634,7 @@ export default function ClientesPage() {
       ) : (
         /* ── MODO GRID ── */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[1rem]">
-          {visiveis.map(({ cliente: c, estagio }) => {
+          {visiveisAgrupados.map(({ cliente: c, estagio }) => {
             const cardCtxItems = [
               {
                 label: 'Ver detalhes',
@@ -632,6 +669,12 @@ export default function ClientesPage() {
             return (
             <ContextMenu key={c.id} items={cardCtxItems}>
             <div className="relative group">
+              {/* Badge do grupo (multi-CNPJ) */}
+              {c.grupo_id && gruposMap.has(c.grupo_id) && (
+                <span className="absolute top-[-0.5rem] right-[0.75rem] z-10 px-[0.5rem] py-[0.125rem] rounded-full text-[0.625rem] font-medium bg-status-purple text-white shadow-sm">
+                  {gruposMap.get(c.grupo_id)}
+                </span>
+              )}
               {/* Checkbox sobre o card */}
               <button
                 onClick={() => toggleSelect(c.id)}

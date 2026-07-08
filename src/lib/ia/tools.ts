@@ -220,7 +220,7 @@ export const TOOLS: Record<string, Tool> = {
       const id = str(args.cliente_id)
       if (!id) throw new Error('cliente_id é obrigatório.')
       const cliente = await ownCliente(ctx, id,
-        'id, nome, email, whatsapp, nicho, website, status, mrr, plano, dias_atraso, data_vencimento, saldo_google, google_ads_enabled, ga4_enabled, congelado_em, data_criacao')
+        'id, nome, email, whatsapp, nicho, website, status, mrr, plano, dias_atraso, data_vencimento, saldo_google, google_ads_enabled, ga4_enabled, congelado_em, data_criacao, grupo_id')
       const [assinaturas, estagios, memoria, tarefas, lancamentos, snapshots] = await Promise.all([
         ctx.db.from('assinaturas').select('plano_nome, valor_mensal, status, data_proxima_cobranca, dias_atraso').eq('cliente_id', id),
         ctx.db.from('estagios').select('nome, ativo, concluido_em, checklist').eq('cliente_id', id),
@@ -229,8 +229,20 @@ export const TOOLS: Record<string, Tool> = {
         ctx.db.from('financeiro_lancamentos').select('tipo, descricao, valor, data, status').eq('cliente_id', id).order('data', { ascending: false }).limit(10),
         ctx.db.from('analytics_snapshots').select('fonte, periodo_inicio, periodo_fim, investimento, cliques, conversoes, cpa, sessoes').eq('cliente_id', id).order('periodo_fim', { ascending: false }).limit(4),
       ])
+      // Grupo multi-CNPJ: inclui nome do grupo e os outros registros (a visão
+      // consolidada é a soma dos membros — use agregar_grupo nas tools de analytics).
+      let grupo: Record<string, unknown> | null = null
+      if (cliente.grupo_id) {
+        const [{ data: g }, { data: membros }] = await Promise.all([
+          ctx.db.from('cliente_grupos').select('nome').eq('id', cliente.grupo_id).maybeSingle(),
+          ctx.db.from('clientes').select('id, nome, status, mrr').eq('grupo_id', cliente.grupo_id),
+        ])
+        if (g) grupo = { nome: g.nome, membros: membros ?? [] }
+      }
+
       return {
         cliente,
+        grupo,
         inadimplencia: estagioInadimplencia((cliente.dias_atraso as number) ?? 0),
         assinaturas: assinaturas.data ?? [],
         estagios: estagios.data ?? [],
@@ -973,8 +985,9 @@ export const TOOLS: Record<string, Tool> = {
       parameters: {
         type: T.OBJECT,
         properties: {
-          cliente_id: { type: T.STRING },
-          fonte:      { type: T.STRING, description: 'google_ads ou ga4' },
+          cliente_id:    { type: T.STRING },
+          fonte:         { type: T.STRING, description: 'google_ads ou ga4' },
+          agregar_grupo: { type: T.BOOLEAN, description: 'true = soma os snapshots de todos os CNPJs do grupo do cliente (visão consolidada)' },
         },
         required: ['cliente_id'],
       },
@@ -982,12 +995,25 @@ export const TOOLS: Record<string, Tool> = {
     execute: async (args, ctx) => {
       const id = str(args.cliente_id)
       if (!id) throw new Error('cliente_id é obrigatório.')
-      await ownCliente(ctx, id)
+      const cliente = await ownCliente(ctx, id, 'id, nome, grupo_id')
+
+      // Visão consolidada do grupo (multi-CNPJ): soma os membros.
+      let ids = [cliente.id as string]
+      let grupoNome: string | null = null
+      if (args.agregar_grupo === true && cliente.grupo_id) {
+        const [{ data: g }, { data: membros }] = await Promise.all([
+          ctx.db.from('cliente_grupos').select('nome').eq('id', cliente.grupo_id).maybeSingle(),
+          ctx.db.from('clientes').select('id').eq('grupo_id', cliente.grupo_id),
+        ])
+        grupoNome = (g?.nome as string) ?? null
+        if (membros?.length) ids = membros.map((m: { id: string }) => m.id)
+      }
+
       let q = ctx.db.from('analytics_snapshots')
-        .select('fonte, periodo_inicio, periodo_fim, investimento, impressoes, cliques, ctr, conversoes, cpa, roas, cpc_medio, usuarios, sessoes, taxa_conversao')
-        .eq('cliente_id', id)
+        .select('cliente_id, fonte, periodo_inicio, periodo_fim, investimento, impressoes, cliques, ctr, conversoes, cpa, roas, cpc_medio, usuarios, sessoes, taxa_conversao')
+        .in('cliente_id', ids)
         .order('periodo_fim', { ascending: false })
-        .limit(8)
+        .limit(ids.length > 1 ? 24 : 8)
       const fonte = str(args.fonte)
       if (fonte) q = q.eq('fonte', fonte)
       const { data, error } = await q
@@ -998,7 +1024,9 @@ export const TOOLS: Record<string, Tool> = {
         for (const [k, v] of Object.entries(s)) o[k] = typeof v === 'number' ? Math.round(v * 100) / 100 : v
         return o
       })
-      return { total: snapshots.length, snapshots }
+      return grupoNome
+        ? { grupo: grupoNome, membros: ids.length, nota: 'snapshots de todos os CNPJs do grupo — some por período/fonte para o consolidado', total: snapshots.length, snapshots }
+        : { total: snapshots.length, snapshots }
     },
     resumo: () => 'Consultou analytics',
   },
@@ -1067,12 +1095,13 @@ export const TOOLS: Record<string, Tool> = {
       parameters: {
         type: T.OBJECT,
         properties: {
-          cliente_id:   { type: T.STRING },
-          data_inicio:  { type: T.STRING, description: 'YYYY-MM-DD' },
-          data_fim:     { type: T.STRING, description: 'YYYY-MM-DD' },
-          dimensao:     { type: T.STRING, description: 'campanha (default), dia ou keyword' },
-          data_inicio2: { type: T.STRING, description: 'opcional — início do 2º período p/ comparativo' },
-          data_fim2:    { type: T.STRING, description: 'opcional — fim do 2º período p/ comparativo' },
+          cliente_id:    { type: T.STRING },
+          data_inicio:   { type: T.STRING, description: 'YYYY-MM-DD' },
+          data_fim:      { type: T.STRING, description: 'YYYY-MM-DD' },
+          dimensao:      { type: T.STRING, description: 'campanha (default), dia ou keyword' },
+          data_inicio2:  { type: T.STRING, description: 'opcional — início do 2º período p/ comparativo' },
+          data_fim2:     { type: T.STRING, description: 'opcional — fim do 2º período p/ comparativo' },
+          agregar_grupo: { type: T.BOOLEAN, description: 'true = soma as contas Ads de todos os CNPJs do grupo do cliente' },
         },
         required: ['cliente_id', 'data_inicio', 'data_fim'],
       },
@@ -1080,9 +1109,21 @@ export const TOOLS: Record<string, Tool> = {
     execute: async (args, ctx) => {
       const id = str(args.cliente_id)
       if (!id) throw new Error('cliente_id é obrigatório.')
-      const cliente = await ownCliente(ctx, id, 'id, nome, google_ads_customer_id')
-      const customerId = cliente.google_ads_customer_id as string | null
-      if (!customerId) throw new Error(`${cliente.nome} não tem Google Ads customer ID configurado.`)
+      const cliente = await ownCliente(ctx, id, 'id, nome, google_ads_customer_id, grupo_id')
+
+      // Contas a consultar: só a do cliente, ou todas as do grupo (multi-CNPJ).
+      let customerIds = cliente.google_ads_customer_id ? [cliente.google_ads_customer_id as string] : []
+      let grupoNome: string | null = null
+      if (args.agregar_grupo === true && cliente.grupo_id) {
+        const [{ data: g }, { data: membros }] = await Promise.all([
+          ctx.db.from('cliente_grupos').select('nome').eq('id', cliente.grupo_id).maybeSingle(),
+          ctx.db.from('clientes').select('google_ads_customer_id').eq('grupo_id', cliente.grupo_id).not('google_ads_customer_id', 'is', null),
+        ])
+        grupoNome = (g?.nome as string) ?? null
+        const doGrupo = (membros ?? []).map((m: { google_ads_customer_id: string }) => m.google_ads_customer_id)
+        if (doGrupo.length) customerIds = doGrupo
+      }
+      if (customerIds.length === 0) throw new Error(`${cliente.nome} não tem Google Ads customer ID configurado.`)
 
       const inicio = str(args.data_inicio)
       const fim = str(args.data_fim)
@@ -1093,10 +1134,29 @@ export const TOOLS: Record<string, Tool> = {
       const dimensao = ['campanha', 'dia', 'keyword'].includes(dim) ? dim : 'campanha'
 
       const { desempenhoHistorico, totaisPeriodo } = await import('@/lib/bigquery')
-      const linhas = await desempenhoHistorico(customerId, inicio, fim, dimensao, MAX_LISTA)
+
+      // Uma conta = direto; grupo = consulta cada conta e soma por chave.
+      const porConta = await Promise.all(
+        customerIds.map((cid) => desempenhoHistorico(cid, inicio, fim, dimensao, MAX_LISTA)),
+      )
+      const somadas = new Map<string, { chave: string; impressoes: number; cliques: number; custo: number; conversoes: number }>()
+      for (const lista of porConta) {
+        for (const l of lista) {
+          const atual = somadas.get(l.chave) ?? { chave: l.chave, impressoes: 0, cliques: 0, custo: 0, conversoes: 0 }
+          atual.impressoes += l.impressoes
+          atual.cliques    += l.cliques
+          atual.custo      = Math.round((atual.custo + l.custo) * 100) / 100
+          atual.conversoes = Math.round((atual.conversoes + l.conversoes) * 100) / 100
+          somadas.set(l.chave, atual)
+        }
+      }
+      const linhas = Array.from(somadas.values())
+        .sort((a, b) => (dimensao === 'dia' ? a.chave.localeCompare(b.chave) : b.custo - a.custo))
+        .slice(0, MAX_LISTA)
 
       const resultado: Record<string, unknown> = {
         cliente: cliente.nome,
+        ...(grupoNome ? { grupo: grupoNome, contas_somadas: customerIds.length } : {}),
         periodo: { inicio, fim },
         dimensao,
         total_linhas: linhas.length,
@@ -1107,9 +1167,18 @@ export const TOOLS: Record<string, Tool> = {
       const inicio2 = str(args.data_inicio2)
       const fim2 = str(args.data_fim2)
       if (inicio2 && fim2 && /^\d{4}-\d{2}-\d{2}$/.test(inicio2) && /^\d{4}-\d{2}-\d{2}$/.test(fim2)) {
+        const somaTotais = async (i: string, f: string) => {
+          const ts = await Promise.all(customerIds.map((cid) => totaisPeriodo(cid, i, f)))
+          return ts.reduce((acc, t) => ({
+            impressoes: acc.impressoes + t.impressoes,
+            cliques:    acc.cliques + t.cliques,
+            custo:      Math.round((acc.custo + t.custo) * 100) / 100,
+            conversoes: Math.round((acc.conversoes + t.conversoes) * 100) / 100,
+          }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0 })
+        }
         const [t1, t2] = await Promise.all([
-          totaisPeriodo(customerId, inicio, fim),
-          totaisPeriodo(customerId, inicio2, fim2),
+          somaTotais(inicio, fim),
+          somaTotais(inicio2, fim2),
         ])
         const varPct = (a: number, b: number) => (b > 0 ? Math.round(((a - b) / b) * 100) : null)
         resultado.comparativo = {

@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.53.0',
+    data:   '2026-07-07',
+    novidades: [
+      'Grupos de cliente para quem tem mais de um CNPJ (caso Paulo Alexandre): os registros continuam separados (cobrança, IDs Google e saldo são por CNPJ), mas ganham um grupo com visão consolidada — MRR somado, status de cada CNPJ e métricas do mês agregadas. Criação e vínculo direto na página do cliente; na lista, membros do grupo aparecem juntos com badge roxo',
+      'A Gator entende grupos: o dossiê do cliente mostra o grupo e os irmãos de CNPJ, e as consultas de analytics/histórico aceitam "o grupo como um todo" (agregar_grupo) — dá para perguntar "como está o Paulo Alexandre no total?"',
+    ],
+  },
+  {
     versao: '0.52.0',
     data:   '2026-07-07',
     novidades: [

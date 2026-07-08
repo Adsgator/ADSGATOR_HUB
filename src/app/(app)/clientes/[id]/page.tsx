@@ -19,6 +19,7 @@ import { EmailComposer } from '@/components/relatorios/EmailComposer'
 import { ChecklistCard } from '@/components/clientes/ChecklistCard'
 import { ClienteCompletude } from '@/components/clientes/ClienteCompletude'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
+import { ClienteGrupo } from '@/components/clientes/ClienteGrupo'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
 import { EmailsCliente } from '@/components/clientes/EmailsCliente'
@@ -1032,6 +1033,7 @@ export default function ClienteDetalhePage() {
                 </div>
               )}
               <ClienteIntegracoes cliente={cliente} onUpdate={setCliente} />
+              <ClienteGrupo cliente={cliente} onUpdate={setCliente} />
             </div>
             <div className="space-y-[1.5rem]">
               <AcessoRapido links={{
