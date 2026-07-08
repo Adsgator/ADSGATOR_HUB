@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.54.0',
+    data:   '2026-07-07',
+    novidades: [
+      'Relatório mensal auto-preenchido na API: POST /api/v1/relatorios/generate agora só precisa de cliente + mês — campanhas e keywords vêm do BigQuery (histórico exato do mês, inclusive campanhas removidas; fallback automático na API ao vivo enquanto a conta não carrega no BigQuery) e GA4 da Data API. Antes, sem mandar os dados no body, saía relatório vazio',
+    ],
+  },
+  {
     versao: '0.53.0',
     data:   '2026-07-07',
     novidades: [
