@@ -36,7 +36,8 @@ export interface FonteTrafego {
 // GOOGLE_APPLICATION_CREDENTIALS aceita caminho de arquivo (local, o SDK lê
 // sozinho) ou o JSON inteiro da service account (Vercel, sem filesystem).
 
-function criarClienteGA4() {
+// Exportado para camadas que montam relatórios próprios (ga4-detalhes.ts).
+export function criarClienteGA4() {
   const cred = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? '';
   if (cred.trimStart().startsWith('{')) {
     return new BetaAnalyticsDataClient({ credentials: JSON.parse(cred) });
@@ -48,7 +49,7 @@ function criarClienteGA4() {
 // moeda (totalRevenue): "Future currency exchange rate not exist". Como não
 // existe dado futuro, pedir até hoje é equivalente — o fim canônico do
 // período (ex.: último dia do mês) fica só na chave do snapshot.
-function clampFim(dataFim: string): string {
+export function clampFim(dataFim: string): string {
   const hoje = new Date().toISOString().slice(0, 10);
   return dataFim > hoje ? hoje : dataFim;
 }

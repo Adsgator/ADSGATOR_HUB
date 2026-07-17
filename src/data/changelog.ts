@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.59.3',
+    data:   '2026-07-17',
+    novidades: [
+      'Analytics 2.0 (fundação, parte 2): agora também o lado do SITE (GA4) — páginas acessadas (caminhos limpos, sem lixo de fbclid), origem do tráfego, dispositivos, visitante novo × recorrente, eventos, horários de acesso, sistema/resolução de tela e cidade/estado (a seção que vivia dando "erro de cota" no Looker), além dos KPIs do dashboard com comparativo vs período anterior — incluindo "rolaram a tela até o fim" e eventos por sessão. Validado com propriedade real',
+    ],
+  },
+  {
     versao: '0.59.2',
     data:   '2026-07-17',
     novidades: [

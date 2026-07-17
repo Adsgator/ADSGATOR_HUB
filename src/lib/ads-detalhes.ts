@@ -1,5 +1,6 @@
 import { criarCustomer, obterDadosCampanhasAds } from './google-ads'
 import { consultarAds, viewAds } from './bigquery'
+import { Periodo, validarPeriodo, periodoAnterior } from './analytics-periodo'
 
 // ─── ANALYTICS 2.0 (F1) — cortes detalhados do Google Ads ────────────────────
 // Camada de dados dos dashboards internos e do portal: termos de pesquisa,
@@ -17,11 +18,9 @@ import { consultarAds, viewAds } from './bigquery'
 // zeros como se fossem dado.
 
 // ─── TIPOS ───────────────────────────────────────────────────────────────────
+// Período/comparativo: helpers compartilhados em analytics-periodo.ts.
 
-export interface PeriodoAds {
-  inicio: string // YYYY-MM-DD
-  fim:    string // YYYY-MM-DD
-}
+export type PeriodoAds = Periodo
 
 export interface FiltroAds {
   campanhaId?: string
@@ -77,42 +76,6 @@ export interface KpisAdsComparativo {
   periodoAnterior:  PeriodoAds
   atual:            KpisAds
   anterior:         KpisAds
-}
-
-// ─── PERÍODO E COMPARATIVO ───────────────────────────────────────────────────
-
-const RE_DATA = /^\d{4}-\d{2}-\d{2}$/
-
-function validarPeriodo(p: PeriodoAds): void {
-  if (!RE_DATA.test(p.inicio) || !RE_DATA.test(p.fim)) {
-    throw new Error(`Período inválido: "${p.inicio}"–"${p.fim}" (esperado YYYY-MM-DD)`)
-  }
-  if (p.fim < p.inicio) throw new Error(`Período inválido: fim ${p.fim} antes do início ${p.inicio}`)
-}
-
-const DIA_MS = 86_400_000
-
-function diaUtc(data: string): number {
-  const [ano, mes, dia] = data.split('-').map(Number)
-  return Date.UTC(ano, mes - 1, dia)
-}
-
-function formatarDia(ms: number): string {
-  return new Date(ms).toISOString().slice(0, 10)
-}
-
-/** Período imediatamente anterior com a mesma duração (para o comparativo). */
-export function periodoAnterior(p: PeriodoAds): PeriodoAds {
-  validarPeriodo(p)
-  const dias = (diaUtc(p.fim) - diaUtc(p.inicio)) / DIA_MS + 1
-  const fim = diaUtc(p.inicio) - DIA_MS
-  return { inicio: formatarDia(fim - (dias - 1) * DIA_MS), fim: formatarDia(fim) }
-}
-
-/** Variação % entre períodos; null quando não há base de comparação. */
-export function variacaoPercentual(atual: number, anterior: number): number | null {
-  if (!anterior) return null
-  return r2(((atual - anterior) / anterior) * 100)
 }
 
 // ─── HELPERS INTERNOS ────────────────────────────────────────────────────────

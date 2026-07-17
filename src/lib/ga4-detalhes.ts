@@ -1,0 +1,433 @@
+import { criarClienteGA4, clampFim } from './google-analytics'
+import { Periodo, validarPeriodo, periodoAnterior } from './analytics-periodo'
+
+// ─── ANALYTICS 2.0 (F2) — cortes detalhados do GA4 ───────────────────────────
+// Camada de dados do dashboard Site (interno e portal): KPIs com comparativo,
+// páginas, aquisição origem/mídia, dispositivos, novo×recorrente, eventos,
+// hora do dia, SO/resolução e geografia — por propriedade e período flexível.
+//
+// Regras herdadas (não regredir):
+//   - TODA dateRange passa por clampFim (fim no futuro quebra com
+//     "Future currency exchange rate not exist" quando há conversão de moeda).
+//   - Falha de API LANÇA — nunca devolver zeros como se fossem dado.
+// O cache/TTL fica na fase F3 (tabela analytics_detalhes) — aqui é só leitura,
+// uma chamada runReport por corte (KPIs comparam 2 períodos em UMA chamada).
+
+// ─── TIPOS ───────────────────────────────────────────────────────────────────
+
+export interface KpisGA4 {
+  visualizacoes:      number
+  usuariosNovos:      number
+  usuariosAtivos:     number
+  sessoes:            number
+  duracaoMediaSessao: number // segundos
+  eventosPorSessao:   number
+  usuariosScrollFim:  number // usuários que rolaram ≥90% da página
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+}
+
+export interface KpisGA4Comparativo {
+  periodo:         Periodo
+  periodoAnterior: Periodo
+  atual:           KpisGA4
+  anterior:        KpisGA4
+}
+
+export interface LinhaPaginaGA4 {
+  pagina:             string
+  visualizacoes:      number
+  usuarios:           number
+  usuariosNovos:      number
+  sessoes:            number
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+  duracaoMediaSessao: number // segundos
+}
+
+export interface LinhaOrigemGA4 {
+  fonte:           string
+  midia:           string
+  sessoes:         number
+  usuarios:        number
+  conversoes:      number
+  taxaConversao:   number // %
+  taxaEngajamento: number // %
+}
+
+export interface LinhaDispositivoGA4 {
+  dispositivo:     string // mobile | desktop | tablet…
+  sessoes:         number
+  usuarios:        number
+  usuariosNovos:   number
+  visualizacoes:   number
+  taxaEngajamento: number // %
+}
+
+export interface LinhaTipoUsuarioGA4 {
+  tipo:            string // new | returning | (not set)
+  usuarios:        number
+  sessoes:         number
+  conversoes:      number
+  taxaEngajamento: number // %
+}
+
+export interface LinhaEventoGA4 {
+  evento:   string
+  contagem: number
+  usuarios: number
+}
+
+export interface LinhaHoraGA4 {
+  hora:               number // 0–23
+  sessoes:            number
+  visualizacoes:      number
+  duracaoMediaSessao: number // segundos
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+}
+
+export interface LinhaSistemaGA4 {
+  sistema:  string
+  versao:   string
+  sessoes:  number
+  usuarios: number
+}
+
+export interface LinhaResolucaoGA4 {
+  resolucao: string
+  sessoes:   number
+  usuarios:  number
+}
+
+export interface TecnologiaGA4 {
+  sistemas:   LinhaSistemaGA4[]
+  resolucoes: LinhaResolucaoGA4[]
+}
+
+export interface LinhaLocalGA4 {
+  pais:            string
+  estado:          string
+  cidade:          string
+  sessoes:         number
+  usuarios:        number
+  usuariosNovos:   number
+  taxaEngajamento: number // %
+}
+
+// ─── HELPERS INTERNOS ────────────────────────────────────────────────────────
+
+const r2 = (n: number) => Math.round(n * 100) / 100
+const num = (v?: string | null) => parseFloat(v ?? '0') || 0
+const pct = (v?: string | null) => r2(num(v) * 100)
+
+interface LinhaRelatorio {
+  dimensionValues?: Array<{ value?: string | null }>
+  metricValues?:    Array<{ value?: string | null }>
+}
+
+/** runReport com clampFim aplicado a todo período. Erros LANÇAM. */
+async function rodarRelatorio(
+  propertyId: string,
+  periodos:   Periodo[],
+  dimensoes:  string[],
+  metricas:   string[],
+  opcoes?:    { limite?: number; ordenarPor?: string },
+): Promise<LinhaRelatorio[]> {
+  const client = criarClienteGA4()
+  const [response] = await client.runReport({
+    property:   `properties/${propertyId}`,
+    dateRanges: periodos.map((p, i) => ({ startDate: p.inicio, endDate: clampFim(p.fim), name: `p${i}` })),
+    dimensions: dimensoes.map((name) => ({ name })),
+    metrics:    metricas.map((name) => ({ name })),
+    ...(opcoes?.ordenarPor ? { orderBys: [{ metric: { metricName: opcoes.ordenarPor }, desc: true }] } : {}),
+    ...(opcoes?.limite ? { limit: opcoes.limite } : {}),
+  })
+  return (response?.rows ?? []) as LinhaRelatorio[]
+}
+
+const dim = (r: LinhaRelatorio, i: number) => r.dimensionValues?.[i]?.value ?? ''
+const met = (r: LinhaRelatorio, i: number) => num(r.metricValues?.[i]?.value)
+const metPct = (r: LinhaRelatorio, i: number) => pct(r.metricValues?.[i]?.value)
+
+// ─── KPIs + COMPARATIVO ──────────────────────────────────────────────────────
+
+const METRICAS_KPI = [
+  'screenPageViews', 'newUsers', 'activeUsers', 'sessions', 'averageSessionDuration',
+  'eventsPerSession', 'scrolledUsers', 'engagementRate', 'bounceRate',
+]
+
+function kpisDeLinha(r?: LinhaRelatorio): KpisGA4 {
+  const v = (i: number) => (r ? met(r, i) : 0)
+  return {
+    visualizacoes:      v(0),
+    usuariosNovos:      v(1),
+    usuariosAtivos:     v(2),
+    sessoes:            v(3),
+    duracaoMediaSessao: r2(v(4)),
+    eventosPorSessao:   r2(v(5)),
+    usuariosScrollFim:  v(6),
+    taxaEngajamento:    r2(v(7) * 100),
+    taxaRejeicao:       r2(v(8) * 100),
+  }
+}
+
+/** KPIs do período + anterior em UMA chamada (duas dateRanges no runReport). */
+export async function kpisGA4Comparativo(
+  propertyId: string,
+  periodo:    Periodo,
+): Promise<KpisGA4Comparativo> {
+  validarPeriodo(periodo)
+  const anterior = periodoAnterior(periodo)
+  const rows = await rodarRelatorio(propertyId, [periodo, anterior], [], METRICAS_KPI)
+  // Com 2 períodos a API adiciona a dimensão dateRange (valor = name passado)
+  const porPeriodo = new Map(rows.map((r) => [dim(r, 0), r]))
+  return {
+    periodo,
+    periodoAnterior: anterior,
+    atual:    kpisDeLinha(porPeriodo.get('p0')),
+    anterior: kpisDeLinha(porPeriodo.get('p1')),
+  }
+}
+
+// ─── PÁGINAS ─────────────────────────────────────────────────────────────────
+// pagePath já vem SEM query string (o fbclid que poluía o Looker fica de fora);
+// normalizamos também a barra final para não duplicar /contato e /contato/.
+// Taxas e duração são médias — ao fundir caminhos, pondera por sessões.
+
+function normalizarCaminho(caminho: string): string {
+  const semSufixo = caminho.split(/[?#]/)[0] || '/'
+  if (semSufixo.length > 1 && semSufixo.endsWith('/')) return semSufixo.slice(0, -1)
+  return semSufixo
+}
+
+export async function paginasGA4(
+  propertyId: string,
+  periodo:    Periodo,
+  limite = 50,
+): Promise<LinhaPaginaGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['pagePath'],
+    ['screenPageViews', 'activeUsers', 'newUsers', 'sessions', 'engagementRate', 'bounceRate', 'averageSessionDuration'],
+    { ordenarPor: 'screenPageViews', limite: limite * 2 }, // margem p/ fusão pós-normalização
+  )
+
+  const mapa = new Map<string, LinhaPaginaGA4>()
+  for (const r of rows) {
+    const pagina = normalizarCaminho(dim(r, 0))
+    const linha: LinhaPaginaGA4 = {
+      pagina,
+      visualizacoes:      met(r, 0),
+      usuarios:           met(r, 1),
+      usuariosNovos:      met(r, 2),
+      sessoes:            met(r, 3),
+      taxaEngajamento:    metPct(r, 4),
+      taxaRejeicao:       metPct(r, 5),
+      duracaoMediaSessao: r2(met(r, 6)),
+    }
+    const atual = mapa.get(pagina)
+    if (!atual) {
+      mapa.set(pagina, linha)
+      continue
+    }
+    const pesoTotal = atual.sessoes + linha.sessoes
+    const media = (a: number, b: number) =>
+      pesoTotal > 0 ? r2((a * atual.sessoes + b * linha.sessoes) / pesoTotal) : 0
+    atual.taxaEngajamento    = media(atual.taxaEngajamento, linha.taxaEngajamento)
+    atual.taxaRejeicao       = media(atual.taxaRejeicao, linha.taxaRejeicao)
+    atual.duracaoMediaSessao = media(atual.duracaoMediaSessao, linha.duracaoMediaSessao)
+    atual.visualizacoes += linha.visualizacoes
+    atual.usuarios      += linha.usuarios
+    atual.usuariosNovos += linha.usuariosNovos
+    atual.sessoes       += linha.sessoes
+  }
+
+  return Array.from(mapa.values())
+    .sort((a, b) => b.visualizacoes - a.visualizacoes)
+    .slice(0, limite)
+}
+
+// ─── AQUISIÇÃO (ORIGEM / MÍDIA) ──────────────────────────────────────────────
+
+export async function aquisicaoGA4(
+  propertyId: string,
+  periodo:    Periodo,
+  limite = 20,
+): Promise<LinhaOrigemGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['sessionSource', 'sessionMedium'],
+    ['sessions', 'activeUsers', 'conversions', 'engagementRate'],
+    { ordenarPor: 'sessions', limite },
+  )
+  return rows.map((r) => {
+    const sessoes = met(r, 0)
+    const conversoes = met(r, 2)
+    return {
+      fonte:           dim(r, 0) || '(direct)',
+      midia:           dim(r, 1) || '(none)',
+      sessoes,
+      usuarios:        met(r, 1),
+      conversoes:      r2(conversoes),
+      taxaConversao:   sessoes > 0 ? r2((conversoes / sessoes) * 100) : 0,
+      taxaEngajamento: metPct(r, 3),
+    }
+  })
+}
+
+// ─── DISPOSITIVOS ────────────────────────────────────────────────────────────
+
+export async function dispositivosGA4(
+  propertyId: string,
+  periodo:    Periodo,
+): Promise<LinhaDispositivoGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['deviceCategory'],
+    ['sessions', 'activeUsers', 'newUsers', 'screenPageViews', 'engagementRate'],
+    { ordenarPor: 'sessions' },
+  )
+  return rows.map((r) => ({
+    dispositivo:     dim(r, 0),
+    sessoes:         met(r, 0),
+    usuarios:        met(r, 1),
+    usuariosNovos:   met(r, 2),
+    visualizacoes:   met(r, 3),
+    taxaEngajamento: metPct(r, 4),
+  }))
+}
+
+// ─── NOVO × RECORRENTE ───────────────────────────────────────────────────────
+
+export async function novoVsRecorrenteGA4(
+  propertyId: string,
+  periodo:    Periodo,
+): Promise<LinhaTipoUsuarioGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['newVsReturning'],
+    ['activeUsers', 'sessions', 'conversions', 'engagementRate'],
+    { ordenarPor: 'activeUsers' },
+  )
+  return rows.map((r) => ({
+    tipo:            dim(r, 0) || '(not set)',
+    usuarios:        met(r, 0),
+    sessoes:         met(r, 1),
+    conversoes:      r2(met(r, 2)),
+    taxaEngajamento: metPct(r, 3),
+  }))
+}
+
+// ─── EVENTOS ─────────────────────────────────────────────────────────────────
+
+export async function eventosGA4(
+  propertyId: string,
+  periodo:    Periodo,
+  limite = 30,
+): Promise<LinhaEventoGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['eventName'],
+    ['eventCount', 'activeUsers'],
+    { ordenarPor: 'eventCount', limite },
+  )
+  return rows.map((r) => ({
+    evento:   dim(r, 0),
+    contagem: met(r, 0),
+    usuarios: met(r, 1),
+  }))
+}
+
+// ─── HORA DO DIA ─────────────────────────────────────────────────────────────
+// Cobre as três séries por hora do Looker (acessos, duração média,
+// engajamento × rejeição) em uma chamada. Sempre 24 linhas (0–23).
+
+export async function horariosGA4(
+  propertyId: string,
+  periodo:    Periodo,
+): Promise<LinhaHoraGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['hour'],
+    ['sessions', 'screenPageViews', 'averageSessionDuration', 'engagementRate', 'bounceRate'],
+  )
+  const porHora = new Map<number, LinhaHoraGA4>()
+  for (const r of rows) {
+    const valor = dim(r, 0)
+    if (!/^\d+$/.test(valor)) continue // "(not set)"
+    const hora = Number(valor)
+    porHora.set(hora, {
+      hora,
+      sessoes:            met(r, 0),
+      visualizacoes:      met(r, 1),
+      duracaoMediaSessao: r2(met(r, 2)),
+      taxaEngajamento:    metPct(r, 3),
+      taxaRejeicao:       metPct(r, 4),
+    })
+  }
+  return Array.from({ length: 24 }, (_, hora) => porHora.get(hora) ?? {
+    hora, sessoes: 0, visualizacoes: 0, duracaoMediaSessao: 0, taxaEngajamento: 0, taxaRejeicao: 0,
+  })
+}
+
+// ─── TECNOLOGIA (SO + RESOLUÇÃO) ─────────────────────────────────────────────
+
+export async function tecnologiaGA4(
+  propertyId: string,
+  periodo:    Periodo,
+  limite = 20,
+): Promise<TecnologiaGA4> {
+  validarPeriodo(periodo)
+  const [sistemas, resolucoes] = await Promise.all([
+    rodarRelatorio(
+      propertyId, [periodo], ['operatingSystem', 'operatingSystemVersion'],
+      ['sessions', 'activeUsers'],
+      { ordenarPor: 'sessions', limite },
+    ),
+    rodarRelatorio(
+      propertyId, [periodo], ['screenResolution'],
+      ['sessions', 'activeUsers'],
+      { ordenarPor: 'sessions', limite },
+    ),
+  ])
+  return {
+    sistemas: sistemas.map((r) => ({
+      sistema:  dim(r, 0),
+      versao:   dim(r, 1),
+      sessoes:  met(r, 0),
+      usuarios: met(r, 1),
+    })),
+    resolucoes: resolucoes.map((r) => ({
+      resolucao: dim(r, 0),
+      sessoes:   met(r, 0),
+      usuarios:  met(r, 1),
+    })),
+  }
+}
+
+// ─── GEOGRAFIA (PAÍS / ESTADO / CIDADE) ──────────────────────────────────────
+// No Looker esta seção vivia dando "erro de cota" — aqui é uma chamada só,
+// cacheada na F3.
+
+export async function geografiaGA4(
+  propertyId: string,
+  periodo:    Periodo,
+  limite = 50,
+): Promise<LinhaLocalGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['country', 'region', 'city'],
+    ['sessions', 'activeUsers', 'newUsers', 'engagementRate'],
+    { ordenarPor: 'sessions', limite },
+  )
+  return rows.map((r) => ({
+    pais:            dim(r, 0),
+    estado:          dim(r, 1),
+    cidade:          dim(r, 2),
+    sessoes:         met(r, 0),
+    usuarios:        met(r, 1),
+    usuariosNovos:   met(r, 2),
+    taxaEngajamento: metPct(r, 3),
+  }))
+}
