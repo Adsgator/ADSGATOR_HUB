@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.57.0',
+    data:   '2026-07-08',
+    novidades: [
+      'O sistema agora joga as pendências na sua cara: modal na tela inicial (1x por dia) lista tudo que falta por cliente — integração sem ID, toggle desligado, sync com erro, saldo não informado — com explicação do impacto, passo a passo de como resolver e dois caminhos: "Resolver agora" (leva direto à seção Integrações do cliente, já destacada) ou "Ignorar 7 dias" (soneca — volta sozinha)',
+      'Banner de pendências na página de cada cliente com a mesma régua: o que falta NESTE cliente, guiado e com atalho que rola até a seção certa. Ignorou no modal, some no banner também',
+    ],
+  },
+  {
     versao: '0.56.0',
     data:   '2026-07-08',
     novidades: [

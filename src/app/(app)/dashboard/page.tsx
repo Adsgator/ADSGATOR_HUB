@@ -41,6 +41,7 @@ import { CentralDeComando }      from '@/components/dashboard/CentralDeComando'
 import { GoalsCard }             from '@/components/dashboard/GoalsCard'
 import { AlertaSaldoGoogle }     from '@/components/dashboard/AlertaSaldoGoogle'
 import { SaudeDoSistema }        from '@/components/dashboard/SaudeDoSistema'
+import { PendenciasModal }       from '@/components/dashboard/PendenciasModal'
 import { RecentTransactions }    from '@/components/dashboard/RecentTransactions'
 import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
@@ -610,6 +611,10 @@ export default function DashboardPage() {
       <motion.div variants={pageTransition} initial="hidden" animate="visible" exit="exit" className="page-enter space-y-[1.5rem]" ref={containerRef}>
         {/* Banner de prontidão — fora do grid RGL, some quando setup = 100% */}
         <SetupProgressCard />
+
+        {/* Pendências por cliente — modal que abre sozinho (1x/dia) quando há
+            integração faltando, toggle desligado ou sync com erro */}
+        <PendenciasModal />
 
         {/* ════════════════════════════════════════════════════════════ */}
         {/* News Container — Monitoramento por cliente (scroll horiz.)   */}

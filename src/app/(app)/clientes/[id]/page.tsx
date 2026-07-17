@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   ArrowLeft, User, CheckSquare, BarChart3, History, GitBranch,
@@ -20,6 +20,7 @@ import { ChecklistCard } from '@/components/clientes/ChecklistCard'
 import { ClienteCompletude } from '@/components/clientes/ClienteCompletude'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClienteGrupo } from '@/components/clientes/ClienteGrupo'
+import { PendenciasCliente } from '@/components/clientes/PendenciasCliente'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
 import { EmailsCliente } from '@/components/clientes/EmailsCliente'
@@ -181,6 +182,28 @@ export default function ClienteDetalhePage() {
   const [novoProjetoOpen, setNovoProjetoOpen] = useState(false)
   const [editandoProjeto, setEditandoProjeto] = useState<ProjetoWeb | null>(null)
   const [formProjeto, setFormProjeto] = useState({ nome: '', url: '', plataforma: 'astro', status: 'ativo', data_entrega: '' })
+
+  // Rola até a seção Integrações (aba visão geral) e a destaca — usado pelo
+  // banner de pendências e pelo deep-link ?foco=integracoes do modal do dashboard.
+  const irParaIntegracoes = useCallback(() => {
+    setAbaAtiva('visao_geral')
+    setTimeout(() => {
+      const el = document.getElementById('secao-integracoes')
+      if (!el) return
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      el.classList.add('pendencia-destaque')
+      setTimeout(() => el.classList.remove('pendencia-destaque'), 2600)
+    }, 150)
+  }, [])
+
+  const focoAplicado = useRef(false)
+  useEffect(() => {
+    if (!cliente || focoAplicado.current) return
+    focoAplicado.current = true
+    if (new URLSearchParams(window.location.search).get('foco') === 'integracoes') {
+      irParaIntegracoes()
+    }
+  }, [cliente, irParaIntegracoes])
 
   async function salvarCampo(campo: keyof Cliente, valor: string) {
     if (!cliente) return
@@ -930,6 +953,9 @@ export default function ClienteDetalhePage() {
           </div>
         )}
 
+        {/* Pendências deste cliente — mesma régua do modal do dashboard */}
+        <PendenciasCliente cliente={cliente} onIrParaIntegracoes={irParaIntegracoes} />
+
         {/* Tabs */}
         <div className="flex items-center gap-[0.25rem] mb-[1.5rem] border-b border-surface-border">
           {ABAS.map((aba) => {
@@ -1032,7 +1058,9 @@ export default function ClienteDetalhePage() {
                   </div>
                 </div>
               )}
-              <ClienteIntegracoes cliente={cliente} onUpdate={setCliente} />
+              <div id="secao-integracoes">
+                <ClienteIntegracoes cliente={cliente} onUpdate={setCliente} />
+              </div>
               <ClienteGrupo cliente={cliente} onUpdate={setCliente} />
             </div>
             <div className="space-y-[1.5rem]">
