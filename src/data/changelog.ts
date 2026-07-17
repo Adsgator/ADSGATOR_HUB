@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.58.0',
+    data:   '2026-07-17',
+    novidades: [
+      'Cancelamento de cliente completo em um clique: o botão Cancelar agora abre um modal que pergunta se cancela também no Asaas (remove a recorrência e as cobranças não vencidas) e tem opção separada — desmarcada por padrão — para excluir também as cobranças VENCIDAS (dívida real só some se você mandar). Se o Asaas falhar, nada é arquivado: o erro aparece e você tenta de novo',
+      'Transições de status blindadas: cliente arquivado não pode mais ser congelado (nem pelo menu da lista, nem pelo dashboard) e descongelar só age em quem está de fato congelado — era por essa brecha que um cliente cancelado "ressuscitava" como congelado sem ninguém perceber (caso real do Paulo)',
+    ],
+  },
+  {
     versao: '0.57.1',
     data:   '2026-07-17',
     novidades: [

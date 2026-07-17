@@ -47,7 +47,7 @@ import { OnboardingWizard }      from '@/components/ui/OnboardingWizard'
 import { useClientes }           from '@/lib/hooks/useClientes'
 import { useRightSidebarStore }  from '@/lib/store/right-sidebar-store'
 import { supabase }              from '@/lib/supabase'
-import { carregarDashboardLayout, salvarDashboardLayout, type Layouts as LayoutsType } from '@/lib/database'
+import { carregarDashboardLayout, salvarDashboardLayout, congelarCliente, type Layouts as LayoutsType } from '@/lib/database'
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 import { estagioInadimplencia, diasAtrasoCliente } from '@/lib/cobranca'
@@ -577,7 +577,13 @@ export default function DashboardPage() {
   }
 
   async function handleCongelar(clienteId: string) {
-    await supabase.from('clientes').update({ status: 'congelado' }).eq('id', clienteId)
+    // Função oficial: guarda de transição (arquivado não congela) + histórico
+    try {
+      await congelarCliente(clienteId)
+      toast.success('Cliente congelado')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao congelar cliente')
+    }
     recarregar()
   }
 

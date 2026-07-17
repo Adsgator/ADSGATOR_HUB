@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { isArquivado } from './cliente-status';
 import type { Cliente, Estagio, HistoricoAcao, Assinatura, ChecklistItem } from './types';
 import type { TimelineTemplate, TimelineInstance, TimelineAlert, TimelineAlertHistory } from './types/timeline';
 import type { EmailHistory } from './types/email';
@@ -155,6 +156,13 @@ export async function obterEstagioAtivo(clienteId: string): Promise<Estagio | nu
 }
 
 export async function congelarCliente(clienteId: string) {
+  // Guarda de transição: arquivado (inativo) não congela — congelar de novo
+  // ressuscitaria um cancelado para a operação sem ninguém perceber.
+  const { data: atual } = await supabase.from('clientes').select('status').eq('id', clienteId).single();
+  if (atual && isArquivado(atual as Pick<Cliente, 'status'>)) {
+    throw new Error('Cliente arquivado não pode ser congelado. Reative-o antes.');
+  }
+
   const estagioAtivo = await obterEstagioAtivo(clienteId);
   const estagioAnterior = estagioAtivo?.nome ?? 'desconhecido';
 
@@ -182,6 +190,13 @@ export async function congelarCliente(clienteId: string) {
 }
 
 export async function descongelarCliente(clienteId: string, estagioRetorno: string, acaoProxima: string) {
+  // Guarda de transição: só descongela quem está congelado — impede o clique
+  // atrasado de sobrescrever um cancelamento com status 'ativo'.
+  const { data: atual } = await supabase.from('clientes').select('status').eq('id', clienteId).single();
+  if (atual && atual.status !== 'congelado') {
+    throw new Error('Cliente não está congelado — nada a descongelar.');
+  }
+
   // Cancelar alertas pendentes deste cliente
   await supabase
     .from('alertas')

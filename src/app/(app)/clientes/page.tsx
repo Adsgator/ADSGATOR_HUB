@@ -15,6 +15,7 @@ import { WhatsAppTemplateModal }     from '@/components/clientes/WhatsAppTemplat
 import { ContextMenu }               from '@/components/ui/ContextMenu'
 import { useClientes }               from '@/lib/hooks/useClientes'
 import { isInadimplente, diasAtrasoCliente } from '@/lib/cobranca'
+import { congelarCliente }           from '@/lib/database'
 import { supabase }                  from '@/lib/supabase'
 import { toast }                     from 'sonner'
 import type { Cliente }              from '@/lib/types'
@@ -127,7 +128,13 @@ export default function ClientesPage() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleCongelar(id: string) {
-    await supabase.from('clientes').update({ status: 'congelado' }).eq('id', id)
+    // Função oficial: guarda de transição (arquivado não congela) + histórico
+    try {
+      await congelarCliente(id)
+      toast.success('Cliente congelado')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao congelar cliente')
+    }
     recarregar()
   }
 
@@ -644,9 +651,9 @@ export default function ClientesPage() {
                   {
                     label: 'Congelar',
                     icon: <Snowflake className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
-                    onClick: async () => { await supabase.from('clientes').update({ status: 'congelado' }).eq('id', c.id); toast.success('Cliente congelado') },
+                    onClick: () => handleCongelar(c.id),
                     separator: true,
-                    disabled: c.status === 'congelado' || c.status === 'cancelado',
+                    disabled: c.status === 'congelado' || c.status === 'cancelado' || c.status === 'inativo',
                   },
                 ]
                 return (
@@ -744,9 +751,9 @@ export default function ClientesPage() {
               {
                 label: 'Congelar',
                 icon: <Snowflake className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
-                onClick: async () => { await supabase.from('clientes').update({ status: 'congelado' }).eq('id', c.id); toast.success('Cliente congelado') },
+                onClick: () => handleCongelar(c.id),
                 separator: true,
-                disabled: c.status === 'congelado' || c.status === 'cancelado',
+                disabled: c.status === 'congelado' || c.status === 'cancelado' || c.status === 'inativo',
               },
             ]
             return (

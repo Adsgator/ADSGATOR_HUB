@@ -29,7 +29,7 @@ import {
  *                       manualmente.
  */
 
-export type EtapaRegua = 'suspender' | 'cancelar_admin' | 'excluir' | 'reativar'
+export type EtapaRegua = 'suspender' | 'cancelar_admin' | 'excluir' | 'reativar' | 'cancelar_pedido'
 
 export interface ResultadoEtapa {
   ok: boolean
@@ -281,6 +281,63 @@ export async function excluirAssinatura(db: SupabaseClient, clienteId: string): 
   await historico(db, clienteId, 'regua_exclusao_d28',
     '❌ Exclusão por inadimplência (D+28): assinatura e cobranças removidas no Asaas, cliente arquivado. Pendente remoção manual de assets/dados do servidor.',
     ass.valor_mensal, { cobrancas: r.cobrancas ?? null })
+  r.ok = true
+  return r
+}
+
+/**
+ * CANCELAR A PEDIDO — saída voluntária pelo botão Cancelar do detalhe do
+ * cliente. Não é etapa de inadimplência, mas mora aqui para reusar o
+ * maquinário Asaas com as mesmas garantias.
+ *  - `cancelarAsaas`: remove a recorrência e as cobranças NÃO-vencidas no Asaas
+ *    (desmarcado = só arquiva no Hub; o webhook acompanha se o operador
+ *    excluir no Asaas por fora).
+ *  - `excluirVencidas`: inclui as VENCIDAS na remoção — apaga dívida real,
+ *    então só acontece por decisão explícita (checkbox no modal).
+ * Se o Asaas falhar, NÃO arquiva: melhor o operador ver o erro e repetir do
+ * que o Hub dizer "cancelado" com a recorrência ainda viva cobrando.
+ */
+export async function cancelarClientePedido(
+  db: SupabaseClient,
+  clienteId: string,
+  opts: { cancelarAsaas?: boolean; excluirVencidas?: boolean } = {},
+): Promise<ResultadoEtapa> {
+  const r: ResultadoEtapa = { ok: false, clienteId, etapa: 'cancelar_pedido' }
+  const { ass, cli } = await carregar(db, clienteId)
+  if (!cli) { r.motivo = 'cliente não encontrado'; return r }
+
+  const assinaturaViva = !!ass && !STATUS_TERMINAIS.includes(ass.status)
+
+  if (opts.cancelarAsaas && assinaturaViva && ass.asaas_subscription_id) {
+    try {
+      r.cobrancas = await removerCobrancasEmAberto(ass.asaas_subscription_id, { incluirVencidas: !!opts.excluirVencidas })
+      await asaasRequest('DELETE', `/v3/subscriptions/${ass.asaas_subscription_id}`)
+      r.assinaturaDeletada = true
+    } catch (err) {
+      r.motivo = `Asaas: ${err instanceof Error ? err.message : String(err)}`
+      return r
+    }
+  }
+
+  if (opts.cancelarAsaas && assinaturaViva) {
+    await db.from('assinaturas').update({ status: 'deletada', updated_at: new Date().toISOString() }).eq('id', ass!.id)
+  }
+
+  await db.from('clientes').update({
+    status: 'inativo', motivo_inativacao: 'cancelado', inativado_em: new Date().toISOString(),
+  }).eq('id', clienteId)
+
+  const nRem = r.cobrancas?.removidas.length ?? 0
+  const nFalha = r.cobrancas?.falhas.length ?? 0
+  const detalheAsaas = !opts.cancelarAsaas
+    ? 'Asaas não alterado (opção desmarcada).'
+    : r.assinaturaDeletada
+      ? `Assinatura removida no Asaas; ${nRem} cobrança(s) removida(s) ${opts.excluirVencidas ? '(incluindo vencidas)' : '(vencidas preservadas)'}${nFalha ? `; ${nFalha} falha(s) — conferir` : ''}.`
+      : 'Sem assinatura viva vinculada ao Asaas para remover.'
+  await historico(db, clienteId, 'cancelamento_pedido',
+    `Cancelamento a pedido: cliente arquivado (Cancelado a pedido). ${detalheAsaas}`,
+    ass?.valor_mensal ?? null, { cobrancas: r.cobrancas ?? null, opcoes: opts })
+
   r.ok = true
   return r
 }

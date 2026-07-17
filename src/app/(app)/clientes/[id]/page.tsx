@@ -21,6 +21,7 @@ import { ClienteCompletude } from '@/components/clientes/ClienteCompletude'
 import { ClienteIntegracoes } from '@/components/clientes/ClienteIntegracoes'
 import { ClienteGrupo } from '@/components/clientes/ClienteGrupo'
 import { PendenciasCliente } from '@/components/clientes/PendenciasCliente'
+import { CancelarClienteModal } from '@/components/clientes/CancelarClienteModal'
 import { ClientePerformance } from '@/components/clientes/ClientePerformance'
 import { AuditTimeline } from '@/components/clientes/AuditTimeline'
 import { EmailsCliente } from '@/components/clientes/EmailsCliente'
@@ -164,6 +165,7 @@ export default function ClienteDetalhePage() {
   const [abaAtiva,  setAbaAtiva]  = useState<AbaId>('visao_geral')
   const [carregando, setCarregando] = useState(true)
   const [whatsappOpen,   setWhatsappOpen]   = useState(false)
+  const [cancelarAberto, setCancelarAberto] = useState(false)
   const [agindo,         setAgindo]         = useState(false)
   const [filtroHistorico, setFiltroHistorico] = useState('')
   const [emailOpen,      setEmailOpen]      = useState(false)
@@ -524,25 +526,10 @@ export default function ClienteDetalhePage() {
   }
 
   function handleIniciarCancelamento() {
+    // Modal com as opções do Asaas (CancelarClienteModal) — o backend faz
+    // arquivamento + Asaas num lugar só (acao cancelar_pedido).
     if (!cliente) return
-    const openConfirm = useConfirmDialogStore.getState().openConfirm
-    openConfirm(
-      'Iniciar Cancelamento',
-      `Você está prestes a iniciar o fluxo de cancelamento para ${cliente.nome}. Esta ação não pode ser desfeita.`,
-      async () => {
-        setAgindo(true)
-        try {
-          // saída a pedido → arquiva como inativo + motivo (lib/cliente-status.ts)
-          await atualizarCliente(cliente.id, { status: 'inativo' as Cliente['status'], motivo_inativacao: 'cancelado', inativado_em: new Date().toISOString() })
-          setCliente((prev) => prev ? { ...prev, status: 'inativo', motivo_inativacao: 'cancelado' } : prev)
-          toast.success('Fluxo de cancelamento iniciado')
-        } catch {
-          toast.error('Erro ao iniciar cancelamento')
-        } finally {
-          setAgindo(false)
-        }
-      }
-    )
+    setCancelarAberto(true)
   }
 
   async function handleDescongelar() {
@@ -1435,6 +1422,20 @@ export default function ClienteDetalhePage() {
           onClose={() => setWhatsappOpen(false)}
         />
       )}
+
+      <CancelarClienteModal
+        cliente={cliente}
+        assinatura={assinatura}
+        aberto={cancelarAberto}
+        onFechar={() => setCancelarAberto(false)}
+        onCancelado={({ asaasCancelado }) => {
+          setCliente((prev) => prev ? { ...prev, status: 'inativo', motivo_inativacao: 'cancelado' } : prev)
+          if (asaasCancelado) {
+            setAssinatura((prev) => prev ? { ...prev, status: 'deletada' as Assinatura['status'] } : prev)
+          }
+          setCancelarAberto(false)
+        }}
+      />
 
       {emailOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-[1rem]">
