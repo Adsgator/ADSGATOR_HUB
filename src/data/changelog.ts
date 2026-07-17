@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.59.1',
+    data:   '2026-07-17',
+    novidades: [
+      'Histórico Google Ads no BigQuery destravado de verdade: o backfill de ~1 ano carregou (9 contas, atualização diária) e as consultas foram corrigidas para a estrutura real do Data Transfer (views por MCC com filtro por conta). A tool ads_historico da Gator e o relatório mensal auto-preenchido agora leem o histórico — inclusive de campanhas antigas/removidas',
+    ],
+  },
+  {
     versao: '0.59.0',
     data:   '2026-07-17',
     novidades: [

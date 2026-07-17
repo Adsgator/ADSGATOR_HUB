@@ -1,16 +1,23 @@
 import { BigQuery } from '@google-cloud/bigquery'
 
 // ─── BIGQUERY — histórico granular do Google Ads ─────────────────────────────
-// O BigQuery Data Transfer nativo (nível MCC) despeja diariamente as tabelas
+// O BigQuery Data Transfer nativo (nível MCC) despeja diariamente os relatórios
 // ads_* de TODAS as contas de cliente no dataset `google_ads` — sem código de
 // sync nosso. Este módulo só CONSULTA (leitura pura, service account com
 // jobUser + dataViewer). Free tier: 1 TB de query/mês; nossas consultas são KB.
 //
-// Tabelas por conta (sufixo = customer ID sem hífens):
-//   ads_Campaign_<CID>            — atributos de campanha (nome, status)
-//   ads_CampaignBasicStats_<CID>  — métricas diárias por campanha
-//   ads_Keyword_<CID>             — atributos de keyword
-//   ads_KeywordBasicStats_<CID>   — métricas diárias por keyword
+// ESTRUTURA REAL (validada em 17/07/2026 contra o dataset em produção):
+// UMA view por relatório, sufixada com o ID do MCC (não por conta!), contendo
+// TODAS as contas — o filtro por cliente é a coluna `customer_id`:
+//   ads_Campaign_<MCC>            — atributos de campanha (nome, status)
+//   ads_CampaignBasicStats_<MCC>  — métricas diárias por campanha
+//   ads_Keyword_<MCC> / ads_KeywordBasicStats_<MCC>
+//   (também disponíveis: SearchQueryStats, AgeRange/Gender, GeoStats,
+//    HourlyCampaignStats, Placement — usados pelo Analytics 2.0)
+// Regras de leitura validadas:
+//   - Stats: partição espelha a data do dado (sem duplicação) → somar direto.
+//   - Entidades (Campaign/Keyword): usar só o snapshot mais recente
+//     (_DATA_DATE = _LATEST_DATE) para nomes/atributos atuais.
 
 // Credencial no padrão dual-mode do projeto (google-analytics.ts/vertex-ai.ts):
 // GOOGLE_APPLICATION_CREDENTIALS aceita caminho de arquivo (local) ou o JSON
@@ -26,9 +33,20 @@ function criarClienteBigQuery(): BigQuery {
 
 const DATASET = process.env.BIGQUERY_DATASET_ADS || 'google_ads'
 
-/** Sufixo de tabela: customer ID só dígitos ("223-747-4942" → "2237474942"). */
-function cid(customerId: string): string {
-  return customerId.replace(/\D/g, '')
+/** Sufixo das views = ID do MCC (mesma env que o client Google Ads usa). */
+function sufixoMcc(): string {
+  const mcc = (process.env.GOOGLE_ADS_MANAGER_ID ?? '').replace(/\D/g, '')
+  if (!mcc) {
+    throw new Error('GOOGLE_ADS_MANAGER_ID não configurado — necessário para as views do BigQuery (ads_*_<MCC>).')
+  }
+  return mcc
+}
+
+/** customer_id numérico ("223-747-4942" → 2237474942) para o filtro das views. */
+function cidNumero(customerId: string): number {
+  const digitos = customerId.replace(/\D/g, '')
+  if (!digitos) throw new Error(`Customer ID inválido: "${customerId}"`)
+  return Number(digitos)
 }
 
 export type DimensaoHistorico = 'campanha' | 'dia' | 'keyword'
@@ -48,12 +66,12 @@ export interface TotaisPeriodo {
   conversoes: number
 }
 
-/** Erro amigável quando a tabela da conta ainda não existe no dataset. */
+/** Erro amigável quando o dataset/views do transfer ainda não existem. */
 export class HistoricoIndisponivelError extends Error {
   constructor(customerId: string) {
     super(
       `Histórico BigQuery ainda não disponível para a conta ${customerId} — ` +
-      'a transferência diária ainda não carregou essa conta (ou o backfill está em andamento).',
+      'o Data Transfer ainda não criou as views do MCC (ou o dataset está errado).',
     )
     this.name = 'HistoricoIndisponivelError'
   }
@@ -61,7 +79,7 @@ export class HistoricoIndisponivelError extends Error {
 
 function ehTabelaInexistente(err: unknown): boolean {
   const msg = (err as Error)?.message ?? String(err)
-  return /Not found: Table|was not found in location/i.test(msg)
+  return /Not found: (Table|Dataset)|was not found in location/i.test(msg)
 }
 
 /**
@@ -69,6 +87,7 @@ function ehTabelaInexistente(err: unknown): boolean {
  *  - campanha: uma linha por campanha (ordena por custo)
  *  - dia:      uma linha por dia (série temporal)
  *  - keyword:  uma linha por keyword (ordena por cliques)
+ * Conta sem linhas no período devolve [] (ex.: ainda não carregou no transfer).
  */
 export async function desempenhoHistorico(
   customerId: string,
@@ -78,7 +97,8 @@ export async function desempenhoHistorico(
   limite = 50,
 ): Promise<LinhaHistorico[]> {
   const bq = criarClienteBigQuery()
-  const sufixo = cid(customerId)
+  const mcc = sufixoMcc()
+  const cid = cidNumero(customerId)
 
   let sql: string
   if (dimensao === 'keyword') {
@@ -89,13 +109,14 @@ export async function desempenhoHistorico(
         SUM(s.metrics_clicks)       AS cliques,
         SUM(s.metrics_cost_micros) / 1e6 AS custo,
         SUM(s.metrics_conversions)  AS conversoes
-      FROM \`${DATASET}.ads_KeywordBasicStats_${sufixo}\` s
+      FROM \`${DATASET}.ads_KeywordBasicStats_${mcc}\` s
       JOIN (
         SELECT ad_group_criterion_criterion_id, ANY_VALUE(ad_group_criterion_keyword_text) AS ad_group_criterion_keyword_text
-        FROM \`${DATASET}.ads_Keyword_${sufixo}\`
+        FROM \`${DATASET}.ads_Keyword_${mcc}\`
+        WHERE customer_id = @cid AND _DATA_DATE = _LATEST_DATE
         GROUP BY ad_group_criterion_criterion_id
       ) k USING (ad_group_criterion_criterion_id)
-      WHERE s.segments_date BETWEEN @inicio AND @fim
+      WHERE s.customer_id = @cid AND s.segments_date BETWEEN @inicio AND @fim
       GROUP BY chave
       ORDER BY cliques DESC
       LIMIT @limite
@@ -108,8 +129,8 @@ export async function desempenhoHistorico(
         SUM(metrics_clicks)             AS cliques,
         SUM(metrics_cost_micros) / 1e6  AS custo,
         SUM(metrics_conversions)        AS conversoes
-      FROM \`${DATASET}.ads_CampaignBasicStats_${sufixo}\`
-      WHERE segments_date BETWEEN @inicio AND @fim
+      FROM \`${DATASET}.ads_CampaignBasicStats_${mcc}\`
+      WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim
       GROUP BY chave
       ORDER BY chave
       LIMIT @limite
@@ -122,13 +143,14 @@ export async function desempenhoHistorico(
         SUM(s.metrics_clicks)             AS cliques,
         SUM(s.metrics_cost_micros) / 1e6  AS custo,
         SUM(s.metrics_conversions)        AS conversoes
-      FROM \`${DATASET}.ads_CampaignBasicStats_${sufixo}\` s
+      FROM \`${DATASET}.ads_CampaignBasicStats_${mcc}\` s
       JOIN (
         SELECT campaign_id, ANY_VALUE(campaign_name) AS campaign_name
-        FROM \`${DATASET}.ads_Campaign_${sufixo}\`
+        FROM \`${DATASET}.ads_Campaign_${mcc}\`
+        WHERE customer_id = @cid AND _DATA_DATE = _LATEST_DATE
         GROUP BY campaign_id
       ) c USING (campaign_id)
-      WHERE s.segments_date BETWEEN @inicio AND @fim
+      WHERE s.customer_id = @cid AND s.segments_date BETWEEN @inicio AND @fim
       GROUP BY chave
       ORDER BY custo DESC
       LIMIT @limite
@@ -138,7 +160,7 @@ export async function desempenhoHistorico(
   try {
     const [rows] = await bq.query({
       query: sql,
-      params: { inicio: dataInicio, fim: dataFim, limite },
+      params: { cid, inicio: dataInicio, fim: dataFim, limite },
       location: 'US',
     })
     return (rows as Array<Record<string, unknown>>).map((r) => ({
@@ -161,20 +183,21 @@ export async function totaisPeriodo(
   dataFim:    string,
 ): Promise<TotaisPeriodo> {
   const bq = criarClienteBigQuery()
-  const sufixo = cid(customerId)
+  const mcc = sufixoMcc()
+  const cid = cidNumero(customerId)
   const sql = `
     SELECT
       SUM(metrics_impressions)        AS impressoes,
       SUM(metrics_clicks)             AS cliques,
       SUM(metrics_cost_micros) / 1e6  AS custo,
       SUM(metrics_conversions)        AS conversoes
-    FROM \`${DATASET}.ads_CampaignBasicStats_${sufixo}\`
-    WHERE segments_date BETWEEN @inicio AND @fim
+    FROM \`${DATASET}.ads_CampaignBasicStats_${mcc}\`
+    WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim
   `
   try {
     const [rows] = await bq.query({
       query: sql,
-      params: { inicio: dataInicio, fim: dataFim },
+      params: { cid, inicio: dataInicio, fim: dataFim },
       location: 'US',
     })
     const r = (rows[0] ?? {}) as Record<string, unknown>
@@ -190,14 +213,21 @@ export async function totaisPeriodo(
   }
 }
 
-/** Lista as contas (CIDs) que já têm tabelas no dataset — diagnóstico. */
+/** Contas (CIDs) com dados carregados no dataset + intervalo — diagnóstico. */
 export async function contasDisponiveis(): Promise<string[]> {
   const bq = criarClienteBigQuery()
-  const [tables] = await bq.dataset(DATASET).getTables()
-  const cids = new Set<string>()
-  for (const t of tables) {
-    const m = /^ads_CampaignBasicStats_(\d+)$/.exec(t.id ?? '')
-    if (m) cids.add(m[1])
+  const mcc = sufixoMcc()
+  const sql = `
+    SELECT CAST(customer_id AS STRING) AS cid
+    FROM \`${DATASET}.ads_CampaignBasicStats_${mcc}\`
+    GROUP BY cid
+    ORDER BY cid
+  `
+  try {
+    const [rows] = await bq.query({ query: sql, location: 'US' })
+    return (rows as Array<{ cid: string }>).map((r) => r.cid)
+  } catch (err) {
+    if (ehTabelaInexistente(err)) return []
+    throw err
   }
-  return Array.from(cids)
 }

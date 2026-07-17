@@ -1,6 +1,6 @@
 # PLANO — Analytics 2.0: trazer os dashboards Looker para dentro do Hub
 
-> Status: **AGUARDANDO APROVAÇÃO do Lucas** (17/07/2026)
+> Status: **APROVADO em 17/07/2026** — decisões do Lucas registradas abaixo; execução fase a fase.
 > Base: inventário dos dashboards atuais em `docs/referencias/DASHBOARDS_LOOKER_ATUAIS.md`.
 > Protocolo: executar fase por fase, verificação + commit ao fim de cada uma.
 > Custo: **nenhuma env/serviço novo** — GA4 Data API e Google Ads API são gratuitas
@@ -50,10 +50,15 @@ nunca devolver zeros como se fosse dado.
 
 ## Fases
 
-### F0 — Validar BigQuery (bloqueia F1, não bloqueia F2)
-Backfill carregou? Listar tabelas reais do dataset `google_ads`, validar os
-schemas usados em `lib/bigquery.ts` (item pendente do plano anterior) e mapear
-as tabelas extras (SearchQuery/Age/Gender/Geo/Hourly). Ajustar queries.
+### F0 — Validar BigQuery ✅ CONCLUÍDA (17/07/2026)
+Backfill carregado: 9 contas, histórico desde 07/2025, atualização diária (D-1).
+**Descoberta:** as views são sufixadas com o ID do MCC (uma view por relatório
+com TODAS as contas; filtro por `customer_id`), não por conta como assumido —
+`lib/bigquery.ts` corrigido e validado com query real (campanhas do Ricardo,
+incluindo campanhas antigas). Sem duplicação entre partições nas views de
+stats; entidades usam `_DATA_DATE = _LATEST_DATE`. Todas as views do plano
+existem: SearchQueryStats, AgeRange/Gender, GeoStats, HourlyCampaignStats,
+Keyword, Placement.
 
 ### F1 — Camada de dados Ads: `lib/ads-detalhes.ts`
 Termos, demografia, geo, dia/hora, impression share — GAQL + BQ conforme F0.
@@ -82,18 +87,30 @@ Aba "Site": KPIs com delta, aquisição, páginas, dispositivos/tech, horários,
 engajamento×rejeição, novo×recorrente, geografia.
 
 ### F6 — Portal do cliente + limite mensal
-Portal ganha versão simplificada dos dois dashboards (o link do Looker morre).
-Gauge "limite de mídia do mês": novo campo `clientes.limite_mensal_midia`
-(👤 decidir) × gasto do mês do snapshot.
+Portal ganha os dois dashboards **completos porém didáticos** (decisão 1):
+mesmos números, mas cada métrica com explicação em linguagem de leigo
+(tooltip/legenda "o que isso significa"), leitura guiada ("neste mês seu
+anúncio apareceu X vezes…"). A profundidade analítica crua (tabelas densas,
+filtros avançados) fica nos dashs internos. O link do Looker morre.
+Gauge "limite de mídia do mês": o limite é **por PLANO** (decisão 2) — campo
+no cadastro de plano (Configurações → Planos); o gauge cruza o plano do
+cliente × gasto do mês. Os planos ainda serão estruturados pelo Lucas; o
+gauge entra quando existirem (não bloqueia o resto da fase).
 
 ### F7 — Amarração: relatórios + Gator + aposentar Looker
 Relatório mensal ganha termos/demografia; Gator ganha acesso aos novos cortes
 (estender `ads_historico`/`analytics_cliente` ou tool nova `analytics_detalhes`);
 system-map + changelog; Looker desativado quando o Lucas validar.
 
-## Decisões do Lucas (👤 antes de F6)
+## Decisões do Lucas (respondidas em 17/07/2026)
 
-1. **Portal do cliente**: mostra custo/CPC ao cliente (como o Looker mostra
-   hoje) ou só resultados (impressões, cliques, conversões)?
-2. **Limite mensal de mídia**: quer o campo por cliente para o gauge?
-3. **Looker**: manter em paralelo durante quanto tempo após F5?
+1. **Portal do cliente**: bem completo E didático — mostra tudo (inclusive
+   custo), mas explicado para leigo entender; o analítico denso fica nos
+   dashs internos da agência.
+2. **Limite mensal de mídia**: é **por PLANO** (cada plano tem um limite),
+   não por cliente. Os planos ainda serão estruturados — o gauge entra
+   quando existirem.
+3. **Looker**: será desligado — tudo pelo Hub. Meta de UX: "entrar no
+   cliente e ver o dash certinho, com filtros e tudo" → além da página
+   /analytics, o dashboard do cliente deve ser acessível a partir do
+   DETALHE do cliente (aba Campanhas/Performance aponta para o dash completo).
