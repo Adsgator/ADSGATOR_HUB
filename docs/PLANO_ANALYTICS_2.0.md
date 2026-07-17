@@ -18,8 +18,9 @@ Ao final, o Looker é aposentado.
 
 - `analytics_snapshots`: agregado mensal + semanal (Ads e GA4) via sync.
 - `/api/analytics/[id]/live`: Ads ao vivo (7/30/90d, campanhas top-N).
-- BigQuery `google_ads` (Data Transfer MCC): histórico diário por
-  campanha/keyword — backfill ~1 ano em carga; `lib/bigquery.ts` consulta.
+- BigQuery `google_ads` (Data Transfer MCC): histórico diário CARREGADO
+  (9 contas desde 07/2025, atualização D-1); `lib/bigquery.ts` consulta e é
+  o padrão a seguir (views por MCC, filtro `customer_id`, params nomeados).
 - Relatório mensal auto-preenchido; relatório semanal por email; portal
   `/portal/[token]`; página `/analytics` com seletor de cliente.
 
@@ -35,14 +36,18 @@ SO/resolução, país/cidade — tudo com delta vs período anterior.
 
 ## Fontes por seção
 
+Views BigQuery: sufixo = ID do MCC (env `GOOGLE_ADS_MANAGER_ID`, só dígitos),
+todas as contas dentro, filtro `WHERE customer_id = <cid>`. Stats somam direto
+(sem dedupe — validado); entidades filtram `_DATA_DATE = _LATEST_DATE`.
+
 | Corte | Fonte primária | Fallback |
 | --- | --- | --- |
-| Série diária Ads | BigQuery (`ads_CampaignBasicStats`) | GAQL segments.date |
-| Termos de pesquisa | BQ `ads_SearchQueryStats_<CID>` (validar em F0) | GAQL `search_term_view` |
-| Demografia idade/gênero | BQ Age/Gender stats (validar) | GAQL `age_range_view` / `gender_view` |
-| Geografia | GAQL `geographic_view` | BQ GeoStats se existir |
-| Dia da semana / hora | GAQL `segments.day_of_week` / `segments.hour` | BQ HourlyStats se existir |
-| Impression share 1ª pos. | GAQL `search_top_impression_share` | — |
+| Série diária Ads | BQ `ads_CampaignBasicStats_<MCC>` | GAQL segments.date |
+| Termos de pesquisa | BQ `ads_SearchQueryStats_<MCC>` (existe ✅) | GAQL `search_term_view` |
+| Demografia idade/gênero | BQ `ads_AgeRangeBasicStats_<MCC>` / `ads_GenderBasicStats_<MCC>` (existem ✅) | GAQL `age_range_view` / `gender_view` |
+| Geografia | BQ `ads_GeoStats_<MCC>` (existe ✅) | GAQL `geographic_view` |
+| Dia da semana / hora | BQ `ads_HourlyCampaignStats_<MCC>` (existe ✅) + `EXTRACT(DAYOFWEEK FROM segments_date)` | GAQL `segments.hour`/`day_of_week` |
+| Impression share 1ª pos. | GAQL `search_top_impression_share` (não vem no transfer) | — |
 | GA4 (todos os cortes) | GA4 Data API `runReport` com dimensões (SEMPRE com `clampFim`) | — |
 
 Regra herdada do plano anterior (não regredir): falha de API **lança** —
@@ -80,7 +85,9 @@ Looker e deixa a UI instantânea.
 Por cliente, aba "Tráfego": KPIs com delta (o layout de tiles do Looker no
 design system do Hub), série diária, termos (busca + top), demografia, geo,
 dia/hora, dispositivos, filtro por campanha, presets de período (mês atual,
-mês passado, 30/90d) com comparativo automático.
+mês passado, 30/90d) com comparativo automático. Requisito de UX (decisão 3):
+o dash também é alcançável DE DENTRO do detalhe do cliente (aba
+Campanhas/Performance leva ao dash completo já filtrado no cliente).
 
 ### F5 — UI `/analytics`: dashboard Site (GA4)
 Aba "Site": KPIs com delta, aquisição, páginas, dispositivos/tech, horários,
@@ -101,6 +108,22 @@ gauge entra quando existirem (não bloqueia o resto da fase).
 Relatório mensal ganha termos/demografia; Gator ganha acesso aos novos cortes
 (estender `ads_historico`/`analytics_cliente` ou tool nova `analytics_detalhes`);
 system-map + changelog; Looker desativado quando o Lucas validar.
+
+## Como executar (para a sessão que pegar este plano)
+
+1. Uma fase por vez, na ordem F1→F7; ao fim de cada: verificar com dado REAL
+   (query BigQuery/GAQL/GA4 de verdade, tela aberta), registrar em
+   `src/data/changelog.ts` + `src/lib/ia/system-map.ts` no MESMO commit, e
+   commitar direto na main com resumo curto.
+2. Referência visual: `docs/referencias/DASHBOARDS_LOOKER_ATUAIS.md` (inventário
+   fiel dos 3 dashboards Looker; os PDFs originais estão no Desktop do Lucas —
+   pedir se precisar rever o layout).
+3. Migrations (F3 e F6): SEMPRE manuais — entregar o SQL para o Lucas rodar no
+   SQL Editor do Supabase (nunca `supabase db push`).
+4. Padrões de código a seguir: `lib/bigquery.ts` (BQ), `lib/google-ads.ts`
+   (GAQL, IDs normalizados na borda), `lib/google-analytics.ts` (`clampFim`),
+   erros LANÇAM (nunca devolver zeros), rem-based/tokens CSS, sem `dark:`.
+5. Parar o dev server antes de `npm run build` (conflito de .next).
 
 ## Decisões do Lucas (respondidas em 17/07/2026)
 
