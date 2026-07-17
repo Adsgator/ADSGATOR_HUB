@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.59.2',
+    data:   '2026-07-17',
+    novidades: [
+      'Analytics 2.0 (fundação): o Hub agora sabe consultar tudo que os dashboards Looker mostram do Google Ads — termos de pesquisa, idade/gênero, cidade/bairro, dia da semana, horário, dispositivos, série diária e KPIs com comparativo vs período anterior (incluindo parcela de impressões na 1ª posição) — por cliente, período livre e filtro de campanha. Histórico vem do BigQuery (rápido e sem custo de cota) com fallback automático na API ao vivo; validado com dados reais, números batendo em todos os cortes. As telas novas do /analytics entram nas próximas fases',
+    ],
+  },
+  {
     versao: '0.59.1',
     data:   '2026-07-17',
     novidades: [

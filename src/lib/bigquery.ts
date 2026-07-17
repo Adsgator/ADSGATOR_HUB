@@ -82,6 +82,37 @@ function ehTabelaInexistente(err: unknown): boolean {
   return /Not found: (Table|Dataset)|was not found in location/i.test(msg)
 }
 
+// ─── HELPERS PARA OUTRAS CAMADAS (ads-detalhes.ts) ───────────────────────────
+
+/** Nome completo da view do transfer (`dataset.ads_<Relatorio>_<MCC>`) para montar SQL. */
+export function viewAds(relatorio: string): string {
+  return `${DATASET}.ads_${relatorio}_${sufixoMcc()}`
+}
+
+/**
+ * Executa uma query nas views do transfer com o filtro de conta já resolvido:
+ * o param nomeado @cid chega pronto (customer_id numérico). Views inexistentes
+ * viram HistoricoIndisponivelError (conta ainda não carregou no transfer).
+ */
+export async function consultarAds(
+  customerId: string,
+  sql:        string,
+  params:     Record<string, unknown> = {},
+): Promise<Array<Record<string, unknown>>> {
+  const bq = criarClienteBigQuery()
+  try {
+    const [rows] = await bq.query({
+      query:  sql,
+      params: { cid: cidNumero(customerId), ...params },
+      location: 'US',
+    })
+    return rows as Array<Record<string, unknown>>
+  } catch (err) {
+    if (ehTabelaInexistente(err)) throw new HistoricoIndisponivelError(customerId)
+    throw err
+  }
+}
+
 /**
  * Performance no período agregada pela dimensão pedida.
  *  - campanha: uma linha por campanha (ordena por custo)

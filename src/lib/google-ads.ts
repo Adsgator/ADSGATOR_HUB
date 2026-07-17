@@ -37,7 +37,8 @@ function criarClienteAds() {
 
 // A API rejeita IDs com hífen/espaço ("Invalid customer ID '123-456-7890'"),
 // então normaliza para só dígitos aqui na borda — aceita o formato que vier.
-function criarCustomer(customerId: string) {
+// Exportado para camadas que montam GAQL próprio (ads-detalhes.ts).
+export function criarCustomer(customerId: string) {
   const client = criarClienteAds();
   return client.Customer({
     customer_id:       customerId.replace(/\D/g, ''),
