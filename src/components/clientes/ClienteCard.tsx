@@ -5,10 +5,11 @@ import Link from 'next/link';
 import {
   MessageCircle, PauseCircle, ChevronRight,
   Bell, ClipboardList, Settings2, TrendingUp, XCircle,
-  Globe, BarChart2, Pencil, Trash2, Copy, Archive,
+  Globe, BarChart2, Pencil, Trash2, Copy,
 } from 'lucide-react';
 import type { Cliente, Estagio } from '@/lib/types';
 import { diasAtrasoCliente } from '@/lib/cobranca';
+import { isArquivado } from '@/lib/cliente-status';
 import { FLUXO_OPERACIONAL } from '@/lib/fluxo-operacional';
 import { gerarLinkWhatsApp } from '@/lib/whatsapp';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -72,10 +73,12 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
       onClick: () => {},
     },
     {
-      label: 'Arquivar',
-      icon: <Archive className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
+      // Antes dizia "Arquivar" mas congelava — rótulo agora fala a verdade
+      label: 'Congelar',
+      icon: <PauseCircle className="w-[0.875rem] h-[0.875rem]" strokeWidth={1.75} />,
       onClick: () => onCongelar(cliente.id),
       separator: true,
+      disabled: cliente.status === 'congelado' || isArquivado(cliente),
     },
     {
       label: 'Deletar',
@@ -187,7 +190,7 @@ export function ClienteCard({ cliente, estagio, onCongelar }: ClienteCardProps) 
 
           <div className="flex-1" />
 
-          {cliente.status !== 'congelado' && cliente.status !== 'cancelado' && (
+          {cliente.status !== 'congelado' && !isArquivado(cliente) && (
             <Tooltip content="Congelar cliente" side="top">
               <button
                 onClick={() => onCongelar(cliente.id)}

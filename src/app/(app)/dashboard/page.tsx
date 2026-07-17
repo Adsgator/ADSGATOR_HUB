@@ -51,6 +51,7 @@ import { carregarDashboardLayout, salvarDashboardLayout, congelarCliente, type L
 import { toast } from 'sonner'
 import type { Cliente, Estagio } from '@/lib/types'
 import { estagioInadimplencia, diasAtrasoCliente } from '@/lib/cobranca'
+import { isArquivado } from '@/lib/cliente-status'
 import { gerarLinkWhatsApp } from '@/lib/whatsapp'
 
 type Urgencia = 'critica' | 'atencao' | 'review'
@@ -534,7 +535,7 @@ export default function DashboardPage() {
   }, [editMode])
 
   const progresso = dados.filter((d) =>
-    d.cliente.status !== 'congelado' && d.cliente.status !== 'cancelado'
+    d.cliente.status !== 'congelado' && !isArquivado(d.cliente)
   )
 
   const acoesDoDia = useMemo(() => {

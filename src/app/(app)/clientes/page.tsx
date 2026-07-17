@@ -16,6 +16,7 @@ import { ContextMenu }               from '@/components/ui/ContextMenu'
 import { useClientes }               from '@/lib/hooks/useClientes'
 import { isInadimplente, diasAtrasoCliente } from '@/lib/cobranca'
 import { congelarCliente }           from '@/lib/database'
+import { isArquivado }               from '@/lib/cliente-status'
 import { supabase }                  from '@/lib/supabase'
 import { toast }                     from 'sonner'
 import type { Cliente }              from '@/lib/types'
@@ -28,8 +29,6 @@ const STATUS_OPCOES = [
   { value: 'setup_trafego',    label: 'Setup Tráfego'  },
   { value: 'ativo',            label: 'Ativo'          },
   { value: 'congelado',        label: 'Congelado'      },
-  { value: 'cancelado_debito', label: 'Cancelado D.'   },
-  { value: 'cancelado',        label: 'Cancelado'      },
   { value: 'inativo',          label: 'Inativo'        },
 ] as const
 
@@ -57,7 +56,9 @@ const STATUS_COLOR: Record<string, string> = {
   inativo:          'bg-surface-hover text-ink-muted',
 }
 
-const STATUS_BATCH = STATUS_OPCOES.filter((s) => s.value !== '')
+// Lote só muda entre status de OPERAÇÃO — arquivar é individual (modal
+// Cancelar, com motivo e opções do Asaas), nunca em lote.
+const STATUS_BATCH = STATUS_OPCOES.filter((s) => s.value !== '' && s.value !== 'inativo')
 
 function exportarCSV(clientes: Cliente[]) {
   const header = ['Nome', 'E-mail', 'WhatsApp', 'Nicho', 'Status', 'MRR', 'Dias Atraso']
@@ -81,7 +82,9 @@ function exportarCSV(clientes: Cliente[]) {
 }
 
 export default function ClientesPage() {
-  const { dados, loading, metricas, recarregar } = useClientes()
+  // incluirArquivados: o filtro "Inativo" lista os arquivados; as métricas do
+  // hook seguem contando só a operação.
+  const { dados, loading, metricas, recarregar } = useClientes({ incluirArquivados: true })
   const { setContextActions, clearContextActions } = useRightSidebarStore()
   const [busca,        setBusca]        = useState('')
   const [filtro,       setFiltro]       = useState<StatusValue>('')
@@ -146,7 +149,8 @@ export default function ClientesPage() {
 
   const visiveis = useMemo(() =>
     dados.filter(({ cliente: c }) => {
-      const matchStatus = filtro === '' || c.status === filtro
+      // Sem filtro = só operação; "Inativo" (ou outro status) filtra exato
+      const matchStatus = filtro === '' ? !isArquivado(c) : c.status === filtro
       const matchNicho  = filtroNicho === '' || c.nicho === filtroNicho
       const matchPag    = filtroPag === ''
         ? true
@@ -262,14 +266,32 @@ export default function ClientesPage() {
   async function handleMudarStatusBatch() {
     if (!batchStatus) { toast.error('Selecione um status'); return }
     setSalvandoBatch(true)
-    const ids = Array.from(selecionados)
-    const { error } = await supabase
-      .from('clientes')
-      .update({ status: batchStatus })
-      .in('id', ids)
+    // Arquivado fica fora do lote — reativar/cancelar é decisão individual
+    const alvos = dados
+      .filter(({ cliente: c }) => selecionados.has(c.id) && !isArquivado(c))
+      .map(({ cliente: c }) => c.id)
+    const pulados = selecionados.size - alvos.length
+    if (alvos.length === 0) {
+      setSalvandoBatch(false)
+      toast.error('Só clientes em operação entram na mudança de status em lote')
+      return
+    }
+    try {
+      if (batchStatus === 'congelado') {
+        // Congelar tem fluxo próprio (guarda + estágio + alerta 48h + histórico)
+        for (const id of alvos) await congelarCliente(id)
+      } else {
+        const { error } = await supabase
+          .from('clientes')
+          .update({ status: batchStatus })
+          .in('id', alvos)
+        if (error) throw new Error(error.message)
+      }
+      toast.success(`${alvos.length} cliente(s) atualizados para "${STATUS_LABEL[batchStatus]}"${pulados ? ` — ${pulados} arquivado(s) fora do lote` : ''}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao atualizar status')
+    }
     setSalvandoBatch(false)
-    if (error) { toast.error('Erro ao atualizar status'); return }
-    toast.success(`${ids.length} clientes atualizados para "${STATUS_LABEL[batchStatus]}"`)
     limparSelecao()
     recarregar()
   }

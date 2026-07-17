@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { isInadimplente } from '@/lib/cobranca'
 import { calcularMRR, STATUS_ASSINATURA_ATIVA } from '@/lib/mrr'
-import { STATUS_OCULTOS } from '@/lib/cliente-status'
+import { STATUS_OCULTOS, isArquivado } from '@/lib/cliente-status'
 import { normalizarChecklistEstagio } from '@/lib/database'
 import type { Cliente, Estagio } from '@/lib/types'
 
@@ -13,7 +13,8 @@ export type ClienteComEstagio = {
   estagio: Estagio | null
 }
 
-export function useClientes() {
+export function useClientes(opts?: { incluirArquivados?: boolean }) {
+  const incluirArquivados = opts?.incluirArquivados === true
   const [dados,   setDados]   = useState<ClienteComEstagio[]>([])
   const [loading, setLoading] = useState(true)
   const [error,   setError]   = useState<string | null>(null)
@@ -24,12 +25,17 @@ export function useClientes() {
     setLoading(true)
     setError(null)
     try {
-      const { data: clientes, error: errClientes } = await supabase
+      // Por padrão esconde arquivados (inativo) — clientes da operação só
+      // (lib/cliente-status.ts). incluirArquivados: a lista de clientes usa
+      // para o filtro "Inativo" funcionar; as métricas seguem só da operação.
+      let query = supabase
         .from('clientes')
         .select('*')
-        // esconde arquivados (inativo) — clientes da operação só (lib/cliente-status.ts)
-        .not('status', 'in', `(${STATUS_OCULTOS.join(',')})`)
         .order('data_criacao', { ascending: false })
+      if (!incluirArquivados) {
+        query = query.not('status', 'in', `(${STATUS_OCULTOS.join(',')})`)
+      }
+      const { data: clientes, error: errClientes } = await query
 
       if (errClientes) throw new Error(errClientes.message)
 
@@ -75,7 +81,7 @@ export function useClientes() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [incluirArquivados])
 
   // ── REALTIME SUBSCRIPTION ────────────────────────────────────────────
   useEffect(() => {
@@ -94,16 +100,19 @@ export function useClientes() {
   }, [carregar])
 
   // ── MÉTRICAS DERIVADAS ───────────────────────────────────────────────
+  // Sempre da OPERAÇÃO: arquivado não conta em total/retenção mesmo quando
+  // incluirArquivados traz eles para a listagem.
+  const operacionais = dados.filter((d) => !isArquivado(d.cliente))
   const metricas = {
-    total:        dados.length,
-    ativos:       dados.filter((d) => d.cliente.status === 'ativo').length,
-    retidos:      dados.filter((d) => d.cliente.status === 'congelado').length,
-    recebidos:    dados.filter((d) => d.cliente.status === 'recebido').length,
-    onboarding:   dados.filter((d) => d.cliente.status === 'onboarding').length,
-    inadimplentes: dados.filter((d) => isInadimplente(d.cliente)).length,
+    total:        operacionais.length,
+    ativos:       operacionais.filter((d) => d.cliente.status === 'ativo').length,
+    retidos:      operacionais.filter((d) => d.cliente.status === 'congelado').length,
+    recebidos:    operacionais.filter((d) => d.cliente.status === 'recebido').length,
+    onboarding:   operacionais.filter((d) => d.cliente.status === 'onboarding').length,
+    inadimplentes: operacionais.filter((d) => isInadimplente(d.cliente)).length,
     mrr,
-    taxaRetencao: dados.length > 0
-      ? Math.round((dados.filter((d) => d.cliente.status === 'ativo').length / dados.length) * 100)
+    taxaRetencao: operacionais.length > 0
+      ? Math.round((operacionais.filter((d) => d.cliente.status === 'ativo').length / operacionais.length) * 100)
       : 0,
   }
 

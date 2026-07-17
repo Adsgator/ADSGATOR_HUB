@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.59.0',
+    data:   '2026-07-17',
+    novidades: [
+      'Varredura completa atrás de brechas iguais à do congelamento: a mudança de status em lote não aceita mais arquivar (cancelamento é individual, com motivo e opções do Asaas), pula clientes arquivados e congela pelo fluxo oficial; o menu do card dizia "Arquivar" mas congelava — agora diz a verdade e desabilita quando não cabe; botão Congelar some para cliente arquivado em todos os cards',
+      'Filtro "Inativo" da lista agora funciona de verdade: mostra os clientes arquivados quando selecionado (antes a opção existia mas nunca listava nada — arquivado era invisível). As métricas do topo seguem contando só a operação. Filtros dos status mortos "Cancelado"/"Cancelado D." removidos',
+    ],
+  },
+  {
     versao: '0.58.0',
     data:   '2026-07-17',
     novidades: [
