@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { EmptyStateConfig } from './EmptyStateConfig'
+import { STATUS_OPERACAO } from '@/lib/cliente-status'
 
 interface SaldoAlert {
   cliente_id: string
@@ -42,6 +43,8 @@ export function AlertaSaldoGoogle() {
         .select('id, nome, google_ads_customer_id, saldo_google, saldo_google_atualizado_em, saldo_minimo_alerta, saldo_alertas_ativos')
         .eq('google_ads_enabled', true)
         .not('google_ads_customer_id', 'is', null)
+        // cliente arquivado (inativo) não entra no alerta de verba
+        .in('status', [...STATUS_OPERACAO])
 
       if (error) throw error
 

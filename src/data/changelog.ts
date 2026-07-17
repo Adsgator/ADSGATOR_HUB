@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.57.1',
+    data:   '2026-07-17',
+    novidades: [
+      'Cancelou, saiu das rotinas: cliente arquivado (inativo) agora é ignorado pelo sync de analytics e pelos alertas de verba Google (widget do dashboard e emails de saldo), mesmo que a integração tenha ficado ligada — cancelar um cliente não exige mais lembrar de desligar toggle nenhum',
+    ],
+  },
+  {
     versao: '0.57.0',
     data:   '2026-07-08',
     novidades: [

@@ -20,6 +20,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { dispararEmailAutomatico } from '@/lib/email-automation'
+import { STATUS_OPERACAO } from '@/lib/cliente-status'
 
 /** Quantos avisos de "saldo baixo" ao cliente antes de escalar para o operador. */
 const MAX_AVISOS_BAIXO = 3
@@ -91,6 +92,8 @@ export async function processarAlertasSaldo(
     .select('id, nome, email, whatsapp, saldo_google, saldo_minimo_alerta, saldo_alertas_ativos')
     .eq('google_ads_enabled', true)
     .not('google_ads_customer_id', 'is', null)
+    // cliente arquivado (inativo) não recebe cobrança de recarga
+    .in('status', [...STATUS_OPERACAO])
 
   const clientes = (clientesRaw ?? []).filter(
     (c) => (c as ClienteSaldo).saldo_alertas_ativos !== false,

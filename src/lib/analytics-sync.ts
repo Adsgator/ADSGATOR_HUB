@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { obterDadosCampanhasAds, obterSaldoConta } from '@/lib/google-ads'
 import { obterDadosGA4 } from '@/lib/google-analytics'
+import { STATUS_OPERACAO } from '@/lib/cliente-status'
 
 /**
  * Sync de Analytics — popula a tabela `analytics_snapshots` com dados agregados
@@ -196,10 +197,13 @@ export async function sincronizarTodos(
   supabase: SupabaseClient,
   mesAno: string = mesAtual(),
 ): Promise<ResultadoSyncCliente[]> {
+  // Só clientes em operação: arquivado (inativo) sai das rotinas mesmo com o
+  // toggle ligado — cancelar não pode exigir lembrar de desligar integração.
   const { data: clientes } = await supabase
     .from('clientes')
     .select('id, nome, google_ads_customer_id, ga4_property_id, google_ads_enabled, ga4_enabled')
     .or('google_ads_enabled.eq.true,ga4_enabled.eq.true')
+    .in('status', [...STATUS_OPERACAO])
 
   const resultados: ResultadoSyncCliente[] = []
   for (const cliente of (clientes ?? []) as ClienteSync[]) {
