@@ -8,6 +8,13 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.59.4',
+    data:   '2026-07-17',
+    novidades: [
+      'Analytics 2.0 (fundação, parte 3): cache inteligente dos cortes de Ads e GA4 — cada consulta fica guardada por ~6h (7 dias para período encerrado) e renova sozinha quando vence, então os dashboards novos vão abrir na hora, sem o "erro de cota" que o Looker dava. Se a renovação falhar, o dado anterior aparece marcado como desatualizado em vez de sumir. Requer rodar a migration analytics_detalhes no SQL Editor (sem ela nada quebra: busca direto na fonte)',
+    ],
+  },
+  {
     versao: '0.59.3',
     data:   '2026-07-17',
     novidades: [
