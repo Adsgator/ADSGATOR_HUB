@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useCallback } from 'react'
-import { ChevronDown, ChevronUp, TrendingUp, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, TrendingUp, Loader2, ExternalLink } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -87,29 +87,41 @@ export function ClientePerformance({
 
   return (
     <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow overflow-hidden">
-      <button
-        onClick={handleToggle}
-        className="w-full flex items-center justify-between p-4 hover:bg-surface-hover transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-ads-500" strokeWidth={2} />
-          <span className="text-sm font-semibold text-ink-primary">Performance Ads + GA4</span>
-          {googleAdsEnabled && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-status-blue/10 text-status-blue">Ads</span>
-          )}
-          {ga4Enabled && (
-            <span className="text-xs px-2 py-0.5 rounded-full bg-ads-500/10 text-ads-500">GA4</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          {loading && <Loader2 className="w-4 h-4 animate-spin text-ads-500" strokeWidth={2} />}
-          {expanded ? (
-            <ChevronUp className="w-4 h-4 text-ink-muted" strokeWidth={2} />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-ink-muted" strokeWidth={2} />
-          )}
-        </div>
-      </button>
+      <div className="flex items-center">
+        <button
+          onClick={handleToggle}
+          className="flex-1 flex items-center justify-between p-4 hover:bg-surface-hover transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-ads-500" strokeWidth={2} />
+            <span className="text-sm font-semibold text-ink-primary">Performance Ads + GA4</span>
+            {googleAdsEnabled && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-status-blue/10 text-status-blue">Ads</span>
+            )}
+            {ga4Enabled && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-ads-500/10 text-ads-500">GA4</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {loading && <Loader2 className="w-4 h-4 animate-spin text-ads-500" strokeWidth={2} />}
+            {expanded ? (
+              <ChevronUp className="w-4 h-4 text-ink-muted" strokeWidth={2} />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-ink-muted" strokeWidth={2} />
+            )}
+          </div>
+        </button>
+        {googleAdsEnabled && (
+          <a
+            href={`/analytics?cliente=${clienteId}&aba=trafego`}
+            className="shrink-0 mr-4 inline-flex items-center gap-1 text-xs font-medium text-ads-500 hover:underline"
+            title="Abrir o dashboard de tráfego completo já filtrado neste cliente"
+          >
+            Dashboard completo
+            <ExternalLink className="w-3 h-3" strokeWidth={2} />
+          </a>
+        )}
+      </div>
 
       {expanded && (
         <div className="border-t border-surface-border p-4 space-y-4">

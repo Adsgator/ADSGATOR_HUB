@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.60.0',
+    data:   '2026-07-17',
+    novidades: [
+      'Analytics 2.0 chegou na tela: nova aba "Tráfego (Google Ads)" em /analytics com o dashboard que substitui o Looker — KPIs com variação vs período anterior (incluindo impressões na 1ª posição), acompanhamento diário, termos de pesquisa com busca, demografia por idade e gênero, dispositivos, dias da semana + horários e cidades/bairros/CEPs com nome resolvido. Presets de período (mês atual, mês passado, 30/90 dias) com comparativo automático e filtro por campanha. Cada seção carrega e falha sozinha, com "tentar de novo" e selo quando o dado está desatualizado; botão Atualizar busca dado fresco na hora',
+      'Atalho no detalhe do cliente: na aba Campanhas, o link "Dashboard completo" abre o /analytics já filtrado naquele cliente (meta de UX: entrar no cliente e ver o dash certinho)',
+    ],
+  },
+  {
     versao: '0.59.4',
     data:   '2026-07-17',
     novidades: [

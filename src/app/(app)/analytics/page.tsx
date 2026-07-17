@@ -35,6 +35,7 @@ import { AuctionInsights } from '@/components/analytics/AuctionInsights'
 import { GA4PagesTable } from '@/components/analytics/GA4PagesTable'
 import { GA4TrafficDetail } from '@/components/analytics/GA4TrafficDetail'
 import { GA4EventsTable } from '@/components/analytics/GA4EventsTable'
+import { TrafegoDashboard } from '@/components/analytics/trafego/TrafegoDashboard'
 
 const fmt  = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 const fmtN = (v: number) => new Intl.NumberFormat('pt-BR').format(v)
@@ -156,6 +157,24 @@ export default function AnalyticsPage() {
   const [iaRecs,        setIaRecs]        = useState<string>('')
   const [loadingIaRecs, setLoadingIaRecs] = useState(false)
   const [mostrarIaRecs, setMostrarIaRecs] = useState(false)
+  const [aba, setAba] = useState<'geral' | 'trafego'>('geral')
+
+  // Deep link: /analytics?cliente=<id>&aba=trafego (vindo do detalhe do cliente)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('aba') === 'trafego') setAba('trafego')
+    const clienteUrl = params.get('cliente')
+    if (clienteUrl) setClienteSel(clienteUrl)
+  }, [])
+
+  // Mantém a URL compartilhável ao navegar entre abas/clientes
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (aba === 'geral') params.delete('aba'); else params.set('aba', aba)
+    if (clienteSel) params.set('cliente', clienteSel); else params.delete('cliente')
+    const q = params.toString()
+    window.history.replaceState(null, '', q ? `?${q}` : window.location.pathname)
+  }, [aba, clienteSel])
 
   const carregar = useCallback(async () => {
     setLoading(true)
@@ -184,9 +203,10 @@ export default function AnalyticsPage() {
 
   useEffect(() => { carregar() }, [carregar])
 
-  // Buscar dados live quando cliente ou período mudar
+  // Buscar dados live quando cliente ou período mudar (só na visão geral —
+  // a aba Tráfego usa a rota de detalhes com cache próprio)
   const carregarLive = useCallback(async () => {
-    if (!clienteSel) return
+    if (!clienteSel || aba !== 'geral') return
     setLoadingLive(true)
     try {
       const res = await fetch(`/api/analytics/${clienteSel}/live?periodo=${periodo}`)
@@ -202,7 +222,7 @@ export default function AnalyticsPage() {
     } finally {
       setLoadingLive(false)
     }
-  }, [clienteSel, periodo])
+  }, [clienteSel, periodo, aba])
 
   useEffect(() => {
     if (clienteSel) {
@@ -325,7 +345,8 @@ export default function AnalyticsPage() {
       subtitle={selData ? `Cliente: ${selData.cliente.nome}` : 'Selecione um cliente para ver detalhes'}
       actions={
         <div className="flex items-center gap-[0.5rem]">
-          {/* Pills de período */}
+          {/* Pills de período (a aba Tráfego tem presets próprios) */}
+          {aba === 'geral' && (
           <div className="flex bg-surface-hover border border-surface-border rounded-[0.5rem] p-[0.1875rem] gap-[0.125rem]">
             {(['7d', '30d', '90d'] as Periodo[]).map((p) => (
               <button
@@ -341,6 +362,7 @@ export default function AnalyticsPage() {
               </button>
             ))}
           </div>
+          )}
           <Button
             variant="secondary"
             size="sm"
@@ -362,7 +384,25 @@ export default function AnalyticsPage() {
       }
     >
       <div className="page-enter">
+      {/* ══ ABAS — Visão geral | Tráfego (Ads) ═══════════════════════ */}
+      <div className="flex items-center gap-[0.375rem] mb-[1.5rem] border-b border-surface-border">
+        {([['geral', 'Visão geral'], ['trafego', 'Tráfego (Google Ads)']] as const).map(([id, label]) => (
+          <button
+            key={id}
+            onClick={() => setAba(id)}
+            className={`h-[2.25rem] px-[0.875rem] text-[0.8125rem] font-medium border-b-2 -mb-[1px] transition-colors ${
+              aba === id
+                ? 'border-ads-500 text-ink-primary'
+                : 'border-transparent text-ink-muted hover:text-ink-secondary'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* ══ SEÇÃO 1 — KPI RESUMO GERAL ════════════════════════════════ */}
+      {aba === 'geral' && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-[1rem] mb-[2rem]">
         {loading
           ? Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[6rem] rounded-xl skeleton-shimmer dark:border dark:border-surface-border" />)
@@ -383,6 +423,7 @@ export default function AnalyticsPage() {
             ))
         }
       </div>
+      )}
 
       {/* ══ SEÇÃO 2 — SELETOR DE CLIENTE (pills) ═══════════════════ */}
       {!loading && dados.length > 0 && (
@@ -409,6 +450,15 @@ export default function AnalyticsPage() {
       )}
       {loading && <div className="h-[2rem] mb-[1.5rem] skeleton-shimmer rounded-full w-[60%]" />}
 
+      {/* ══ ABA TRÁFEGO — dashboard completo Google Ads ═══════════════ */}
+      {aba === 'trafego' && selData && (
+        <TrafegoDashboard
+          clienteId={selData.cliente.id}
+          adsConectado={Boolean(selData.cliente.google_ads_enabled && selData.cliente.google_ads_customer_id)}
+        />
+      )}
+
+      {aba === 'geral' && (<>
       {/* ══ SEÇÃO 3 — DETALHE POR CAMPANHA ════════════════════════════ */}
       {selData && (
         <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[2rem]">
@@ -773,6 +823,7 @@ export default function AnalyticsPage() {
           <p className="text-ink-muted text-[0.625rem] mt-[0.75rem]">* Conversões fracionadas = data-driven attribution do Google Ads</p>
         </div>
       )}
+      </>)}
 
       {dados.length === 0 && !loading && (
         <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[4rem] text-center">
