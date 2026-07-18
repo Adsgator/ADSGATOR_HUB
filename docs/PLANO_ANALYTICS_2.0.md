@@ -1,6 +1,17 @@
 # PLANO — Analytics 2.0: trazer os dashboards Looker para dentro do Hub
 
-> Status: **APROVADO em 17/07/2026** — decisões do Lucas registradas abaixo; execução fase a fase.
+> Status: **EXECUTADO — F0 a F7 concluídas em 18/07/2026** (commits F1 326a084 →
+> F7 30a84e8, um por fase, todos validados com dado real).
+> Pendências manuais do Lucas: (1) rodar as migrations `20260717_analytics_detalhes.sql`
+> e `20260718_planos_limite_midia.sql` no SQL Editor (sem elas nada quebra — o
+> cache é bypassado e o gauge não aparece); (2) preencher o limite de mídia nos
+> planos; (3) validar os dashs novos e aí remover o campo Looker (hoje marcado
+> como legado).
+> Descobertas de execução que valem registro: `ads_HourlyCampaignStats` segmenta
+> por click_type e DUPLICA impressões (hora do dia ficou GAQL-only; dia da semana
+> via EXTRACT no CampaignBasicStats); o recurso `customer` não expõe os shares de
+> topo (agregado derivado do nível de campanha); a lib google-ads-api devolve
+> enums como NÚMERO do proto (normalizados para nome nos fallbacks).
 > Base: inventário dos dashboards atuais em `docs/referencias/DASHBOARDS_LOOKER_ATUAIS.md`.
 > Protocolo: executar fase por fase, verificação + commit ao fim de cada uma.
 > Custo: **nenhuma env/serviço novo** — GA4 Data API e Google Ads API são gratuitas
