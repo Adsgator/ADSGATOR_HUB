@@ -8,6 +8,15 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.63.0',
+    data:   '2026-07-18',
+    novidades: [
+      'Relatório mensal mais completo: ganhou as seções "O que as pessoas pesquisaram" (termos de pesquisa do mês) e "Perfil de quem viu os anúncios" (idade e gênero). Se a fonte falhar na hora de gerar, a seção avisa "indisponível" em vez de sair vazia como se não houvesse dados',
+      'Gator agora enxerga os mesmos cortes dos dashboards novos: pergunte "que termos trouxeram cliques em junho?", "qual cidade converte mais?" ou "que horário rende mais?" e ela consulta direto (ferramenta analytics_detalhes, com o mesmo cache das telas)',
+      'Looker oficialmente aposentável: o campo "Looker Studio" nas Integrações do cliente virou legado (com aviso na tela) — tudo que ele mostrava agora vive nas abas Tráfego/Site do Analytics e no portal do cliente. A remoção definitiva acontece quando você validar os dashs novos',
+    ],
+  },
+  {
     versao: '0.62.0',
     data:   '2026-07-18',
     novidades: [

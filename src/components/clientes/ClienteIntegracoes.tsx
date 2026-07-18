@@ -323,16 +323,21 @@ export function ClienteIntegracoes({ cliente, onUpdate }: ClienteIntegracoesProp
           editing={editing}
         />
 
-        {/* Looker */}
+        {/* Looker — legado: os dashboards agora vivem no Hub (Analytics 2.0) */}
         <LinkItem
           icon={FileSpreadsheet}
-          label="Looker Studio"
+          label="Looker Studio (legado)"
           value={formData.looker_url}
           onChange={(value) => setFormData({ ...formData, looker_url: value })}
           placeholder="URL do relatório"
           color="purple"
           editing={editing}
         />
+        {(formData.looker_url || editing) && (
+          <p className="text-ink-muted text-[0.6875rem] pl-[0.25rem]">
+            Os dashboards agora vivem no Hub (Analytics → Tráfego/Site) e no portal do cliente — este link é legado e pode ser removido quando você validar os novos.
+          </p>
+        )}
 
         {/* Website */}
         <LinkItem

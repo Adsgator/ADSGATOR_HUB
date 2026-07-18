@@ -1198,6 +1198,75 @@ export const TOOLS: Record<string, Tool> = {
     resumo: () => 'Consultou histórico BigQuery do Google Ads',
   },
 
+  analytics_detalhes: {
+    declaration: {
+      name: 'analytics_detalhes',
+      description: 'CORTES DETALHADOS do Analytics 2.0 — os mesmos dados dos dashboards Tráfego/Site do Hub, com cache. fonte "ads": kpis (comparativo vs período anterior + impression share), serie (diária), termos (de pesquisa), demografia (idade/gênero), geografia (cidade/bairro/CEP com nome), dias_horarios, dispositivos, campanhas. fonte "ga4": kpis, paginas, aquisicao (origem/mídia), dispositivos, novo_recorrente, eventos, horarios, tecnologia, geografia. Use para perguntas específicas ("que termos trouxeram cliques?", "qual cidade converte mais?", "que horário rende mais?") que ads_ao_vivo/ads_historico não cobrem.',
+      parameters: {
+        type: T.OBJECT,
+        properties: {
+          cliente_id:  { type: T.STRING },
+          fonte:       { type: T.STRING, description: 'ads ou ga4' },
+          dimensao:    { type: T.STRING, description: 'um dos cortes listados na descrição da ferramenta' },
+          data_inicio: { type: T.STRING, description: 'YYYY-MM-DD' },
+          data_fim:    { type: T.STRING, description: 'YYYY-MM-DD' },
+          campanha_id: { type: T.STRING, description: 'opcional — filtra uma campanha específica do Ads (id numérico)' },
+        },
+        required: ['cliente_id', 'fonte', 'dimensao', 'data_inicio', 'data_fim'],
+      },
+    },
+    execute: async (args, ctx) => {
+      const id = str(args.cliente_id)
+      if (!id) throw new Error('cliente_id é obrigatório.')
+      const cliente = await ownCliente(ctx, id, 'id, nome, google_ads_customer_id, ga4_property_id')
+
+      const fonte = str(args.fonte)
+      if (fonte !== 'ads' && fonte !== 'ga4') throw new Error('fonte deve ser "ads" ou "ga4".')
+      const dimensao = str(args.dimensao) ?? ''
+      const inicio = str(args.data_inicio)
+      const fim = str(args.data_fim)
+      if (!inicio || !fim || !/^\d{4}-\d{2}-\d{2}$/.test(inicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fim)) {
+        throw new Error('data_inicio e data_fim são obrigatórias no formato YYYY-MM-DD.')
+      }
+
+      const { obterDetalheAnalytics, DIMENSOES_DETALHE } = await import('@/lib/analytics-detalhes')
+      if (!DIMENSOES_DETALHE[fonte].includes(dimensao)) {
+        throw new Error(`Dimensão inválida para ${fonte}: "${dimensao}" (aceitas: ${DIMENSOES_DETALHE[fonte].join(', ')}).`)
+      }
+
+      const r = await obterDetalheAnalytics({
+        supabase:       ctx.db,
+        userId:         ctx.userId,
+        clienteId:      cliente.id as string,
+        contaAds:       (cliente.google_ads_customer_id as string | null) ?? null,
+        propriedadeGa4: (cliente.ga4_property_id as string | null) ?? null,
+        fonte,
+        dimensao,
+        periodo:        { inicio, fim },
+        campanhaId:     str(args.campanha_id) || undefined,
+      })
+
+      // Payload enxuto (padrão das tools de lista): corta em MAX_LISTA e avisa.
+      let dados = r.payload
+      let nota: string | undefined
+      if (Array.isArray(dados) && dados.length > MAX_LISTA) {
+        nota = `mostrando ${MAX_LISTA} de ${dados.length} linhas`
+        dados = dados.slice(0, MAX_LISTA)
+      }
+      return {
+        cliente: cliente.nome,
+        fonte, dimensao,
+        periodo: { inicio, fim },
+        ...(r.campanhaId ? { campanha_id: r.campanhaId } : {}),
+        cache: r.cache,
+        ...(r.erro ? { aviso: `dado do cache antigo — renovação falhou: ${r.erro}` } : {}),
+        ...(nota ? { nota } : {}),
+        dados,
+      }
+    },
+    resumo: () => 'Consultou cortes detalhados de analytics',
+  },
+
   historico_cliente: {
     declaration: {
       name: 'historico_cliente',

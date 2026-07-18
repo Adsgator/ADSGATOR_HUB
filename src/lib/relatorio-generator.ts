@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { DadosCampanhaAds, PalavraChavePerformance } from './google-ads';
 import type { DadosGA4, PaginaPerformance, FonteTrafego } from './google-analytics';
+import type { LinhaTermoAds, DemografiaAds } from './ads-detalhes';
 
 // ─── TIPOS ───────────────────────────────────────────────────────────────────
 
@@ -12,6 +13,10 @@ export interface RelatorioMensalInput {
   ga4:        DadosGA4;
   paginas:    PaginaPerformance[];
   fontes:     FonteTrafego[];
+  // Analytics 2.0: cortes extras do relatório (null = falhou ao buscar,
+  // [] / vazio = sem dados reais no período, undefined = não solicitado)
+  termos?:     LinhaTermoAds[] | null;
+  demografia?: DemografiaAds | null;
 }
 
 export interface RecomendacaoAuto {
@@ -79,6 +84,16 @@ export function gerarRecomendacoes(
 
 // ─── GERAR MARKDOWN DO RELATÓRIO ─────────────────────────────────────────────
 
+// Rótulos pt-BR dos enums de demografia (mesma convenção da UI)
+const FAIXA_MD: Record<string, string> = {
+  AGE_RANGE_18_24: '18–24', AGE_RANGE_25_34: '25–34', AGE_RANGE_35_44: '35–44',
+  AGE_RANGE_45_54: '45–54', AGE_RANGE_55_64: '55–64', AGE_RANGE_65_UP: '65+',
+  AGE_RANGE_UNDETERMINED: 'Indeterminado',
+};
+const GENERO_MD: Record<string, string> = {
+  MALE: 'Masculino', FEMALE: 'Feminino', UNDETERMINED: 'Indeterminado',
+};
+
 export function gerarMarkdownRelatorio(
   nomeCliente:  string,
   mesAno:       string,
@@ -87,6 +102,8 @@ export function gerarMarkdownRelatorio(
   ga4:          DadosGA4,
   paginas:      PaginaPerformance[],
   fontes:       FonteTrafego[],
+  termos?:      LinhaTermoAds[] | null,
+  demografia?:  DemografiaAds | null,
 ): string {
   const [ano, mes] = mesAno.split('-').map(Number);
   const nomeMes    = new Date(ano, mes - 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -122,6 +139,41 @@ export function gerarMarkdownRelatorio(
     ? recomendacoes.map((r) => `### ${r.tipo === 'alerta' ? '⚠️' : '✅'} ${r.titulo}\n${r.descricao}`).join('\n\n')
     : '_Nenhuma recomendação automática gerada._';
 
+  // ── Seções Analytics 2.0 (termos + demografia) — só entram se solicitadas ──
+  let secaoTermos = '';
+  if (termos !== undefined) {
+    const corpo = termos === null
+      ? '_Indisponível no momento da geração — tente gerar novamente._'
+      : termos.length === 0
+        ? '_Sem termos de pesquisa no período._'
+        : `| Termo de pesquisa | Impressões | Cliques | Custo | Conv. |\n|---|---|---|---|---|\n` +
+          termos.slice(0, 15).map((t) =>
+            `| ${t.termo} | ${t.impressoes.toLocaleString()} | ${t.cliques.toLocaleString()} | ${fmt(t.custo)} | ${t.conversoes} |`
+          ).join('\n');
+    secaoTermos = `\n---\n\n## 🔎 O que as pessoas pesquisaram\n\n${corpo}\n`;
+  }
+
+  let secaoDemografia = '';
+  if (demografia !== undefined) {
+    let corpo: string;
+    if (demografia === null) {
+      corpo = '_Indisponível no momento da geração — tente gerar novamente._';
+    } else if (demografia.faixasEtarias.length === 0 && demografia.generos.length === 0) {
+      corpo = '_Sem dados demográficos no período._';
+    } else {
+      const faixas = demografia.faixasEtarias.map((f) =>
+        `| ${FAIXA_MD[f.faixa] ?? f.faixa} | ${f.impressoes.toLocaleString()} | ${f.cliques.toLocaleString()} | ${f.conversoes} |`
+      ).join('\n');
+      const generos = demografia.generos.map((g) =>
+        `| ${GENERO_MD[g.genero] ?? g.genero} | ${g.impressoes.toLocaleString()} | ${g.cliques.toLocaleString()} | ${g.conversoes} |`
+      ).join('\n');
+      corpo =
+        `**Por idade**\n\n| Faixa | Impressões | Cliques | Conv. |\n|---|---|---|---|\n${faixas}\n\n` +
+        `**Por gênero**\n\n| Gênero | Impressões | Cliques | Conv. |\n|---|---|---|---|\n${generos}`;
+    }
+    secaoDemografia = `\n---\n\n## 👥 Perfil de quem viu os anúncios\n\n${corpo}\n`;
+  }
+
   return `# Relatório de Performance — ${nomeCliente}
 **Período:** ${nomeMes}
 **Gerado em:** ${new Date().toLocaleDateString('pt-BR')}
@@ -151,7 +203,7 @@ ${tabelaCampanhas}
 ## 🔑 Top Palavras-chave
 
 ${tabelaKeywords}
-
+${secaoTermos}${secaoDemografia}
 ---
 
 ## 🌐 Google Analytics 4 — Top Páginas
@@ -184,6 +236,8 @@ export async function gerarRelatorioMensal(
     dados.ga4,
     dados.paginas,
     dados.fontes,
+    dados.termos,
+    dados.demografia,
   );
 
   const campanhaAgregada = dados.campanhas[0];

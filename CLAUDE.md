@@ -370,6 +370,18 @@ que **não funcionam em Deno** — por isso o sync é uma rota Next.js, não Edg
   (campanha/dia/keyword, comparativos) — usado pela tool `ads_historico` da
   Gator e pelo relatório mensal auto-preenchido (`/api/v1/relatorios/generate`,
   fallback na API ao vivo enquanto a conta não carrega no BQ).
+- **Analytics 2.0 (dashboards que substituem o Looker):** camadas de dados
+  `lib/ads-detalhes.ts` (BigQuery primário + fallback GAQL com MESMO shape;
+  hora do dia é GAQL-only — `HourlyCampaignStats` segmenta por click_type e
+  duplica impressões; impression share agregado derivado do nível de campanha)
+  e `lib/ga4-detalhes.ts` (sempre `clampFim`; KPIs comparam 2 períodos em 1
+  runReport). Cache `analytics_detalhes` (TTL 6h/7d) via `lib/analytics-detalhes.ts`
+  + rota `GET /api/analytics/[id]/detalhes` — cache indisponível nunca bloqueia;
+  renovação que falha serve o dado antigo marcado `desatualizado`. UI: abas
+  Tráfego/Site em `/analytics` (componentes em `components/analytics/trafego|site/`),
+  portal didático server-rendered (`components/portal/AnalyticsDidatico.tsx`),
+  gauge de verba por PLANO (`planos_servico.limite_midia_mensal`). Gator: tool
+  `analytics_detalhes`. Período/comparativo compartilhados em `lib/analytics-periodo.ts`.
 - **Rota:** `POST /api/v1/analytics/sync` (botão "Sincronizar" na UI, sessão) e
   `GET` (Vercel Cron, header `Authorization: Bearer $CRON_SECRET`).
 - **Agendamento:** dispatcher `/api/v1/cron/dispatch` (GitHub Actions a cada 30 min + fallback diário no `vercel.json`), horário configurável em Configurações → Automações. Requer env `CRON_SECRET`.

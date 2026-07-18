@@ -89,6 +89,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── Analytics 2.0: termos + demografia (BQ com fallback GAQL interno) ──
+    // Falha aqui não derruba o relatório: a seção sai como "indisponível".
+    let termos: RelatorioMensalInput['termos']
+    let demografia: RelatorioMensalInput['demografia']
+    if (cliente.google_ads_customer_id) {
+      const { termosPesquisaAds, demografiaAds } = await import('@/lib/ads-detalhes')
+      const periodo = { inicio, fim }
+      ;[termos, demografia] = await Promise.all([
+        termosPesquisaAds(cliente.google_ads_customer_id, periodo).catch((e) => {
+          console.warn('[relatorios/generate] termos indisponíveis:', e instanceof Error ? e.message : e)
+          return null
+        }),
+        demografiaAds(cliente.google_ads_customer_id, periodo).catch((e) => {
+          console.warn('[relatorios/generate] demografia indisponível:', e instanceof Error ? e.message : e)
+          return null
+        }),
+      ])
+    }
+
     // ── GA4: Data API (o clamp interno evita fim no futuro) ──
     let ga4: DadosGA4 = body.ga4 ?? GA4_VAZIO
     let paginas = body.paginas ?? []
@@ -104,7 +123,7 @@ export async function POST(request: NextRequest) {
       fontesUsadas.ga4 = 'data_api'
     }
 
-    const input: RelatorioMensalInput = { cliente_id, mes_ano, campanhas, keywords, ga4, paginas, fontes }
+    const input: RelatorioMensalInput = { cliente_id, mes_ano, campanhas, keywords, ga4, paginas, fontes, termos, demografia }
     const relatorio = await gerarRelatorioMensal(input, cliente.nome)
     return NextResponse.json({ data: relatorio, fontes: fontesUsadas })
   } catch (err) {
