@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.62.0',
+    data:   '2026-07-18',
+    novidades: [
+      'Portal do cliente ganhou os dashboards de anúncios e de site — completos porém didáticos: os mesmos números dos dashboards internos, mas com leitura guiada ("seu anúncio apareceu X vezes, gerou Y contatos…") e cada métrica explicada em linguagem simples. Inclui o que pesquisaram no Google, dias com mais resultado, aparelhos, regiões, perfil de idade/gênero, origem das visitas, páginas mais vistas e visitantes novos × recorrentes. Tudo renderizado no servidor (portal continua leve) e servido do cache — o link do Looker deixa de ser necessário',
+      'Medidor de verba do mês no portal: cadastre o "Limite de mídia mensal" no plano (Configurações → Cobrança → Planos) e o portal mostra quanto do teto já foi investido, com barra verde/laranja/vermelha. Sem limite no plano, o medidor simplesmente não aparece. Requer rodar a migration planos_limite_midia no SQL Editor',
+    ],
+  },
+  {
     versao: '0.61.0',
     data:   '2026-07-17',
     novidades: [

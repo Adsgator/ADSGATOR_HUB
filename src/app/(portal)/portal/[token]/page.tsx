@@ -1,6 +1,16 @@
 import { criarClienteServiceRole } from '@/lib/supabase'
 import type { Cliente, Estagio, RelatorioMensal } from '@/lib/types'
 import { diasAtrasoCliente } from '@/lib/cobranca'
+import { obterDetalheAnalytics } from '@/lib/analytics-detalhes'
+import type {
+  KpisAdsComparativo, LinhaTermoAds, DiasHorariosAds,
+  LinhaDispositivoAds, LinhaLocalAds, DemografiaAds,
+} from '@/lib/ads-detalhes'
+import type {
+  KpisGA4Comparativo, LinhaOrigemGA4, LinhaPaginaGA4,
+  LinhaDispositivoGA4, LinhaTipoUsuarioGA4, LinhaLocalGA4,
+} from '@/lib/ga4-detalhes'
+import { TrafegoDidatico, SiteDidatico, GaugeMidia } from '@/components/portal/AnalyticsDidatico'
 import { Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
 
 type StatusBadgeColor = 'green' | 'orange' | 'red' | 'blue' | 'gray'
@@ -72,7 +82,7 @@ export default async function PortalPage({ params }: PageParams) {
   try {
     const { data } = await supabase
       .from('clientes')
-      .select('id, nome, email, whatsapp, dominio, nicho, status, mrr, dias_atraso, data_vencimento')
+      .select('id, user_id, nome, email, whatsapp, dominio, nicho, status, mrr, dias_atraso, data_vencimento, google_ads_customer_id, ga4_property_id, google_ads_enabled, ga4_enabled')
       .eq('portal_token', token)
       .single()
 
@@ -128,6 +138,80 @@ export default async function PortalPage({ params }: PageParams) {
     // Erro ao buscar estágios
   }
 
+  // ── Analytics 2.0: dashboards didáticos (mês atual, mesmos números dos
+  // dashboards internos, servidos do cache analytics_detalhes) ──
+  const hoje = new Date()
+  const fmtDia = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const periodoMes = { inicio: fmtDia(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), fim: fmtDia(hoje) }
+
+  const adsOn = Boolean(cliente.google_ads_enabled && cliente.google_ads_customer_id)
+  const ga4On = Boolean(cliente.ga4_enabled && cliente.ga4_property_id)
+
+  // Falha de um corte não derruba o portal — a seção mostra "indisponível".
+  const detalhe = <T,>(fonte: 'ads' | 'ga4', dimensao: string): Promise<T | null> =>
+    obterDetalheAnalytics({
+      supabase,
+      userId: (cliente as Cliente & { user_id: string }).user_id,
+      clienteId: cliente.id,
+      contaAds: cliente.google_ads_customer_id,
+      propriedadeGa4: cliente.ga4_property_id,
+      fonte, dimensao, periodo: periodoMes,
+    })
+      .then((r) => r.payload as T)
+      .catch((err) => {
+        console.warn(`[portal] ${fonte}/${dimensao} indisponível:`, err instanceof Error ? err.message : err)
+        return null
+      })
+
+  const nulo = Promise.resolve(null)
+  const [
+    adsKpis, adsTermos, adsDias, adsDispositivos, adsGeografia, adsDemografia,
+    ga4Kpis, ga4Aquisicao, ga4Paginas, ga4Dispositivos, ga4NovoRecorrente, ga4Geografia,
+  ] = await Promise.all([
+    adsOn ? detalhe<KpisAdsComparativo>('ads', 'kpis') : nulo,
+    adsOn ? detalhe<LinhaTermoAds[]>('ads', 'termos') : nulo,
+    adsOn ? detalhe<DiasHorariosAds>('ads', 'dias_horarios') : nulo,
+    adsOn ? detalhe<LinhaDispositivoAds[]>('ads', 'dispositivos') : nulo,
+    adsOn ? detalhe<LinhaLocalAds[]>('ads', 'geografia') : nulo,
+    adsOn ? detalhe<DemografiaAds>('ads', 'demografia') : nulo,
+    ga4On ? detalhe<KpisGA4Comparativo>('ga4', 'kpis') : nulo,
+    ga4On ? detalhe<LinhaOrigemGA4[]>('ga4', 'aquisicao') : nulo,
+    ga4On ? detalhe<LinhaPaginaGA4[]>('ga4', 'paginas') : nulo,
+    ga4On ? detalhe<LinhaDispositivoGA4[]>('ga4', 'dispositivos') : nulo,
+    ga4On ? detalhe<LinhaTipoUsuarioGA4[]>('ga4', 'novo_recorrente') : nulo,
+    ga4On ? detalhe<LinhaLocalGA4[]>('ga4', 'geografia') : nulo,
+  ])
+
+  // Medidor de verba: limite de mídia é do PLANO (assinatura ativa → plano
+  // pelo nome). Sem plano com limite definido, o medidor simplesmente não
+  // aparece — entra sozinho quando o Lucas estruturar os planos.
+  let gaugeMidia: { limite: number; planoNome: string } | null = null
+  if (adsKpis) {
+    try {
+      const { data: assinatura } = await supabase
+        .from('assinaturas')
+        .select('plano_nome')
+        .eq('cliente_id', cliente.id)
+        .in('status', ['ativa', 'atraso'])
+        .limit(1)
+        .maybeSingle()
+      if (assinatura?.plano_nome) {
+        const { data: plano } = await supabase
+          .from('planos_servico')
+          .select('nome, limite_midia_mensal')
+          .ilike('nome', assinatura.plano_nome)
+          .maybeSingle()
+        if (plano?.limite_midia_mensal && Number(plano.limite_midia_mensal) > 0) {
+          gaugeMidia = { limite: Number(plano.limite_midia_mensal), planoNome: plano.nome }
+        }
+      }
+    } catch (err) {
+      // coluna/limite ainda não existe (migration pendente) — sem medidor
+      console.warn('[portal] medidor de verba indisponível:', err instanceof Error ? err.message : err)
+    }
+  }
+
   const statusColor = statusBadgeColors[cliente.status as string] ?? 'gray'
   const statusStyles = getBadgeStyles(statusColor)
 
@@ -167,6 +251,37 @@ export default async function PortalPage({ params }: PageParams) {
 
       {/* Main Content */}
       <div className="max-w-[80rem] mx-auto px-[1.5rem] py-[2rem]">
+        {/* Dashboards didáticos (Analytics 2.0) */}
+        {(adsOn || ga4On) && (
+          <div className="space-y-[2.5rem] mb-[2.5rem]">
+            {gaugeMidia && adsKpis && (
+              <GaugeMidia gastoMes={adsKpis.atual.custo} limite={gaugeMidia.limite} planoNome={gaugeMidia.planoNome} />
+            )}
+            {adsOn && (
+              <TrafegoDidatico
+                periodo={periodoMes}
+                kpis={adsKpis}
+                termos={adsTermos}
+                diasHorarios={adsDias}
+                dispositivos={adsDispositivos}
+                geografia={adsGeografia}
+                demografia={adsDemografia}
+              />
+            )}
+            {ga4On && (
+              <SiteDidatico
+                periodo={periodoMes}
+                kpis={ga4Kpis}
+                aquisicao={ga4Aquisicao}
+                paginas={ga4Paginas}
+                dispositivos={ga4Dispositivos}
+                novoRecorrente={ga4NovoRecorrente}
+                geografia={ga4Geografia}
+              />
+            )}
+          </div>
+        )}
+
         {/* Relatórios Recentes */}
         {relatorios.length > 0 && (
           <section className="mb-[2.5rem]">

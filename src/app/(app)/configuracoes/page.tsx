@@ -1059,6 +1059,7 @@ interface PlanoServico {
   cor:        string
   features:   string[]
   ativo:      boolean
+  limite_midia_mensal?: number | null // teto de verba de mídia/mês — alimenta o medidor do portal
 }
 
 const CORES_PLANO = ['#FFB100', '#22c55e', '#3b82f6', '#8b5cf6', '#ef4444', '#06b6d4']
@@ -1079,10 +1080,13 @@ function AbaPlanos() {
   useEffect(() => { carregar() }, [])
 
   async function salvarPlano(p: Partial<PlanoServico> & { nome: string; valor: number }) {
-    if (p.id) {
-      await supabase.from('planos_servico').update(p).eq('id', p.id)
-    } else {
-      await supabase.from('planos_servico').insert({ ...p, ativo: true, features: p.features ?? [] })
+    const { error } = p.id
+      ? await supabase.from('planos_servico').update(p).eq('id', p.id)
+      : await supabase.from('planos_servico').insert({ ...p, ativo: true, features: p.features ?? [] })
+    if (error) {
+      // ex.: migration do limite de mídia ainda não aplicada no SQL Editor
+      toast.error(`Erro ao salvar plano: ${error.message}`)
+      return
     }
     setEditando(null); setNovo(false); carregar()
   }
@@ -1175,6 +1179,15 @@ function PlanoForm({ plano, onSave, onCancel }: { plano: PlanoServico; onSave: (
           <input type="number" value={form.valor} onChange={(e) => setForm((f) => ({ ...f, valor: Number(e.target.value) }))}
             className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30" />
         </div>
+      </div>
+      <div>
+        <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.25rem]">Limite de mídia mensal (R$)</label>
+        <input type="number" min={0} value={form.limite_midia_mensal ?? ''} placeholder="Ex: 1500 — deixe vazio se não houver teto"
+          onChange={(e) => setForm((f) => ({ ...f, limite_midia_mensal: e.target.value === '' ? null : Number(e.target.value) }))}
+          className="w-full h-[2.25rem] px-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-ink-primary text-[0.875rem] focus:outline-none focus:ring-2 focus:ring-ads-500/30" />
+        <p className="text-ink-muted text-[0.6875rem] mt-[0.25rem]">
+          Teto de verba Google Ads incluído no plano — aparece como medidor de verba no portal do cliente.
+        </p>
       </div>
       <div>
         <label className="block text-ink-secondary text-[0.75rem] font-medium mb-[0.375rem]">Cor</label>
