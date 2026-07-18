@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.61.0',
+    data:   '2026-07-17',
+    novidades: [
+      'Aba "Site (GA4)" em /analytics — o dashboard de site do Looker agora vive no Hub: KPIs com variação vs período anterior (visualizações, novos usuários, sessões, duração média, eventos por sessão, "rolaram até o fim", engajamento e rejeição), origem do tráfego com pizza + tabela, páginas acessadas com busca (caminhos limpos, sem fbclid), acompanhamento por hora do dia (acessos + engajamento × rejeição), dispositivos, visitante novo × recorrente, eventos disparados, SO/resolução e cidade/estado/país — a seção que no Looker vivia dando erro de cota',
+      'Detalhe do cliente ganhou os dois atalhos: "Dash Tráfego" e "Dash Site" abrem o /analytics já no cliente e na aba certa',
+    ],
+  },
+  {
     versao: '0.60.0',
     data:   '2026-07-17',
     novidades: [

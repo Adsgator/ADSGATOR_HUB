@@ -36,6 +36,7 @@ import { GA4PagesTable } from '@/components/analytics/GA4PagesTable'
 import { GA4TrafficDetail } from '@/components/analytics/GA4TrafficDetail'
 import { GA4EventsTable } from '@/components/analytics/GA4EventsTable'
 import { TrafegoDashboard } from '@/components/analytics/trafego/TrafegoDashboard'
+import { SiteDashboard } from '@/components/analytics/site/SiteDashboard'
 
 const fmt  = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 const fmtN = (v: number) => new Intl.NumberFormat('pt-BR').format(v)
@@ -157,12 +158,13 @@ export default function AnalyticsPage() {
   const [iaRecs,        setIaRecs]        = useState<string>('')
   const [loadingIaRecs, setLoadingIaRecs] = useState(false)
   const [mostrarIaRecs, setMostrarIaRecs] = useState(false)
-  const [aba, setAba] = useState<'geral' | 'trafego'>('geral')
+  const [aba, setAba] = useState<'geral' | 'trafego' | 'site'>('geral')
 
-  // Deep link: /analytics?cliente=<id>&aba=trafego (vindo do detalhe do cliente)
+  // Deep link: /analytics?cliente=<id>&aba=trafego|site (vindo do detalhe do cliente)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('aba') === 'trafego') setAba('trafego')
+    const abaUrl = params.get('aba')
+    if (abaUrl === 'trafego' || abaUrl === 'site') setAba(abaUrl)
     const clienteUrl = params.get('cliente')
     if (clienteUrl) setClienteSel(clienteUrl)
   }, [])
@@ -384,9 +386,9 @@ export default function AnalyticsPage() {
       }
     >
       <div className="page-enter">
-      {/* ══ ABAS — Visão geral | Tráfego (Ads) ═══════════════════════ */}
+      {/* ══ ABAS — Visão geral | Tráfego (Ads) | Site (GA4) ══════════ */}
       <div className="flex items-center gap-[0.375rem] mb-[1.5rem] border-b border-surface-border">
-        {([['geral', 'Visão geral'], ['trafego', 'Tráfego (Google Ads)']] as const).map(([id, label]) => (
+        {([['geral', 'Visão geral'], ['trafego', 'Tráfego (Google Ads)'], ['site', 'Site (GA4)']] as const).map(([id, label]) => (
           <button
             key={id}
             onClick={() => setAba(id)}
@@ -455,6 +457,14 @@ export default function AnalyticsPage() {
         <TrafegoDashboard
           clienteId={selData.cliente.id}
           adsConectado={Boolean(selData.cliente.google_ads_enabled && selData.cliente.google_ads_customer_id)}
+        />
+      )}
+
+      {/* ══ ABA SITE — dashboard completo GA4 ═════════════════════════ */}
+      {aba === 'site' && selData && (
+        <SiteDashboard
+          clienteId={selData.cliente.id}
+          ga4Conectado={Boolean(selData.cliente.ga4_enabled && selData.cliente.ga4_property_id)}
         />
       )}
 

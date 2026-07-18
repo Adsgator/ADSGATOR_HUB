@@ -111,15 +111,29 @@ export function ClientePerformance({
             )}
           </div>
         </button>
-        {googleAdsEnabled && (
-          <a
-            href={`/analytics?cliente=${clienteId}&aba=trafego`}
-            className="shrink-0 mr-4 inline-flex items-center gap-1 text-xs font-medium text-ads-500 hover:underline"
-            title="Abrir o dashboard de tráfego completo já filtrado neste cliente"
-          >
-            Dashboard completo
-            <ExternalLink className="w-3 h-3" strokeWidth={2} />
-          </a>
+        {(googleAdsEnabled || ga4Enabled) && (
+          <div className="shrink-0 mr-4 flex items-center gap-3">
+            {googleAdsEnabled && (
+              <a
+                href={`/analytics?cliente=${clienteId}&aba=trafego`}
+                className="inline-flex items-center gap-1 text-xs font-medium text-ads-500 hover:underline"
+                title="Abrir o dashboard de tráfego completo já filtrado neste cliente"
+              >
+                Dash Tráfego
+                <ExternalLink className="w-3 h-3" strokeWidth={2} />
+              </a>
+            )}
+            {ga4Enabled && (
+              <a
+                href={`/analytics?cliente=${clienteId}&aba=site`}
+                className="inline-flex items-center gap-1 text-xs font-medium text-status-blue hover:underline"
+                title="Abrir o dashboard do site (GA4) já filtrado neste cliente"
+              >
+                Dash Site
+                <ExternalLink className="w-3 h-3" strokeWidth={2} />
+              </a>
+            )}
+          </div>
         )}
       </div>
 
