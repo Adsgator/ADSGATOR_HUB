@@ -24,6 +24,9 @@ export type PeriodoAds = Periodo
 
 export interface FiltroAds {
   campanhaId?: string
+  /** Grupo de anúncios — quando presente, tem prioridade sobre campanhaId
+   *  (um grupo já pertence a uma única campanha). */
+  grupoAnuncioId?: string
 }
 
 export interface MetricasAds {
@@ -46,6 +49,7 @@ export interface LinhaDiaSemanaAds extends MetricasAds { dia: string }       // 
 export interface LinhaHoraAds extends MetricasAds { hora: number }           // 0–23
 export interface LinhaDispositivoAds extends MetricasAds { dispositivo: string } // enum MOBILE, DESKTOP…
 export interface CampanhaPeriodoAds extends MetricasAds { id: string; nome: string }
+export interface GrupoAnuncioPeriodoAds extends MetricasAds { id: string; nome: string; campanhaId: string }
 
 export interface DemografiaAds {
   faixasEtarias: LinhaFaixaEtariaAds[]
@@ -68,6 +72,10 @@ export interface KpisAds extends MetricasAds {
   cpcMedio:       number
   cpa:            number
   taxaConversao:  number // %
+  /** Ação de conversão secundária "view_content" (convenção fixa da agência —
+   *  ver docs/DASHBOARD_GADS_SPEC.md). Marca chegada real no site, distinto
+   *  de "conversoes" (a ação principal "contato_wpp", o lead). */
+  visitasSite:    number
   impressionShare: ImpressionShareAds
 }
 
@@ -106,18 +114,60 @@ function campanhaIdNumero(filtro?: FiltroAds): number | null {
   return id
 }
 
-/** Cláusula extra + params para o filtro de campanha nas queries BQ. */
+function grupoAnuncioIdNumero(filtro?: FiltroAds): number | null {
+  if (!filtro?.grupoAnuncioId) return null
+  const id = Number(String(filtro.grupoAnuncioId).replace(/\D/g, ''))
+  if (!Number.isFinite(id) || id <= 0) throw new Error(`grupoAnuncioId inválido: "${filtro.grupoAnuncioId}"`)
+  return id
+}
+
+type NivelFiltro = 'conta' | 'campanha' | 'grupo'
+
+function nivelFiltro(filtro?: FiltroAds): NivelFiltro {
+  if (grupoAnuncioIdNumero(filtro) !== null) return 'grupo'
+  if (campanhaIdNumero(filtro) !== null) return 'campanha'
+  return 'conta'
+}
+
+/** View de stats a consultar no BQ: grupo de anúncios exige a view própria
+ *  (ads_AdGroupBasicStats não tem campaign_id como coluna filtrável direto —
+ *  tem, mas o corte por grupo é feito por ad_group_id). */
+function baseStatsViewBq(filtro?: FiltroAds): string {
+  return nivelFiltro(filtro) === 'grupo' ? 'AdGroupBasicStats' : 'CampaignBasicStats'
+}
+
+/** Cláusula extra + params para o filtro de campanha/grupo nas queries BQ. */
 function filtroBq(filtro?: FiltroAds): { sql: string; params: Record<string, unknown> } {
-  const id = campanhaIdNumero(filtro)
-  if (id === null) return { sql: '', params: {} }
-  return { sql: ' AND campaign_id = @campanha', params: { campanha: id } }
+  const grupo = grupoAnuncioIdNumero(filtro)
+  if (grupo !== null) return { sql: ' AND ad_group_id = @grupo', params: { grupo } }
+  const campanha = campanhaIdNumero(filtro)
+  if (campanha !== null) return { sql: ' AND campaign_id = @campanha', params: { campanha } }
+  return { sql: '', params: {} }
 }
 
 /** WHERE compartilhado das queries GAQL (datas já validadas na borda). */
 function gaqlWhere(p: PeriodoAds, filtro?: FiltroAds): string {
-  const id = campanhaIdNumero(filtro)
-  const campanha = id === null ? '' : ` AND campaign.id = ${id}`
-  return `segments.date BETWEEN '${p.inicio}' AND '${p.fim}'${campanha}`
+  const grupo = grupoAnuncioIdNumero(filtro)
+  if (grupo !== null) return `segments.date BETWEEN '${p.inicio}' AND '${p.fim}' AND ad_group.id = ${grupo}`
+  const campanha = campanhaIdNumero(filtro)
+  const clausulaCampanha = campanha === null ? '' : ` AND campaign.id = ${campanha}`
+  return `segments.date BETWEEN '${p.inicio}' AND '${p.fim}'${clausulaCampanha}`
+}
+
+// Recurso GAQL para totais/série agregada: sem filtro usa 'customer' (leve);
+// com campanha ou grupo usa o recurso específico — comportamento herdado
+// (não regride o que já funcionava sem filtro de grupo).
+function recursoGaqlAgregado(filtro?: FiltroAds): string {
+  const nivel = nivelFiltro(filtro)
+  if (nivel === 'grupo') return 'ad_group'
+  if (nivel === 'campanha') return 'campaign'
+  return 'customer'
+}
+
+// Recurso GAQL para quebras por dimensão (dia/hora/dispositivo): sempre usava
+// 'campaign' (mesmo sem filtro) — só troca pra 'ad_group' quando há grupo.
+function recursoGaqlQuebra(filtro?: FiltroAds): string {
+  return nivelFiltro(filtro) === 'grupo' ? 'ad_group' : 'campaign'
 }
 
 type LinhaGaql = Record<string, any>
@@ -191,7 +241,7 @@ export async function serieDiariaAds(
   return comFallback('série diária', async () => {
     const rows = await consultarAds(customerId, `
       SELECT CAST(segments_date AS STRING) AS data, ${SOMA_METRICAS_BQ}
-      FROM \`${viewAds('CampaignBasicStats')}\`
+      FROM \`${viewAds(baseStatsViewBq(filtro))}\`
       WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
       GROUP BY data
       ORDER BY data
@@ -199,7 +249,7 @@ export async function serieDiariaAds(
     return rows.map((r) => ({ data: String(r.data ?? ''), ...metricasDeLinhaBq(r) }))
   }, async () => {
     const customer = criarCustomer(customerId)
-    const recurso = filtro?.campanhaId ? 'campaign' : 'customer'
+    const recurso = recursoGaqlAgregado(filtro)
     const rows: LinhaGaql[] = await customer.query(`
       SELECT segments.date, ${METRICAS_GAQL}
       FROM ${recurso}
@@ -463,7 +513,7 @@ export async function diasHorariosAds(
   const porDiaPromise = comFallback('dia da semana', async () => {
     const rows = await consultarAds(customerId, `
       SELECT EXTRACT(DAYOFWEEK FROM segments_date) AS dia_num, ${SOMA_METRICAS_BQ}
-      FROM \`${viewAds('CampaignBasicStats')}\`
+      FROM \`${viewAds(baseStatsViewBq(filtro))}\`
       WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
       GROUP BY dia_num
     `, { inicio: periodo.inicio, fim: periodo.fim, ...extra.params })
@@ -474,7 +524,7 @@ export async function diasHorariosAds(
     const customer = criarCustomer(customerId)
     const rows: LinhaGaql[] = await customer.query(`
       SELECT segments.day_of_week, ${METRICAS_GAQL}
-      FROM campaign
+      FROM ${recursoGaqlQuebra(filtro)}
       WHERE ${gaqlWhere(periodo, filtro)}
     `)
     const mapa = new Map<string, MetricasAds>()
@@ -486,7 +536,7 @@ export async function diasHorariosAds(
     const customer = criarCustomer(customerId)
     const rows: LinhaGaql[] = await customer.query(`
       SELECT segments.hour, ${METRICAS_GAQL}
-      FROM campaign
+      FROM ${recursoGaqlQuebra(filtro)}
       WHERE ${gaqlWhere(periodo, filtro)}
     `)
     const mapa = new Map<number, MetricasAds>()
@@ -514,7 +564,7 @@ export async function dispositivosAds(
   return comFallback('dispositivos', async () => {
     const rows = await consultarAds(customerId, `
       SELECT segments_device AS dispositivo, ${SOMA_METRICAS_BQ}
-      FROM \`${viewAds('CampaignBasicStats')}\`
+      FROM \`${viewAds(baseStatsViewBq(filtro))}\`
       WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
       GROUP BY dispositivo
       ORDER BY cliques DESC
@@ -524,7 +574,7 @@ export async function dispositivosAds(
     const customer = criarCustomer(customerId)
     const rows: LinhaGaql[] = await customer.query(`
       SELECT segments.device, ${METRICAS_GAQL}
-      FROM campaign
+      FROM ${recursoGaqlQuebra(filtro)}
       WHERE ${gaqlWhere(periodo, filtro)}
     `)
     const mapa = new Map<string, MetricasAds>()
@@ -570,17 +620,71 @@ export async function campanhasDoPeriodoAds(
   })
 }
 
+// ─── GRUPOS DE ANÚNCIOS DO PERÍODO (para o filtro da UI) ─────────────────────
+
+export async function gruposAnuncioDoPeriodoAds(
+  customerId:  string,
+  periodo:     PeriodoAds,
+  campanhaId?: string,
+): Promise<GrupoAnuncioPeriodoAds[]> {
+  validarPeriodo(periodo)
+  const campanha = campanhaId ? campanhaIdNumero({ campanhaId }) : null
+
+  return comFallback('grupos de anúncios do período', async () => {
+    const filtroBqCampanha = campanha !== null ? ' AND s.campaign_id = @campanha' : ''
+    const rows = await consultarAds(customerId, `
+      SELECT CAST(s.ad_group_id AS STRING) AS id, CAST(s.campaign_id AS STRING) AS campanha_id,
+             g.ad_group_name AS nome, ${SOMA_METRICAS_BQ}
+      FROM \`${viewAds('AdGroupBasicStats')}\` s
+      JOIN (
+        SELECT ad_group_id, ANY_VALUE(ad_group_name) AS ad_group_name
+        FROM \`${viewAds('AdGroup')}\`
+        WHERE customer_id = @cid AND _DATA_DATE = _LATEST_DATE
+        GROUP BY ad_group_id
+      ) g USING (ad_group_id)
+      WHERE s.customer_id = @cid AND s.segments_date BETWEEN @inicio AND @fim${filtroBqCampanha}
+      GROUP BY id, campanha_id, nome
+      ORDER BY custo DESC
+    `, { inicio: periodo.inicio, fim: periodo.fim, ...(campanha !== null ? { campanha } : {}) })
+    return rows.map((r) => ({
+      id: String(r.id ?? ''), nome: String(r.nome ?? ''), campanhaId: String(r.campanha_id ?? ''),
+      ...metricasDeLinhaBq(r),
+    }))
+  }, async () => {
+    const customer = criarCustomer(customerId)
+    const filtroGaqlCampanha = campanha !== null ? ` AND campaign.id = ${campanha}` : ''
+    const rows: LinhaGaql[] = await customer.query(`
+      SELECT ad_group.id, ad_group.name, campaign.id, ${METRICAS_GAQL}
+      FROM ad_group
+      WHERE segments.date BETWEEN '${periodo.inicio}' AND '${periodo.fim}'${filtroGaqlCampanha}
+    `)
+    return rows
+      .map((r) => ({
+        id: String(r.ad_group?.id ?? ''), nome: String(r.ad_group?.name ?? ''),
+        campanhaId: String(r.campaign?.id ?? ''), ...arredondar(metricasDeLinhaGaql(r)),
+      }))
+      .sort((a, b) => b.custo - a.custo)
+  })
+}
+
 // ─── IMPRESSION SHARE (GAQL-only — não vem no transfer) ──────────────────────
+
+const IMPRESSION_SHARE_VAZIO: ImpressionShareAds = {
+  parcelaImpressao: null, parcelaPrimeiraPosicao: null, parcelaTopoAbsoluto: null,
+}
 
 // A API não expõe os shares agregados no recurso customer (rejeita os de
 // topo) — deriva do nível de campanha: elegíveis = impressões / share, e o
 // agregado = Σ impressões / Σ elegíveis, exato pela definição das métricas.
+// Não existe no nível de grupo de anúncios (métrica de leilão, só
+// campanha/conta) — retorna null direto, sem tentar uma query que falharia.
 export async function impressionShareAds(
   customerId: string,
   periodo:    PeriodoAds,
   filtro?:    FiltroAds,
 ): Promise<ImpressionShareAds> {
   validarPeriodo(periodo)
+  if (nivelFiltro(filtro) === 'grupo') return IMPRESSION_SHARE_VAZIO
   const customer = criarCustomer(customerId)
   const rows: LinhaGaql[] = await customer.query(`
     SELECT metrics.impressions, metrics.search_impression_share,
@@ -621,6 +725,38 @@ export async function impressionShareAds(
   }
 }
 
+// ─── VISITAS NO SITE (ação de conversão secundária — GAQL-only) ──────────────
+// Convenção fixa da agência (todo cliente novo, mesmo nome): "contato_wpp" é
+// a ação PRIMÁRIA (conta em metrics.conversions — é o "conversoes" de sempre),
+// "view_content" é SECUNDÁRIA (só aparece em metrics.all_conversions) e marca
+// chegada real no site. Validado com dado real: BigQuery Data Transfer não
+// guarda all_conversions por ação (views *ConversionStats só têm a primária)
+// — por isso essa métrica é sempre GAQL, mesmo com a conta carregada no BQ.
+// Nomes de ações legadas (ex.: contato_wpp_fibra, de LPs específicas antigas)
+// não são suportados — prática abandonada, convenção hoje é fixa.
+
+const ACAO_CONVERSAO_VISITA = 'view_content'
+
+export async function visitasSiteAds(
+  customerId: string,
+  periodo:    PeriodoAds,
+  filtro?:    FiltroAds,
+): Promise<number> {
+  validarPeriodo(periodo)
+  const customer = criarCustomer(customerId)
+  const rows: LinhaGaql[] = await customer.query(`
+    SELECT segments.conversion_action_name, metrics.all_conversions
+    FROM ${recursoGaqlQuebra(filtro)}
+    WHERE ${gaqlWhere(periodo, filtro)}
+  `)
+  let total = 0
+  for (const r of rows) {
+    const nome = String(r.segments?.conversion_action_name ?? '')
+    if (nome.toLowerCase() === ACAO_CONVERSAO_VISITA) total += r.metrics?.all_conversions ?? 0
+  }
+  return r2(total)
+}
+
 // ─── KPIs + COMPARATIVO ──────────────────────────────────────────────────────
 
 async function totaisAds(customerId: string, periodo: PeriodoAds, filtro?: FiltroAds): Promise<MetricasAds> {
@@ -629,13 +765,13 @@ async function totaisAds(customerId: string, periodo: PeriodoAds, filtro?: Filtr
   return comFallback('KPIs', async () => {
     const rows = await consultarAds(customerId, `
       SELECT ${SOMA_METRICAS_BQ}
-      FROM \`${viewAds('CampaignBasicStats')}\`
+      FROM \`${viewAds(baseStatsViewBq(filtro))}\`
       WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
     `, { inicio: periodo.inicio, fim: periodo.fim, ...extra.params })
     return metricasDeLinhaBq(rows[0] ?? {})
   }, async () => {
     const customer = criarCustomer(customerId)
-    const recurso = filtro?.campanhaId ? 'campaign' : 'customer'
+    const recurso = recursoGaqlAgregado(filtro)
     const rows: LinhaGaql[] = await customer.query(`
       SELECT ${METRICAS_GAQL}
       FROM ${recurso}
@@ -653,9 +789,10 @@ export async function kpisAds(
   filtro?:    FiltroAds,
 ): Promise<KpisAds> {
   validarPeriodo(periodo)
-  const [totais, impressionShare] = await Promise.all([
+  const [totais, impressionShare, visitasSite] = await Promise.all([
     totaisAds(customerId, periodo, filtro),
     impressionShareAds(customerId, periodo, filtro),
+    visitasSiteAds(customerId, periodo, filtro),
   ])
   return {
     ...totais,
@@ -663,6 +800,7 @@ export async function kpisAds(
     cpcMedio:      totais.cliques > 0 ? r2(totais.custo / totais.cliques) : 0,
     cpa:           totais.conversoes > 0 ? r2(totais.custo / totais.conversoes) : 0,
     taxaConversao: totais.cliques > 0 ? r2((totais.conversoes / totais.cliques) * 100) : 0,
+    visitasSite,
     impressionShare,
   }
 }

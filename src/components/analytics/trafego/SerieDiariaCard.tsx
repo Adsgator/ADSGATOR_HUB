@@ -1,48 +1,49 @@
 'use client'
 
-import {
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
-} from 'recharts'
 import type { LinhaDiaAds } from '@/lib/ads-detalhes'
-import { fmtConv, fmtMoeda, fmtNum } from './labels'
+import { MiniChartLinha } from './MiniChartLinha'
+import { fmtConv, fmtMoeda, fmtNum, fmtPct } from './labels'
 
-const NOMES: Record<string, string> = {
-  custo: 'Custo', cliques: 'Cliques', conversoes: 'Conversões',
-}
+// Gráfico de acompanhamento — replica os 2 gráficos do Looker (GADS-2), mas
+// cada métrica em eixo único: o Looker força Impressões/Cliques/CPC/Conversões
+// (e depois CTR/Taxa conv./Custo) em 2 escalas na mesma linha, o que cria
+// correlação visual que não existe nos dados. Mesmo AGRUPAMENTO de métricas,
+// small multiples em vez de eixo duplo. CTR e Taxa de conv. são a mesma
+// unidade (%) e legitimamente dividem 1 gráfico com 1 eixo.
+
+const CORES = { impressoes: '#ef4444', cliques: '#3B82F6', cpc: '#22c55e', conversoes: '#f59e0b', custo: '#3B82F6' }
 
 export function SerieDiariaCard({ dados }: { dados: LinhaDiaAds[] }) {
   const chartData = dados.map((l) => ({
-    ...l,
     dia: `${l.data.slice(8, 10)}/${l.data.slice(5, 7)}`,
+    impressoes: l.impressoes,
+    cliques: l.cliques,
+    cpc: l.cliques > 0 ? l.custo / l.cliques : 0,
+    conversoes: l.conversoes,
+    custo: l.custo,
+    ctr: l.impressoes > 0 ? (l.cliques / l.impressoes) * 100 : 0,
+    taxaConv: l.cliques > 0 ? (l.conversoes / l.cliques) * 100 : 0,
   }))
 
   return (
-    <div className="h-[15rem]">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
-          <XAxis dataKey="dia" tick={{ fontSize: 10, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-          <YAxis yAxisId="custo" tick={{ fontSize: 10, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => `R$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v.toFixed(0)}`} />
-          <YAxis yAxisId="contagem" orientation="right" tick={{ fontSize: 10, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} />
-          <Tooltip
-            contentStyle={{ background: 'var(--surface-elevated)', border: '1px solid var(--surface-border)', borderRadius: '0.625rem', fontSize: '0.75rem', boxShadow: '0 8px 24px rgba(0,0,0,0.15)' }}
-            labelStyle={{ color: 'var(--ink-primary)', fontWeight: 600, marginBottom: '0.25rem' }}
-            formatter={(v: unknown, name: unknown) => {
-              const n = String(name)
-              const valor = Number(v)
-              return [
-                n === 'custo' ? fmtMoeda(valor) : n === 'conversoes' ? fmtConv(valor) : fmtNum(valor),
-                NOMES[n] ?? n,
-              ] as [string, string]
-            }}
-          />
-          <Legend formatter={(v: string) => NOMES[v] ?? v} wrapperStyle={{ fontSize: '0.75rem' }} />
-          <Bar  yAxisId="custo"    dataKey="custo"      fill="#3B82F6" opacity={0.7} radius={[3, 3, 0, 0]} />
-          <Line yAxisId="contagem" dataKey="cliques"    stroke="#FFB100" strokeWidth={2} dot={false} activeDot={{ r: 3 }} />
-          <Line yAxisId="contagem" dataKey="conversoes" stroke="#22c55e" strokeWidth={2} dot={false} activeDot={{ r: 3 }} />
-        </ComposedChart>
-      </ResponsiveContainer>
+    <div className="space-y-[0.75rem]">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-[0.75rem]">
+        <MiniChartLinha titulo="Impressões" dados={chartData} eixoX="dia" formatter={fmtNum}
+          series={[{ chave: 'impressoes', cor: CORES.impressoes }]} />
+        <MiniChartLinha titulo="Cliques" dados={chartData} eixoX="dia" formatter={fmtNum}
+          series={[{ chave: 'cliques', cor: CORES.cliques }]} />
+        <MiniChartLinha titulo="CPC médio" dados={chartData} eixoX="dia" formatter={fmtMoeda}
+          series={[{ chave: 'cpc', cor: CORES.cpc }]} />
+        <MiniChartLinha titulo="Conversões" dados={chartData} eixoX="dia" formatter={fmtConv}
+          series={[{ chave: 'conversoes', cor: CORES.conversoes }]} />
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[0.75rem]">
+        <MiniChartLinha titulo="CTR e Taxa de conversão" dados={chartData} eixoX="dia" formatter={fmtPct}
+          series={[{ chave: 'ctr', cor: '#22c55e' }, { chave: 'taxaConv', cor: '#f59e0b' }]}
+          legenda={{ ctr: 'CTR', taxaConv: 'Taxa conv.' }} />
+        <MiniChartLinha titulo="Custo" dados={chartData} eixoX="dia" formatter={fmtMoeda}
+          series={[{ chave: 'custo', cor: CORES.custo }]} />
+      </div>
     </div>
   )
 }

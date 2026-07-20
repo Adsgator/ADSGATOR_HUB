@@ -3,7 +3,7 @@ import { Periodo, validarPeriodo } from './analytics-periodo'
 import {
   kpisAdsComparativo, serieDiariaAds, termosPesquisaAds, demografiaAds,
   geografiaAds, diasHorariosAds, dispositivosAds, campanhasDoPeriodoAds,
-  FiltroAds,
+  gruposAnuncioDoPeriodoAds, FiltroAds,
 } from './ads-detalhes'
 import {
   kpisGA4Comparativo, paginasGA4, aquisicaoGA4, dispositivosGA4,
@@ -25,19 +25,28 @@ import {
 export type FonteDetalhe = 'ads' | 'ga4'
 
 export const DIMENSOES_DETALHE: Record<FonteDetalhe, readonly string[]> = {
-  ads: ['kpis', 'serie', 'termos', 'demografia', 'geografia', 'dias_horarios', 'dispositivos', 'campanhas'],
+  ads: [
+    'kpis', 'serie', 'termos', 'demografia', 'geografia', 'dias_horarios',
+    'dispositivos', 'campanhas', 'grupos_anuncio',
+  ],
   ga4: ['kpis', 'paginas', 'aquisicao', 'dispositivos', 'novo_recorrente', 'eventos', 'horarios', 'tecnologia', 'geografia'],
 }
 
+// Dimensões que ignoram o filtro de campanha/grupo — listam TODAS as opções
+// pra alimentar os próprios seletores da UI (campanhasDoPeriodoAds não aceita
+// filtro; grupos_anuncio aceita só campanhaId, pra escopar o dropdown).
+const DIMENSOES_SEM_FILTRO_GRUPO = new Set(['campanhas'])
+
 export interface DetalheAnalytics {
-  fonte:        FonteDetalhe
-  dimensao:     string
-  periodo:      Periodo
-  campanhaId:   string      // '' = sem filtro
-  payload:      unknown
-  atualizadoEm: string      // ISO
-  cache:        'hit' | 'renovado' | 'desatualizado'
-  erro?:        string      // presente quando 'desatualizado' (renovação falhou)
+  fonte:          FonteDetalhe
+  dimensao:       string
+  periodo:        Periodo
+  campanhaId:     string      // '' = sem filtro
+  grupoAnuncioId: string      // '' = sem filtro
+  payload:        unknown
+  atualizadoEm:   string      // ISO
+  cache:          'hit' | 'renovado' | 'desatualizado'
+  erro?:          string      // presente quando 'desatualizado' (renovação falhou)
 }
 
 export interface ObterDetalheParams {
@@ -50,6 +59,7 @@ export interface ObterDetalheParams {
   dimensao:        string
   periodo:         Periodo
   campanhaId?:     string
+  grupoAnuncioId?: string
   renovar?:        boolean       // força renovação mesmo dentro do TTL
 }
 
@@ -65,20 +75,23 @@ function ttlDoPeriodo(fim: string): number {
 
 /** Busca o corte direto na fonte (BigQuery/GAQL/GA4) — sem cache. */
 async function buscarFresco(p: ObterDetalheParams): Promise<unknown> {
-  const filtro: FiltroAds | undefined = p.campanhaId ? { campanhaId: p.campanhaId } : undefined
+  const filtro: FiltroAds | undefined = (p.campanhaId || p.grupoAnuncioId)
+    ? { campanhaId: p.campanhaId, grupoAnuncioId: p.grupoAnuncioId }
+    : undefined
 
   if (p.fonte === 'ads') {
     const conta = p.contaAds
     if (!conta) throw new Error('Cliente sem Google Ads conectado (customer ID ausente)')
     switch (p.dimensao) {
-      case 'kpis':          return kpisAdsComparativo(conta, p.periodo, filtro)
-      case 'serie':         return serieDiariaAds(conta, p.periodo, filtro)
-      case 'termos':        return termosPesquisaAds(conta, p.periodo, filtro)
-      case 'demografia':    return demografiaAds(conta, p.periodo, filtro)
-      case 'geografia':     return geografiaAds(conta, p.periodo, filtro)
-      case 'dias_horarios': return diasHorariosAds(conta, p.periodo, filtro)
-      case 'dispositivos':  return dispositivosAds(conta, p.periodo, filtro)
-      case 'campanhas':     return campanhasDoPeriodoAds(conta, p.periodo)
+      case 'kpis':           return kpisAdsComparativo(conta, p.periodo, filtro)
+      case 'serie':          return serieDiariaAds(conta, p.periodo, filtro)
+      case 'termos':         return termosPesquisaAds(conta, p.periodo, filtro)
+      case 'demografia':     return demografiaAds(conta, p.periodo, filtro)
+      case 'geografia':      return geografiaAds(conta, p.periodo, filtro)
+      case 'dias_horarios':  return diasHorariosAds(conta, p.periodo, filtro)
+      case 'dispositivos':   return dispositivosAds(conta, p.periodo, filtro)
+      case 'campanhas':      return campanhasDoPeriodoAds(conta, p.periodo)
+      case 'grupos_anuncio': return gruposAnuncioDoPeriodoAds(conta, p.periodo, p.campanhaId)
     }
   } else {
     const prop = p.propriedadeGa4
@@ -103,15 +116,20 @@ export async function obterDetalheAnalytics(p: ObterDetalheParams): Promise<Deta
   if (!DIMENSOES_DETALHE[p.fonte]?.includes(p.dimensao)) {
     throw new Error(`Dimensão inválida para ${p.fonte}: "${p.dimensao}" (aceitas: ${DIMENSOES_DETALHE[p.fonte].join(', ')})`)
   }
-  const campanhaId = p.fonte === 'ads' ? (p.campanhaId ?? '') : ''
+  const semFiltro = p.fonte !== 'ads' || DIMENSOES_SEM_FILTRO_GRUPO.has(p.dimensao)
+  const campanhaId = semFiltro ? '' : (p.campanhaId ?? '')
+  // grupos_anuncio usa campanhaId só pra ESCOPAR a lista, não é filtro de dado
+  // (a dimensão em si já lista todos os grupos) — não entra na chave do grupo.
+  const grupoAnuncioId = (semFiltro || p.dimensao === 'grupos_anuncio') ? '' : (p.grupoAnuncioId ?? '')
 
   const chave = {
-    cliente_id:     p.clienteId,
-    fonte:          p.fonte,
-    dimensao:       p.dimensao,
-    periodo_inicio: p.periodo.inicio,
-    periodo_fim:    p.periodo.fim,
-    campanha_id:    campanhaId,
+    cliente_id:       p.clienteId,
+    fonte:            p.fonte,
+    dimensao:         p.dimensao,
+    periodo_inicio:   p.periodo.inicio,
+    periodo_fim:      p.periodo.fim,
+    campanha_id:      campanhaId,
+    grupo_anuncio_id: grupoAnuncioId,
   }
 
   // 1. cache — indisponível não bloqueia (ex.: migration ainda não aplicada)
@@ -133,7 +151,7 @@ export async function obterDetalheAnalytics(p: ObterDetalheParams): Promise<Deta
     && Date.now() - new Date(emCache.atualizado_em).getTime() < ttlDoPeriodo(p.periodo.fim)
   if (emCache && dentroDoTtl && !p.renovar) {
     return {
-      fonte: p.fonte, dimensao: p.dimensao, periodo: p.periodo, campanhaId,
+      fonte: p.fonte, dimensao: p.dimensao, periodo: p.periodo, campanhaId, grupoAnuncioId,
       payload: emCache.payload, atualizadoEm: emCache.atualizado_em, cache: 'hit',
     }
   }
@@ -148,7 +166,7 @@ export async function obterDetalheAnalytics(p: ObterDetalheParams): Promise<Deta
       // dado real velho e SINALIZADO é melhor que erro seco
       console.warn(`[analytics-detalhes] renovação falhou (${p.fonte}/${p.dimensao}) — servindo cache antigo:`, mensagem)
       return {
-        fonte: p.fonte, dimensao: p.dimensao, periodo: p.periodo, campanhaId,
+        fonte: p.fonte, dimensao: p.dimensao, periodo: p.periodo, campanhaId, grupoAnuncioId,
         payload: emCache.payload, atualizadoEm: emCache.atualizado_em,
         cache: 'desatualizado', erro: mensagem,
       }
@@ -163,7 +181,7 @@ export async function obterDetalheAnalytics(p: ObterDetalheParams): Promise<Deta
       .from('analytics_detalhes')
       .upsert(
         { ...chave, user_id: p.userId, payload, atualizado_em: atualizadoEm },
-        { onConflict: 'cliente_id,fonte,dimensao,periodo_inicio,periodo_fim,campanha_id' },
+        { onConflict: 'cliente_id,fonte,dimensao,periodo_inicio,periodo_fim,campanha_id,grupo_anuncio_id' },
       )
     if (error) throw error
   } catch (err) {
@@ -171,7 +189,7 @@ export async function obterDetalheAnalytics(p: ObterDetalheParams): Promise<Deta
   }
 
   return {
-    fonte: p.fonte, dimensao: p.dimensao, periodo: p.periodo, campanhaId,
+    fonte: p.fonte, dimensao: p.dimensao, periodo: p.periodo, campanhaId, grupoAnuncioId,
     payload, atualizadoEm, cache: 'renovado',
   }
 }

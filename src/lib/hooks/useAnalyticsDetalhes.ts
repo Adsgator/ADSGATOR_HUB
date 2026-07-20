@@ -13,11 +13,12 @@ export interface MetaDetalhe {
 }
 
 interface Params {
-  clienteId:   string
-  fonte:       'ads' | 'ga4'
-  dimensao:    string
-  periodo:     Periodo
-  campanhaId?: string
+  clienteId:      string
+  fonte:          'ads' | 'ga4'
+  dimensao:       string
+  periodo:        Periodo
+  campanhaId?:    string
+  grupoAnuncioId?: string
   /** Incrementar força renovação (bypass do cache) em todas as seções. */
   renovarTick?: number
   /** false pausa o fetch (ex.: integração desligada). */
@@ -31,7 +32,7 @@ export function useDetalheAnalytics<T>(p: Params) {
   const [erro, setErro]             = useState<string | null>(null)
   const seq = useRef(0) // descarta resposta atrasada de um fetch anterior
 
-  const { clienteId, fonte, dimensao, campanhaId, ativo } = p
+  const { clienteId, fonte, dimensao, campanhaId, grupoAnuncioId, ativo } = p
   const { inicio, fim } = p.periodo
 
   const carregar = useCallback(async (renovar: boolean) => {
@@ -41,6 +42,7 @@ export function useDetalheAnalytics<T>(p: Params) {
     try {
       const qs = new URLSearchParams({ fonte, dimensao, inicio, fim })
       if (campanhaId) qs.set('campanha', campanhaId)
+      if (grupoAnuncioId) qs.set('grupo', grupoAnuncioId)
       if (renovar) qs.set('renovar', '1')
       const res = await fetch(`/api/analytics/${clienteId}/detalhes?${qs.toString()}`)
       const json = await res.json().catch(() => null)
@@ -54,7 +56,7 @@ export function useDetalheAnalytics<T>(p: Params) {
     } finally {
       if (id === seq.current) setCarregando(false)
     }
-  }, [clienteId, fonte, dimensao, inicio, fim, campanhaId])
+  }, [clienteId, fonte, dimensao, inicio, fim, campanhaId, grupoAnuncioId])
 
   useEffect(() => {
     if (ativo === false || !clienteId) return

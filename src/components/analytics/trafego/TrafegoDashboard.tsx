@@ -5,12 +5,14 @@ import { RefreshCw, Megaphone, Link2 } from 'lucide-react'
 import type {
   KpisAdsComparativo, LinhaDiaAds, LinhaTermoAds, DemografiaAds,
   LinhaLocalAds, DiasHorariosAds, LinhaDispositivoAds, CampanhaPeriodoAds,
+  GrupoAnuncioPeriodoAds,
 } from '@/lib/ads-detalhes'
 import type { Periodo } from '@/lib/analytics-periodo'
 import { useDetalheAnalytics } from '@/lib/hooks/useAnalyticsDetalhes'
 import { SecaoCard } from './SecaoCard'
 import { KpiTilesAds } from './KpiTilesAds'
 import { SerieDiariaCard } from './SerieDiariaCard'
+import { TabelaCompacta } from './TabelaCompacta'
 import { TermosCard } from './TermosCard'
 import { DemografiaAdsCard } from './DemografiaAdsCard'
 import { DispositivosAdsCard } from './DispositivosAdsCard'
@@ -18,11 +20,11 @@ import { DiasHorariosCard } from './DiasHorariosCard'
 import { GeografiaAdsCard } from './GeografiaAdsCard'
 import { fmtMoeda } from './labels'
 
-// ─── Dashboard Tráfego (Google Ads) — Analytics 2.0 F4 ──────────────────────
-// Tudo que o dashboard Looker de Ads mostrava, por cliente: KPIs com delta,
-// série diária, termos, demografia, geografia, dias/horários e dispositivos,
-// com presets de período (comparativo automático no server) e filtro por
-// campanha. Cada seção busca seu corte na rota de detalhes (cache 6h).
+// ─── Dashboard Tráfego (Google Ads) — réplica do Looker (Analytics 2.0) ─────
+// Ordem das seções segue os 6 prints do Looker (docs/DASHBOARD_GADS_SPEC.md):
+// KPIs em 3 grupos → gráfico diário (eixo único) + prévias compactas de
+// termos/horário → tabela completa de termos → geografia (Cidade/Estado/País)
+// → demografia (tabela + 4 gráficos) → dias/horário/dispositivo.
 
 export type PresetPeriodo = 'mes_atual' | 'mes_passado' | '30d' | '90d'
 
@@ -53,6 +55,12 @@ export function periodoDoPreset(preset: PresetPeriodo): Periodo {
   }
 }
 
+/** "6 de jul. de 2026" — mesmo estilo do seletor de período do Looker. */
+function fmtDataExtensa(iso: string): string {
+  const [ano, mes, dia] = iso.split('-').map(Number)
+  return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
 interface TrafegoDashboardProps {
   clienteId:    string
   adsConectado: boolean
@@ -61,16 +69,20 @@ interface TrafegoDashboardProps {
 export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardProps) {
   const [preset, setPreset] = useState<PresetPeriodo>('mes_atual')
   const [campanhaId, setCampanhaId] = useState('')
+  const [grupoAnuncioId, setGrupoAnuncioId] = useState('')
   const [renovarTick, setRenovarTick] = useState(0)
   const periodo = useMemo(() => periodoDoPreset(preset), [preset])
 
-  // trocar de cliente zera o filtro de campanha (ids são por conta)
-  useEffect(() => { setCampanhaId('') }, [clienteId])
+  // trocar de cliente zera os filtros (ids são por conta)
+  useEffect(() => { setCampanhaId(''); setGrupoAnuncioId('') }, [clienteId])
+  // trocar de campanha zera o grupo (grupo pertence a UMA campanha)
+  useEffect(() => { setGrupoAnuncioId('') }, [campanhaId])
 
   const base = { clienteId, fonte: 'ads' as const, periodo, renovarTick, ativo: adsConectado }
-  const comFiltro = { ...base, campanhaId: campanhaId || undefined }
+  const comFiltro = { ...base, campanhaId: campanhaId || undefined, grupoAnuncioId: grupoAnuncioId || undefined }
 
   const campanhas    = useDetalheAnalytics<CampanhaPeriodoAds[]>({ ...base, dimensao: 'campanhas' })
+  const grupos       = useDetalheAnalytics<GrupoAnuncioPeriodoAds[]>({ ...base, campanhaId: campanhaId || undefined, dimensao: 'grupos_anuncio' })
   const kpis         = useDetalheAnalytics<KpisAdsComparativo>({ ...comFiltro, dimensao: 'kpis' })
   const serie        = useDetalheAnalytics<LinhaDiaAds[]>({ ...comFiltro, dimensao: 'serie' })
   const termos       = useDetalheAnalytics<LinhaTermoAds[]>({ ...comFiltro, dimensao: 'termos' })
@@ -101,10 +113,20 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
 
   const atualizadoEm = kpis.meta?.atualizadoEm
   const campanhaSelecionada = campanhas.dados?.find((c) => c.id === campanhaId)
+  const grupoSelecionado = grupos.dados?.find((g) => g.id === grupoAnuncioId)
+
+  // Prévias compactas (GADS-2) reaproveitam dados já buscados — sem query extra.
+  const termosCompactos = (termos.dados ?? []).slice(0, 10).map((t) => ({
+    chave: t.termo, label: t.termo, impressoes: t.impressoes, cliques: t.cliques,
+  }))
+  const horariosCompactos = [...(diasHorarios.dados?.porHora ?? [])]
+    .sort((a, b) => b.impressoes - a.impressoes)
+    .slice(0, 8)
+    .map((h) => ({ chave: String(h.hora), label: `${h.hora}h`, impressoes: h.impressoes, cliques: h.cliques }))
 
   return (
     <div className="space-y-[1rem]">
-      {/* ── Controles: período + campanha + atualizar ── */}
+      {/* ── Controles: período + campanha + grupo de anúncios + atualizar ── */}
       <div className="flex items-center gap-[0.625rem] flex-wrap">
         <div className="flex bg-surface-hover border border-surface-border rounded-[0.5rem] p-[0.1875rem] gap-[0.125rem]">
           {PRESETS.map((p) => (
@@ -125,17 +147,35 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
         <select
           value={campanhaId}
           onChange={(e) => setCampanhaId(e.target.value)}
-          className="h-[2.125rem] px-[0.625rem] rounded-lg bg-surface-card border border-surface-border text-[0.8125rem] text-ink-primary focus-ring max-w-[18rem]"
+          className="h-[2.125rem] px-[0.625rem] rounded-lg bg-surface-card border border-surface-border text-[0.8125rem] text-ink-primary focus-ring max-w-[16rem]"
         >
           <option value="">Todas as campanhas</option>
           {(campanhas.dados ?? []).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.nome} ({fmtMoeda(c.custo)})
-            </option>
+            <option key={c.id} value={c.id}>{c.nome} ({fmtMoeda(c.custo)})</option>
+          ))}
+        </select>
+
+        <select
+          value={grupoAnuncioId}
+          onChange={(e) => setGrupoAnuncioId(e.target.value)}
+          className="h-[2.125rem] px-[0.625rem] rounded-lg bg-surface-card border border-surface-border text-[0.8125rem] text-ink-primary focus-ring max-w-[16rem] disabled:opacity-50"
+          disabled={(grupos.dados ?? []).length === 0}
+        >
+          <option value="">Todos os grupos de anúncios</option>
+          {(grupos.dados ?? []).map((g) => (
+            <option key={g.id} value={g.id}>{g.nome} ({fmtMoeda(g.custo)})</option>
           ))}
         </select>
 
         <div className="ml-auto flex items-center gap-[0.625rem]">
+          {(campanhaId || grupoAnuncioId) && (
+            <button
+              onClick={() => { setCampanhaId(''); setGrupoAnuncioId('') }}
+              className="text-[0.75rem] font-medium text-ads-500 hover:underline"
+            >
+              Limpar filtros
+            </button>
+          )}
           {atualizadoEm && (
             <span className="text-ink-muted text-[0.6875rem]">
               Atualizado {new Date(atualizadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
@@ -152,39 +192,52 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
         </div>
       </div>
 
-      {campanhaSelecionada && (
+      {(campanhaSelecionada || grupoSelecionado) && (
         <p className="text-[0.75rem] text-ink-muted -mt-[0.25rem]">
-          Filtrando pela campanha <span className="text-ink-secondary font-medium">{campanhaSelecionada.nome}</span>
-          {' '}— comparativo e todas as seções refletem só ela.
+          Filtrando por {grupoSelecionado
+            ? <>grupo de anúncios <span className="text-ink-secondary font-medium">{grupoSelecionado.nome}</span></>
+            : <>campanha <span className="text-ink-secondary font-medium">{campanhaSelecionada?.nome}</span></>}
+          {' '}— comparativo e todas as seções refletem só esse recorte.
         </p>
       )}
 
-      {/* ── KPIs com delta ── */}
+      <p className="text-ink-muted text-[0.75rem]">
+        Período: <span className="text-ink-secondary font-medium">{fmtDataExtensa(periodo.inicio)} – {fmtDataExtensa(periodo.fim)}</span>
+      </p>
+
+      {/* ── KPIs em 3 grupos (Interações, Desempenho+dispositivo, %) ── */}
       <SecaoCard
-        titulo={`Resumo do período (${periodo.inicio.slice(8, 10)}/${periodo.inicio.slice(5, 7)} – ${periodo.fim.slice(8, 10)}/${periodo.fim.slice(5, 7)}) vs período anterior`}
+        titulo="Visão geral"
         carregando={kpis.carregando}
         erro={kpis.erro}
         meta={kpis.meta}
         aoTentarNovamente={kpis.recarregar}
       >
-        {kpis.dados && <KpiTilesAds dados={kpis.dados} />}
+        {kpis.dados && <KpiTilesAds dados={kpis.dados} dispositivos={dispositivos.dados ?? undefined} />}
       </SecaoCard>
 
-      {/* ── Série diária ── */}
-      <SecaoCard
-        titulo="Acompanhamento diário"
-        carregando={serie.carregando}
-        erro={serie.erro}
-        meta={serie.meta}
-        vazio={(serie.dados ?? []).length === 0}
-        aoTentarNovamente={serie.recarregar}
-      >
-        {serie.dados && <SerieDiariaCard dados={serie.dados} />}
-      </SecaoCard>
+      {/* ── Gráfico de acompanhamento + prévias compactas ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_18rem] gap-[1rem]">
+        <SecaoCard
+          titulo="Gráfico de acompanhamento"
+          carregando={serie.carregando}
+          erro={serie.erro}
+          meta={serie.meta}
+          vazio={(serie.dados ?? []).length === 0}
+          aoTentarNovamente={serie.recarregar}
+        >
+          {serie.dados && <SerieDiariaCard dados={serie.dados} />}
+        </SecaoCard>
 
-      {/* ── Termos de pesquisa ── */}
+        <div className="space-y-[1rem]">
+          <TabelaCompacta titulo="Top pesquisas" linhas={termosCompactos} />
+          <TabelaCompacta titulo="Resultados pelo horário" linhas={horariosCompactos} />
+        </div>
+      </div>
+
+      {/* ── Tabela completa de termos ── */}
       <SecaoCard
-        titulo="Termos de pesquisa"
+        titulo="Principais termos e palavras nas pesquisas que mostraram seus anúncios"
         carregando={termos.carregando}
         erro={termos.erro}
         meta={termos.meta}
@@ -194,34 +247,32 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
         {termos.dados && <TermosCard dados={termos.dados} />}
       </SecaoCard>
 
-      {/* ── Demografia + Dispositivos ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
-        <SecaoCard
-          titulo="Dados demográficos"
-          carregando={demografia.carregando}
-          erro={demografia.erro}
-          meta={demografia.meta}
-          vazio={(demografia.dados?.faixasEtarias ?? []).length === 0 && (demografia.dados?.generos ?? []).length === 0}
-          aoTentarNovamente={demografia.recarregar}
-        >
-          {demografia.dados && <DemografiaAdsCard dados={demografia.dados} />}
-        </SecaoCard>
-
-        <SecaoCard
-          titulo="Dispositivos"
-          carregando={dispositivos.carregando}
-          erro={dispositivos.erro}
-          meta={dispositivos.meta}
-          vazio={(dispositivos.dados ?? []).length === 0}
-          aoTentarNovamente={dispositivos.recarregar}
-        >
-          {dispositivos.dados && <DispositivosAdsCard dados={dispositivos.dados} />}
-        </SecaoCard>
-      </div>
-
-      {/* ── Dias da semana + horários ── */}
+      {/* ── Geografia: Cidade / Estado / País ── */}
       <SecaoCard
-        titulo="Dias da semana e horários"
+        titulo="Métricas de cidade, estado e país"
+        carregando={geografia.carregando}
+        erro={geografia.erro}
+        meta={geografia.meta}
+        aoTentarNovamente={geografia.recarregar}
+      >
+        {geografia.dados && <GeografiaAdsCard dados={geografia.dados} />}
+      </SecaoCard>
+
+      {/* ── Demografia ── */}
+      <SecaoCard
+        titulo="Dados demográficos"
+        carregando={demografia.carregando}
+        erro={demografia.erro}
+        meta={demografia.meta}
+        vazio={(demografia.dados?.faixasEtarias ?? []).length === 0 && (demografia.dados?.generos ?? []).length === 0}
+        aoTentarNovamente={demografia.recarregar}
+      >
+        {demografia.dados && <DemografiaAdsCard dados={demografia.dados} />}
+      </SecaoCard>
+
+      {/* ── Dias da semana + horário ── */}
+      <SecaoCard
+        titulo="Dias da semana e horário do dia"
         carregando={diasHorarios.carregando}
         erro={diasHorarios.erro}
         meta={diasHorarios.meta}
@@ -230,16 +281,16 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
         {diasHorarios.dados && <DiasHorariosCard dados={diasHorarios.dados} />}
       </SecaoCard>
 
-      {/* ── Geografia ── */}
+      {/* ── Dispositivos ── */}
       <SecaoCard
-        titulo="Cidades e regiões (onde o usuário estava)"
-        carregando={geografia.carregando}
-        erro={geografia.erro}
-        meta={geografia.meta}
-        vazio={(geografia.dados ?? []).length === 0}
-        aoTentarNovamente={geografia.recarregar}
+        titulo="Dispositivos"
+        carregando={dispositivos.carregando}
+        erro={dispositivos.erro}
+        meta={dispositivos.meta}
+        vazio={(dispositivos.dados ?? []).length === 0}
+        aoTentarNovamente={dispositivos.recarregar}
       >
-        {geografia.dados && <GeografiaAdsCard dados={geografia.dados} />}
+        {dispositivos.dados && <DispositivosAdsCard dados={dispositivos.dados} />}
       </SecaoCard>
     </div>
   )

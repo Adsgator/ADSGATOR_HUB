@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.64.0',
+    data:   '2026-07-20',
+    novidades: [
+      'Dashboard de Tráfego (Google Ads) refeito com precisão contra o Looker real: painel de KPIs em 3 grupos (Interações, Desempenho, %), gráfico diário sem eixo duplo (Impressões/Cliques/CPC/Conversões cada um no seu gráfico — dois eixos numa linha só criava correlação falsa), termos de pesquisa completos com busca e prévia rápida, geografia separada em Cidade/Estado/País, demografia com 4 gráficos por métrica (idade e gênero), e tabelas de dia da semana/horário/dispositivo com todas as métricas + donuts de participação',
+      'Novo filtro por Grupo de Anúncios (além de campanha) — os filtros se combinam e todas as seções refletem o recorte escolhido',
+      'Métrica nova "Visitas no site": a ação de conversão secundária view_content, que mostra quantos cliques realmente chegaram no site (distinto da conversão principal, o lead do WhatsApp)',
+      'Ainda faltam: "Visitas site" detalhada por termo/cidade/dispositivo (hoje só como total), e o drill-down de cidade para bairro/CEP — próximos incrementos',
+    ],
+  },
+  {
     versao: '0.63.0',
     data:   '2026-07-18',
     novidades: [

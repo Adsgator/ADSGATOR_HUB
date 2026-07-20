@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 /**
  * GET /api/analytics/[clienteId]/detalhes
  *   ?fonte=ads|ga4 & dimensao=<corte> & inicio=YYYY-MM-DD & fim=YYYY-MM-DD
- *   [&campanha=<id do Google Ads>] [&renovar=1]
+ *   [&campanha=<id do Google Ads>] [&grupo=<id do grupo de anúncios>] [&renovar=1]
  *
  * Serve os cortes do Analytics 2.0 a partir do cache analytics_detalhes
  * (TTL ~6h; período fechado 7d) e renova on-demand — a resposta indica
@@ -80,6 +80,7 @@ export async function GET(
       dimensao,
       periodo:        { inicio, fim },
       campanhaId:     searchParams.get('campanha') ?? undefined,
+      grupoAnuncioId: searchParams.get('grupo') ?? undefined,
       renovar:        searchParams.get('renovar') === '1',
     })
     return NextResponse.json(detalhe)
