@@ -12,13 +12,14 @@ import { fmtConv, fmtMoeda, fmtNum, fmtPct } from './labels'
 // nos totais gerais, só não aparecem detalhadas nesta tabela (drill-down é o
 // próximo incremento, ver docs/DASHBOARD_GADS_SPEC.md).
 
-const COLUNAS = ['Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo']
+const COLUNAS = ['Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo', 'Visitas site']
 
 function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string; linhas: LinhaLocalAds[] }) {
   const total = useMemo(() => linhas.reduce((acc, l) => ({
     impressoes: acc.impressoes + l.impressoes, cliques: acc.cliques + l.cliques,
     custo: acc.custo + l.custo, conversoes: acc.conversoes + l.conversoes,
-  }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0 }), [linhas])
+    visitasSite: acc.visitasSite + l.visitasSite,
+  }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0, visitasSite: 0 }), [linhas])
 
   return (
     <div>
@@ -54,7 +55,8 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
                     <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(ctr)}</td>
                     <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(l.conversoes)}</td>
                     <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{l.conversoes > 0 ? fmtMoeda(l.custo / l.conversoes) : '—'}</td>
-                    <td className="py-[0.5rem] text-status-blue font-medium">{fmtMoeda(l.custo)}</td>
+                    <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtMoeda(l.custo)}</td>
+                    <td className="py-[0.5rem] text-ink-secondary">{fmtConv(l.visitasSite)}</td>
                   </tr>
                 )
               })}
@@ -68,7 +70,8 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{total.impressoes > 0 ? fmtPct((total.cliques / total.impressoes) * 100) : '—'}</td>
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{fmtConv(total.conversoes)}</td>
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{total.conversoes > 0 ? fmtMoeda(total.custo / total.conversoes) : '—'}</td>
-                <td className="py-[0.5rem] text-ink-primary">{fmtMoeda(total.custo)}</td>
+                <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{fmtMoeda(total.custo)}</td>
+                <td className="py-[0.5rem] text-ink-primary">{fmtConv(total.visitasSite)}</td>
               </tr>
             </tfoot>
           </table>

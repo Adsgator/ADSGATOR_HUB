@@ -8,6 +8,14 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.64.1',
+    data:   '2026-07-22',
+    novidades: [
+      '"Visitas no site" agora aparece detalhada por termo de pesquisa, cidade/estado/país e dispositivo (antes só existia como total) — validado contra o total: dispositivo e geografia batem exatamente, termos soma menos porque busca só existe em campanhas de Pesquisa',
+      'Gráfico "Por dispositivo" do painel de Desempenho e os donuts de dispositivo ganharam Visitas site como 3ª/4ª métrica, igual ao Looker',
+    ],
+  },
+  {
     versao: '0.64.0',
     data:   '2026-07-20',
     novidades: [

@@ -37,17 +37,20 @@ export interface MetricasAds {
 }
 
 export interface LinhaDiaAds extends MetricasAds { data: string }
-export interface LinhaTermoAds extends MetricasAds { termo: string }
+/** visitasSite: ação "view_content" segmentada por termo — mesma convenção de
+ *  `KpisAds.visitasSite`, ver seção "VISITAS NO SITE" abaixo. */
+export interface LinhaTermoAds extends MetricasAds { termo: string; visitasSite: number }
 export interface LinhaFaixaEtariaAds extends MetricasAds { faixa: string }   // enum AGE_RANGE_*
 export interface LinhaGeneroAds extends MetricasAds { genero: string }       // MALE | FEMALE | UNDETERMINED
 export interface LinhaLocalAds extends MetricasAds {
   local:  string // nome resolvido (cidade, região…)
   regiao: string // unidade acima (estado, quando o local é cidade)
   tipo:   string // target_type do geo constant (City, State…)
+  visitasSite: number
 }
 export interface LinhaDiaSemanaAds extends MetricasAds { dia: string }       // enum MONDAY..SUNDAY
 export interface LinhaHoraAds extends MetricasAds { hora: number }           // 0–23
-export interface LinhaDispositivoAds extends MetricasAds { dispositivo: string } // enum MOBILE, DESKTOP…
+export interface LinhaDispositivoAds extends MetricasAds { dispositivo: string; visitasSite: number } // enum MOBILE, DESKTOP…
 export interface CampanhaPeriodoAds extends MetricasAds { id: string; nome: string }
 export interface GrupoAnuncioPeriodoAds extends MetricasAds { id: string; nome: string; campanhaId: string }
 
@@ -263,6 +266,41 @@ export async function serieDiariaAds(
   })
 }
 
+// ─── VISITAS NO SITE POR DIMENSÃO (GAQL-only, mesmo mecanismo do KPI) ────────
+// "view_content" é ação de conversão SECUNDÁRIA — segmentar por ela numa
+// query que também tivesse cliques/impressões duplicaria essas métricas (uma
+// linha por ação de conversão). Por isso é sempre uma query À PARTE, só com
+// a chave da dimensão + conversion_action_name + all_conversions, mergeada
+// por chave depois. Confirmado compatível com search_term_view,
+// geographic_view e segments.device (ver docs/DASHBOARD_GADS_SPEC.md).
+
+const ACAO_CONVERSAO_VISITA = 'view_content'
+
+async function visitasPorChaveAds(
+  customerId:    string,
+  periodo:       PeriodoAds,
+  filtro:        FiltroAds | undefined,
+  recurso:       string,
+  camposSelect:  string,
+  extrairChave:  (r: LinhaGaql) => string,
+  extraWhere = '',
+): Promise<Map<string, number>> {
+  const customer = criarCustomer(customerId)
+  const rows: LinhaGaql[] = await customer.query(`
+    SELECT ${camposSelect}, segments.conversion_action_name, metrics.all_conversions
+    FROM ${recurso}
+    WHERE ${gaqlWhere(periodo, filtro)}${extraWhere}
+  `)
+  const mapa = new Map<string, number>()
+  for (const r of rows) {
+    const nome = String(r.segments?.conversion_action_name ?? '')
+    if (nome.toLowerCase() !== ACAO_CONVERSAO_VISITA) continue
+    const chave = extrairChave(r)
+    mapa.set(chave, r2((mapa.get(chave) ?? 0) + (r.metrics?.all_conversions ?? 0)))
+  }
+  return mapa
+}
+
 // ─── TERMOS DE PESQUISA ──────────────────────────────────────────────────────
 
 export async function termosPesquisaAds(
@@ -274,31 +312,39 @@ export async function termosPesquisaAds(
   validarPeriodo(periodo)
   const extra = filtroBq(filtro)
 
-  return comFallback('termos de pesquisa', async () => {
-    const rows = await consultarAds(customerId, `
-      SELECT search_term_view_search_term AS termo, ${SOMA_METRICAS_BQ}
-      FROM \`${viewAds('SearchQueryStats')}\`
-      WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
-      GROUP BY termo
-      ORDER BY cliques DESC, impressoes DESC
-      LIMIT @limite
-    `, { inicio: periodo.inicio, fim: periodo.fim, limite, ...extra.params })
-    return rows.map((r) => ({ termo: String(r.termo ?? ''), ...metricasDeLinhaBq(r) }))
-  }, async () => {
-    const customer = criarCustomer(customerId)
-    const rows: LinhaGaql[] = await customer.query(`
-      SELECT search_term_view.search_term, ${METRICAS_GAQL}
-      FROM search_term_view
-      WHERE ${gaqlWhere(periodo, filtro)}
-      ORDER BY metrics.clicks DESC
-      LIMIT ${limite}
-    `)
-    const mapa = new Map<string, MetricasAds>()
-    for (const r of rows) acumular(mapa, String(r.search_term_view?.search_term ?? ''), metricasDeLinhaGaql(r))
-    return Array.from(mapa.entries())
-      .map(([termo, m]) => ({ termo, ...arredondar(m) }))
-      .sort((a, b) => b.cliques - a.cliques)
-  })
+  const [linhas, visitas] = await Promise.all([
+    comFallback('termos de pesquisa', async () => {
+      const rows = await consultarAds(customerId, `
+        SELECT search_term_view_search_term AS termo, ${SOMA_METRICAS_BQ}
+        FROM \`${viewAds('SearchQueryStats')}\`
+        WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
+        GROUP BY termo
+        ORDER BY cliques DESC, impressoes DESC
+        LIMIT @limite
+      `, { inicio: periodo.inicio, fim: periodo.fim, limite, ...extra.params })
+      return rows.map((r) => ({ termo: String(r.termo ?? ''), ...metricasDeLinhaBq(r) }))
+    }, async () => {
+      const customer = criarCustomer(customerId)
+      const rows: LinhaGaql[] = await customer.query(`
+        SELECT search_term_view.search_term, ${METRICAS_GAQL}
+        FROM search_term_view
+        WHERE ${gaqlWhere(periodo, filtro)}
+        ORDER BY metrics.clicks DESC
+        LIMIT ${limite}
+      `)
+      const mapa = new Map<string, MetricasAds>()
+      for (const r of rows) acumular(mapa, String(r.search_term_view?.search_term ?? ''), metricasDeLinhaGaql(r))
+      return Array.from(mapa.entries())
+        .map(([termo, m]) => ({ termo, ...arredondar(m) }))
+        .sort((a, b) => b.cliques - a.cliques)
+    }),
+    visitasPorChaveAds(
+      customerId, periodo, filtro, 'search_term_view', 'search_term_view.search_term',
+      (r) => String(r.search_term_view?.search_term ?? ''),
+    ),
+  ])
+
+  return linhas.map((l) => ({ ...l, visitasSite: r2(visitas.get(l.termo) ?? 0) }))
 }
 
 // ─── DEMOGRAFIA (IDADE + GÊNERO) ─────────────────────────────────────────────
@@ -402,9 +448,10 @@ export async function demografiaAds(
 // duplicaria as métricas.
 
 async function resolverLocais(
-  customerId: string,
-  porLocal:   Map<number, MetricasAds>,
-  limite:     number,
+  customerId:   string,
+  porLocal:     Map<number, MetricasAds>,
+  limite:       number,
+  visitasPorId: Map<string, number> = new Map(),
 ): Promise<LinhaLocalAds[]> {
   const ids = Array.from(porLocal.keys()).filter((id) => id > 0)
   if (ids.length === 0) return []
@@ -434,6 +481,7 @@ async function resolverLocais(
         local:  info?.nome || `#${id}`,
         regiao: partes.length >= 3 ? partes[partes.length - 2].trim() : '',
         tipo:   info?.tipo ?? '',
+        visitasSite: r2(visitasPorId.get(String(id)) ?? 0),
         ...arredondar(m),
       }
     })
@@ -454,35 +502,42 @@ export async function geografiaAds(
   validarPeriodo(periodo)
   const extra = filtroBq(filtro)
 
-  const porLocal = await comFallback('geografia', async () => {
-    const rows = await consultarAds(customerId, `
-      SELECT segments_geo_target_most_specific_location AS local_id, ${SOMA_METRICAS_BQ}
-      FROM \`${viewAds('GeoStats')}\`
-      WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim
-        AND geographic_view_location_type = 'LOCATION_OF_PRESENCE'${extra.sql}
-      GROUP BY local_id
-      ORDER BY cliques DESC
-      LIMIT @limite
-    `, { inicio: periodo.inicio, fim: periodo.fim, limite, ...extra.params })
-    const mapa = new Map<number, MetricasAds>()
-    for (const r of rows) mapa.set(idGeoTarget(r.local_id), metricasDeLinhaBq(r))
-    return mapa
-  }, async () => {
-    const customer = criarCustomer(customerId)
-    const rows: LinhaGaql[] = await customer.query(`
-      SELECT segments.geo_target_most_specific_location, ${METRICAS_GAQL}
-      FROM geographic_view
-      WHERE ${gaqlWhere(periodo, filtro)}
-        AND geographic_view.location_type = 'LOCATION_OF_PRESENCE'
-    `)
-    const mapa = new Map<number, MetricasAds>()
-    for (const r of rows) {
-      acumular(mapa, idGeoTarget(r.segments?.geo_target_most_specific_location), metricasDeLinhaGaql(r))
-    }
-    return mapa
-  })
+  const [porLocal, visitasPorId] = await Promise.all([
+    comFallback('geografia', async () => {
+      const rows = await consultarAds(customerId, `
+        SELECT segments_geo_target_most_specific_location AS local_id, ${SOMA_METRICAS_BQ}
+        FROM \`${viewAds('GeoStats')}\`
+        WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim
+          AND geographic_view_location_type = 'LOCATION_OF_PRESENCE'${extra.sql}
+        GROUP BY local_id
+        ORDER BY cliques DESC
+        LIMIT @limite
+      `, { inicio: periodo.inicio, fim: periodo.fim, limite, ...extra.params })
+      const mapa = new Map<number, MetricasAds>()
+      for (const r of rows) mapa.set(idGeoTarget(r.local_id), metricasDeLinhaBq(r))
+      return mapa
+    }, async () => {
+      const customer = criarCustomer(customerId)
+      const rows: LinhaGaql[] = await customer.query(`
+        SELECT segments.geo_target_most_specific_location, ${METRICAS_GAQL}
+        FROM geographic_view
+        WHERE ${gaqlWhere(periodo, filtro)}
+          AND geographic_view.location_type = 'LOCATION_OF_PRESENCE'
+      `)
+      const mapa = new Map<number, MetricasAds>()
+      for (const r of rows) {
+        acumular(mapa, idGeoTarget(r.segments?.geo_target_most_specific_location), metricasDeLinhaGaql(r))
+      }
+      return mapa
+    }),
+    visitasPorChaveAds(
+      customerId, periodo, filtro, 'geographic_view', 'segments.geo_target_most_specific_location',
+      (r) => String(idGeoTarget(r.segments?.geo_target_most_specific_location)),
+      " AND geographic_view.location_type = 'LOCATION_OF_PRESENCE'",
+    ),
+  ])
 
-  return resolverLocais(customerId, porLocal, limite)
+  return resolverLocais(customerId, porLocal, limite, visitasPorId)
 }
 
 // ─── DIA DA SEMANA + HORA ────────────────────────────────────────────────────
@@ -561,28 +616,36 @@ export async function dispositivosAds(
   validarPeriodo(periodo)
   const extra = filtroBq(filtro)
 
-  return comFallback('dispositivos', async () => {
-    const rows = await consultarAds(customerId, `
-      SELECT segments_device AS dispositivo, ${SOMA_METRICAS_BQ}
-      FROM \`${viewAds(baseStatsViewBq(filtro))}\`
-      WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
-      GROUP BY dispositivo
-      ORDER BY cliques DESC
-    `, { inicio: periodo.inicio, fim: periodo.fim, ...extra.params })
-    return rows.map((r) => ({ dispositivo: String(r.dispositivo ?? 'UNKNOWN'), ...metricasDeLinhaBq(r) }))
-  }, async () => {
-    const customer = criarCustomer(customerId)
-    const rows: LinhaGaql[] = await customer.query(`
-      SELECT segments.device, ${METRICAS_GAQL}
-      FROM ${recursoGaqlQuebra(filtro)}
-      WHERE ${gaqlWhere(periodo, filtro)}
-    `)
-    const mapa = new Map<string, MetricasAds>()
-    for (const r of rows) acumular(mapa, nomeEnum(r.segments?.device, DISPOSITIVO_POR_ENUM, 'UNKNOWN'), metricasDeLinhaGaql(r))
-    return Array.from(mapa.entries())
-      .map(([dispositivo, m]) => ({ dispositivo, ...arredondar(m) }))
-      .sort((a, b) => b.cliques - a.cliques)
-  })
+  const [linhas, visitas] = await Promise.all([
+    comFallback('dispositivos', async () => {
+      const rows = await consultarAds(customerId, `
+        SELECT segments_device AS dispositivo, ${SOMA_METRICAS_BQ}
+        FROM \`${viewAds(baseStatsViewBq(filtro))}\`
+        WHERE customer_id = @cid AND segments_date BETWEEN @inicio AND @fim${extra.sql}
+        GROUP BY dispositivo
+        ORDER BY cliques DESC
+      `, { inicio: periodo.inicio, fim: periodo.fim, ...extra.params })
+      return rows.map((r) => ({ dispositivo: String(r.dispositivo ?? 'UNKNOWN'), ...metricasDeLinhaBq(r) }))
+    }, async () => {
+      const customer = criarCustomer(customerId)
+      const rows: LinhaGaql[] = await customer.query(`
+        SELECT segments.device, ${METRICAS_GAQL}
+        FROM ${recursoGaqlQuebra(filtro)}
+        WHERE ${gaqlWhere(periodo, filtro)}
+      `)
+      const mapa = new Map<string, MetricasAds>()
+      for (const r of rows) acumular(mapa, nomeEnum(r.segments?.device, DISPOSITIVO_POR_ENUM, 'UNKNOWN'), metricasDeLinhaGaql(r))
+      return Array.from(mapa.entries())
+        .map(([dispositivo, m]) => ({ dispositivo, ...arredondar(m) }))
+        .sort((a, b) => b.cliques - a.cliques)
+    }),
+    visitasPorChaveAds(
+      customerId, periodo, filtro, recursoGaqlQuebra(filtro), 'segments.device',
+      (r) => nomeEnum(r.segments?.device, DISPOSITIVO_POR_ENUM, 'UNKNOWN'),
+    ),
+  ])
+
+  return linhas.map((l) => ({ ...l, visitasSite: r2(visitas.get(l.dispositivo) ?? 0) }))
 }
 
 // ─── CAMPANHAS DO PERÍODO (para o filtro da UI) ──────────────────────────────
@@ -725,7 +788,7 @@ export async function impressionShareAds(
   }
 }
 
-// ─── VISITAS NO SITE (ação de conversão secundária — GAQL-only) ──────────────
+// ─── VISITAS NO SITE — TOTAL (ação de conversão secundária — GAQL-only) ──────
 // Convenção fixa da agência (todo cliente novo, mesmo nome): "contato_wpp" é
 // a ação PRIMÁRIA (conta em metrics.conversions — é o "conversoes" de sempre),
 // "view_content" é SECUNDÁRIA (só aparece em metrics.all_conversions) e marca
@@ -733,9 +796,9 @@ export async function impressionShareAds(
 // guarda all_conversions por ação (views *ConversionStats só têm a primária)
 // — por isso essa métrica é sempre GAQL, mesmo com a conta carregada no BQ.
 // Nomes de ações legadas (ex.: contato_wpp_fibra, de LPs específicas antigas)
-// não são suportados — prática abandonada, convenção hoje é fixa.
-
-const ACAO_CONVERSAO_VISITA = 'view_content'
+// não são suportados — prática abandonada, convenção hoje é fixa. Reusa
+// `visitasPorChaveAds` (mesmo helper das quebras por termo/geo/dispositivo)
+// com uma chave fixa só pra somar tudo.
 
 export async function visitasSiteAds(
   customerId: string,
@@ -743,18 +806,10 @@ export async function visitasSiteAds(
   filtro?:    FiltroAds,
 ): Promise<number> {
   validarPeriodo(periodo)
-  const customer = criarCustomer(customerId)
-  const rows: LinhaGaql[] = await customer.query(`
-    SELECT segments.conversion_action_name, metrics.all_conversions
-    FROM ${recursoGaqlQuebra(filtro)}
-    WHERE ${gaqlWhere(periodo, filtro)}
-  `)
-  let total = 0
-  for (const r of rows) {
-    const nome = String(r.segments?.conversion_action_name ?? '')
-    if (nome.toLowerCase() === ACAO_CONVERSAO_VISITA) total += r.metrics?.all_conversions ?? 0
-  }
-  return r2(total)
+  const mapa = await visitasPorChaveAds(
+    customerId, periodo, filtro, recursoGaqlQuebra(filtro), 'segments.date', () => 'total',
+  )
+  return r2(mapa.get('total') ?? 0)
 }
 
 // ─── KPIs + COMPARATIVO ──────────────────────────────────────────────────────

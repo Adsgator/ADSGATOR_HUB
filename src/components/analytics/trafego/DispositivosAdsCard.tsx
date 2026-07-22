@@ -6,20 +6,18 @@ import type { LinhaDispositivoAds } from '@/lib/ads-detalhes'
 import { DISPOSITIVO_LABEL, fmtConv, fmtMoeda, fmtNum, fmtPct } from './labels'
 
 // Dispositivo — réplica do Looker (GADS-6): tabela completa + donuts de
-// participação por métrica. "Visitas site" por dispositivo fica pendente
-// (mesmo motivo dos termos: precisa de query própria segmentada por
-// conversion_action, ver docs/DASHBOARDS_GADS_SPEC.md).
+// participação por métrica (Impressões, Cliques, Visitas site, Conversões).
 
 const CORES: Record<string, string> = {
   MOBILE: '#FFB100', DESKTOP: '#10B981', TABLET: '#3B82F6', CONNECTED_TV: '#8b5cf6', OTHER: '#6B7280', UNKNOWN: '#6B7280',
 }
 
-const COLUNAS = ['Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo']
+const COLUNAS = ['Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo', 'Visitas site']
 
 function Donut({ titulo, dados, metrica, formatter }: {
   titulo: string
   dados: LinhaDispositivoAds[]
-  metrica: 'impressoes' | 'cliques' | 'conversoes'
+  metrica: 'impressoes' | 'cliques' | 'conversoes' | 'visitasSite'
   formatter: (v: number) => string
 }) {
   const total = dados.reduce((s, d) => s + d[metrica], 0)
@@ -62,7 +60,8 @@ export function DispositivosAdsCard({ dados }: { dados: LinhaDispositivoAds[] })
   const total = useMemo(() => dados.reduce((acc, d) => ({
     impressoes: acc.impressoes + d.impressoes, cliques: acc.cliques + d.cliques,
     custo: acc.custo + d.custo, conversoes: acc.conversoes + d.conversoes,
-  }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0 }), [dados])
+    visitasSite: acc.visitasSite + d.visitasSite,
+  }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0, visitasSite: 0 }), [dados])
 
   return (
     <div>
@@ -89,7 +88,8 @@ export function DispositivosAdsCard({ dados }: { dados: LinhaDispositivoAds[] })
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(ctr)}</td>
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(d.conversoes)}</td>
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{d.conversoes > 0 ? fmtMoeda(d.custo / d.conversoes) : '—'}</td>
-                  <td className="py-[0.5rem] text-status-blue font-medium">{fmtMoeda(d.custo)}</td>
+                  <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtMoeda(d.custo)}</td>
+                  <td className="py-[0.5rem] text-ink-secondary">{fmtConv(d.visitasSite)}</td>
                 </tr>
               )
             })}
@@ -103,15 +103,17 @@ export function DispositivosAdsCard({ dados }: { dados: LinhaDispositivoAds[] })
               <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{total.impressoes > 0 ? fmtPct((total.cliques / total.impressoes) * 100) : '—'}</td>
               <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{fmtConv(total.conversoes)}</td>
               <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{total.conversoes > 0 ? fmtMoeda(total.custo / total.conversoes) : '—'}</td>
-              <td className="py-[0.5rem] text-ink-primary">{fmtMoeda(total.custo)}</td>
+              <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{fmtMoeda(total.custo)}</td>
+              <td className="py-[0.5rem] text-ink-primary">{fmtConv(total.visitasSite)}</td>
             </tr>
           </tfoot>
         </table>
       </div>
 
-      <div className="grid grid-cols-3 gap-[0.75rem]">
+      <div className="grid grid-cols-4 gap-[0.75rem]">
         <Donut titulo="Impressões" dados={dados} metrica="impressoes" formatter={fmtNum} />
         <Donut titulo="Cliques" dados={dados} metrica="cliques" formatter={fmtNum} />
+        <Donut titulo="Visitas site" dados={dados} metrica="visitasSite" formatter={fmtConv} />
         <Donut titulo="Conversões" dados={dados} metrica="conversoes" formatter={fmtConv} />
       </div>
     </div>

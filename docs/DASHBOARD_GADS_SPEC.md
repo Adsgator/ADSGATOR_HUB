@@ -143,9 +143,8 @@ falharia.
       "de graça" via `ad_group_id` já presente nas views; impression share
       retorna null nesse nível). `gruposAnuncioDoPeriodoAds` pro seletor da UI.
       Migration `20260720_analytics_detalhes_grupo_anuncio.sql` (cache por
-      grupo) — PENDENTE Lucas rodar no SQL Editor; sem ela funciona igual, só
-      sem cache pros cortes filtrados por grupo (confirmado: degrada com aviso
-      no log, não quebra).
+      grupo) — aplicada pelo Lucas em 20/07; reverificado com dado real
+      (conta Ana Ester): 2ª chamada com mesmo filtro de grupo já vem `hit`.
 - [x] Gráficos de eixo duplo corrigidos: série diária virou small multiples
       (Impressões/Cliques/CPC médio/Conversões cada um seu gráfico; CTR+Taxa
       conv. dividem 1 eixo % porque são a mesma unidade; Custo separado).
@@ -164,15 +163,29 @@ falharia.
       Cliques, Conversões).
 - [x] Typecheck limpo, build de produção ok.
 
-### Pendências reais (não travam a 1ª rodada, mas não estão prontas)
-- [ ] **"Visitas site" por linha** (termos/geografia/dispositivo) — hoje só
-      existe como KPI agregado. Detalhar por dimensão exige uma query extra
-      por seção (segmentada por `conversion_action_name`, SEM misturar com
-      impressões/cliques na mesma query — duplicaria, mesmo erro do
-      click_type) + merge por chave. Não implementado ainda.
-  - [ ] Mesma pendência no gráfico "Por dispositivo" do painel Desempenho
-        (hoje só Cliques + Conversões) e nos 4 donuts de dispositivo (hoje só
-        Impressões/Cliques/Conversões, Looker tinha Visitas site também).
+### Feito e validado (2ª rodada — 22/07)
+- [x] **"Visitas site" por linha** (termos/geografia/dispositivo) — helper
+      genérico `visitasPorChaveAds` em `ads-detalhes.ts`: query separada por
+      seção (só a chave da dimensão + `conversion_action_name` +
+      `all_conversions`, nunca misturada com impressões/cliques — evita o
+      mesmo erro do click_type), merge por chave. Confirmado compatível com
+      `search_term_view`, `geographic_view` e `segments.device`. Validado com
+      dado real (conta Ricardo, jun–jul/2026): soma por Dispositivo (209.00)
+      e por Geografia (209.01) batem com o agregado (209) — sem duplicação.
+      Termos soma menos (102.53) porque `search_term_view` só existe pra
+      campanhas de Pesquisa (Display/PMax não têm termo de busca) — mesma
+      limitação de escopo que já valia pras outras colunas dessa tabela, não
+      é bug novo. `visitasSiteAds` (KPI agregado) foi refatorado pra reusar o
+      mesmo helper.
+  - [x] Gráfico "Por dispositivo" do painel Desempenho ganhou a 3ª barra
+        (Visitas site, entre Cliques e Conversões) e os donuts de dispositivo
+        ganharam o 4º (Visitas site) — igual ao Looker.
+- [x] Corrigido de quebra um bug real achado no typecheck: crase literal
+      dentro do template literal de `system-map.ts` (texto com `` `view_content` ``
+      fechava a string da Gator prematuramente, quebrando a build). Escapado
+      com `\``.
+
+### Pendências reais (não travam, mas não estão prontas)
 - [ ] **Drill-down de Cidade → bairro/CEP** — a tabela Cidade hoje só mostra
       linhas que resolveram EXATAMENTE em nível de cidade (`tipo === 'City'`);
       bairro/CEP não aparecem em lugar nenhum desta seção (entram nos totais

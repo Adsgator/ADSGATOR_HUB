@@ -8,10 +8,9 @@ import { fmtConv, fmtMoeda, fmtNum, fmtPct } from './labels'
 // Termos de pesquisa — top por cliques com busca local (padrão do Looker:
 // tabela completa pesquisável).
 
-// Ordem de colunas replica o Looker (GADS-3). "Visitas site" fica pendente —
-// depende de detalhamento por termo da ação view_content (próximo incremento,
-// ver docs/DASHBOARD_GADS_SPEC.md).
-const COLUNAS = ['Termo de pesquisa', 'Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo']
+// Ordem de colunas replica o Looker (GADS-3), incluindo Visitas site (ação
+// view_content segmentada por termo, ver docs/DASHBOARD_GADS_SPEC.md).
+const COLUNAS = ['Termo de pesquisa', 'Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo', 'Visitas site']
 
 export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
   const [busca, setBusca] = useState('')
@@ -23,11 +22,12 @@ export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
   }, [dados, busca])
 
   const total = useMemo(() => dados.reduce((acc, t) => ({
-    impressoes: acc.impressoes + t.impressoes,
-    cliques:    acc.cliques + t.cliques,
-    custo:      acc.custo + t.custo,
-    conversoes: acc.conversoes + t.conversoes,
-  }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0 }), [dados])
+    impressoes:  acc.impressoes + t.impressoes,
+    cliques:     acc.cliques + t.cliques,
+    custo:       acc.custo + t.custo,
+    conversoes:  acc.conversoes + t.conversoes,
+    visitasSite: acc.visitasSite + t.visitasSite,
+  }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0, visitasSite: 0 }), [dados])
 
   return (
     <div>
@@ -65,7 +65,8 @@ export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(ctr)}</td>
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(t.conversoes)}</td>
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{t.conversoes > 0 ? fmtMoeda(t.custo / t.conversoes) : '—'}</td>
-                  <td className="py-[0.5rem] text-status-blue font-medium">{fmtMoeda(t.custo)}</td>
+                  <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtMoeda(t.custo)}</td>
+                  <td className="py-[0.5rem] text-ink-secondary">{fmtConv(t.visitasSite)}</td>
                 </tr>
               )
             })}
@@ -80,7 +81,8 @@ export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{total.impressoes > 0 ? fmtPct((total.cliques / total.impressoes) * 100) : '—'}</td>
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{fmtConv(total.conversoes)}</td>
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{total.conversoes > 0 ? fmtMoeda(total.custo / total.conversoes) : '—'}</td>
-                <td className="py-[0.5rem] text-ink-primary">{fmtMoeda(total.custo)}</td>
+                <td className="py-[0.5rem] pr-[1rem] text-ink-primary">{fmtMoeda(total.custo)}</td>
+                <td className="py-[0.5rem] text-ink-primary">{fmtConv(total.visitasSite)}</td>
               </tr>
             </tfoot>
           )}

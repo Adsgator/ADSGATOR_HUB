@@ -112,10 +112,15 @@ const TILES_PCT: TileConfig[] = [
   { label: 'CTR',                atual: (k) => k.atual.ctr,           fmt: fmtPct, subida: 'boa' },
 ]
 
+const NOME_METRICA_DISPOSITIVO: Record<string, string> = {
+  cliques: 'Cliques', visitasSite: 'Visitas site', conversoes: 'Conversões',
+}
+
 function GraficoDispositivo({ dispositivos }: { dispositivos: LinhaDispositivoAds[] }) {
   const dados = dispositivos.map((d) => ({
     nome: DISPOSITIVO_LABEL[d.dispositivo] ?? d.dispositivo,
     cliques: d.cliques,
+    visitasSite: d.visitasSite,
     conversoes: d.conversoes,
   }))
   return (
@@ -130,10 +135,11 @@ function GraficoDispositivo({ dispositivos }: { dispositivos: LinhaDispositivoAd
             <Tooltip
               cursor={{ fill: 'var(--surface-hover)' }}
               contentStyle={{ background: 'var(--surface-elevated)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
-              formatter={(v: unknown, nome: unknown) => [fmtNum(Number(v)), nome === 'cliques' ? 'Cliques' : 'Conversões'] as [string, string]}
+              formatter={(v: unknown, nome: unknown) => [fmtNum(Number(v)), NOME_METRICA_DISPOSITIVO[String(nome)] ?? String(nome)] as [string, string]}
             />
-            <Legend formatter={(v: string) => (v === 'cliques' ? 'Cliques' : 'Conversões')} wrapperStyle={{ fontSize: '0.6875rem' }} />
+            <Legend formatter={(v: string) => NOME_METRICA_DISPOSITIVO[v] ?? v} wrapperStyle={{ fontSize: '0.6875rem' }} />
             <Bar dataKey="cliques" fill="#3B82F6" radius={[0, 3, 3, 0]} />
+            <Bar dataKey="visitasSite" fill="#8b5cf6" radius={[0, 3, 3, 0]} />
             <Bar dataKey="conversoes" fill="#f59e0b" radius={[0, 3, 3, 0]} />
           </BarChart>
         </ResponsiveContainer>
