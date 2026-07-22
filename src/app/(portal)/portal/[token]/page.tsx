@@ -8,7 +8,7 @@ import type {
 } from '@/lib/ads-detalhes'
 import type {
   KpisGA4Comparativo, LinhaOrigemGA4, LinhaPaginaGA4,
-  LinhaDispositivoGA4, LinhaTipoUsuarioGA4, LinhaLocalGA4,
+  LinhaDispositivoGA4, LinhaTipoUsuarioGA4, GeografiaGA4,
 } from '@/lib/ga4-detalhes'
 import { TrafegoDidatico, SiteDidatico, GaugeMidia } from '@/components/portal/AnalyticsDidatico'
 import { Calendar, AlertCircle, CheckCircle2, Clock } from 'lucide-react'
@@ -180,7 +180,7 @@ export default async function PortalPage({ params }: PageParams) {
     ga4On ? detalhe<LinhaPaginaGA4[]>('ga4', 'paginas') : nulo,
     ga4On ? detalhe<LinhaDispositivoGA4[]>('ga4', 'dispositivos') : nulo,
     ga4On ? detalhe<LinhaTipoUsuarioGA4[]>('ga4', 'novo_recorrente') : nulo,
-    ga4On ? detalhe<LinhaLocalGA4[]>('ga4', 'geografia') : nulo,
+    ga4On ? detalhe<GeografiaGA4>('ga4', 'geografia') : nulo,
   ])
 
   // Medidor de verba: limite de mídia é do PLANO (assinatura ativa → plano

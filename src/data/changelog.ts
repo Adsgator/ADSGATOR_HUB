@@ -8,6 +8,16 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.65.0',
+    data:   '2026-07-22',
+    novidades: [
+      'Dashboard de Site (GA4) refeito com o mesmo rigor do dashboard de Ads: painel de KPIs em 2 grupos, gráfico por hora do dia sem eixo duplo (era 1 gráfico com sessões numa escala e engajamento/rejeição noutra — criava correlação visual falsa), geografia separada em Cidade/Estado/País (antes vinha tudo misturado numa linha só)',
+      'Tabelas de Origem/mídia, Dispositivo e Novo×Recorrente agora têm o mesmo conjunto de 6 métricas (visualizações, usuários, novos, sessões, engajamento, rejeição, duração) + linha "Total geral", igual ao Looker',
+      'Página com query string: nova tabela mostrando o caminho + parâmetros exatos (fbclid, UTM), útil pra rastrear de qual link ou campanha veio o acesso',
+      'Informações técnicas dos dispositivos: ganhou as tabelas de Navegador e de Dispositivo+Modelo+Marca que não existiam antes',
+    ],
+  },
+  {
     versao: '0.64.1',
     data:   '2026-07-22',
     novidades: [

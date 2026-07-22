@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { RefreshCw, Globe, Link2 } from 'lucide-react'
 import type {
   KpisGA4Comparativo, LinhaPaginaGA4, LinhaOrigemGA4, LinhaDispositivoGA4,
-  LinhaTipoUsuarioGA4, LinhaEventoGA4, LinhaHoraGA4, TecnologiaGA4, LinhaLocalGA4,
+  LinhaTipoUsuarioGA4, LinhaEventoGA4, LinhaHoraGA4, TecnologiaGA4, GeografiaGA4,
 } from '@/lib/ga4-detalhes'
 import { useDetalheAnalytics } from '@/lib/hooks/useAnalyticsDetalhes'
 import { SecaoCard } from '../trafego/SecaoCard'
@@ -43,13 +43,14 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
 
   const kpis           = useDetalheAnalytics<KpisGA4Comparativo>({ ...base, dimensao: 'kpis' })
   const paginas        = useDetalheAnalytics<LinhaPaginaGA4[]>({ ...base, dimensao: 'paginas' })
+  const paginasRaw     = useDetalheAnalytics<LinhaPaginaGA4[]>({ ...base, dimensao: 'paginas_raw' })
   const aquisicao      = useDetalheAnalytics<LinhaOrigemGA4[]>({ ...base, dimensao: 'aquisicao' })
   const dispositivos   = useDetalheAnalytics<LinhaDispositivoGA4[]>({ ...base, dimensao: 'dispositivos' })
   const novoRecorrente = useDetalheAnalytics<LinhaTipoUsuarioGA4[]>({ ...base, dimensao: 'novo_recorrente' })
   const eventos        = useDetalheAnalytics<LinhaEventoGA4[]>({ ...base, dimensao: 'eventos' })
   const horarios       = useDetalheAnalytics<LinhaHoraGA4[]>({ ...base, dimensao: 'horarios' })
   const tecnologia     = useDetalheAnalytics<TecnologiaGA4>({ ...base, dimensao: 'tecnologia' })
-  const geografia      = useDetalheAnalytics<LinhaLocalGA4[]>({ ...base, dimensao: 'geografia' })
+  const geografia      = useDetalheAnalytics<GeografiaGA4>({ ...base, dimensao: 'geografia' })
 
   if (!ga4Conectado) {
     return (
@@ -118,7 +119,7 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
         meta={kpis.meta}
         aoTentarNovamente={kpis.recarregar}
       >
-        {kpis.dados && <KpiTilesGA4 dados={kpis.dados} />}
+        {kpis.dados && <KpiTilesGA4 dados={kpis.dados} dispositivos={dispositivos.dados ?? undefined} />}
       </SecaoCard>
 
       {/* ── Aquisição ── */}
@@ -142,7 +143,7 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
         vazio={(paginas.dados ?? []).length === 0}
         aoTentarNovamente={paginas.recarregar}
       >
-        {paginas.dados && <PaginasCard dados={paginas.dados} />}
+        {paginas.dados && <PaginasCard dados={paginas.dados} dadosBrutos={paginasRaw.dados ?? undefined} />}
       </SecaoCard>
 
       {/* ── Horários ── */}
@@ -156,19 +157,20 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
         {horarios.dados && <HorariosGA4Card dados={horarios.dados} />}
       </SecaoCard>
 
-      {/* ── Dispositivos + Novo×Recorrente ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
-        <SecaoCard
-          titulo="Por dispositivo"
-          carregando={dispositivos.carregando}
-          erro={dispositivos.erro}
-          meta={dispositivos.meta}
-          vazio={(dispositivos.dados ?? []).length === 0}
-          aoTentarNovamente={dispositivos.recarregar}
-        >
-          {dispositivos.dados && <DispositivosGA4Card dados={dispositivos.dados} />}
-        </SecaoCard>
+      {/* ── Dispositivos ── */}
+      <SecaoCard
+        titulo="Por dispositivo"
+        carregando={dispositivos.carregando}
+        erro={dispositivos.erro}
+        meta={dispositivos.meta}
+        vazio={(dispositivos.dados ?? []).length === 0}
+        aoTentarNovamente={dispositivos.recarregar}
+      >
+        {dispositivos.dados && <DispositivosGA4Card dados={dispositivos.dados} />}
+      </SecaoCard>
 
+      {/* ── Novo×Recorrente + Eventos ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
         <SecaoCard
           titulo="Visitante novo × recorrente"
           carregando={novoRecorrente.carregando}
@@ -179,10 +181,7 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
         >
           {novoRecorrente.dados && <NovoRecorrenteCard dados={novoRecorrente.dados} />}
         </SecaoCard>
-      </div>
 
-      {/* ── Eventos + Tecnologia ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
         <SecaoCard
           titulo="Eventos disparados"
           carregando={eventos.carregando}
@@ -193,18 +192,19 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
         >
           {eventos.dados && <EventosCard dados={eventos.dados} />}
         </SecaoCard>
-
-        <SecaoCard
-          titulo="Informações técnicas"
-          carregando={tecnologia.carregando}
-          erro={tecnologia.erro}
-          meta={tecnologia.meta}
-          vazio={(tecnologia.dados?.sistemas ?? []).length === 0 && (tecnologia.dados?.resolucoes ?? []).length === 0}
-          aoTentarNovamente={tecnologia.recarregar}
-        >
-          {tecnologia.dados && <TecnologiaCard dados={tecnologia.dados} />}
-        </SecaoCard>
       </div>
+
+      {/* ── Informações técnicas ── */}
+      <SecaoCard
+        titulo="Informações técnicas dos dispositivos"
+        carregando={tecnologia.carregando}
+        erro={tecnologia.erro}
+        meta={tecnologia.meta}
+        vazio={(tecnologia.dados?.sistemas ?? []).length === 0 && (tecnologia.dados?.resolucoes ?? []).length === 0}
+        aoTentarNovamente={tecnologia.recarregar}
+      >
+        {tecnologia.dados && <TecnologiaCard dados={tecnologia.dados} />}
+      </SecaoCard>
 
       {/* ── Geografia ── */}
       <SecaoCard
@@ -212,7 +212,7 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
         carregando={geografia.carregando}
         erro={geografia.erro}
         meta={geografia.meta}
-        vazio={(geografia.dados ?? []).length === 0}
+        vazio={!!geografia.dados && geografia.dados.cidades.length === 0 && geografia.dados.estados.length === 0 && geografia.dados.paises.length === 0}
         aoTentarNovamente={geografia.recarregar}
       >
         {geografia.dados && <GeografiaGA4Card dados={geografia.dados} />}

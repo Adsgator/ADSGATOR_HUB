@@ -46,30 +46,42 @@ export interface LinhaPaginaGA4 {
 }
 
 export interface LinhaOrigemGA4 {
-  fonte:           string
-  midia:           string
-  sessoes:         number
-  usuarios:        number
-  conversoes:      number
-  taxaConversao:   number // %
-  taxaEngajamento: number // %
+  fonte:              string
+  midia:              string
+  visualizacoes:      number
+  usuarios:           number
+  usuariosNovos:      number
+  sessoes:            number
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+  duracaoMediaSessao: number // segundos
+  /** Extras não presentes no Looker — métrica de negócio real, mantida
+   *  (mesmo precedente do Ads com CPC médio/Cliques por conversão). */
+  conversoes:         number
+  taxaConversao:      number // %
 }
 
 export interface LinhaDispositivoGA4 {
-  dispositivo:     string // mobile | desktop | tablet…
-  sessoes:         number
-  usuarios:        number
-  usuariosNovos:   number
-  visualizacoes:   number
-  taxaEngajamento: number // %
+  dispositivo:        string // mobile | desktop | tablet…
+  visualizacoes:      number
+  usuarios:           number
+  usuariosNovos:      number
+  sessoes:            number
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+  duracaoMediaSessao: number // segundos
 }
 
 export interface LinhaTipoUsuarioGA4 {
-  tipo:            string // new | returning | (not set)
-  usuarios:        number
-  sessoes:         number
-  conversoes:      number
-  taxaEngajamento: number // %
+  tipo:               string // new | returning | (not set)
+  visualizacoes:      number
+  usuarios:           number
+  usuariosNovos:      number
+  sessoes:            number
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+  duracaoMediaSessao: number // segundos
+  conversoes:         number
 }
 
 export interface LinhaEventoGA4 {
@@ -80,8 +92,9 @@ export interface LinhaEventoGA4 {
 
 export interface LinhaHoraGA4 {
   hora:               number // 0–23
-  sessoes:            number
   visualizacoes:      number
+  usuariosNovos:      number
+  sessoes:            number
   duracaoMediaSessao: number // segundos
   taxaEngajamento:    number // %
   taxaRejeicao:       number // %
@@ -100,19 +113,53 @@ export interface LinhaResolucaoGA4 {
   usuarios:  number
 }
 
-export interface TecnologiaGA4 {
-  sistemas:   LinhaSistemaGA4[]
-  resolucoes: LinhaResolucaoGA4[]
+export interface LinhaNavegadorGA4 {
+  navegador:          string
+  visualizacoes:      number
+  usuarios:           number
+  usuariosNovos:      number
+  sessoes:            number
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+  duracaoMediaSessao: number // segundos
 }
 
-export interface LinhaLocalGA4 {
-  pais:            string
-  estado:          string
-  cidade:          string
-  sessoes:         number
-  usuarios:        number
-  usuariosNovos:   number
-  taxaEngajamento: number // %
+/** Dispositivo + modelo + marca — só as 4 métricas que o Looker mostra aqui
+ *  (sem %engajamento/%rejeição, diferente das outras quebras). */
+export interface LinhaDispositivoDetalhadoGA4 {
+  dispositivo:        string
+  modelo:             string
+  marca:              string
+  visualizacoes:      number
+  usuariosNovos:      number
+  sessoes:            number
+  duracaoMediaSessao: number // segundos
+}
+
+export interface TecnologiaGA4 {
+  sistemas:            LinhaSistemaGA4[]
+  resolucoes:          LinhaResolucaoGA4[]
+  navegadores:         LinhaNavegadorGA4[]
+  dispositivosDetalhe: LinhaDispositivoDetalhadoGA4[]
+}
+
+/** Uma linha genérica de quebra geográfica (Cidade OU Estado OU País —
+ *  nunca misturados, ver docs/DASHBOARD_GA4_SPEC.md). */
+export interface LinhaGeoGA4 {
+  local:              string
+  visualizacoes:      number
+  usuarios:           number
+  usuariosNovos:      number
+  sessoes:            number
+  taxaEngajamento:    number // %
+  taxaRejeicao:       number // %
+  duracaoMediaSessao: number // segundos
+}
+
+export interface GeografiaGA4 {
+  cidades: LinhaGeoGA4[]
+  estados: LinhaGeoGA4[]
+  paises:  LinhaGeoGA4[]
 }
 
 // ─── HELPERS INTERNOS ────────────────────────────────────────────────────────
@@ -248,7 +295,33 @@ export async function paginasGA4(
     .slice(0, limite)
 }
 
+/** Caminho + query string (fbclid/UTM etc.), SEM normalizar nem fundir —
+ *  granularidade mais fina que `paginasGA4`, útil pra rastrear link exato. */
+export async function paginasRawGA4(
+  propertyId: string,
+  periodo:    Periodo,
+  limite = 50,
+): Promise<LinhaPaginaGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], ['pagePathPlusQueryString'],
+    ['screenPageViews', 'activeUsers', 'newUsers', 'sessions', 'engagementRate', 'bounceRate', 'averageSessionDuration'],
+    { ordenarPor: 'screenPageViews', limite },
+  )
+  return rows.map((r) => ({
+    pagina:             dim(r, 0) || '/',
+    visualizacoes:      met(r, 0),
+    usuarios:           met(r, 1),
+    usuariosNovos:      met(r, 2),
+    sessoes:            met(r, 3),
+    taxaEngajamento:    metPct(r, 4),
+    taxaRejeicao:       metPct(r, 5),
+    duracaoMediaSessao: r2(met(r, 6)),
+  }))
+}
+
 // ─── AQUISIÇÃO (ORIGEM / MÍDIA) ──────────────────────────────────────────────
+// 6 métricas padrão (ver spec) + conversões/taxa de conversão como extra.
 
 export async function aquisicaoGA4(
   propertyId: string,
@@ -258,20 +331,24 @@ export async function aquisicaoGA4(
   validarPeriodo(periodo)
   const rows = await rodarRelatorio(
     propertyId, [periodo], ['sessionSource', 'sessionMedium'],
-    ['sessions', 'activeUsers', 'conversions', 'engagementRate'],
+    ['screenPageViews', 'activeUsers', 'newUsers', 'sessions', 'conversions', 'engagementRate', 'bounceRate', 'averageSessionDuration'],
     { ordenarPor: 'sessions', limite },
   )
   return rows.map((r) => {
-    const sessoes = met(r, 0)
-    const conversoes = met(r, 2)
+    const sessoes = met(r, 3)
+    const conversoes = met(r, 4)
     return {
-      fonte:           dim(r, 0) || '(direct)',
-      midia:           dim(r, 1) || '(none)',
+      fonte:              dim(r, 0) || '(direct)',
+      midia:              dim(r, 1) || '(none)',
+      visualizacoes:      met(r, 0),
+      usuarios:           met(r, 1),
+      usuariosNovos:      met(r, 2),
       sessoes,
-      usuarios:        met(r, 1),
-      conversoes:      r2(conversoes),
-      taxaConversao:   sessoes > 0 ? r2((conversoes / sessoes) * 100) : 0,
-      taxaEngajamento: metPct(r, 3),
+      taxaEngajamento:    metPct(r, 5),
+      taxaRejeicao:       metPct(r, 6),
+      duracaoMediaSessao: r2(met(r, 7)),
+      conversoes:         r2(conversoes),
+      taxaConversao:      sessoes > 0 ? r2((conversoes / sessoes) * 100) : 0,
     }
   })
 }
@@ -285,16 +362,18 @@ export async function dispositivosGA4(
   validarPeriodo(periodo)
   const rows = await rodarRelatorio(
     propertyId, [periodo], ['deviceCategory'],
-    ['sessions', 'activeUsers', 'newUsers', 'screenPageViews', 'engagementRate'],
+    ['screenPageViews', 'activeUsers', 'newUsers', 'sessions', 'engagementRate', 'bounceRate', 'averageSessionDuration'],
     { ordenarPor: 'sessions' },
   )
   return rows.map((r) => ({
-    dispositivo:     dim(r, 0),
-    sessoes:         met(r, 0),
-    usuarios:        met(r, 1),
-    usuariosNovos:   met(r, 2),
-    visualizacoes:   met(r, 3),
-    taxaEngajamento: metPct(r, 4),
+    dispositivo:        dim(r, 0),
+    visualizacoes:      met(r, 0),
+    usuarios:           met(r, 1),
+    usuariosNovos:      met(r, 2),
+    sessoes:            met(r, 3),
+    taxaEngajamento:    metPct(r, 4),
+    taxaRejeicao:       metPct(r, 5),
+    duracaoMediaSessao: r2(met(r, 6)),
   }))
 }
 
@@ -307,15 +386,19 @@ export async function novoVsRecorrenteGA4(
   validarPeriodo(periodo)
   const rows = await rodarRelatorio(
     propertyId, [periodo], ['newVsReturning'],
-    ['activeUsers', 'sessions', 'conversions', 'engagementRate'],
+    ['screenPageViews', 'activeUsers', 'newUsers', 'sessions', 'conversions', 'engagementRate', 'bounceRate', 'averageSessionDuration'],
     { ordenarPor: 'activeUsers' },
   )
   return rows.map((r) => ({
-    tipo:            dim(r, 0) || '(not set)',
-    usuarios:        met(r, 0),
-    sessoes:         met(r, 1),
-    conversoes:      r2(met(r, 2)),
-    taxaEngajamento: metPct(r, 3),
+    tipo:               dim(r, 0) || '(not set)',
+    visualizacoes:      met(r, 0),
+    usuarios:           met(r, 1),
+    usuariosNovos:      met(r, 2),
+    sessoes:            met(r, 3),
+    taxaEngajamento:    metPct(r, 5),
+    taxaRejeicao:       metPct(r, 6),
+    duracaoMediaSessao: r2(met(r, 7)),
+    conversoes:         r2(met(r, 4)),
   }))
 }
 
@@ -350,7 +433,7 @@ export async function horariosGA4(
   validarPeriodo(periodo)
   const rows = await rodarRelatorio(
     propertyId, [periodo], ['hour'],
-    ['sessions', 'screenPageViews', 'averageSessionDuration', 'engagementRate', 'bounceRate'],
+    ['sessions', 'screenPageViews', 'newUsers', 'averageSessionDuration', 'engagementRate', 'bounceRate'],
   )
   const porHora = new Map<number, LinhaHoraGA4>()
   for (const r of rows) {
@@ -359,19 +442,20 @@ export async function horariosGA4(
     const hora = Number(valor)
     porHora.set(hora, {
       hora,
-      sessoes:            met(r, 0),
       visualizacoes:      met(r, 1),
-      duracaoMediaSessao: r2(met(r, 2)),
-      taxaEngajamento:    metPct(r, 3),
-      taxaRejeicao:       metPct(r, 4),
+      usuariosNovos:      met(r, 2),
+      sessoes:            met(r, 0),
+      duracaoMediaSessao: r2(met(r, 3)),
+      taxaEngajamento:    metPct(r, 4),
+      taxaRejeicao:       metPct(r, 5),
     })
   }
   return Array.from({ length: 24 }, (_, hora) => porHora.get(hora) ?? {
-    hora, sessoes: 0, visualizacoes: 0, duracaoMediaSessao: 0, taxaEngajamento: 0, taxaRejeicao: 0,
+    hora, visualizacoes: 0, usuariosNovos: 0, sessoes: 0, duracaoMediaSessao: 0, taxaEngajamento: 0, taxaRejeicao: 0,
   })
 }
 
-// ─── TECNOLOGIA (SO + RESOLUÇÃO) ─────────────────────────────────────────────
+// ─── TECNOLOGIA (SO + RESOLUÇÃO + NAVEGADOR + DISPOSITIVO DETALHADO) ─────────
 
 export async function tecnologiaGA4(
   propertyId: string,
@@ -379,7 +463,7 @@ export async function tecnologiaGA4(
   limite = 20,
 ): Promise<TecnologiaGA4> {
   validarPeriodo(periodo)
-  const [sistemas, resolucoes] = await Promise.all([
+  const [sistemas, resolucoes, navegadores, dispositivosDetalhe] = await Promise.all([
     rodarRelatorio(
       propertyId, [periodo], ['operatingSystem', 'operatingSystemVersion'],
       ['sessions', 'activeUsers'],
@@ -388,6 +472,16 @@ export async function tecnologiaGA4(
     rodarRelatorio(
       propertyId, [periodo], ['screenResolution'],
       ['sessions', 'activeUsers'],
+      { ordenarPor: 'sessions', limite },
+    ),
+    rodarRelatorio(
+      propertyId, [periodo], ['browser'],
+      ['screenPageViews', 'activeUsers', 'newUsers', 'sessions', 'engagementRate', 'bounceRate', 'averageSessionDuration'],
+      { ordenarPor: 'sessions', limite },
+    ),
+    rodarRelatorio(
+      propertyId, [periodo], ['deviceCategory', 'mobileDeviceModel', 'mobileDeviceBranding'],
+      ['screenPageViews', 'newUsers', 'sessions', 'averageSessionDuration'],
       { ordenarPor: 'sessions', limite },
     ),
   ])
@@ -403,31 +497,63 @@ export async function tecnologiaGA4(
       sessoes:   met(r, 0),
       usuarios:  met(r, 1),
     })),
+    navegadores: navegadores.map((r) => ({
+      navegador:          dim(r, 0),
+      visualizacoes:      met(r, 0),
+      usuarios:           met(r, 1),
+      usuariosNovos:      met(r, 2),
+      sessoes:            met(r, 3),
+      taxaEngajamento:    metPct(r, 4),
+      taxaRejeicao:       metPct(r, 5),
+      duracaoMediaSessao: r2(met(r, 6)),
+    })),
+    dispositivosDetalhe: dispositivosDetalhe.map((r) => ({
+      dispositivo:        dim(r, 0),
+      modelo:             dim(r, 1),
+      marca:              dim(r, 2),
+      visualizacoes:      met(r, 0),
+      usuariosNovos:      met(r, 1),
+      sessoes:            met(r, 2),
+      duracaoMediaSessao: r2(met(r, 3)),
+    })),
   }
 }
 
-// ─── GEOGRAFIA (PAÍS / ESTADO / CIDADE) ──────────────────────────────────────
-// No Looker esta seção vivia dando "erro de cota" — aqui é uma chamada só,
-// cacheada na F3.
+// ─── GEOGRAFIA (CIDADE / ESTADO / PAÍS — 3 tabelas separadas) ────────────────
+// No Looker esta seção vivia dando "erro de cota" — aqui são 3 chamadas em
+// paralelo, cacheadas na F3. Nunca misturar granularidade numa linha só
+// (mesma decisão do dashboard de Ads) — cada dimensão isolada tem sua
+// própria contagem de sessões/usuários (não são a mesma população cortada
+// 3 vezes: são 3 agregações independentes).
+
+async function quebraGeoGA4(propertyId: string, periodo: Periodo, dimensao: string, limite: number): Promise<LinhaGeoGA4[]> {
+  const rows = await rodarRelatorio(
+    propertyId, [periodo], [dimensao],
+    ['screenPageViews', 'activeUsers', 'newUsers', 'sessions', 'engagementRate', 'bounceRate', 'averageSessionDuration'],
+    { ordenarPor: 'sessions', limite },
+  )
+  return rows.map((r) => ({
+    local:              dim(r, 0) || '(não informado)',
+    visualizacoes:      met(r, 0),
+    usuarios:           met(r, 1),
+    usuariosNovos:      met(r, 2),
+    sessoes:            met(r, 3),
+    taxaEngajamento:    metPct(r, 4),
+    taxaRejeicao:       metPct(r, 5),
+    duracaoMediaSessao: r2(met(r, 6)),
+  }))
+}
 
 export async function geografiaGA4(
   propertyId: string,
   periodo:    Periodo,
   limite = 50,
-): Promise<LinhaLocalGA4[]> {
+): Promise<GeografiaGA4> {
   validarPeriodo(periodo)
-  const rows = await rodarRelatorio(
-    propertyId, [periodo], ['country', 'region', 'city'],
-    ['sessions', 'activeUsers', 'newUsers', 'engagementRate'],
-    { ordenarPor: 'sessions', limite },
-  )
-  return rows.map((r) => ({
-    pais:            dim(r, 0),
-    estado:          dim(r, 1),
-    cidade:          dim(r, 2),
-    sessoes:         met(r, 0),
-    usuarios:        met(r, 1),
-    usuariosNovos:   met(r, 2),
-    taxaEngajamento: metPct(r, 3),
-  }))
+  const [cidades, estados, paises] = await Promise.all([
+    quebraGeoGA4(propertyId, periodo, 'city', limite),
+    quebraGeoGA4(propertyId, periodo, 'region', limite),
+    quebraGeoGA4(propertyId, periodo, 'country', limite),
+  ])
+  return { cidades, estados, paises }
 }

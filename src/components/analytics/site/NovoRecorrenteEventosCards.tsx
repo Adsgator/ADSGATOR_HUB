@@ -3,9 +3,10 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import type { LinhaTipoUsuarioGA4, LinhaEventoGA4 } from '@/lib/ga4-detalhes'
 import { fmtConv, fmtNum, fmtPct } from '../trafego/labels'
-import { TIPO_USUARIO_LABEL } from './labelsGa4'
+import { TIPO_USUARIO_LABEL, fmtDuracao } from './labelsGa4'
 
-// Novo × recorrente (pizza + números) e eventos disparados (tabela).
+// Novo × recorrente — pizza (visual extra) + tabela completa (6 métricas
+// padrão + Total geral, réplica do Looker GA4-6) e eventos disparados.
 
 const COR_TIPO: Record<string, string> = {
   'new': '#FFB100',
@@ -20,37 +21,64 @@ export function NovoRecorrenteCard({ dados }: { dados: LinhaTipoUsuarioGA4[] }) 
     .map((l) => ({ name: TIPO_USUARIO_LABEL[l.tipo] ?? l.tipo, value: l.usuarios, cor: COR_TIPO[l.tipo] ?? '#6B7280' }))
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-[1rem] items-center">
-      <div className="h-[8.5rem]">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={chartData} cx="50%" cy="50%" innerRadius={26} outerRadius={54} paddingAngle={3} dataKey="value">
-              {chartData.map((entry) => <Cell key={entry.name} fill={entry.cor} />)}
-            </Pie>
-            <Tooltip
-              contentStyle={{ background: 'var(--surface-elevated)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
-              formatter={(v: unknown, name: unknown) => [
-                `${fmtNum(Number(v))} usuários (${totalUsuarios > 0 ? ((Number(v) / totalUsuarios) * 100).toFixed(1) : 0}%)`,
-                String(name),
-              ] as [string, string]}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+    <div>
+      <div className="grid grid-cols-1 sm:grid-cols-[9rem_1fr] gap-[1rem] items-center mb-[1rem]">
+        <div className="h-[8.5rem]">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={chartData} cx="50%" cy="50%" innerRadius={26} outerRadius={54} paddingAngle={3} dataKey="value">
+                {chartData.map((entry) => <Cell key={entry.name} fill={entry.cor} />)}
+              </Pie>
+              <Tooltip
+                contentStyle={{ background: 'var(--surface-elevated)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
+                formatter={(v: unknown, name: unknown) => [
+                  `${fmtNum(Number(v))} usuários (${totalUsuarios > 0 ? ((Number(v) / totalUsuarios) * 100).toFixed(1) : 0}%)`,
+                  String(name),
+                ] as [string, string]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="space-y-[0.5rem]">
+          {dados.map((l) => (
+            <div key={l.tipo} className="flex items-center justify-between text-[0.8125rem]">
+              <div className="flex items-center gap-[0.375rem]">
+                <span className="w-[0.5rem] h-[0.5rem] rounded-full" style={{ backgroundColor: COR_TIPO[l.tipo] ?? '#6B7280' }} />
+                <span className="text-ink-secondary">{TIPO_USUARIO_LABEL[l.tipo] ?? l.tipo}</span>
+              </div>
+              <span className="text-ink-primary font-medium text-[0.75rem]">
+                {fmtNum(l.usuarios)} usuários
+                <span className="text-ink-muted font-normal"> · {fmtNum(l.sessoes)} sessões · {fmtConv(l.conversoes)} conv. · {fmtPct(l.taxaEngajamento)}</span>
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="space-y-[0.5rem]">
-        {dados.map((l) => (
-          <div key={l.tipo} className="flex items-center justify-between text-[0.8125rem]">
-            <div className="flex items-center gap-[0.375rem]">
-              <span className="w-[0.5rem] h-[0.5rem] rounded-full" style={{ backgroundColor: COR_TIPO[l.tipo] ?? '#6B7280' }} />
-              <span className="text-ink-secondary">{TIPO_USUARIO_LABEL[l.tipo] ?? l.tipo}</span>
-            </div>
-            <span className="text-ink-primary font-medium text-[0.75rem]">
-              {fmtNum(l.usuarios)} usuários
-              <span className="text-ink-muted font-normal"> · {fmtNum(l.sessoes)} sessões · {fmtConv(l.conversoes)} conv. · {fmtPct(l.taxaEngajamento)}</span>
-            </span>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="w-full text-[0.75rem]">
+          <thead>
+            <tr className="border-b border-surface-border">
+              {['Tipo', 'Visualiz.', 'Novos', 'Sessões', 'Engaj.', 'Rejeição', 'Duração'].map((h) => (
+                <th key={h} className="text-left pb-[0.375rem] text-ink-muted text-[0.625rem] font-semibold uppercase tracking-wide pr-[0.75rem] last:pr-0">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {dados.map((l) => (
+              <tr key={l.tipo} className="border-b border-surface-border/60 last:border-0">
+                <td className="py-[0.375rem] pr-[0.75rem] text-ink-primary font-medium">{TIPO_USUARIO_LABEL[l.tipo] ?? l.tipo}</td>
+                <td className="py-[0.375rem] pr-[0.75rem] text-status-blue font-medium">{fmtNum(l.visualizacoes)}</td>
+                <td className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtNum(l.usuariosNovos)}</td>
+                <td className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtNum(l.sessoes)}</td>
+                <td className="py-[0.375rem] pr-[0.75rem] text-status-green">{fmtPct(l.taxaEngajamento)}</td>
+                <td className="py-[0.375rem] pr-[0.75rem] text-status-orange">{fmtPct(l.taxaRejeicao)}</td>
+                <td className="py-[0.375rem] text-ink-secondary">{fmtDuracao(l.duracaoMediaSessao)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

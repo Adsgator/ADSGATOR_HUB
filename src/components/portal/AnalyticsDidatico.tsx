@@ -5,7 +5,7 @@ import type {
 } from '@/lib/ads-detalhes'
 import type {
   KpisGA4Comparativo, LinhaOrigemGA4, LinhaPaginaGA4,
-  LinhaDispositivoGA4, LinhaTipoUsuarioGA4, LinhaLocalGA4,
+  LinhaDispositivoGA4, LinhaTipoUsuarioGA4, GeografiaGA4,
 } from '@/lib/ga4-detalhes'
 import type { Periodo } from '@/lib/analytics-periodo'
 import { variacaoPercentual } from '@/lib/analytics-periodo'
@@ -281,7 +281,7 @@ interface SiteDidaticoProps {
   paginas:        LinhaPaginaGA4[] | null
   dispositivos:   LinhaDispositivoGA4[] | null
   novoRecorrente: LinhaTipoUsuarioGA4[] | null
-  geografia:      LinhaLocalGA4[] | null
+  geografia:      GeografiaGA4 | null
 }
 
 export function SiteDidatico({ periodo, kpis, aquisicao, paginas, dispositivos, novoRecorrente, geografia }: SiteDidaticoProps) {
@@ -375,11 +375,11 @@ export function SiteDidatico({ periodo, kpis, aquisicao, paginas, dispositivos, 
           </Secao>
         )}
 
-        {geografia && geografia.length > 0 && (
+        {geografia && geografia.cidades.length > 0 && (
           <Secao titulo="De onde são os visitantes"
             subtitulo="Cidades com mais acessos ao seu site.">
-            <BarraLista linhas={geografia.filter((l) => l.cidade && l.cidade !== '(not set)').slice(0, 6).map((l, i) => ({
-              chave: `${l.cidade}-${i}`, label: `${l.cidade}${l.estado ? ` – ${l.estado}` : ''}`,
+            <BarraLista linhas={geografia.cidades.filter((l) => l.local && l.local !== '(not set)').slice(0, 6).map((l, i) => ({
+              chave: `${l.local}-${i}`, label: l.local,
               valor: l.sessoes, detalhe: 'visitas', cor: '#06b6d4',
             }))} />
           </Secao>
