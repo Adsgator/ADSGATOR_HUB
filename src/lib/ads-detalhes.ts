@@ -43,9 +43,10 @@ export interface LinhaTermoAds extends MetricasAds { termo: string; visitasSite:
 export interface LinhaFaixaEtariaAds extends MetricasAds { faixa: string }   // enum AGE_RANGE_*
 export interface LinhaGeneroAds extends MetricasAds { genero: string }       // MALE | FEMALE | UNDETERMINED
 export interface LinhaLocalAds extends MetricasAds {
-  local:  string // nome resolvido (cidade, região…)
-  regiao: string // unidade acima (estado, quando o local é cidade)
-  tipo:   string // target_type do geo constant (City, State…)
+  local:  string // nome resolvido (cidade, bairro, CEP, estado…)
+  regiao: string // estado (penúltima parte do canonical_name; a própria parte se a linha já é estado)
+  pais:   string // país (última parte do canonical_name) — base da agregação de País na UI
+  tipo:   string // target_type do geo constant (City, Neighborhood, Postal Code, District, State…)
   visitasSite: number
 }
 export interface LinhaDiaSemanaAds extends MetricasAds { dia: string }       // enum MONDAY..SUNDAY
@@ -475,11 +476,18 @@ async function resolverLocais(
   return Array.from(porLocal.entries())
     .map(([id, m]) => {
       const info = nomes.get(id)
-      // canonical_name = "Cidade,Região,País" → a região é a penúltima parte
-      const partes = (info?.canonico ?? '').split(',')
+      // canonical_name = "Cidade,Estado,País" (City) ou "Bairro/CEP,Estado,País"
+      // (bairro/CEP pulam a cidade) ou "Estado,País" (quando a linha já é estado).
+      // Estado = penúltima parte; se só há 2 partes, a 1ª já é o estado. País = última.
+      const partes = (info?.canonico ?? '').split(',').map((p) => p.trim()).filter(Boolean)
+      const pais   = partes.length >= 1 ? partes[partes.length - 1] : ''
+      const regiao = partes.length >= 3 ? partes[partes.length - 2]
+                   : partes.length === 2 ? partes[0]
+                   : ''
       return {
         local:  info?.nome || `#${id}`,
-        regiao: partes.length >= 3 ? partes[partes.length - 2].trim() : '',
+        regiao,
+        pais,
         tipo:   info?.tipo ?? '',
         visitasSite: r2(visitasPorId.get(String(id)) ?? 0),
         ...arredondar(m),
@@ -497,7 +505,10 @@ export async function geografiaAds(
   customerId: string,
   periodo:    PeriodoAds,
   filtro?:    FiltroAds,
-  limite = 50,
+  // Teto alto (não 50): a UI agrega Estado/País e ranqueia Cidade/Bairro/CEP a
+  // partir do array; 500 cobre ~todas as localizações sem virar query ilimitada
+  // (o IN(...) de resolverLocais também fica são nesse tamanho).
+  limite = 500,
 ): Promise<LinhaLocalAds[]> {
   validarPeriodo(periodo)
   const extra = filtroBq(filtro)

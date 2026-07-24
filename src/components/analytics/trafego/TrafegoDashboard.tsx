@@ -227,9 +227,9 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
         {termos.dados && <TermosCard dados={termos.dados} />}
       </SecaoCard>
 
-      {/* ── Geografia: Cidade / Estado / País ── */}
+      {/* ── Geografia: Cidade / Bairro / CEP / Estado / País ── */}
       <SecaoCard
-        titulo="Métricas de cidade, estado e país"
+        titulo="Métricas por cidade, bairro, CEP, estado e país"
         carregando={geografia.carregando}
         erro={geografia.erro}
         meta={geografia.meta}
