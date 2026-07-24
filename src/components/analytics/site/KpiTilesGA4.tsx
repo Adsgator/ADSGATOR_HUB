@@ -26,7 +26,7 @@ function corDelta(delta: number, subida: Sentido): string {
   return melhorou ? 'text-status-green' : 'text-status-red'
 }
 
-function KpiTile({ tile, dados }: { tile: TileConfig; dados: KpisGA4Comparativo }) {
+function KpiTile({ tile, dados, dias }: { tile: TileConfig; dados: KpisGA4Comparativo; dias: number }) {
   const atual = tile.valor(dados.atual)
   const anterior = tile.valor(dados.anterior)
   const delta = variacaoPercentual(atual, anterior)
@@ -46,7 +46,7 @@ function KpiTile({ tile, dados }: { tile: TileConfig; dados: KpisGA4Comparativo 
               ? <ArrowUpRight className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2.25} />
               : <ArrowDownRight className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2.25} />}
             {Math.abs(delta).toFixed(1).replace('.', ',')}%
-            <span className="text-ink-muted font-normal ml-[0.125rem]">vs período anterior</span>
+            <span className="text-ink-muted font-normal ml-[0.125rem]">de {dias} dias anteriores</span>
           </span>
         )}
       </p>
@@ -55,12 +55,13 @@ function KpiTile({ tile, dados }: { tile: TileConfig; dados: KpisGA4Comparativo 
 }
 
 function PainelKpis({
-  titulo, icone: Icone, tiles, dados, extra,
+  titulo, icone: Icone, tiles, dados, dias, extra,
 }: {
   titulo: string
   icone:  typeof Gauge
   tiles:  TileConfig[]
   dados:  KpisGA4Comparativo
+  dias:   number
   extra?: React.ReactNode
 }) {
   return (
@@ -71,7 +72,7 @@ function PainelKpis({
       </div>
       <div className="p-[0.875rem] space-y-[0.75rem]">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-[0.625rem]">
-          {tiles.map((tile) => <KpiTile key={tile.label} tile={tile} dados={dados} />)}
+          {tiles.map((tile) => <KpiTile key={tile.label} tile={tile} dados={dados} dias={dias} />)}
         </div>
         {extra}
       </div>
@@ -130,12 +131,12 @@ function GraficoDispositivo({ dispositivos }: { dispositivos: LinhaDispositivoGA
   )
 }
 
-export function KpiTilesGA4({ dados, dispositivos }: { dados: KpisGA4Comparativo; dispositivos?: LinhaDispositivoGA4[] }) {
+export function KpiTilesGA4({ dados, dispositivos, dias }: { dados: KpisGA4Comparativo; dispositivos?: LinhaDispositivoGA4[]; dias: number }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-[0.875rem]">
-      <PainelKpis titulo="Informações gerais" icone={BarChart3} tiles={TILES_GERAL} dados={dados} />
+      <PainelKpis titulo="Informações gerais" icone={BarChart3} tiles={TILES_GERAL} dados={dados} dias={dias} />
       <PainelKpis
-        titulo="Desempenho" icone={Gauge} tiles={TILES_DESEMPENHO} dados={dados}
+        titulo="Desempenho" icone={Gauge} tiles={TILES_DESEMPENHO} dados={dados} dias={dias}
         extra={dispositivos && dispositivos.length > 0 ? <GraficoDispositivo dispositivos={dispositivos} /> : undefined}
       />
     </div>

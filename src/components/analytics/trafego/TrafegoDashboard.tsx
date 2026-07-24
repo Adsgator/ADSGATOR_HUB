@@ -1,13 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshCw, Megaphone, Link2 } from 'lucide-react'
 import type {
   KpisAdsComparativo, LinhaDiaAds, LinhaTermoAds, DemografiaAds,
   LinhaLocalAds, DiasHorariosAds, LinhaDispositivoAds, CampanhaPeriodoAds,
   GrupoAnuncioPeriodoAds,
 } from '@/lib/ads-detalhes'
-import type { Periodo } from '@/lib/analytics-periodo'
 import { useDetalheAnalytics } from '@/lib/hooks/useAnalyticsDetalhes'
 import { SecaoCard } from './SecaoCard'
 import { KpiTilesAds } from './KpiTilesAds'
@@ -19,6 +18,11 @@ import { DispositivosAdsCard } from './DispositivosAdsCard'
 import { DiasHorariosCard } from './DiasHorariosCard'
 import { GeografiaAdsCard } from './GeografiaAdsCard'
 import { fmtMoeda } from './labels'
+import {
+  FiltroPeriodo, periodoEfetivo, estadoPeriodoPadrao, ehPeriodoPadrao,
+  diasDoPeriodo, fmtDataExtensa, serializarPeriodo, parsePeriodo, paramInicial,
+  type EstadoPeriodo,
+} from '../shared/FiltroPeriodo'
 
 // ─── Dashboard Tráfego (Google Ads) — réplica do Looker (Analytics 2.0) ─────
 // Ordem das seções segue os 6 prints do Looker (docs/DASHBOARD_GADS_SPEC.md):
@@ -26,57 +30,47 @@ import { fmtMoeda } from './labels'
 // termos/horário → tabela completa de termos → geografia (Cidade/Estado/País)
 // → demografia (tabela + 4 gráficos) → dias/horário/dispositivo.
 
-export type PresetPeriodo = 'mes_atual' | 'mes_passado' | '30d' | '90d'
-
-const PRESETS: Array<{ id: PresetPeriodo; label: string }> = [
-  { id: 'mes_atual',  label: 'Mês atual' },
-  { id: 'mes_passado', label: 'Mês passado' },
-  { id: '30d', label: '30 dias' },
-  { id: '90d', label: '90 dias' },
-]
-
-const fmtLocal = (d: Date) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-
-export function periodoDoPreset(preset: PresetPeriodo): Periodo {
-  const hoje = new Date()
-  switch (preset) {
-    case 'mes_atual':
-      return { inicio: fmtLocal(new Date(hoje.getFullYear(), hoje.getMonth(), 1)), fim: fmtLocal(hoje) }
-    case 'mes_passado':
-      return {
-        inicio: fmtLocal(new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1)),
-        fim:    fmtLocal(new Date(hoje.getFullYear(), hoje.getMonth(), 0)),
-      }
-    case '30d':
-      return { inicio: fmtLocal(new Date(hoje.getTime() - 29 * 86_400_000)), fim: fmtLocal(hoje) }
-    case '90d':
-      return { inicio: fmtLocal(new Date(hoje.getTime() - 89 * 86_400_000)), fim: fmtLocal(hoje) }
-  }
-}
-
-/** "6 de jul. de 2026" — mesmo estilo do seletor de período do Looker. */
-function fmtDataExtensa(iso: string): string {
-  const [ano, mes, dia] = iso.split('-').map(Number)
-  return new Date(ano, mes - 1, dia).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 interface TrafegoDashboardProps {
   clienteId:    string
   adsConectado: boolean
 }
 
 export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardProps) {
-  const [preset, setPreset] = useState<PresetPeriodo>('mes_atual')
-  const [campanhaId, setCampanhaId] = useState('')
-  const [grupoAnuncioId, setGrupoAnuncioId] = useState('')
+  // Estado inicial vem da URL (deep-link / refresh) — ver paramInicial().
+  const [estadoPeriodo, setEstadoPeriodo] = useState<EstadoPeriodo>(
+    () => parsePeriodo(paramInicial('periodo')) ?? estadoPeriodoPadrao(),
+  )
+  const [campanhaId, setCampanhaId] = useState(() => paramInicial('campanha'))
+  const [grupoAnuncioId, setGrupoAnuncioId] = useState(() => paramInicial('grupo'))
   const [renovarTick, setRenovarTick] = useState(0)
-  const periodo = useMemo(() => periodoDoPreset(preset), [preset])
+  const periodo = useMemo(() => periodoEfetivo(estadoPeriodo), [estadoPeriodo])
+  const dias = useMemo(() => diasDoPeriodo(periodo), [periodo])
 
-  // trocar de cliente zera os filtros (ids são por conta)
-  useEffect(() => { setCampanhaId(''); setGrupoAnuncioId('') }, [clienteId])
-  // trocar de campanha zera o grupo (grupo pertence a UMA campanha)
-  useEffect(() => { setGrupoAnuncioId('') }, [campanhaId])
+  // trocar de cliente zera os filtros (ids são por conta) — pula a montagem
+  // pra não apagar o filtro vindo da URL.
+  const clienteMontado = useRef(false)
+  useEffect(() => {
+    if (!clienteMontado.current) { clienteMontado.current = true; return }
+    setCampanhaId(''); setGrupoAnuncioId('')
+  }, [clienteId])
+  // trocar de campanha zera o grupo (grupo pertence a UMA campanha) — idem.
+  const campanhaMontada = useRef(false)
+  useEffect(() => {
+    if (!campanhaMontada.current) { campanhaMontada.current = true; return }
+    setGrupoAnuncioId('')
+  }, [campanhaId])
+
+  // Espelha período + campanha + grupo na URL (sem apagar aba/cliente, que a
+  // página controla). Idempotente na montagem: reescreve o que já veio da URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const per = serializarPeriodo(estadoPeriodo)
+    if (per) params.set('periodo', per); else params.delete('periodo')
+    if (campanhaId) params.set('campanha', campanhaId); else params.delete('campanha')
+    if (grupoAnuncioId) params.set('grupo', grupoAnuncioId); else params.delete('grupo')
+    const q = params.toString()
+    window.history.replaceState(null, '', q ? `?${q}` : window.location.pathname)
+  }, [estadoPeriodo, campanhaId, grupoAnuncioId])
 
   const base = { clienteId, fonte: 'ads' as const, periodo, renovarTick, ativo: adsConectado }
   const comFiltro = { ...base, campanhaId: campanhaId || undefined, grupoAnuncioId: grupoAnuncioId || undefined }
@@ -128,21 +122,7 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
     <div className="space-y-[1rem]">
       {/* ── Controles: período + campanha + grupo de anúncios + atualizar ── */}
       <div className="flex items-center gap-[0.625rem] flex-wrap">
-        <div className="flex bg-surface-hover border border-surface-border rounded-[0.5rem] p-[0.1875rem] gap-[0.125rem]">
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPreset(p.id)}
-              className={`h-[1.75rem] px-[0.625rem] rounded-[0.3125rem] text-[0.75rem] font-medium transition-all ${
-                preset === p.id
-                  ? 'bg-surface-card text-ink-primary shadow-sm'
-                  : 'text-ink-muted hover:text-ink-secondary'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <FiltroPeriodo estado={estadoPeriodo} onChange={setEstadoPeriodo} />
 
         <select
           value={campanhaId}
@@ -168,9 +148,9 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
         </select>
 
         <div className="ml-auto flex items-center gap-[0.625rem]">
-          {(campanhaId || grupoAnuncioId) && (
+          {(campanhaId || grupoAnuncioId || !ehPeriodoPadrao(estadoPeriodo)) && (
             <button
-              onClick={() => { setCampanhaId(''); setGrupoAnuncioId('') }}
+              onClick={() => { setCampanhaId(''); setGrupoAnuncioId(''); setEstadoPeriodo(estadoPeriodoPadrao()) }}
               className="text-[0.75rem] font-medium text-ads-500 hover:underline"
             >
               Limpar filtros
@@ -213,7 +193,7 @@ export function TrafegoDashboard({ clienteId, adsConectado }: TrafegoDashboardPr
         meta={kpis.meta}
         aoTentarNovamente={kpis.recarregar}
       >
-        {kpis.dados && <KpiTilesAds dados={kpis.dados} dispositivos={dispositivos.dados ?? undefined} />}
+        {kpis.dados && <KpiTilesAds dados={kpis.dados} dispositivos={dispositivos.dados ?? undefined} dias={dias} />}
       </SecaoCard>
 
       {/* ── Gráfico de acompanhamento + prévias compactas ── */}

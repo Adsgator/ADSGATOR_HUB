@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw, Globe, Link2 } from 'lucide-react'
 import type {
   KpisGA4Comparativo, LinhaPaginaGA4, LinhaOrigemGA4, LinhaDispositivoGA4,
@@ -8,8 +8,11 @@ import type {
 } from '@/lib/ga4-detalhes'
 import { useDetalheAnalytics } from '@/lib/hooks/useAnalyticsDetalhes'
 import { SecaoCard } from '../trafego/SecaoCard'
-import { periodoDoPreset } from '../trafego/TrafegoDashboard'
-import type { PresetPeriodo } from '../trafego/TrafegoDashboard'
+import {
+  FiltroPeriodo, periodoEfetivo, estadoPeriodoPadrao, ehPeriodoPadrao,
+  diasDoPeriodo, serializarPeriodo, parsePeriodo, paramInicial,
+  type EstadoPeriodo,
+} from '../shared/FiltroPeriodo'
 import { KpiTilesGA4 } from './KpiTilesGA4'
 import { AquisicaoCard } from './AquisicaoCard'
 import { PaginasCard } from './PaginasCard'
@@ -22,22 +25,29 @@ import { GeografiaGA4Card } from './GeografiaGA4Card'
 // O dashboard SITE do Looker dentro do Hub: KPIs com delta, aquisição,
 // páginas, dispositivos/tech, horários, novo×recorrente, eventos e geografia.
 
-const PRESETS: Array<{ id: PresetPeriodo; label: string }> = [
-  { id: 'mes_atual',  label: 'Mês atual' },
-  { id: 'mes_passado', label: 'Mês passado' },
-  { id: '30d', label: '30 dias' },
-  { id: '90d', label: '90 dias' },
-]
-
 interface SiteDashboardProps {
   clienteId:    string
   ga4Conectado: boolean
 }
 
 export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
-  const [preset, setPreset] = useState<PresetPeriodo>('mes_atual')
+  // O período é deep-linkável e compartilha o param `periodo` com o Ads (só um
+  // dashboard fica montado por vez). Campanha/grupo são exclusivos do Ads.
+  const [estadoPeriodo, setEstadoPeriodo] = useState<EstadoPeriodo>(
+    () => parsePeriodo(paramInicial('periodo')) ?? estadoPeriodoPadrao(),
+  )
   const [renovarTick, setRenovarTick] = useState(0)
-  const periodo = useMemo(() => periodoDoPreset(preset), [preset])
+  const periodo = useMemo(() => periodoEfetivo(estadoPeriodo), [estadoPeriodo])
+  const dias = useMemo(() => diasDoPeriodo(periodo), [periodo])
+
+  // Espelha só o período na URL — não mexe em campanha/grupo (do Ads).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const per = serializarPeriodo(estadoPeriodo)
+    if (per) params.set('periodo', per); else params.delete('periodo')
+    const q = params.toString()
+    window.history.replaceState(null, '', q ? `?${q}` : window.location.pathname)
+  }, [estadoPeriodo])
 
   const base = { clienteId, fonte: 'ga4' as const, periodo, renovarTick, ativo: ga4Conectado }
 
@@ -78,23 +88,17 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
     <div className="space-y-[1rem]">
       {/* ── Controles ── */}
       <div className="flex items-center gap-[0.625rem] flex-wrap">
-        <div className="flex bg-surface-hover border border-surface-border rounded-[0.5rem] p-[0.1875rem] gap-[0.125rem]">
-          {PRESETS.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setPreset(p.id)}
-              className={`h-[1.75rem] px-[0.625rem] rounded-[0.3125rem] text-[0.75rem] font-medium transition-all ${
-                preset === p.id
-                  ? 'bg-surface-card text-ink-primary shadow-sm'
-                  : 'text-ink-muted hover:text-ink-secondary'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <FiltroPeriodo estado={estadoPeriodo} onChange={setEstadoPeriodo} />
 
         <div className="ml-auto flex items-center gap-[0.625rem]">
+          {!ehPeriodoPadrao(estadoPeriodo) && (
+            <button
+              onClick={() => setEstadoPeriodo(estadoPeriodoPadrao())}
+              className="text-[0.75rem] font-medium text-ads-500 hover:underline"
+            >
+              Limpar filtros
+            </button>
+          )}
           {atualizadoEm && (
             <span className="text-ink-muted text-[0.6875rem]">
               Atualizado {new Date(atualizadoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
@@ -119,7 +123,7 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
         meta={kpis.meta}
         aoTentarNovamente={kpis.recarregar}
       >
-        {kpis.dados && <KpiTilesGA4 dados={kpis.dados} dispositivos={dispositivos.dados ?? undefined} />}
+        {kpis.dados && <KpiTilesGA4 dados={kpis.dados} dispositivos={dispositivos.dados ?? undefined} dias={dias} />}
       </SecaoCard>
 
       {/* ── Aquisição ── */}

@@ -30,7 +30,7 @@ function corDelta(delta: number, subida: Sentido): string {
   return melhorou ? 'text-status-green' : 'text-status-red'
 }
 
-function KpiTile({ tile, dados }: { tile: TileConfig; dados: KpisAdsComparativo }) {
+function KpiTile({ tile, dados, dias }: { tile: TileConfig; dados: KpisAdsComparativo; dias: number }) {
   const atual = tile.atual(dados)
   const anterior = anteriorDe(tile, dados)
   const delta = atual !== null && anterior !== null ? variacaoPercentual(atual, anterior) : null
@@ -50,7 +50,7 @@ function KpiTile({ tile, dados }: { tile: TileConfig; dados: KpisAdsComparativo 
               ? <ArrowUpRight className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2.25} />
               : <ArrowDownRight className="w-[0.6875rem] h-[0.6875rem]" strokeWidth={2.25} />}
             {Math.abs(delta).toFixed(1).replace('.', ',')}%
-            <span className="text-ink-muted font-normal ml-[0.125rem]">vs período anterior</span>
+            <span className="text-ink-muted font-normal ml-[0.125rem]">de {dias} dias anteriores</span>
           </span>
         )}
       </p>
@@ -59,12 +59,13 @@ function KpiTile({ tile, dados }: { tile: TileConfig; dados: KpisAdsComparativo 
 }
 
 function PainelKpis({
-  titulo, icone: Icone, tiles, dados, extra,
+  titulo, icone: Icone, tiles, dados, dias, extra,
 }: {
   titulo: string
   icone:  typeof Megaphone
   tiles:  TileConfig[]
   dados:  KpisAdsComparativo
+  dias:   number
   extra?: React.ReactNode
 }) {
   return (
@@ -75,7 +76,7 @@ function PainelKpis({
       </div>
       <div className="p-[0.875rem] space-y-[0.75rem]">
         <div className="grid grid-cols-2 md:grid-cols-3 gap-[0.625rem]">
-          {tiles.map((tile) => <KpiTile key={tile.label} tile={tile} dados={dados} />)}
+          {tiles.map((tile) => <KpiTile key={tile.label} tile={tile} dados={dados} dias={dias} />)}
         </div>
         {extra}
       </div>
@@ -148,15 +149,15 @@ function GraficoDispositivo({ dispositivos }: { dispositivos: LinhaDispositivoAd
   )
 }
 
-export function KpiTilesAds({ dados, dispositivos }: { dados: KpisAdsComparativo; dispositivos?: LinhaDispositivoAds[] }) {
+export function KpiTilesAds({ dados, dispositivos, dias }: { dados: KpisAdsComparativo; dispositivos?: LinhaDispositivoAds[]; dias: number }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-[0.875rem]">
       <div className="space-y-[0.875rem]">
-        <PainelKpis titulo="Google Ads interações" icone={Megaphone} tiles={TILES_INTERACOES} dados={dados} />
-        <PainelKpis titulo="Google Ads %" icone={Percent} tiles={TILES_PCT} dados={dados} />
+        <PainelKpis titulo="Google Ads interações" icone={Megaphone} tiles={TILES_INTERACOES} dados={dados} dias={dias} />
+        <PainelKpis titulo="Google Ads %" icone={Percent} tiles={TILES_PCT} dados={dados} dias={dias} />
       </div>
       <PainelKpis
-        titulo="Desempenho" icone={Gauge} tiles={TILES_DESEMPENHO} dados={dados}
+        titulo="Desempenho" icone={Gauge} tiles={TILES_DESEMPENHO} dados={dados} dias={dias}
         extra={dispositivos && dispositivos.length > 0 ? <GraficoDispositivo dispositivos={dispositivos} /> : undefined}
       />
     </div>
