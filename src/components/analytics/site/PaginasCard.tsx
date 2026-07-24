@@ -5,6 +5,7 @@ import { Search } from 'lucide-react'
 import type { LinhaPaginaGA4 } from '@/lib/ga4-detalhes'
 import { fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
+import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 
 // Quais páginas são acessadas — caminhos normalizados (sem query string; o
 // fbclid que poluía o Looker não chega aqui) + tabela secundária com o
@@ -40,6 +41,16 @@ function Tabela({ dados, buscaPlaceholder }: { dados: LinhaPaginaGA4[]; buscaPla
 
   const total = useMemo(() => totalDe(filtradas), [filtradas])
 
+  // Faixas por coluna (heatmap) sobre as linhas visíveis.
+  const faixas = useMemo(() => ({
+    usuarios:      faixaColuna(filtradas, (p) => p.usuarios),
+    usuariosNovos: faixaColuna(filtradas, (p) => p.usuariosNovos),
+    sessoes:       faixaColuna(filtradas, (p) => p.sessoes),
+    engajamento:   faixaColuna(filtradas, (p) => p.taxaEngajamento),
+    rejeicao:      faixaColuna(filtradas, (p) => p.taxaRejeicao),
+    duracao:       faixaColuna(filtradas, (p) => p.duracaoMediaSessao),
+  }), [filtradas])
+
   return (
     <div>
       <div className="relative mb-[0.75rem]">
@@ -66,12 +77,12 @@ function Tabela({ dados, buscaPlaceholder }: { dados: LinhaPaginaGA4[]; buscaPla
               <tr key={`${p.pagina}-${i}`} className="border-b border-surface-border/60 last:border-0 hover:bg-surface-hover/50 transition-colors">
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary font-medium max-w-[16rem] truncate" title={p.pagina}>{p.pagina}</td>
                 <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtNum(p.visualizacoes)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(p.usuarios)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(p.usuariosNovos)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(p.sessoes)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-status-green">{fmtPct(p.taxaEngajamento)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-status-orange">{fmtPct(p.taxaRejeicao)}</td>
-                <td className="py-[0.5rem] text-ink-secondary">{fmtDuracao(p.duracaoMediaSessao)}</td>
+                <CelulaMetrica valor={p.usuarios} faixa={faixas.usuarios} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(p.usuarios)}</CelulaMetrica>
+                <CelulaMetrica valor={p.usuariosNovos} faixa={faixas.usuariosNovos} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(p.usuariosNovos)}</CelulaMetrica>
+                <CelulaMetrica valor={p.sessoes} faixa={faixas.sessoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(p.sessoes)}</CelulaMetrica>
+                <CelulaMetrica valor={p.taxaEngajamento} faixa={faixas.engajamento} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(p.taxaEngajamento)}</CelulaMetrica>
+                <CelulaMetrica valor={p.taxaRejeicao} faixa={faixas.rejeicao} tom="vermelho" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(p.taxaRejeicao)}</CelulaMetrica>
+                <CelulaMetrica valor={p.duracaoMediaSessao} faixa={faixas.duracao} tom="verde" className="py-[0.5rem] text-ink-secondary">{fmtDuracao(p.duracaoMediaSessao)}</CelulaMetrica>
               </tr>
             ))}
           </tbody>

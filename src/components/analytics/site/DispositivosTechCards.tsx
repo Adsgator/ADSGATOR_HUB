@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from 'rechar
 import type { LinhaDispositivoGA4, TecnologiaGA4 } from '@/lib/ga4-detalhes'
 import { fmtNum, fmtPct } from '../trafego/labels'
 import { DISPOSITIVO_GA4_LABEL, fmtDuracao } from './labelsGa4'
+import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 
 // Por dispositivo — réplica do Looker (GA4-1): tabela completa + donuts de
 // participação, mesmo padrão do dashboard de Ads.
@@ -73,6 +74,16 @@ export function DispositivosGA4Card({ dados }: { dados: LinhaDispositivoGA4[] })
     }
   }, { visualizacoes: 0, usuarios: 0, usuariosNovos: 0, sessoes: 0, taxaEngajamento: 0, taxaRejeicao: 0, duracaoMediaSessao: 0 }), [dados])
 
+  // Faixas por coluna (heatmap) sobre as linhas visíveis.
+  const faixas = useMemo(() => ({
+    usuarios:      faixaColuna(dados, (d) => d.usuarios),
+    usuariosNovos: faixaColuna(dados, (d) => d.usuariosNovos),
+    sessoes:       faixaColuna(dados, (d) => d.sessoes),
+    engajamento:   faixaColuna(dados, (d) => d.taxaEngajamento),
+    rejeicao:      faixaColuna(dados, (d) => d.taxaRejeicao),
+    duracao:       faixaColuna(dados, (d) => d.duracaoMediaSessao),
+  }), [dados])
+
   return (
     <div>
       <div className="overflow-x-auto mb-[1.25rem]">
@@ -90,12 +101,12 @@ export function DispositivosGA4Card({ dados }: { dados: LinhaDispositivoGA4[] })
               <tr key={d.dispositivo} className="border-b border-surface-border/60 last:border-0">
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary font-medium">{DISPOSITIVO_GA4_LABEL[d.dispositivo.toLowerCase()] ?? d.dispositivo}</td>
                 <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtNum(d.visualizacoes)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.usuarios)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.usuariosNovos)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.sessoes)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-status-green">{fmtPct(d.taxaEngajamento)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-status-orange">{fmtPct(d.taxaRejeicao)}</td>
-                <td className="py-[0.5rem] text-ink-secondary">{fmtDuracao(d.duracaoMediaSessao)}</td>
+                <CelulaMetrica valor={d.usuarios} faixa={faixas.usuarios} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.usuarios)}</CelulaMetrica>
+                <CelulaMetrica valor={d.usuariosNovos} faixa={faixas.usuariosNovos} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.usuariosNovos)}</CelulaMetrica>
+                <CelulaMetrica valor={d.sessoes} faixa={faixas.sessoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.sessoes)}</CelulaMetrica>
+                <CelulaMetrica valor={d.taxaEngajamento} faixa={faixas.engajamento} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(d.taxaEngajamento)}</CelulaMetrica>
+                <CelulaMetrica valor={d.taxaRejeicao} faixa={faixas.rejeicao} tom="vermelho" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(d.taxaRejeicao)}</CelulaMetrica>
+                <CelulaMetrica valor={d.duracaoMediaSessao} faixa={faixas.duracao} tom="verde" className="py-[0.5rem] text-ink-secondary">{fmtDuracao(d.duracaoMediaSessao)}</CelulaMetrica>
               </tr>
             ))}
           </tbody>
@@ -152,6 +163,21 @@ function TabelaSimples<T>({ titulo, linhas, coluna, campo, cor }: {
 }
 
 export function TecnologiaCard({ dados }: { dados: TecnologiaGA4 }) {
+  // Faixas por coluna (heatmap) das tabelas de navegador e dispositivo detalhado.
+  const faixasNav = useMemo(() => ({
+    usuarios:      faixaColuna(dados.navegadores, (n) => n.usuarios),
+    usuariosNovos: faixaColuna(dados.navegadores, (n) => n.usuariosNovos),
+    sessoes:       faixaColuna(dados.navegadores, (n) => n.sessoes),
+    engajamento:   faixaColuna(dados.navegadores, (n) => n.taxaEngajamento),
+    rejeicao:      faixaColuna(dados.navegadores, (n) => n.taxaRejeicao),
+    duracao:       faixaColuna(dados.navegadores, (n) => n.duracaoMediaSessao),
+  }), [dados.navegadores])
+  const faixasDisp = useMemo(() => ({
+    usuariosNovos: faixaColuna(dados.dispositivosDetalhe, (d) => d.usuariosNovos),
+    sessoes:       faixaColuna(dados.dispositivosDetalhe, (d) => d.sessoes),
+    duracao:       faixaColuna(dados.dispositivosDetalhe, (d) => d.duracaoMediaSessao),
+  }), [dados.dispositivosDetalhe])
+
   return (
     <div className="space-y-[1.25rem]">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-[1.25rem]">
@@ -188,12 +214,12 @@ export function TecnologiaCard({ dados }: { dados: TecnologiaGA4 }) {
                 <tr key={n.navegador} className="border-b border-surface-border/60 last:border-0">
                   <td className="py-[0.5rem] pr-[1rem] text-ink-primary font-medium">{n.navegador}</td>
                   <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtNum(n.visualizacoes)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(n.usuarios)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(n.usuariosNovos)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(n.sessoes)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-status-green">{fmtPct(n.taxaEngajamento)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-status-orange">{fmtPct(n.taxaRejeicao)}</td>
-                  <td className="py-[0.5rem] text-ink-secondary">{fmtDuracao(n.duracaoMediaSessao)}</td>
+                  <CelulaMetrica valor={n.usuarios} faixa={faixasNav.usuarios} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(n.usuarios)}</CelulaMetrica>
+                  <CelulaMetrica valor={n.usuariosNovos} faixa={faixasNav.usuariosNovos} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(n.usuariosNovos)}</CelulaMetrica>
+                  <CelulaMetrica valor={n.sessoes} faixa={faixasNav.sessoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(n.sessoes)}</CelulaMetrica>
+                  <CelulaMetrica valor={n.taxaEngajamento} faixa={faixasNav.engajamento} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(n.taxaEngajamento)}</CelulaMetrica>
+                  <CelulaMetrica valor={n.taxaRejeicao} faixa={faixasNav.rejeicao} tom="vermelho" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(n.taxaRejeicao)}</CelulaMetrica>
+                  <CelulaMetrica valor={n.duracaoMediaSessao} faixa={faixasNav.duracao} tom="verde" className="py-[0.5rem] text-ink-secondary">{fmtDuracao(n.duracaoMediaSessao)}</CelulaMetrica>
                 </tr>
               ))}
             </tbody>
@@ -220,9 +246,9 @@ export function TecnologiaCard({ dados }: { dados: TecnologiaGA4 }) {
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{d.modelo || '(não informado)'}</td>
                   <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{d.marca || '(não informado)'}</td>
                   <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtNum(d.visualizacoes)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.usuariosNovos)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.sessoes)}</td>
-                  <td className="py-[0.5rem] text-ink-secondary">{fmtDuracao(d.duracaoMediaSessao)}</td>
+                  <CelulaMetrica valor={d.usuariosNovos} faixa={faixasDisp.usuariosNovos} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.usuariosNovos)}</CelulaMetrica>
+                  <CelulaMetrica valor={d.sessoes} faixa={faixasDisp.sessoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.sessoes)}</CelulaMetrica>
+                  <CelulaMetrica valor={d.duracaoMediaSessao} faixa={faixasDisp.duracao} tom="verde" className="py-[0.5rem] text-ink-secondary">{fmtDuracao(d.duracaoMediaSessao)}</CelulaMetrica>
                 </tr>
               ))}
             </tbody>

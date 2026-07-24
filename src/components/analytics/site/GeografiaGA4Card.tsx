@@ -5,6 +5,7 @@ import { MapPin } from 'lucide-react'
 import type { GeografiaGA4, LinhaGeoGA4 } from '@/lib/ga4-detalhes'
 import { fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
+import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 
 // Cidade / Estado / País — 3 tabelas separadas (não misturar granularidade,
 // mesma decisão do dashboard de Ads). Cada dimensão é uma agregação
@@ -26,6 +27,16 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
       duracaoMediaSessao: media(acc.duracaoMediaSessao, l.duracaoMediaSessao),
     }
   }, { visualizacoes: 0, usuarios: 0, usuariosNovos: 0, sessoes: 0, taxaEngajamento: 0, taxaRejeicao: 0, duracaoMediaSessao: 0 }), [linhas])
+
+  // Faixas por coluna (heatmap) sobre as linhas visíveis.
+  const faixas = useMemo(() => ({
+    usuarios:      faixaColuna(linhas, (l) => l.usuarios),
+    usuariosNovos: faixaColuna(linhas, (l) => l.usuariosNovos),
+    sessoes:       faixaColuna(linhas, (l) => l.sessoes),
+    engajamento:   faixaColuna(linhas, (l) => l.taxaEngajamento),
+    rejeicao:      faixaColuna(linhas, (l) => l.taxaRejeicao),
+    duracao:       faixaColuna(linhas, (l) => l.duracaoMediaSessao),
+  }), [linhas])
 
   return (
     <div>
@@ -53,12 +64,12 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
                     </div>
                   </td>
                   <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtNum(l.visualizacoes)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuarios)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuariosNovos)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.sessoes)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-status-green">{fmtPct(l.taxaEngajamento)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-status-orange">{fmtPct(l.taxaRejeicao)}</td>
-                  <td className="py-[0.5rem] text-ink-secondary">{fmtDuracao(l.duracaoMediaSessao)}</td>
+                  <CelulaMetrica valor={l.usuarios} faixa={faixas.usuarios} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuarios)}</CelulaMetrica>
+                  <CelulaMetrica valor={l.usuariosNovos} faixa={faixas.usuariosNovos} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuariosNovos)}</CelulaMetrica>
+                  <CelulaMetrica valor={l.sessoes} faixa={faixas.sessoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.sessoes)}</CelulaMetrica>
+                  <CelulaMetrica valor={l.taxaEngajamento} faixa={faixas.engajamento} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(l.taxaEngajamento)}</CelulaMetrica>
+                  <CelulaMetrica valor={l.taxaRejeicao} faixa={faixas.rejeicao} tom="vermelho" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(l.taxaRejeicao)}</CelulaMetrica>
+                  <CelulaMetrica valor={l.duracaoMediaSessao} faixa={faixas.duracao} tom="verde" className="py-[0.5rem] text-ink-secondary">{fmtDuracao(l.duracaoMediaSessao)}</CelulaMetrica>
                 </tr>
               ))}
             </tbody>

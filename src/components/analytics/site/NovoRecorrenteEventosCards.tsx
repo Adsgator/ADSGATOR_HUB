@@ -1,9 +1,11 @@
 'use client'
 
+import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import type { LinhaTipoUsuarioGA4, LinhaEventoGA4 } from '@/lib/ga4-detalhes'
 import { fmtConv, fmtNum, fmtPct } from '../trafego/labels'
 import { TIPO_USUARIO_LABEL, fmtDuracao } from './labelsGa4'
+import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 
 // Novo × recorrente — pizza (visual extra) + tabela completa (6 métricas
 // padrão + Total geral, réplica do Looker GA4-6) e eventos disparados.
@@ -16,6 +18,14 @@ const COR_TIPO: Record<string, string> = {
 
 export function NovoRecorrenteCard({ dados }: { dados: LinhaTipoUsuarioGA4[] }) {
   const totalUsuarios = dados.reduce((s, l) => s + l.usuarios, 0)
+  // Faixas por coluna (heatmap) sobre as linhas visíveis.
+  const faixas = useMemo(() => ({
+    usuariosNovos: faixaColuna(dados, (l) => l.usuariosNovos),
+    sessoes:       faixaColuna(dados, (l) => l.sessoes),
+    engajamento:   faixaColuna(dados, (l) => l.taxaEngajamento),
+    rejeicao:      faixaColuna(dados, (l) => l.taxaRejeicao),
+    duracao:       faixaColuna(dados, (l) => l.duracaoMediaSessao),
+  }), [dados])
   const chartData = dados
     .filter((l) => l.usuarios > 0)
     .map((l) => ({ name: TIPO_USUARIO_LABEL[l.tipo] ?? l.tipo, value: l.usuarios, cor: COR_TIPO[l.tipo] ?? '#6B7280' }))
@@ -70,11 +80,11 @@ export function NovoRecorrenteCard({ dados }: { dados: LinhaTipoUsuarioGA4[] }) 
               <tr key={l.tipo} className="border-b border-surface-border/60 last:border-0">
                 <td className="py-[0.375rem] pr-[0.75rem] text-ink-primary font-medium">{TIPO_USUARIO_LABEL[l.tipo] ?? l.tipo}</td>
                 <td className="py-[0.375rem] pr-[0.75rem] text-status-blue font-medium">{fmtNum(l.visualizacoes)}</td>
-                <td className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtNum(l.usuariosNovos)}</td>
-                <td className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtNum(l.sessoes)}</td>
-                <td className="py-[0.375rem] pr-[0.75rem] text-status-green">{fmtPct(l.taxaEngajamento)}</td>
-                <td className="py-[0.375rem] pr-[0.75rem] text-status-orange">{fmtPct(l.taxaRejeicao)}</td>
-                <td className="py-[0.375rem] text-ink-secondary">{fmtDuracao(l.duracaoMediaSessao)}</td>
+                <CelulaMetrica valor={l.usuariosNovos} faixa={faixas.usuariosNovos} tom="verde" className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtNum(l.usuariosNovos)}</CelulaMetrica>
+                <CelulaMetrica valor={l.sessoes} faixa={faixas.sessoes} tom="verde" className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtNum(l.sessoes)}</CelulaMetrica>
+                <CelulaMetrica valor={l.taxaEngajamento} faixa={faixas.engajamento} tom="verde" className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtPct(l.taxaEngajamento)}</CelulaMetrica>
+                <CelulaMetrica valor={l.taxaRejeicao} faixa={faixas.rejeicao} tom="vermelho" className="py-[0.375rem] pr-[0.75rem] text-ink-secondary">{fmtPct(l.taxaRejeicao)}</CelulaMetrica>
+                <CelulaMetrica valor={l.duracaoMediaSessao} faixa={faixas.duracao} tom="verde" className="py-[0.375rem] text-ink-secondary">{fmtDuracao(l.duracaoMediaSessao)}</CelulaMetrica>
               </tr>
             ))}
           </tbody>

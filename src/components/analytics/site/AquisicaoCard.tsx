@@ -5,6 +5,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import type { LinhaOrigemGA4 } from '@/lib/ga4-detalhes'
 import { fmtConv, fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
+import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 
 // De onde vem o tráfego (origem/mídia da sessão) — tabela completa (6
 // métricas padrão + Conversões/Tx. conversão como extra) + pizza. Cores
@@ -35,6 +36,18 @@ export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
       duracaoMediaSessao: media(acc.duracaoMediaSessao, l.duracaoMediaSessao),
     }
   }, { visualizacoes: 0, usuarios: 0, usuariosNovos: 0, sessoes: 0, conversoes: 0, taxaEngajamento: 0, taxaRejeicao: 0, duracaoMediaSessao: 0 }), [dados])
+
+  // Faixas por coluna (heatmap) sobre as linhas visíveis.
+  const faixas = useMemo(() => ({
+    usuarios:      faixaColuna(dados, (l) => l.usuarios),
+    usuariosNovos: faixaColuna(dados, (l) => l.usuariosNovos),
+    sessoes:       faixaColuna(dados, (l) => l.sessoes),
+    engajamento:   faixaColuna(dados, (l) => l.taxaEngajamento),
+    rejeicao:      faixaColuna(dados, (l) => l.taxaRejeicao),
+    duracao:       faixaColuna(dados, (l) => l.duracaoMediaSessao),
+    conversoes:    faixaColuna(dados, (l) => l.conversoes),
+    taxaConversao: faixaColuna(dados, (l) => l.taxaConversao),
+  }), [dados])
 
   return (
     <div className="space-y-[1rem]">
@@ -76,14 +89,14 @@ export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
                   </div>
                 </td>
                 <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtNum(l.visualizacoes)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuarios)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuariosNovos)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.sessoes)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-status-green">{fmtPct(l.taxaEngajamento)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-status-orange">{fmtPct(l.taxaRejeicao)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtDuracao(l.duracaoMediaSessao)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(l.conversoes)}</td>
-                <td className="py-[0.5rem] text-ink-secondary">{fmtPct(l.taxaConversao)}</td>
+                <CelulaMetrica valor={l.usuarios} faixa={faixas.usuarios} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuarios)}</CelulaMetrica>
+                <CelulaMetrica valor={l.usuariosNovos} faixa={faixas.usuariosNovos} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.usuariosNovos)}</CelulaMetrica>
+                <CelulaMetrica valor={l.sessoes} faixa={faixas.sessoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.sessoes)}</CelulaMetrica>
+                <CelulaMetrica valor={l.taxaEngajamento} faixa={faixas.engajamento} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(l.taxaEngajamento)}</CelulaMetrica>
+                <CelulaMetrica valor={l.taxaRejeicao} faixa={faixas.rejeicao} tom="vermelho" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(l.taxaRejeicao)}</CelulaMetrica>
+                <CelulaMetrica valor={l.duracaoMediaSessao} faixa={faixas.duracao} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtDuracao(l.duracaoMediaSessao)}</CelulaMetrica>
+                <CelulaMetrica valor={l.conversoes} faixa={faixas.conversoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(l.conversoes)}</CelulaMetrica>
+                <CelulaMetrica valor={l.taxaConversao} faixa={faixas.taxaConversao} tom="verde" className="py-[0.5rem] text-ink-secondary">{fmtPct(l.taxaConversao)}</CelulaMetrica>
               </tr>
             ))}
           </tbody>

@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Label } from 'recharts'
 import type { LinhaDispositivoAds } from '@/lib/ads-detalhes'
 import { DISPOSITIVO_LABEL, fmtConv, fmtMoeda, fmtNum, fmtPct } from './labels'
+import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 
 // Dispositivo — réplica do Looker (GADS-6): tabela completa + donuts de
 // participação por métrica (Impressões, Cliques, Visitas site, Conversões).
@@ -63,6 +64,17 @@ export function DispositivosAdsCard({ dados }: { dados: LinhaDispositivoAds[] })
     visitasSite: acc.visitasSite + d.visitasSite,
   }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0, visitasSite: 0 }), [dados])
 
+  // Faixas por coluna (heatmap) sobre as linhas visíveis.
+  const faixas = useMemo(() => ({
+    impressoes:  faixaColuna(dados, (d) => d.impressoes),
+    cliques:     faixaColuna(dados, (d) => d.cliques),
+    cpc:         faixaColuna(dados, (d) => (d.cliques > 0 ? d.custo / d.cliques : 0)),
+    ctr:         faixaColuna(dados, (d) => (d.impressoes > 0 ? (d.cliques / d.impressoes) * 100 : 0)),
+    conversoes:  faixaColuna(dados, (d) => d.conversoes),
+    custoConv:   faixaColuna(dados, (d) => (d.conversoes > 0 ? d.custo / d.conversoes : 0)),
+    visitasSite: faixaColuna(dados, (d) => d.visitasSite),
+  }), [dados])
+
   return (
     <div>
       <div className="overflow-x-auto mb-[1.25rem]">
@@ -79,17 +91,18 @@ export function DispositivosAdsCard({ dados }: { dados: LinhaDispositivoAds[] })
             {dados.map((d) => {
               const ctr = d.impressoes > 0 ? (d.cliques / d.impressoes) * 100 : 0
               const cpc = d.cliques > 0 ? d.custo / d.cliques : 0
+              const custoConv = d.conversoes > 0 ? d.custo / d.conversoes : 0
               return (
                 <tr key={d.dispositivo} className="border-b border-surface-border/60 last:border-0">
                   <td className="py-[0.5rem] pr-[1rem] text-ink-primary font-medium">{DISPOSITIVO_LABEL[d.dispositivo] ?? d.dispositivo}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.impressoes)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.cliques)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{d.cliques > 0 ? fmtMoeda(cpc) : '—'}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(ctr)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(d.conversoes)}</td>
-                  <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{d.conversoes > 0 ? fmtMoeda(d.custo / d.conversoes) : '—'}</td>
+                  <CelulaMetrica valor={d.impressoes} faixa={faixas.impressoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.impressoes)}</CelulaMetrica>
+                  <CelulaMetrica valor={d.cliques} faixa={faixas.cliques} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(d.cliques)}</CelulaMetrica>
+                  <CelulaMetrica valor={cpc} faixa={faixas.cpc} tom="azul" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{d.cliques > 0 ? fmtMoeda(cpc) : '—'}</CelulaMetrica>
+                  <CelulaMetrica valor={ctr} faixa={faixas.ctr} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtPct(ctr)}</CelulaMetrica>
+                  <CelulaMetrica valor={d.conversoes} faixa={faixas.conversoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(d.conversoes)}</CelulaMetrica>
+                  <CelulaMetrica valor={custoConv} faixa={faixas.custoConv} tom="azul" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{d.conversoes > 0 ? fmtMoeda(custoConv) : '—'}</CelulaMetrica>
                   <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtMoeda(d.custo)}</td>
-                  <td className="py-[0.5rem] text-ink-secondary">{fmtConv(d.visitasSite)}</td>
+                  <CelulaMetrica valor={d.visitasSite} faixa={faixas.visitasSite} tom="verde" className="py-[0.5rem] text-ink-secondary">{fmtConv(d.visitasSite)}</CelulaMetrica>
                 </tr>
               )
             })}

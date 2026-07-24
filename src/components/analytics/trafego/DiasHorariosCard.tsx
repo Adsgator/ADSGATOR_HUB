@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import type { DiasHorariosAds } from '@/lib/ads-detalhes'
 import { DIA_CURTO, fmtConv, fmtMoeda, fmtNum } from './labels'
+import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 
 // Dias da semana e horário do dia — réplica do Looker (GADS-6): tabelas, não
 // gráfico (o gráfico de barras ficou só na versão anterior por engano —
@@ -19,6 +20,12 @@ function Tabela({ titulo, coluna, linhas }: { titulo: string; coluna: string; li
     impressoes: acc.impressoes + l.impressoes, cliques: acc.cliques + l.cliques,
     custo: acc.custo + l.custo, conversoes: acc.conversoes + l.conversoes,
   }), { impressoes: 0, cliques: 0, custo: 0, conversoes: 0 }), [linhas])
+  // Faixas por coluna (heatmap) sobre as linhas visíveis.
+  const faixasCol = useMemo(() => ({
+    impressoes: faixaColuna(ordenadas, (l) => l.impressoes),
+    cliques:    faixaColuna(ordenadas, (l) => l.cliques),
+    conversoes: faixaColuna(ordenadas, (l) => l.conversoes),
+  }), [ordenadas])
 
   return (
     <div>
@@ -36,9 +43,9 @@ function Tabela({ titulo, coluna, linhas }: { titulo: string; coluna: string; li
             {ordenadas.map((l) => (
               <tr key={l.chave} className="border-b border-surface-border/60 last:border-0 hover:bg-surface-hover/50 transition-colors">
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary font-medium">{l.label}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.impressoes)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.cliques)}</td>
-                <td className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(l.conversoes)}</td>
+                <CelulaMetrica valor={l.impressoes} faixa={faixasCol.impressoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.impressoes)}</CelulaMetrica>
+                <CelulaMetrica valor={l.cliques} faixa={faixasCol.cliques} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtNum(l.cliques)}</CelulaMetrica>
+                <CelulaMetrica valor={l.conversoes} faixa={faixasCol.conversoes} tom="verde" className="py-[0.5rem] pr-[1rem] text-ink-secondary">{fmtConv(l.conversoes)}</CelulaMetrica>
                 <td className="py-[0.5rem] text-status-blue font-medium">{fmtMoeda(l.custo)}</td>
               </tr>
             ))}
