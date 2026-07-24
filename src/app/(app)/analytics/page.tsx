@@ -54,6 +54,16 @@ interface ClienteSnap {
 
 type Periodo = '7d' | '30d' | '90d'
 
+// Status "operacionais" — clientes vivos que aparecem por padrão no seletor.
+// Arquivados (inativo/cancelado) só entram com o toggle "incluir inativos".
+const STATUS_OPERACIONAIS: ReadonlyArray<Cliente['status']> = [
+  'recebido', 'onboarding', 'setup_trafego', 'ativo', 'congelado',
+]
+
+const ehOperacional = (c: Cliente) => STATUS_OPERACIONAIS.includes(c.status)
+const temAnalyticsConectado = (c: Cliente) =>
+  Boolean((c.google_ads_enabled && c.google_ads_customer_id) || (c.ga4_enabled && c.ga4_property_id))
+
 interface LiveAnalyticsData {
   googleAds: {
     enabled: boolean
@@ -159,6 +169,9 @@ export default function AnalyticsPage() {
   const [loadingIaRecs, setLoadingIaRecs] = useState(false)
   const [mostrarIaRecs, setMostrarIaRecs] = useState(false)
   const [aba, setAba] = useState<'geral' | 'trafego' | 'site'>('geral')
+  // Revela clientes arquivados (inativo) que ainda têm analytics conectado —
+  // desligado por padrão. Não afeta sync/alertas, só a visualização sob demanda.
+  const [incluirInativos, setIncluirInativos] = useState(false)
 
   // Deep link: /analytics?cliente=<id>&aba=trafego|site (vindo do detalhe do cliente)
   useEffect(() => {
@@ -181,7 +194,12 @@ export default function AnalyticsPage() {
   const carregar = useCallback(async () => {
     setLoading(true)
     const [{ data: clientes }, { data: snaps }, { data: alertasDb }] = await Promise.all([
-      supabase.from('clientes').select('*').in('status', ['ativo', 'onboarding', 'setup_trafego']),
+      // Traz operacionais (por status) + qualquer cliente com analytics conectado
+      // (inclui arquivados com Ads/GA4). O toggle "incluir inativos" filtra o
+      // display no client — o superset já vem carregado, sem re-fetch.
+      supabase.from('clientes').select('*').or(
+        `status.in.(${STATUS_OPERACIONAIS.join(',')}),google_ads_enabled.eq.true,ga4_enabled.eq.true`,
+      ),
       supabase.from('analytics_snapshots').select('*').order('periodo_fim', { ascending: false }).limit(500),
       supabase.from('alertas').select('id, tipo, mensagem').eq('resolvido', false).order('created_at', { ascending: false }).limit(10),
     ])
@@ -199,7 +217,20 @@ export default function AnalyticsPage() {
 
     setDados(resultado)
     setAlertas((alertasDb ?? []) as { id: string; tipo: string; mensagem: string }[])
-    if (!clienteSel && resultado.length > 0) setClienteSel(resultado[0].cliente.id)
+    // Seleção inicial: primeiro cliente operacional (o toggle de inativos vem
+    // desligado). Só cai pro primeiro geral se não houver nenhum operacional.
+    if (!clienteSel && resultado.length > 0) {
+      const inicial = resultado.find((r) => ehOperacional(r.cliente)) ?? resultado[0]
+      setClienteSel(inicial.cliente.id)
+    }
+    // Deep-link pra um cliente arquivado com analytics (ex.: vindo do detalhe
+    // da Ana Ester) → revela automaticamente, senão ele ficaria escondido.
+    if (clienteSel) {
+      const alvo = resultado.find((r) => r.cliente.id === clienteSel)
+      if (alvo && !ehOperacional(alvo.cliente) && temAnalyticsConectado(alvo.cliente)) {
+        setIncluirInativos(true)
+      }
+    }
     setLoading(false)
   }, [clienteSel])
 
@@ -265,8 +296,31 @@ export default function AnalyticsPage() {
     }
   }, [clienteSel, carregar])
 
+  // ── Visibilidade (toggle "incluir inativos") ─────────────────────
+  // Operacionais sempre; arquivados só com o toggle e se tiverem analytics.
+  const dadosVisiveis = dados.filter(
+    (d) => ehOperacional(d.cliente) || (incluirInativos && temAnalyticsConectado(d.cliente)),
+  )
+  // Arquivados com analytics conectado que o toggle revela (base do contador).
+  const inativosComAnalytics = dados.filter(
+    (d) => !ehOperacional(d.cliente) && temAnalyticsConectado(d.cliente),
+  )
+
+  // Toggle: ao DESLIGAR com um arquivado selecionado, volta pro primeiro
+  // operacional (síncrono — evita o cliente sumir e a view ficar vazia).
+  const alternarInativos = useCallback(() => {
+    if (incluirInativos) {
+      const sel = dados.find((d) => d.cliente.id === clienteSel)
+      if (sel && !ehOperacional(sel.cliente)) {
+        const op = dados.find((d) => ehOperacional(d.cliente))
+        if (op) setClienteSel(op.cliente.id)
+      }
+    }
+    setIncluirInativos((v) => !v)
+  }, [incluirInativos, dados, clienteSel])
+
   // ── KPIs agregados ────────────────────────────────────────────────
-  const totais = dados.reduce((acc, { ultimo: u }) => {
+  const totais = dadosVisiveis.reduce((acc, { ultimo: u }) => {
     if (!u) return acc
     return {
       invest:     acc.invest     + (u.investimento ?? 0),
@@ -290,7 +344,7 @@ export default function AnalyticsPage() {
   }))
 
   // ── GA4 — top tráfego por cliente ────────────────────────────────
-  const ga4Data = dados
+  const ga4Data = dadosVisiveis
     .filter((d) => (d.ultimo?.sessoes ?? 0) > 0)
     .map((d) => ({ nome: d.cliente.nome.split(' ')[0], sessoes: d.ultimo?.sessoes ?? 0 }))
     .sort((a, b) => b.sessoes - a.sessoes)
@@ -428,15 +482,17 @@ export default function AnalyticsPage() {
       )}
 
       {/* ══ SEÇÃO 2 — SELETOR DE CLIENTE (pills) ═══════════════════ */}
-      {!loading && dados.length > 0 && (
+      {!loading && dadosVisiveis.length > 0 && (
         <div className="flex items-center gap-[0.375rem] flex-wrap mb-[1.5rem]">
           <span className="text-ink-muted text-[0.75rem] font-medium mr-[0.25rem]">Cliente:</span>
-          {dados.map(({ cliente: c, ultimo: u }) => {
+          {dadosVisiveis.map(({ cliente: c, ultimo: u }) => {
             const ativo = (u?.investimento ?? 0) > 0
+            const arquivado = !ehOperacional(c)
             return (
               <button
                 key={c.id}
                 onClick={() => setClienteSel(c.id)}
+                title={arquivado ? `${c.nome} — arquivado (${c.status})` : c.nome}
                 className={`flex items-center gap-[0.375rem] h-[1.875rem] px-[0.75rem] rounded-full text-[0.8125rem] font-medium transition-all ${
                   clienteSel === c.id
                     ? 'bg-ads-500 text-white shadow-md shadow-ads-500/20'
@@ -445,9 +501,32 @@ export default function AnalyticsPage() {
               >
                 <span className={`w-[0.375rem] h-[0.375rem] rounded-full shrink-0 ${ativo ? 'bg-status-green' : 'bg-ink-muted'}`} />
                 {c.nome.split(' ')[0]}
+                {arquivado && (
+                  <span className={`text-[0.5625rem] uppercase tracking-wide ${clienteSel === c.id ? 'text-white/70' : 'text-ink-muted'}`}>
+                    arquivado
+                  </span>
+                )}
               </button>
             )
           })}
+          {/* Toggle "incluir inativos" — só quando há arquivados com analytics */}
+          {inativosComAnalytics.length > 0 && (
+            <button
+              onClick={alternarInativos}
+              className={`ml-[0.25rem] inline-flex items-center gap-[0.375rem] h-[1.875rem] px-[0.75rem] rounded-full text-[0.75rem] font-medium border transition-all ${
+                incluirInativos
+                  ? 'bg-ads-500/10 border-ads-500/40 text-ads-600'
+                  : 'bg-surface-card border-surface-border text-ink-muted hover:text-ink-secondary hover:border-ads-500/30'
+              }`}
+              title="Mostra clientes arquivados que ainda têm Google Ads ou GA4 conectado (para revisão/histórico). Não afeta sync nem alertas."
+            >
+              <span className={`w-[1.75rem] h-[0.875rem] rounded-full relative transition-colors shrink-0 ${incluirInativos ? 'bg-ads-500' : 'bg-surface-border'}`}>
+                <span className={`absolute top-[0.0625rem] w-[0.75rem] h-[0.75rem] rounded-full bg-white transition-all ${incluirInativos ? 'left-[0.9375rem]' : 'left-[0.0625rem]'}`} />
+              </span>
+              Incluir inativos
+              <span className="text-[0.625rem] text-ink-muted">({inativosComAnalytics.length})</span>
+            </button>
+          )}
         </div>
       )}
       {loading && <div className="h-[2rem] mb-[1.5rem] skeleton-shimmer rounded-full w-[60%]" />}
@@ -794,7 +873,7 @@ export default function AnalyticsPage() {
             <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Métricas GA4</h3>
           </div>
           <div className="flex flex-col gap-[0.625rem]">
-            {dados.filter((d) => d.ultimo?.sessoes).slice(0, 5).map(({ cliente: c, ultimo: u }) => (
+            {dadosVisiveis.filter((d) => d.ultimo?.sessoes).slice(0, 5).map(({ cliente: c, ultimo: u }) => (
               <div key={c.id} className="flex items-center justify-between">
                 <span className="text-ink-secondary text-[0.8125rem] truncate max-w-[10rem]">{c.nome}</span>
                 <div className="flex items-center gap-[1rem] text-[0.75rem]">
@@ -804,7 +883,7 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             ))}
-            {dados.filter((d) => d.ultimo?.sessoes).length === 0 && (
+            {dadosVisiveis.filter((d) => d.ultimo?.sessoes).length === 0 && (
               <p className="text-ink-muted text-[0.875rem] italic">Sem dados GA4 disponíveis.</p>
             )}
           </div>
@@ -835,7 +914,7 @@ export default function AnalyticsPage() {
       )}
       </>)}
 
-      {dados.length === 0 && !loading && (
+      {dadosVisiveis.length === 0 && !loading && (
         <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[4rem] text-center">
           <BarChart2 className="w-[3rem] h-[3rem] text-ink-muted mx-auto mb-[1rem]" strokeWidth={1} />
           <h3 className="text-ink-primary font-semibold text-[1rem] mb-[0.5rem]">Sem dados ainda</h3>
