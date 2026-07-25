@@ -157,9 +157,21 @@ dispositivo com 3 métricas), igual à estrutura Interações/Desempenho do Ads.
 - [x] Typecheck limpo, build de produção ok.
 
 ### Pendências reais (deliberadas, ver decisões acima)
+- [x] **Rodapé de fuso (rodada 2026-07-24)** — "Os dados não são em tempo real.
+      Fuso: (GMT-03:00) Horário de Brasília." adicionado ao rodapé do Site.
+- [x] **Refino 1:1 (rodada 2026-07-24)** — mesmos recursos do Ads no Site:
+      período personalizado + estado na URL, heatmap por coluna, ordenação por
+      cabeçalho, baixar CSV, delta "de N dias anteriores", gráfico "Por
+      dispositivo" menos espremido. Nova série diária GA4 (`serieDiariaGA4`,
+      dimensão `serie`) alimenta a mini-tendência do Site na Visão geral.
 - [ ] "Nome do evento" não ganhou as 6 métricas padrão — a métrica
       "Visualizações" do Looker aplicada a evento é mal definida (só
       `page_view` tem valor); mantido com `eventCount`, mais correto.
-- [ ] Sem gate do Lucas ainda — ele adicionou os prints e sinalizou "pode
-      continuar" mas não revisou/aprovou explicitamente nem Ads nem Site no
-      navegador ainda.
+- [ ] **Prévias compactas do Site** — o Looker GA4-1/GA4-2 tem previews
+      compactas ("De onde vem o tráfego", eventos) ao lado dos gráficos que o
+      Site do Hub ainda não replica (só as tabelas completas). Avaliar na
+      passada print-a-print.
+- [ ] **Passada print-a-print + gate do Lucas** — Site desbloqueado pra revisão
+      (o único cliente com GA4, a Ana Ester, estava escondido — o toggle
+      "Incluir inativos" resolveu). Falta o Lucas fotografar o render e aprovar
+      os deltas finos; não dá pra fazer sem browser aqui.

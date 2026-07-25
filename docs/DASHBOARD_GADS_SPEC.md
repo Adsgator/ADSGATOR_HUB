@@ -186,15 +186,27 @@ falharia.
       com `\``.
 
 ### Pendências reais (não travam, mas não estão prontas)
-- [ ] **Drill-down de Cidade → bairro/CEP** — a tabela Cidade hoje só mostra
-      linhas que resolveram EXATAMENTE em nível de cidade (`tipo === 'City'`);
-      bairro/CEP não aparecem em lugar nenhum desta seção (entram nos totais
-      gerais, só não no detalhe). Exige mapear canonical_name pra saber a
-      qual cidade cada bairro/CEP pertence — não validado com dado real ainda.
-- [ ] Heatmap de cor por célula (o Looker colore cada coluna com gradiente) —
-      cortado desta rodada, fica pro refino visual.
+- [x] **Bairro/CEP + Estado/País (rodada 2026-07-24)** — em vez de drill-down
+      (o Google liga bairro/CEP direto ao ESTADO, não à cidade — não confiável),
+      viraram TABELAS PRÓPRIAS ranqueadas: Cidade → Bairro/distrito
+      (Neighborhood+District+Municipality) → CEP → Estado → País. Estado/País
+      são AGREGADOS em app a partir do `canonical_name` (regiao=penúltima parte,
+      pais=última) somando TODAS as linhas antes de ranquear. `geografiaAds`
+      mantém o retorno array (protege o portal); a separação/agregação é na UI.
+      Limite subiu de 50→500 pra a agregação ficar completa. Validado read-only
+      na conta do Ricardo: as 4 métricas batem entre total/Σestados/Σpaíses;
+      contagens Cidade 53/Bairro 208/CEP 237 provam que o 50 truncava.
+- [x] **Heatmap de cor por célula (rodada 2026-07-24)** — `CelulaMetrica` +
+      `corHeatmap` (hue única por coluna em alpha 0→0.28 sobre a superfície,
+      light/dark aware). Verde=volume, azul=dinheiro, vermelho=rejeição. Texto
+      sempre em ink (contraste validado). Segue o skill dataviz.
+- [x] **Refino 1:1 (rodada 2026-07-24)**: período personalizado (data livre) +
+      estado na URL, ordenação por cabeçalho (`ThOrdenavel`), baixar CSV por
+      tabela, delta "de N dias anteriores", gráfico "Por dispositivo" menos
+      espremido.
 - [ ] Onde o dashboard vive na tela — ainda em `/analytics` aba Tráfego (não
-      movido pro perfil do cliente; essa decisão ficou em aberto quando o
-      foco virou o conteúdo do Ads primeiro).
-- [ ] Ao concluir Ads (Lucas aprovar): repetir o processo (prints do Looker de
-      Site) antes de construir a versão de GA4.
+      movido pro perfil do cliente; decisão em aberto).
+- [ ] **Passada print-a-print com o Lucas** — deltas finos de espaçamento/ordem
+      de coluna/rótulo/cor que só aparecem comparando meu render × print do
+      Looker. Depende de o Lucas fotografar o render (não dá pra fazer sem
+      browser aqui).

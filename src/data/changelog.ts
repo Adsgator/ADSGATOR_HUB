@@ -8,6 +8,20 @@ export interface ChangelogEntry {
 // commit em que é entregue (nova entrada no topo; VERSAO_ATUAL deriva dela).
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    versao: '0.66.0',
+    data:   '2026-07-24',
+    novidades: [
+      'Filtro de período com data personalizada nos dashboards de Tráfego e Site: além dos presets (Mês atual/passado, 7/30/90 dias, Este ano) dá pra escolher um intervalo livre "de tal dia até tal dia", igual ao Looker. O período e os filtros de campanha/grupo agora ficam na URL — dá pra atualizar a página ou compartilhar o link mantendo a mesma visão',
+      'Heatmap de cor nas tabelas: cada coluna numérica é pintada por magnitude (verde = mais volume, vermelho = mais rejeição), do jeito do Looker — bate o olho e já vê onde estão os números altos e baixos',
+      'Ordenar clicando no cabeçalho da tabela (Termos, Geografia, Páginas, Origem/mídia): 1º clique ordena do maior pro menor, 2º inverte',
+      'Baixar CSV por tabela: botão discreto que exporta a tabela pra planilha (abre certinho no Excel) — pra analisar ou mandar pro cliente',
+      'Geografia do Google Ads consertada e ampliada: as tabelas de Estado e País (que viviam vazias) agora somam corretamente todas as localizações; e ganharam tabelas próprias de Bairro/distrito e de CEP, ranqueadas — antes bairro e CEP nem apareciam detalhados',
+      'Aba "Visão geral" enxuta e combinada: mostra Ads + Site do cliente de relance (KPIs-chave com variação e mini-tendência), aparecendo só o que o cliente tem conectado. Mantém o botão Sincronizar e a evolução mês a mês dos snapshots. As telas de análise antigas que duplicavam os dashboards foram aposentadas',
+      'Seletor de cliente do Analytics deixou de esconder gente: mostra todos os clientes operacionais (inclusive os recém-recebidos) e tem um toggle "Incluir inativos" pra revisar arquivados que ainda têm Ads/GA4 conectado',
+      'Rodapé do dashboard de Site com o aviso de fuso (GMT-03:00 Brasília) e os deltas dos KPIs agora dizem "de N dias anteriores" (igual ao Looker); gráfico "Por dispositivo" com barras mais legíveis',
+    ],
+  },
+  {
     versao: '0.65.0',
     data:   '2026-07-22',
     novidades: [
