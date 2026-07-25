@@ -6,7 +6,7 @@ import {
   gruposAnuncioDoPeriodoAds, FiltroAds,
 } from './ads-detalhes'
 import {
-  kpisGA4Comparativo, paginasGA4, paginasRawGA4, aquisicaoGA4, dispositivosGA4,
+  kpisGA4Comparativo, serieDiariaGA4, paginasGA4, paginasRawGA4, aquisicaoGA4, dispositivosGA4,
   novoVsRecorrenteGA4, eventosGA4, horariosGA4, tecnologiaGA4, geografiaGA4,
 } from './ga4-detalhes'
 
@@ -29,7 +29,7 @@ export const DIMENSOES_DETALHE: Record<FonteDetalhe, readonly string[]> = {
     'kpis', 'serie', 'termos', 'demografia', 'geografia', 'dias_horarios',
     'dispositivos', 'campanhas', 'grupos_anuncio',
   ],
-  ga4: ['kpis', 'paginas', 'paginas_raw', 'aquisicao', 'dispositivos', 'novo_recorrente', 'eventos', 'horarios', 'tecnologia', 'geografia'],
+  ga4: ['kpis', 'serie', 'paginas', 'paginas_raw', 'aquisicao', 'dispositivos', 'novo_recorrente', 'eventos', 'horarios', 'tecnologia', 'geografia'],
 }
 
 // Dimensões que ignoram o filtro de campanha/grupo — listam TODAS as opções
@@ -98,6 +98,7 @@ async function buscarFresco(p: ObterDetalheParams): Promise<unknown> {
     if (!prop) throw new Error('Cliente sem GA4 conectado (property ID ausente)')
     switch (p.dimensao) {
       case 'kpis':            return kpisGA4Comparativo(prop, p.periodo)
+      case 'serie':           return serieDiariaGA4(prop, p.periodo)
       case 'paginas':         return paginasGA4(prop, p.periodo)
       case 'paginas_raw':     return paginasRawGA4(prop, p.periodo)
       case 'aquisicao':       return aquisicaoGA4(prop, p.periodo)

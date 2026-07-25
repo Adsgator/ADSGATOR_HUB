@@ -34,6 +34,8 @@ export interface KpisGA4Comparativo {
   anterior:        KpisGA4
 }
 
+export interface LinhaDiaGA4 { data: string; sessoes: number; usuarios: number }
+
 export interface LinhaPaginaGA4 {
   pagina:             string
   visualizacoes:      number
@@ -235,6 +237,22 @@ export async function kpisGA4Comparativo(
     atual:    kpisDeLinha(porPeriodo.get('p0')),
     anterior: kpisDeLinha(porPeriodo.get('p1')),
   }
+}
+
+/** Série diária (sessões + usuários ativos) — mini-tendência da Visão geral. */
+export async function serieDiariaGA4(
+  propertyId: string,
+  periodo:    Periodo,
+): Promise<LinhaDiaGA4[]> {
+  validarPeriodo(periodo)
+  const rows = await rodarRelatorio(propertyId, [periodo], ['date'], ['sessions', 'activeUsers'])
+  return rows
+    .map((r) => {
+      const d = dim(r, 0) // GA4 devolve YYYYMMDD
+      const data = /^\d{8}$/.test(d) ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}` : d
+      return { data, sessoes: met(r, 0), usuarios: met(r, 1) }
+    })
+    .sort((a, b) => a.data.localeCompare(b.data))
 }
 
 // ─── PÁGINAS ─────────────────────────────────────────────────────────────────

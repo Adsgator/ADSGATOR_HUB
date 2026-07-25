@@ -1,16 +1,14 @@
 ﻿'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   BarChart2, TrendingUp, ArrowUpRight, RefreshCw,
   MousePointerClick, DollarSign, AlertTriangle,
-  Users, Globe, Zap, Calendar, ChevronDown,
-  Sparkles, X, DatabaseZap,
+  Zap, Sparkles, X, DatabaseZap,
 } from 'lucide-react'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
-  BarChart,
 } from 'recharts'
 import { MainLayout }  from '@/components/layout/MainLayout'
 import { Button }      from '@/components/ui/Button'
@@ -19,24 +17,10 @@ import { toast } from 'sonner'
 import type { AnalyticsSnapshot, Cliente } from '@/lib/types'
 import { ehSnapshotSemanal } from '@/lib/analytics-snapshots'
 
-// Novos componentes analytics
-import { AdsOverviewKpis } from '@/components/analytics/AdsOverviewKpis'
-import { SearchTermsTable } from '@/components/analytics/SearchTermsTable'
-import { DemographicsCard } from '@/components/analytics/DemographicsCard'
-import { GeographyBreakdown } from '@/components/analytics/GeographyBreakdown'
-import { DeviceBreakdown } from '@/components/analytics/DeviceBreakdown'
-import { GA4Panel } from '@/components/analytics/GA4Panel'
-import { TrafficSources } from '@/components/analytics/TrafficSources'
-import { AnalyticsMap } from '@/components/analytics/AnalyticsMap'
-import { HourDayHeatmap } from '@/components/analytics/HourDayHeatmap'
-import { GenderBreakdown } from '@/components/analytics/GenderBreakdown'
-import { CityTable } from '@/components/analytics/CityTable'
-import { AuctionInsights } from '@/components/analytics/AuctionInsights'
-import { GA4PagesTable } from '@/components/analytics/GA4PagesTable'
-import { GA4TrafficDetail } from '@/components/analytics/GA4TrafficDetail'
-import { GA4EventsTable } from '@/components/analytics/GA4EventsTable'
+import { VisaoGeralCombinada } from '@/components/analytics/geral/VisaoGeralCombinada'
 import { TrafegoDashboard } from '@/components/analytics/trafego/TrafegoDashboard'
 import { SiteDashboard } from '@/components/analytics/site/SiteDashboard'
+import { periodoDoPreset, diasDoPeriodo } from '@/components/analytics/shared/FiltroPeriodo'
 
 const fmt  = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v)
 const fmtN = (v: number) => new Intl.NumberFormat('pt-BR').format(v)
@@ -64,106 +48,12 @@ const ehOperacional = (c: Cliente) => STATUS_OPERACIONAIS.includes(c.status)
 const temAnalyticsConectado = (c: Cliente) =>
   Boolean((c.google_ads_enabled && c.google_ads_customer_id) || (c.ga4_enabled && c.ga4_property_id))
 
-interface LiveAnalyticsData {
-  googleAds: {
-    enabled: boolean
-    campanhas: Array<{
-      campanha_id: string
-      campanha_nome: string
-      impressoes: number
-      cliques: number
-      ctr: number
-      custo_total: number
-      conversoes: number
-      cpa: number
-      roas: number
-    }>
-    termosPesquisa: Array<{
-      termo: string
-      impressoes: number
-      cliques: number
-      ctr: number
-      conversoes: number
-      custo: number
-    }>
-    demografia: Array<{
-      faixa_etaria: string
-      genero: string
-      impressoes: number
-      cliques: number
-      conversoes: number
-      custo: number
-    }>
-    geografia: Array<{
-      pais: string
-      estado: string
-      cidade: string
-      impressoes: number
-      cliques: number
-      conversoes: number
-      custo: number
-    }>
-    device: Array<{
-      device: string
-      impressoes: number
-      cliques: number
-      ctr: number
-      conversoes: number
-      custo: number
-    }>
-  }
-  ga4: {
-    enabled: boolean
-    dados: {
-      sessoes: number
-      usuarios_novos: number
-      visualizacoes_pagina: number
-      taxa_engajamento: number
-      duracao_media_sessao: number
-      taxa_rejeicao: number
-      conversoes: number
-      valor_conversao_total: number
-    } | null
-    paginasTop: Array<{
-      pagina: string
-      visualizacoes: number
-      usuarios_unicos: number
-      taxa_engajamento: number
-      tempo_medio_segundos: number
-    }>
-    fontesTrafego: Array<{
-      fonte: string
-      midia: string
-      sessoes: number
-      conversoes: number
-      taxa_conversao: number
-    }>
-    geografia: Array<{
-      pais: string
-      estado: string
-      cidade: string
-      sessoes: number
-      usuarios: number
-      taxa_engajamento: number
-    }>
-    device: Array<{
-      device: string
-      sistema_operacional: string
-      sessoes: number
-      usuarios: number
-      taxa_engajamento: number
-    }>
-  }
-}
-
 export default function AnalyticsPage() {
   const [dados,    setDados]    = useState<ClienteSnap[]>([])
   const [loading,  setLoading]  = useState(true)
   const [clienteSel, setClienteSel] = useState<string>('')
   const [alertas,  setAlertas]  = useState<{ id: string; tipo: string; mensagem: string }[]>([])
   const [periodo, setPeriodo] = useState<Periodo>('30d')
-  const [liveData, setLiveData] = useState<LiveAnalyticsData | null>(null)
-  const [loadingLive, setLoadingLive] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [iaRecs,        setIaRecs]        = useState<string>('')
   const [loadingIaRecs, setLoadingIaRecs] = useState(false)
@@ -235,39 +125,6 @@ export default function AnalyticsPage() {
   }, [clienteSel])
 
   useEffect(() => { carregar() }, [carregar])
-
-  // Buscar dados live quando cliente ou período mudar (só na visão geral —
-  // a aba Tráfego usa a rota de detalhes com cache próprio)
-  const carregarLive = useCallback(async () => {
-    if (!clienteSel || aba !== 'geral') return
-    setLoadingLive(true)
-    try {
-      const res = await fetch(`/api/analytics/${clienteSel}/live?periodo=${periodo}`)
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ error: 'Erro desconhecido' }))
-        throw new Error(errorData.error || `HTTP ${res.status}`)
-      }
-      const data = await res.json()
-      setLiveData(data)
-    } catch (error) {
-      console.error('Erro ao carregar dados live:', error)
-      toast.error('Erro ao carregar dados em tempo real')
-    } finally {
-      setLoadingLive(false)
-    }
-  }, [clienteSel, periodo, aba])
-
-  useEffect(() => {
-    if (clienteSel) {
-      carregarLive()
-    }
-  }, [clienteSel, carregarLive])
-
-  // Auto-refresh a cada 5 minutos
-  useEffect(() => {
-    const interval = setInterval(carregarLive, 5 * 60 * 1000)
-    return () => clearInterval(interval)
-  }, [carregarLive])
 
   // Sincroniza snapshots (popula analytics_snapshots) e recarrega a leitura.
   const sincronizar = useCallback(async () => {
@@ -343,23 +200,10 @@ export default function AnalyticsPage() {
     sessoes:     s.sessoes ?? 0,
   }))
 
-  // ── GA4 — top tráfego por cliente ────────────────────────────────
-  const ga4Data = dadosVisiveis
-    .filter((d) => (d.ultimo?.sessoes ?? 0) > 0)
-    .map((d) => ({ nome: d.cliente.nome.split(' ')[0], sessoes: d.ultimo?.sessoes ?? 0 }))
-    .sort((a, b) => b.sessoes - a.sessoes)
-    .slice(0, 6)
-
-  // Agregar dados live para KPIs
-  const liveKpiData = liveData?.googleAds?.campanhas?.reduce((acc, c) => ({
-    impressoes: acc.impressoes + (c.impressoes || 0),
-    cliques: acc.cliques + (c.cliques || 0),
-    custo_total: acc.custo_total + (c.custo_total || 0),
-    conversoes: acc.conversoes + (c.conversoes || 0),
-  }), { impressoes: 0, cliques: 0, custo_total: 0, conversoes: 0 }) || { impressoes: 0, cliques: 0, custo_total: 0, conversoes: 0 }
-
-  const liveCtr = liveKpiData.impressoes > 0 ? (liveKpiData.cliques / liveKpiData.impressoes) * 100 : 0
-  const liveCpa = liveKpiData.conversoes > 0 ? liveKpiData.custo_total / liveKpiData.conversoes : 0
+  // Período da Visão geral (pills 7/30/90d) como {inicio,fim} pra os blocos
+  // combinados (mesma fonte cacheada dos dashboards).
+  const periodoGeral = useMemo(() => periodoDoPreset(periodo), [periodo])
+  const diasGeral    = useMemo(() => diasDoPeriodo(periodoGeral), [periodoGeral])
 
   async function gerarRecomendacoes() {
     if (!selData) return
@@ -389,12 +233,6 @@ export default function AnalyticsPage() {
     }
   }
 
-  const periodoLabel: Record<Periodo, string> = {
-    '7d': 'Últimos 7 dias',
-    '30d': 'Últimos 30 dias',
-    '90d': 'Últimos 90 dias',
-  }
-
   return (
     <MainLayout
       title="Analytics"
@@ -422,9 +260,9 @@ export default function AnalyticsPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => { carregar(); carregarLive(); }}
-            disabled={loading || loadingLive}
-            icon={<RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading || loadingLive ? 'animate-spin' : ''}`} strokeWidth={1.75} />}
+            onClick={() => carregar()}
+            disabled={loading}
+            icon={<RefreshCw className={`w-[0.875rem] h-[0.875rem] ${loading ? 'animate-spin' : ''}`} strokeWidth={1.75} />}
             className="w-[2rem] px-0"
           />
           <Button
@@ -548,7 +386,18 @@ export default function AnalyticsPage() {
       )}
 
       {aba === 'geral' && (<>
-      {/* ══ SEÇÃO 3 — DETALHE POR CAMPANHA ════════════════════════════ */}
+      {/* ══ VISÃO GERAL COMBINADA (Ads + Site, de relance) ═══════════ */}
+      {selData && (
+        <VisaoGeralCombinada
+          clienteId={selData.cliente.id}
+          adsAtivo={Boolean(selData.cliente.google_ads_enabled && selData.cliente.google_ads_customer_id)}
+          ga4Ativo={Boolean(selData.cliente.ga4_enabled && selData.cliente.ga4_property_id)}
+          periodo={periodoGeral}
+          dias={diasGeral}
+        />
+      )}
+
+      {/* ══ EVOLUÇÃO HISTÓRICA (snapshots mês a mês) ═════════════════ */}
       {selData && (
         <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem] mb-[2rem]">
           <div className="flex items-center justify-between mb-[1.25rem]">
@@ -556,7 +405,7 @@ export default function AnalyticsPage() {
               <h2 className="text-ink-primary font-semibold text-[0.9375rem]">
                 Evolução — {selData.cliente.nome}
               </h2>
-              <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">{periodoLabel[periodo]}</p>
+              <p className="text-ink-muted text-[0.75rem] mt-[0.125rem]">Snapshots mês a mês</p>
               {(selData.cliente.google_ads_enabled || selData.cliente.ga4_enabled) && (
                 <p className="text-[0.6875rem] mt-[0.25rem]">
                   {selData.cliente.ultimo_sync_at ? (
@@ -618,45 +467,6 @@ export default function AnalyticsPage() {
             <p className="text-ink-muted text-[0.875rem] italic text-center py-[2rem]">Snapshots insuficientes para gerar gráfico.</p>
           )}
 
-          {/* Tabela de campanhas live */}
-          {liveData?.googleAds.enabled && liveData.googleAds.campanhas.length > 0 && (
-            <div className="mt-[1.5rem]">
-              <h3 className="text-ink-primary font-semibold text-[0.875rem] mb-[0.75rem]">Campanhas ativas</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-[0.8125rem]">
-                  <thead>
-                    <tr className="border-b border-surface-border">
-                      {['Campanha', 'Impressões', 'Cliques', 'CTR', 'Custo', 'Conv.', 'CPA'].map((h) => (
-                        <th key={h} className="text-left pb-[0.625rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem] last:pr-0">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {liveData.googleAds.campanhas.map((c) => (
-                      <tr key={c.campanha_id} className="border-b border-surface-border last:border-0 hover:bg-surface-hover/50 transition-colors">
-                        <td className="py-[0.625rem] pr-[1rem] text-ink-primary font-medium max-w-[12rem] truncate">{c.campanha_nome}</td>
-                        <td className="py-[0.625rem] pr-[1rem] text-ink-secondary">{fmtN(c.impressoes)}</td>
-                        <td className="py-[0.625rem] pr-[1rem] text-ink-secondary">{fmtN(c.cliques)}</td>
-                        <td className="py-[0.625rem] pr-[1rem]">
-                          <span className={`font-semibold ${c.ctr > 5 ? 'text-status-green' : c.ctr > 2 ? 'text-ads-500' : 'text-ink-secondary'}`}>
-                            {c.ctr.toFixed(2)}%
-                          </span>
-                        </td>
-                        <td className="py-[0.625rem] pr-[1rem] text-status-blue font-medium">{fmt(c.custo_total)}</td>
-                        <td className="py-[0.625rem] pr-[1rem] text-ink-secondary">{conv(c.conversoes)}</td>
-                        <td className="py-[0.625rem]">
-                          <span className={`font-semibold ${c.cpa > 200 ? 'text-status-orange' : 'text-status-green'}`}>
-                            {c.conversoes > 0 ? fmt(c.cpa) : '—'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
           {/* Recomendações IA */}
           {mostrarIaRecs && (
             <div className="mt-[1.5rem] border-t border-surface-border/30 pt-[1.25rem]">
@@ -689,206 +499,6 @@ export default function AnalyticsPage() {
           )}
         </div>
       )}
-
-      {/* ══ SEÇÃO 4 — LIVE ANALYTICS PREMIUM ═════════════════════════ */}
-      {selData && liveData && (
-        <div className="mb-[2rem]">
-          <div className="flex items-center justify-between mb-[1rem]">
-            <h2 className="text-ink-primary font-bold text-base">
-              Dados ao vivo — {periodoLabel[periodo]}
-            </h2>
-            {loadingLive && (
-              <span className="text-xs text-ads-500 animate-pulse">Atualizando...</span>
-            )}
-          </div>
-
-          {/* Google Ads KPIs */}
-          {liveData.googleAds.enabled && (
-            <div className="mb-[1rem]">
-              <h3 className="text-[0.875rem] font-medium text-ink-muted mb-[0.75rem]">Google Ads</h3>
-              <AdsOverviewKpis
-                data={{
-                  ...liveKpiData,
-                  ctr: liveCtr,
-                  cpa: liveCpa,
-                  roas: liveKpiData.conversoes > 0 ? liveKpiData.custo_total / liveKpiData.conversoes : 0,
-                }}
-                loading={loadingLive}
-              />
-            </div>
-          )}
-
-          {/* GA4 KPIs */}
-          {liveData.ga4.enabled && liveData.ga4.dados && (
-            <div className="mb-[1rem]">
-              <h3 className="text-[0.875rem] font-medium text-ink-muted mb-[0.75rem]">Google Analytics 4</h3>
-              <GA4Panel data={liveData.ga4.dados} loading={loadingLive} />
-            </div>
-          )}
-
-          {/* Grid de detalhes */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1rem]">
-            {/* Termos de Pesquisa */}
-            {liveData.googleAds.enabled && liveData.googleAds.termosPesquisa.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Termos de Pesquisa</h4>
-                <SearchTermsTable data={liveData.googleAds.termosPesquisa} loading={loadingLive} maxRows={5} />
-              </div>
-            )}
-
-            {/* Demografia */}
-            {liveData.googleAds.enabled && liveData.googleAds.demografia.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Demografia</h4>
-                <DemographicsCard data={liveData.googleAds.demografia} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* Geografia — mapa + breakdown */}
-            {(liveData.googleAds.geografia.length > 0 || liveData.ga4.geografia.length > 0) && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Geografia</h4>
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_14rem] gap-[1rem]">
-                  <AnalyticsMap
-                    data={liveData.ga4.enabled ? liveData.ga4.geografia : liveData.googleAds.geografia}
-                    loading={loadingLive}
-                    metric={liveData.ga4.enabled ? 'sessoes' : 'cliques'}
-                  />
-                  <GeographyBreakdown
-                    data={liveData.ga4.enabled ? liveData.ga4.geografia : liveData.googleAds.geografia}
-                    loading={loadingLive}
-                    title={liveData.ga4.enabled ? 'Top estados' : 'Cliques por estado'}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Dispositivos */}
-            {(liveData.googleAds.device.length > 0 || liveData.ga4.device.length > 0) && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Dispositivos</h4>
-                <DeviceBreakdown
-                  data={liveData.ga4.enabled ? liveData.ga4.device : liveData.googleAds.device}
-                  loading={loadingLive}
-                />
-              </div>
-            )}
-
-            {/* Fontes de Tráfego */}
-            {liveData.ga4.enabled && liveData.ga4.fontesTrafego.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Fontes de Tráfego</h4>
-                <TrafficSources data={liveData.ga4.fontesTrafego} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* Heatmap de horários */}
-            {liveData.googleAds.enabled && (liveData.googleAds as any).horario?.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Performance por Horário</h4>
-                <HourDayHeatmap data={(liveData.googleAds as any).horario} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* Gênero */}
-            {liveData.googleAds.enabled && liveData.googleAds.demografia.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Gênero</h4>
-                <GenderBreakdown data={liveData.googleAds.demografia} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* Tabela de cidades */}
-            {liveData.googleAds.enabled && liveData.googleAds.geografia.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Cidades — Google Ads</h4>
-                <CityTable data={liveData.googleAds.geografia} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* Leilão de concorrentes */}
-            {liveData.googleAds.enabled && (liveData.googleAds as any).leilao?.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Leilão de Concorrentes</h4>
-                <AuctionInsights data={(liveData.googleAds as any).leilao} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* GA4 — Páginas expandido */}
-            {liveData.ga4.enabled && liveData.ga4.paginasTop.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem] lg:col-span-2">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Páginas Mais Acessadas</h4>
-                <GA4PagesTable data={liveData.ga4.paginasTop as any} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* GA4 — Origem do tráfego detalhado */}
-            {liveData.ga4.enabled && liveData.ga4.fontesTrafego.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Origem do Tráfego — Detalhado</h4>
-                <GA4TrafficDetail data={liveData.ga4.fontesTrafego} loading={loadingLive} />
-              </div>
-            )}
-
-            {/* GA4 — Eventos */}
-            {liveData.ga4.enabled && (liveData.ga4 as any).eventos?.length > 0 && (
-              <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1rem]">
-                <h4 className="text-[0.875rem] font-medium text-ink-primary mb-[0.75rem]">Eventos Disparados</h4>
-                <GA4EventsTable data={(liveData.ga4 as any).eventos} loading={loadingLive} />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══ SEÇÃO 5 — GA4 TOP TRÁFEGO ═════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[1.5rem] mb-[2rem]">
-        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
-          <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
-            <Globe className="w-[0.875rem] h-[0.875rem] text-status-blue" strokeWidth={1.75} />
-            <h3 className="text-ink-primary font-semibold text-[0.9375rem]">GA4 — Sessões por Cliente</h3>
-          </div>
-          {ga4Data.length > 0 ? (
-            <div className="h-[10rem]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ga4Data} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }}>
-                  <XAxis type="number" tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} />
-                  <YAxis type="category" dataKey="nome" tick={{ fontSize: 11, fill: 'var(--ink-muted)' }} axisLine={false} tickLine={false} width={60} />
-                  <Tooltip
-                    contentStyle={{ background: 'var(--surface-card)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
-                    formatter={(v: unknown) => [fmtN(Number(v)), 'Sessões'] as [string, string]}
-                  />
-                  <Bar dataKey="sessoes" fill="#3B82F6" opacity={0.75} radius={[0, 3, 3, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-ink-muted text-[0.875rem] italic">Sem dados GA4 disponíveis.</p>
-          )}
-        </div>
-
-        <div className="bg-surface-card dark:border dark:border-surface-border rounded-2xl card-shadow p-[1.5rem]">
-          <div className="flex items-center gap-[0.5rem] mb-[1.25rem]">
-            <Users className="w-[0.875rem] h-[0.875rem] text-ads-500" strokeWidth={1.75} />
-            <h3 className="text-ink-primary font-semibold text-[0.9375rem]">Métricas GA4</h3>
-          </div>
-          <div className="flex flex-col gap-[0.625rem]">
-            {dadosVisiveis.filter((d) => d.ultimo?.sessoes).slice(0, 5).map(({ cliente: c, ultimo: u }) => (
-              <div key={c.id} className="flex items-center justify-between">
-                <span className="text-ink-secondary text-[0.8125rem] truncate max-w-[10rem]">{c.nome}</span>
-                <div className="flex items-center gap-[1rem] text-[0.75rem]">
-                  <span className="text-ink-muted">{fmtN(u?.sessoes ?? 0)} sess.</span>
-                  <span className="text-ink-muted">{((u?.taxa_conversao ?? 0) * 100).toFixed(1)}% conv.</span>
-                  <span className="text-status-green font-medium">{fmtN(u?.usuarios ?? 0)} usr</span>
-                </div>
-              </div>
-            ))}
-            {dadosVisiveis.filter((d) => d.ultimo?.sessoes).length === 0 && (
-              <p className="text-ink-muted text-[0.875rem] italic">Sem dados GA4 disponíveis.</p>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* ══ SEÇÃO 5 — ALERTAS EM TEMPO REAL ═══════════════════════════ */}
       {alertas.length > 0 && (
