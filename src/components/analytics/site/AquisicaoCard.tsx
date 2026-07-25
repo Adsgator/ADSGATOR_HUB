@@ -7,6 +7,7 @@ import { fmtConv, fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
+import { BotaoCsv, type ColunaCsv } from '../shared/BotaoCsv'
 
 // De onde vem o tráfego (origem/mídia da sessão) — tabela completa (6
 // métricas padrão + Conversões/Tx. conversão como extra) + pizza. Cores
@@ -39,6 +40,19 @@ const ACESSADORES: Acessadores<LinhaOrigemGA4> = {
   conversoes:         (l) => l.conversoes,
   taxaConversao:      (l) => l.taxaConversao,
 }
+
+const CSV: ColunaCsv<LinhaOrigemGA4>[] = [
+  { label: 'Origem / mídia', valor: (l) => `${l.fonte} / ${l.midia}` },
+  { label: 'Visualizações', valor: (l) => fmtNum(l.visualizacoes) },
+  { label: 'Usuários', valor: (l) => fmtNum(l.usuarios) },
+  { label: 'Novos', valor: (l) => fmtNum(l.usuariosNovos) },
+  { label: 'Sessões', valor: (l) => fmtNum(l.sessoes) },
+  { label: 'Engajamento', valor: (l) => fmtPct(l.taxaEngajamento) },
+  { label: 'Rejeição', valor: (l) => fmtPct(l.taxaRejeicao) },
+  { label: 'Duração', valor: (l) => fmtDuracao(l.duracaoMediaSessao) },
+  { label: 'Conversões', valor: (l) => fmtConv(l.conversoes) },
+  { label: 'Tx. conv.', valor: (l) => fmtPct(l.taxaConversao) },
+]
 
 export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
   const totalSessoes = dados.reduce((s, l) => s + l.sessoes, 0)
@@ -103,6 +117,9 @@ export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
         </ResponsiveContainer>
       </div>
 
+      <div className="flex justify-end">
+        <BotaoCsv nome="aquisicao-origem-midia" colunas={CSV} linhas={ordenadas} />
+      </div>
       <div className="overflow-x-auto max-h-[18rem] overflow-y-auto">
         <table className="w-full text-[0.8125rem]">
           <thead className="sticky top-0 bg-surface-card">

@@ -7,6 +7,7 @@ import { fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
+import { BotaoCsv, type ColunaCsv } from '../shared/BotaoCsv'
 
 // Quais páginas são acessadas — caminhos normalizados (sem query string; o
 // fbclid que poluía o Looker não chega aqui) + tabela secundária com o
@@ -35,6 +36,17 @@ const ACESSADORES: Acessadores<LinhaPaginaGA4> = {
   duracaoMediaSessao: (p) => p.duracaoMediaSessao,
 }
 
+const CSV: ColunaCsv<LinhaPaginaGA4>[] = [
+  { label: 'Página', valor: (p) => p.pagina },
+  { label: 'Visualizações', valor: (p) => fmtNum(p.visualizacoes) },
+  { label: 'Usuários', valor: (p) => fmtNum(p.usuarios) },
+  { label: 'Novos', valor: (p) => fmtNum(p.usuariosNovos) },
+  { label: 'Sessões', valor: (p) => fmtNum(p.sessoes) },
+  { label: 'Engajamento', valor: (p) => fmtPct(p.taxaEngajamento) },
+  { label: 'Rejeição', valor: (p) => fmtPct(p.taxaRejeicao) },
+  { label: 'Duração', valor: (p) => fmtDuracao(p.duracaoMediaSessao) },
+]
+
 function totalDe(dados: LinhaPaginaGA4[]) {
   return dados.reduce((acc, p) => {
     const pesoTotal = acc.sessoes + p.sessoes
@@ -51,7 +63,7 @@ function totalDe(dados: LinhaPaginaGA4[]) {
   }, { visualizacoes: 0, usuarios: 0, usuariosNovos: 0, sessoes: 0, taxaEngajamento: 0, taxaRejeicao: 0, duracaoMediaSessao: 0 })
 }
 
-function Tabela({ dados, buscaPlaceholder }: { dados: LinhaPaginaGA4[]; buscaPlaceholder: string }) {
+function Tabela({ dados, buscaPlaceholder, nomeCsv }: { dados: LinhaPaginaGA4[]; buscaPlaceholder: string; nomeCsv: string }) {
   const [busca, setBusca] = useState('')
 
   const filtradas = useMemo(() => {
@@ -76,14 +88,17 @@ function Tabela({ dados, buscaPlaceholder }: { dados: LinhaPaginaGA4[]; buscaPla
 
   return (
     <div>
-      <div className="relative mb-[0.75rem]">
-        <Search className="absolute left-[0.625rem] top-1/2 -translate-y-1/2 w-[0.8125rem] h-[0.8125rem] text-ink-muted" strokeWidth={2} />
-        <input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder={buscaPlaceholder}
-          className="w-full h-[2rem] pl-[1.75rem] pr-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-[0.8125rem] text-ink-primary placeholder:text-ink-muted focus-ring"
-        />
+      <div className="flex items-center gap-[0.5rem] mb-[0.75rem]">
+        <div className="relative flex-1">
+          <Search className="absolute left-[0.625rem] top-1/2 -translate-y-1/2 w-[0.8125rem] h-[0.8125rem] text-ink-muted" strokeWidth={2} />
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder={buscaPlaceholder}
+            className="w-full h-[2rem] pl-[1.75rem] pr-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-[0.8125rem] text-ink-primary placeholder:text-ink-muted focus-ring"
+          />
+        </div>
+        <BotaoCsv nome={nomeCsv} colunas={CSV} linhas={ordenadas} />
       </div>
 
       <div className="overflow-x-auto max-h-[22rem] overflow-y-auto">
@@ -135,7 +150,7 @@ function Tabela({ dados, buscaPlaceholder }: { dados: LinhaPaginaGA4[]; buscaPla
 export function PaginasCard({ dados, dadosBrutos }: { dados: LinhaPaginaGA4[]; dadosBrutos?: LinhaPaginaGA4[] }) {
   return (
     <div className="space-y-[1.25rem]">
-      <Tabela dados={dados} buscaPlaceholder="Buscar página…" />
+      <Tabela dados={dados} buscaPlaceholder="Buscar página…" nomeCsv="paginas" />
       {dadosBrutos && dadosBrutos.length > 0 && (
         <div>
           <p className="text-ink-secondary text-[0.8125rem] font-semibold mb-[0.5rem]">
@@ -144,7 +159,7 @@ export function PaginasCard({ dados, dadosBrutos }: { dados: LinhaPaginaGA4[]; d
           <p className="text-ink-muted text-[0.6875rem] mb-[0.75rem]">
             Granularidade mais fina — útil pra ver de qual link ou campanha exata veio o acesso.
           </p>
-          <Tabela dados={dadosBrutos} buscaPlaceholder="Buscar caminho + parâmetros…" />
+          <Tabela dados={dadosBrutos} buscaPlaceholder="Buscar caminho + parâmetros…" nomeCsv="paginas-com-parametros" />
         </div>
       )}
     </div>

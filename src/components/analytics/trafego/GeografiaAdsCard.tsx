@@ -6,6 +6,7 @@ import type { LinhaLocalAds } from '@/lib/ads-detalhes'
 import { fmtConv, fmtMoeda, fmtNum, fmtPct, nomeLocal } from './labels'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
+import { BotaoCsv, type ColunaCsv } from '../shared/BotaoCsv'
 
 // Geografia — 5 tabelas ranqueadas: Cidade → Bairro → CEP → Estado → País.
 // O Google resolve cada impressão na localização MAIS específica (cidade,
@@ -37,6 +38,17 @@ const ACESSADORES: Acessadores<LinhaLocalAds> = {
   custo:       (l) => l.custo,
   visitasSite: (l) => l.visitasSite,
 }
+
+const CSV_METRICAS: ColunaCsv<LinhaLocalAds>[] = [
+  { label: 'Impressões', valor: (l) => fmtNum(l.impressoes) },
+  { label: 'Cliques', valor: (l) => fmtNum(l.cliques) },
+  { label: 'CPC médio', valor: (l) => (l.cliques > 0 ? fmtMoeda(l.custo / l.cliques) : '—') },
+  { label: 'CTR', valor: (l) => fmtPct(l.impressoes > 0 ? (l.cliques / l.impressoes) * 100 : 0) },
+  { label: 'Conversões', valor: (l) => fmtConv(l.conversoes) },
+  { label: 'Custo/conv.', valor: (l) => (l.conversoes > 0 ? fmtMoeda(l.custo / l.conversoes) : '—') },
+  { label: 'Custo', valor: (l) => fmtMoeda(l.custo) },
+  { label: 'Visitas site', valor: (l) => fmtConv(l.visitasSite) },
+]
 
 // Neighborhood + District + Municipality são todas granularidades "sub-cidade"
 // (no Brasil o Google mistura os três) → entram juntas na tabela de Bairro.
@@ -84,10 +96,14 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
   }), [linhas])
 
   const { ordenadas, estado, alternar } = useOrdenacao(linhas, ACESSADORES)
+  const csv: ColunaCsv<LinhaLocalAds>[] = [{ label: coluna, valor: (l) => nomeLocal(l.local, l.tipo) }, ...CSV_METRICAS]
 
   return (
     <div>
-      <p className="text-ink-secondary text-[0.8125rem] font-semibold mb-[0.5rem]">{titulo}</p>
+      <div className="flex items-center justify-between gap-[0.5rem] mb-[0.5rem]">
+        <p className="text-ink-secondary text-[0.8125rem] font-semibold">{titulo}</p>
+        {linhas.length > 0 && <BotaoCsv nome={`geografia-${coluna.toLowerCase()}`} colunas={csv} linhas={ordenadas} />}
+      </div>
       {linhas.length === 0 ? (
         <p className="text-ink-muted text-[0.75rem] italic py-[0.75rem]">Sem dados neste nível no período.</p>
       ) : (

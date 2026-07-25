@@ -7,6 +7,7 @@ import { fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
+import { BotaoCsv, type ColunaCsv } from '../shared/BotaoCsv'
 
 // Cidade / Estado / País — 3 tabelas separadas (não misturar granularidade,
 // mesma decisão do dashboard de Ads). Cada dimensão é uma agregação
@@ -32,6 +33,16 @@ const ACESSADORES: Acessadores<LinhaGeoGA4> = {
   taxaRejeicao:       (l) => l.taxaRejeicao,
   duracaoMediaSessao: (l) => l.duracaoMediaSessao,
 }
+
+const CSV_METRICAS: ColunaCsv<LinhaGeoGA4>[] = [
+  { label: 'Visualizações', valor: (l) => fmtNum(l.visualizacoes) },
+  { label: 'Usuários', valor: (l) => fmtNum(l.usuarios) },
+  { label: 'Novos', valor: (l) => fmtNum(l.usuariosNovos) },
+  { label: 'Sessões', valor: (l) => fmtNum(l.sessoes) },
+  { label: 'Engajamento', valor: (l) => fmtPct(l.taxaEngajamento) },
+  { label: 'Rejeição', valor: (l) => fmtPct(l.taxaRejeicao) },
+  { label: 'Duração', valor: (l) => fmtDuracao(l.duracaoMediaSessao) },
+]
 
 function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string; linhas: LinhaGeoGA4[] }) {
   const total = useMemo(() => linhas.reduce((acc, l) => {
@@ -59,10 +70,14 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
   }), [linhas])
 
   const { ordenadas, estado, alternar } = useOrdenacao(linhas, ACESSADORES)
+  const csv: ColunaCsv<LinhaGeoGA4>[] = [{ label: coluna, valor: (l) => l.local }, ...CSV_METRICAS]
 
   return (
     <div>
-      <p className="text-ink-secondary text-[0.8125rem] font-semibold mb-[0.5rem]">{titulo}</p>
+      <div className="flex items-center justify-between gap-[0.5rem] mb-[0.5rem]">
+        <p className="text-ink-secondary text-[0.8125rem] font-semibold">{titulo}</p>
+        {linhas.length > 0 && <BotaoCsv nome={`geografia-site-${coluna.toLowerCase()}`} colunas={csv} linhas={ordenadas} />}
+      </div>
       {linhas.length === 0 ? (
         <p className="text-ink-muted text-[0.75rem] italic py-[0.75rem]">Sem dados neste nível no período.</p>
       ) : (

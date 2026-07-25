@@ -6,6 +6,7 @@ import type { LinhaTermoAds } from '@/lib/ads-detalhes'
 import { fmtConv, fmtMoeda, fmtNum, fmtPct } from './labels'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
+import { BotaoCsv, type ColunaCsv } from '../shared/BotaoCsv'
 
 // Termos de pesquisa — top por cliques com busca local (padrão do Looker:
 // tabela completa pesquisável).
@@ -35,6 +36,18 @@ const ACESSADORES: Acessadores<LinhaTermoAds> = {
   custo:       (t) => t.custo,
   visitasSite: (t) => t.visitasSite,
 }
+
+const CSV: ColunaCsv<LinhaTermoAds>[] = [
+  { label: 'Termo de pesquisa', valor: (t) => t.termo },
+  { label: 'Impressões', valor: (t) => fmtNum(t.impressoes) },
+  { label: 'Cliques', valor: (t) => fmtNum(t.cliques) },
+  { label: 'CPC médio', valor: (t) => (t.cliques > 0 ? fmtMoeda(t.custo / t.cliques) : '—') },
+  { label: 'CTR', valor: (t) => fmtPct(t.impressoes > 0 ? (t.cliques / t.impressoes) * 100 : 0) },
+  { label: 'Conversões', valor: (t) => fmtConv(t.conversoes) },
+  { label: 'Custo/conv.', valor: (t) => (t.conversoes > 0 ? fmtMoeda(t.custo / t.conversoes) : '—') },
+  { label: 'Custo', valor: (t) => fmtMoeda(t.custo) },
+  { label: 'Visitas site', valor: (t) => fmtConv(t.visitasSite) },
+]
 
 export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
   const [busca, setBusca] = useState('')
@@ -68,14 +81,17 @@ export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
 
   return (
     <div>
-      <div className="relative mb-[0.75rem]">
-        <Search className="absolute left-[0.625rem] top-1/2 -translate-y-1/2 w-[0.8125rem] h-[0.8125rem] text-ink-muted" strokeWidth={2} />
-        <input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar termo…"
-          className="w-full h-[2rem] pl-[1.75rem] pr-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-[0.8125rem] text-ink-primary placeholder:text-ink-muted focus-ring"
-        />
+      <div className="flex items-center gap-[0.5rem] mb-[0.75rem]">
+        <div className="relative flex-1">
+          <Search className="absolute left-[0.625rem] top-1/2 -translate-y-1/2 w-[0.8125rem] h-[0.8125rem] text-ink-muted" strokeWidth={2} />
+          <input
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            placeholder="Buscar termo…"
+            className="w-full h-[2rem] pl-[1.75rem] pr-[0.75rem] rounded-lg bg-surface-hover border border-surface-border text-[0.8125rem] text-ink-primary placeholder:text-ink-muted focus-ring"
+          />
+        </div>
+        <BotaoCsv nome="termos-pesquisa" colunas={CSV} linhas={ordenadas} />
       </div>
 
       <div className="overflow-x-auto max-h-[22rem] overflow-y-auto">
