@@ -221,6 +221,11 @@ export function SiteDashboard({ clienteId, ga4Conectado }: SiteDashboardProps) {
       >
         {geografia.dados && <GeografiaGA4Card dados={geografia.dados} />}
       </SecaoCard>
+
+      {/* Rodapé (réplica do Looker GA4-8) */}
+      <p className="text-ink-muted text-[0.6875rem] text-center pt-[0.25rem]">
+        Os dados não são em tempo real. Fuso: (GMT-03:00) Horário de Brasília.
+      </p>
     </div>
   )
 }

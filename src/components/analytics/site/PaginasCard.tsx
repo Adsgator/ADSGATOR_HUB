@@ -6,13 +6,34 @@ import type { LinhaPaginaGA4 } from '@/lib/ga4-detalhes'
 import { fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
+import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
 
 // Quais páginas são acessadas — caminhos normalizados (sem query string; o
 // fbclid que poluía o Looker não chega aqui) + tabela secundária com o
 // caminho + query string bruto (útil pra rastrear link/campanha exata,
 // réplica do Looker GA4-3).
 
-const COLUNAS = ['Página', 'Visualiz.', 'Usuários', 'Novos', 'Sessões', 'Engaj.', 'Rejeição', 'Duração']
+const COLUNAS: Array<{ label: string; chave: string }> = [
+  { label: 'Página', chave: 'pagina' },
+  { label: 'Visualiz.', chave: 'visualizacoes' },
+  { label: 'Usuários', chave: 'usuarios' },
+  { label: 'Novos', chave: 'usuariosNovos' },
+  { label: 'Sessões', chave: 'sessoes' },
+  { label: 'Engaj.', chave: 'taxaEngajamento' },
+  { label: 'Rejeição', chave: 'taxaRejeicao' },
+  { label: 'Duração', chave: 'duracaoMediaSessao' },
+]
+
+const ACESSADORES: Acessadores<LinhaPaginaGA4> = {
+  pagina:             (p) => p.pagina,
+  visualizacoes:      (p) => p.visualizacoes,
+  usuarios:           (p) => p.usuarios,
+  usuariosNovos:      (p) => p.usuariosNovos,
+  sessoes:            (p) => p.sessoes,
+  taxaEngajamento:    (p) => p.taxaEngajamento,
+  taxaRejeicao:       (p) => p.taxaRejeicao,
+  duracaoMediaSessao: (p) => p.duracaoMediaSessao,
+}
 
 function totalDe(dados: LinhaPaginaGA4[]) {
   return dados.reduce((acc, p) => {
@@ -51,6 +72,8 @@ function Tabela({ dados, buscaPlaceholder }: { dados: LinhaPaginaGA4[]; buscaPla
     duracao:       faixaColuna(filtradas, (p) => p.duracaoMediaSessao),
   }), [filtradas])
 
+  const { ordenadas, estado, alternar } = useOrdenacao(filtradas, ACESSADORES)
+
   return (
     <div>
       <div className="relative mb-[0.75rem]">
@@ -67,13 +90,13 @@ function Tabela({ dados, buscaPlaceholder }: { dados: LinhaPaginaGA4[]; buscaPla
         <table className="w-full text-[0.8125rem]">
           <thead className="sticky top-0 bg-surface-card">
             <tr className="border-b border-surface-border">
-              {COLUNAS.map((h) => (
-                <th key={h} className="text-left pb-[0.5rem] pt-[0.125rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem] last:pr-0">{h}</th>
+              {COLUNAS.map((c) => (
+                <ThOrdenavel key={c.chave} label={c.label} chave={c.chave} estado={estado} alternar={alternar} className="pt-[0.125rem]" />
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtradas.map((p, i) => (
+            {ordenadas.map((p, i) => (
               <tr key={`${p.pagina}-${i}`} className="border-b border-surface-border/60 last:border-0 hover:bg-surface-hover/50 transition-colors">
                 <td className="py-[0.5rem] pr-[1rem] text-ink-primary font-medium max-w-[16rem] truncate" title={p.pagina}>{p.pagina}</td>
                 <td className="py-[0.5rem] pr-[1rem] text-status-blue font-medium">{fmtNum(p.visualizacoes)}</td>

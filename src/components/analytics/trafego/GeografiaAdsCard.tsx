@@ -5,6 +5,7 @@ import { MapPin } from 'lucide-react'
 import type { LinhaLocalAds } from '@/lib/ads-detalhes'
 import { fmtConv, fmtMoeda, fmtNum, fmtPct, nomeLocal } from './labels'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
+import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
 
 // Geografia — 5 tabelas ranqueadas: Cidade → Bairro → CEP → Estado → País.
 // O Google resolve cada impressão na localização MAIS específica (cidade,
@@ -14,7 +15,28 @@ import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
 // (regiao/pais em cada linha), somando TODAS as linhas antes de ranquear — o
 // total bate com o KPI (validado por script read-only).
 
-const COLUNAS = ['Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo', 'Visitas site']
+const COLUNAS: Array<{ label: string; chave: string }> = [
+  { label: 'Impr.', chave: 'impressoes' },
+  { label: 'Cliques', chave: 'cliques' },
+  { label: 'CPC médio', chave: 'cpc' },
+  { label: 'CTR', chave: 'ctr' },
+  { label: 'Conv.', chave: 'conversoes' },
+  { label: 'Custo/conv.', chave: 'custoConv' },
+  { label: 'Custo', chave: 'custo' },
+  { label: 'Visitas site', chave: 'visitasSite' },
+]
+
+const ACESSADORES: Acessadores<LinhaLocalAds> = {
+  local:       (l) => l.local,
+  impressoes:  (l) => l.impressoes,
+  cliques:     (l) => l.cliques,
+  cpc:         (l) => (l.cliques > 0 ? l.custo / l.cliques : 0),
+  ctr:         (l) => (l.impressoes > 0 ? (l.cliques / l.impressoes) * 100 : 0),
+  conversoes:  (l) => l.conversoes,
+  custoConv:   (l) => (l.conversoes > 0 ? l.custo / l.conversoes : 0),
+  custo:       (l) => l.custo,
+  visitasSite: (l) => l.visitasSite,
+}
 
 // Neighborhood + District + Municipality são todas granularidades "sub-cidade"
 // (no Brasil o Google mistura os três) → entram juntas na tabela de Bairro.
@@ -61,6 +83,8 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
     visitasSite: faixaColuna(linhas, (l) => l.visitasSite),
   }), [linhas])
 
+  const { ordenadas, estado, alternar } = useOrdenacao(linhas, ACESSADORES)
+
   return (
     <div>
       <p className="text-ink-secondary text-[0.8125rem] font-semibold mb-[0.5rem]">{titulo}</p>
@@ -71,14 +95,14 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
           <table className="w-full text-[0.8125rem]">
             <thead className="sticky top-0 bg-surface-card">
               <tr className="border-b border-surface-border">
-                <th className="text-left pb-[0.5rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem]">{coluna}</th>
-                {COLUNAS.map((h) => (
-                  <th key={h} className="text-left pb-[0.5rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem] last:pr-0">{h}</th>
+                <ThOrdenavel label={coluna} chave="local" estado={estado} alternar={alternar} />
+                {COLUNAS.map((c) => (
+                  <ThOrdenavel key={c.chave} label={c.label} chave={c.chave} estado={estado} alternar={alternar} />
                 ))}
               </tr>
             </thead>
             <tbody>
-              {linhas.map((l, i) => {
+              {ordenadas.map((l, i) => {
                 const ctr = l.impressoes > 0 ? (l.cliques / l.impressoes) * 100 : 0
                 const cpc = l.cliques > 0 ? l.custo / l.cliques : 0
                 const custoConv = l.conversoes > 0 ? l.custo / l.conversoes : 0

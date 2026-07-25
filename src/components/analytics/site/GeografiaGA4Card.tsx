@@ -6,12 +6,32 @@ import type { GeografiaGA4, LinhaGeoGA4 } from '@/lib/ga4-detalhes'
 import { fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
+import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
 
 // Cidade / Estado / País — 3 tabelas separadas (não misturar granularidade,
 // mesma decisão do dashboard de Ads). Cada dimensão é uma agregação
 // independente (não é a mesma população cortada 3 vezes).
 
-const COLUNAS = ['Visualiz.', 'Usuários', 'Novos', 'Sessões', 'Engaj.', 'Rejeição', 'Duração']
+const COLUNAS: Array<{ label: string; chave: string }> = [
+  { label: 'Visualiz.', chave: 'visualizacoes' },
+  { label: 'Usuários', chave: 'usuarios' },
+  { label: 'Novos', chave: 'usuariosNovos' },
+  { label: 'Sessões', chave: 'sessoes' },
+  { label: 'Engaj.', chave: 'taxaEngajamento' },
+  { label: 'Rejeição', chave: 'taxaRejeicao' },
+  { label: 'Duração', chave: 'duracaoMediaSessao' },
+]
+
+const ACESSADORES: Acessadores<LinhaGeoGA4> = {
+  local:              (l) => l.local,
+  visualizacoes:      (l) => l.visualizacoes,
+  usuarios:           (l) => l.usuarios,
+  usuariosNovos:      (l) => l.usuariosNovos,
+  sessoes:            (l) => l.sessoes,
+  taxaEngajamento:    (l) => l.taxaEngajamento,
+  taxaRejeicao:       (l) => l.taxaRejeicao,
+  duracaoMediaSessao: (l) => l.duracaoMediaSessao,
+}
 
 function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string; linhas: LinhaGeoGA4[] }) {
   const total = useMemo(() => linhas.reduce((acc, l) => {
@@ -38,6 +58,8 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
     duracao:       faixaColuna(linhas, (l) => l.duracaoMediaSessao),
   }), [linhas])
 
+  const { ordenadas, estado, alternar } = useOrdenacao(linhas, ACESSADORES)
+
   return (
     <div>
       <p className="text-ink-secondary text-[0.8125rem] font-semibold mb-[0.5rem]">{titulo}</p>
@@ -48,14 +70,14 @@ function TabelaGeo({ titulo, coluna, linhas }: { titulo: string; coluna: string;
           <table className="w-full text-[0.8125rem]">
             <thead className="sticky top-0 bg-surface-card">
               <tr className="border-b border-surface-border">
-                <th className="text-left pb-[0.5rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem]">{coluna}</th>
-                {COLUNAS.map((h) => (
-                  <th key={h} className="text-left pb-[0.5rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem] last:pr-0">{h}</th>
+                <ThOrdenavel label={coluna} chave="local" estado={estado} alternar={alternar} />
+                {COLUNAS.map((c) => (
+                  <ThOrdenavel key={c.chave} label={c.label} chave={c.chave} estado={estado} alternar={alternar} />
                 ))}
               </tr>
             </thead>
             <tbody>
-              {linhas.map((l, i) => (
+              {ordenadas.map((l, i) => (
                 <tr key={`${l.local}-${i}`} className="border-b border-surface-border/60 last:border-0 hover:bg-surface-hover/50 transition-colors">
                   <td className="py-[0.5rem] pr-[1rem]">
                     <div className="flex items-center gap-[0.375rem] min-w-0">

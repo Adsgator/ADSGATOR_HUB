@@ -6,12 +6,39 @@ import type { LinhaOrigemGA4 } from '@/lib/ga4-detalhes'
 import { fmtConv, fmtNum, fmtPct } from '../trafego/labels'
 import { fmtDuracao } from './labelsGa4'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
+import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
 
 // De onde vem o tráfego (origem/mídia da sessão) — tabela completa (6
 // métricas padrão + Conversões/Tx. conversão como extra) + pizza. Cores
 // estáveis por posição (top 6 + "outras").
 
 const CORES = ['#FFB100', '#3B82F6', '#10B981', '#8b5cf6', '#06b6d4', '#f59e0b', '#6B7280']
+
+const COLUNAS: Array<{ label: string; chave: string }> = [
+  { label: 'Origem / mídia', chave: 'origem' },
+  { label: 'Visualiz.', chave: 'visualizacoes' },
+  { label: 'Usuários', chave: 'usuarios' },
+  { label: 'Novos', chave: 'usuariosNovos' },
+  { label: 'Sessões', chave: 'sessoes' },
+  { label: 'Engaj.', chave: 'taxaEngajamento' },
+  { label: 'Rejeição', chave: 'taxaRejeicao' },
+  { label: 'Duração', chave: 'duracaoMediaSessao' },
+  { label: 'Conv.', chave: 'conversoes' },
+  { label: 'Tx. conv.', chave: 'taxaConversao' },
+]
+
+const ACESSADORES: Acessadores<LinhaOrigemGA4> = {
+  origem:             (l) => `${l.fonte} / ${l.midia}`,
+  visualizacoes:      (l) => l.visualizacoes,
+  usuarios:           (l) => l.usuarios,
+  usuariosNovos:      (l) => l.usuariosNovos,
+  sessoes:            (l) => l.sessoes,
+  taxaEngajamento:    (l) => l.taxaEngajamento,
+  taxaRejeicao:       (l) => l.taxaRejeicao,
+  duracaoMediaSessao: (l) => l.duracaoMediaSessao,
+  conversoes:         (l) => l.conversoes,
+  taxaConversao:      (l) => l.taxaConversao,
+}
 
 export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
   const totalSessoes = dados.reduce((s, l) => s + l.sessoes, 0)
@@ -49,6 +76,14 @@ export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
     taxaConversao: faixaColuna(dados, (l) => l.taxaConversao),
   }), [dados])
 
+  const { ordenadas, estado, alternar } = useOrdenacao(dados, ACESSADORES)
+  // Cor do ponto = rank ORIGINAL da origem (casa com as fatias da pizza),
+  // não a posição após ordenar.
+  const rankOriginal = useMemo(
+    () => new Map(dados.map((l, i) => [`${l.fonte}/${l.midia}`, i])),
+    [dados],
+  )
+
   return (
     <div className="space-y-[1rem]">
       <div className="h-[10rem] max-w-[16rem]">
@@ -72,17 +107,17 @@ export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
         <table className="w-full text-[0.8125rem]">
           <thead className="sticky top-0 bg-surface-card">
             <tr className="border-b border-surface-border">
-              {['Origem / mídia', 'Visualiz.', 'Usuários', 'Novos', 'Sessões', 'Engaj.', 'Rejeição', 'Duração', 'Conv.', 'Tx. conv.'].map((h) => (
-                <th key={h} className="text-left pb-[0.5rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem] last:pr-0">{h}</th>
+              {COLUNAS.map((c) => (
+                <ThOrdenavel key={c.chave} label={c.label} chave={c.chave} estado={estado} alternar={alternar} />
               ))}
             </tr>
           </thead>
           <tbody>
-            {dados.map((l, i) => (
+            {ordenadas.map((l) => (
               <tr key={`${l.fonte}/${l.midia}`} className="border-b border-surface-border/60 last:border-0 hover:bg-surface-hover/50 transition-colors">
                 <td className="py-[0.5rem] pr-[1rem]">
                   <div className="flex items-center gap-[0.375rem] min-w-0">
-                    <span className="w-[0.5rem] h-[0.5rem] rounded-full shrink-0" style={{ backgroundColor: CORES[Math.min(i, 6)] }} />
+                    <span className="w-[0.5rem] h-[0.5rem] rounded-full shrink-0" style={{ backgroundColor: CORES[Math.min(rankOriginal.get(`${l.fonte}/${l.midia}`) ?? 6, 6)] }} />
                     <span className="text-ink-primary font-medium truncate max-w-[12rem]" title={`${l.fonte} / ${l.midia}`}>
                       {l.fonte} <span className="text-ink-muted font-normal">/ {l.midia}</span>
                     </span>

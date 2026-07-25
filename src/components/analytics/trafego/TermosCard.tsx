@@ -5,13 +5,36 @@ import { Search } from 'lucide-react'
 import type { LinhaTermoAds } from '@/lib/ads-detalhes'
 import { fmtConv, fmtMoeda, fmtNum, fmtPct } from './labels'
 import { CelulaMetrica, faixaColuna } from '../shared/CelulaMetrica'
+import { useOrdenacao, ThOrdenavel, type Acessadores } from '../shared/ordenacao'
 
 // Termos de pesquisa — top por cliques com busca local (padrão do Looker:
 // tabela completa pesquisável).
 
 // Ordem de colunas replica o Looker (GADS-3), incluindo Visitas site (ação
 // view_content segmentada por termo, ver docs/DASHBOARD_GADS_SPEC.md).
-const COLUNAS = ['Termo de pesquisa', 'Impr.', 'Cliques', 'CPC médio', 'CTR', 'Conv.', 'Custo/conv.', 'Custo', 'Visitas site']
+const COLUNAS: Array<{ label: string; chave: string }> = [
+  { label: 'Termo de pesquisa', chave: 'termo' },
+  { label: 'Impr.', chave: 'impressoes' },
+  { label: 'Cliques', chave: 'cliques' },
+  { label: 'CPC médio', chave: 'cpc' },
+  { label: 'CTR', chave: 'ctr' },
+  { label: 'Conv.', chave: 'conversoes' },
+  { label: 'Custo/conv.', chave: 'custoConv' },
+  { label: 'Custo', chave: 'custo' },
+  { label: 'Visitas site', chave: 'visitasSite' },
+]
+
+const ACESSADORES: Acessadores<LinhaTermoAds> = {
+  termo:       (t) => t.termo,
+  impressoes:  (t) => t.impressoes,
+  cliques:     (t) => t.cliques,
+  cpc:         (t) => (t.cliques > 0 ? t.custo / t.cliques : 0),
+  ctr:         (t) => (t.impressoes > 0 ? (t.cliques / t.impressoes) * 100 : 0),
+  conversoes:  (t) => t.conversoes,
+  custoConv:   (t) => (t.conversoes > 0 ? t.custo / t.conversoes : 0),
+  custo:       (t) => t.custo,
+  visitasSite: (t) => t.visitasSite,
+}
 
 export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
   const [busca, setBusca] = useState('')
@@ -41,6 +64,8 @@ export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
     visitasSite: faixaColuna(filtrados, (t) => t.visitasSite),
   }), [filtrados])
 
+  const { ordenadas, estado, alternar } = useOrdenacao(filtrados, ACESSADORES)
+
   return (
     <div>
       <div className="relative mb-[0.75rem]">
@@ -57,15 +82,13 @@ export function TermosCard({ dados }: { dados: LinhaTermoAds[] }) {
         <table className="w-full text-[0.8125rem]">
           <thead className="sticky top-0 bg-surface-card">
             <tr className="border-b border-surface-border">
-              {COLUNAS.map((h) => (
-                <th key={h} className="text-left pb-[0.5rem] pt-[0.125rem] text-ink-muted text-[0.6875rem] font-semibold uppercase tracking-wide pr-[1rem] last:pr-0">
-                  {h}
-                </th>
+              {COLUNAS.map((c) => (
+                <ThOrdenavel key={c.chave} label={c.label} chave={c.chave} estado={estado} alternar={alternar} className="pt-[0.125rem]" />
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtrados.map((t) => {
+            {ordenadas.map((t) => {
               const ctr = t.impressoes > 0 ? (t.cliques / t.impressoes) * 100 : 0
               const cpc = t.cliques > 0 ? t.custo / t.cliques : 0
               const custoConv = t.conversoes > 0 ? t.custo / t.conversoes : 0
