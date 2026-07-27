@@ -80,10 +80,12 @@ function PainelKpis({
   )
 }
 
+// 6 tiles = grade 3×2 limpa, 1:1 com o Looker (GA4-1). "Usuários ativos" foi
+// removido daqui: como 7º tile ele quebrava o grid em 3+3+1 (dois slots vazios)
+// e não existe na referência. O valor segue no tipo KpisGA4 se precisar voltar.
 const TILES_GERAL: TileConfig[] = [
   { label: 'Visualizações',      valor: (k) => k.visualizacoes,      fmt: fmtNum,     subida: 'boa' },
   { label: 'Novos usuários',     valor: (k) => k.usuariosNovos,      fmt: fmtNum,     subida: 'boa' },
-  { label: 'Usuários ativos',    valor: (k) => k.usuariosAtivos,     fmt: fmtNum,     subida: 'boa' },
   { label: 'Sessões',            valor: (k) => k.sessoes,            fmt: fmtNum,     subida: 'boa' },
   { label: 'Duração média',      valor: (k) => k.duracaoMediaSessao, fmt: fmtDuracao, subida: 'boa' },
   { label: 'Eventos por sessão', valor: (k) => k.eventosPorSessao,   fmt: (v) => v.toFixed(2).replace('.', ','), subida: 'boa' },
@@ -109,7 +111,7 @@ function GraficoDispositivo({ dispositivos }: { dispositivos: LinhaDispositivoGA
   return (
     <div>
       <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold mb-[0.5rem]">Por dispositivo</p>
-      <div className="h-[11rem]">
+      <div className="h-[14rem]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={dados} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }} barCategoryGap="22%" barGap={2}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" horizontal={false} />

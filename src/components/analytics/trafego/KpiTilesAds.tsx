@@ -127,7 +127,7 @@ function GraficoDispositivo({ dispositivos }: { dispositivos: LinhaDispositivoAd
   return (
     <div>
       <p className="text-ink-muted text-[0.6875rem] uppercase tracking-wide font-semibold mb-[0.5rem]">Por dispositivo</p>
-      <div className="h-[11rem]">
+      <div className="h-[14rem]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={dados} layout="vertical" margin={{ top: 0, right: 8, left: 0, bottom: 0 }} barCategoryGap="22%" barGap={2}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" horizontal={false} />

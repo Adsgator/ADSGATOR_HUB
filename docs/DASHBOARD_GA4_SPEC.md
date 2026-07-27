@@ -103,13 +103,15 @@ agrupamento do Looker:
 
 ## Painel de KPIs — regroup em 2 painéis (mesma lógica do Ads)
 
-Atual `KpiTilesGA4` é uma grade única de 9 tiles (inclui "Usuários ativos",
-que o Looker NÃO mostra como tile — mantido como extra útil, mesmo
-precedente de manter métricas a mais quando fazem sentido). Nova versão:
-painel **"Informações gerais"** (Visualizações, Novos usuários, Usuários
-ativos, Sessões, Duração média, Eventos/sessão, Rolaram até o fim) + painel
-**"Desempenho"** (Taxa de engajamento, Taxa de rejeição + gráfico Por
-dispositivo com 3 métricas), igual à estrutura Interações/Desempenho do Ads.
+Dois painéis: **"Informações gerais"** (6 tiles = grade 3×2 limpa, 1:1 com o
+Looker: Visualizações, Novos usuários, Sessões, Duração média, Eventos/sessão,
+Rolaram até o fim) + **"Desempenho"** (Taxa de engajamento, Taxa de rejeição +
+gráfico Por dispositivo com 3 métricas), igual à estrutura Interações/Desempenho
+do Ads. ⚠️ **Revisão 27/07**: "Usuários ativos" foi REMOVIDO do painel — como 7º
+tile ele quebrava o grid em 3+3+1 (dois slots vazios, o "espaço em branco" que o
+Lucas apontou) e não existe na referência. O valor segue no tipo `KpisGA4` se
+precisar voltar. O gráfico "Por dispositivo" subiu de `h-11rem` → `h-14rem` (Ads
+e Site) pra a coluna direita alcançar a altura da esquerda, como no Looker.
 
 ## Dispositivos — duas camadas (categoria vs técnico)
 
