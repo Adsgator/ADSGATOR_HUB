@@ -100,21 +100,39 @@ export function AquisicaoCard({ dados }: { dados: LinhaOrigemGA4[] }) {
 
   return (
     <div className="space-y-[1rem]">
-      <div className="h-[10rem] max-w-[16rem]">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={chartData} cx="50%" cy="50%" innerRadius={30} outerRadius={62} paddingAngle={2} dataKey="value">
-              {chartData.map((entry) => <Cell key={entry.name} fill={entry.cor} />)}
-            </Pie>
-            <Tooltip
-              contentStyle={{ background: 'var(--surface-elevated)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
-              formatter={(v: unknown, name: unknown) => [
-                `${fmtNum(Number(v))} sessões (${totalSessoes > 0 ? ((Number(v) / totalSessoes) * 100).toFixed(1) : 0}%)`,
-                String(name),
-              ] as [string, string]}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+      {/* Donut + legenda lado a lado (a tabela completa vem abaixo) — evita o
+          donut sozinho com uma faixa vazia à direita. */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-[1.5rem]">
+        <div className="h-[10rem] w-[15rem] shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={chartData} cx="50%" cy="50%" innerRadius={30} outerRadius={62} paddingAngle={2} dataKey="value">
+                {chartData.map((entry) => <Cell key={entry.name} fill={entry.cor} />)}
+              </Pie>
+              <Tooltip
+                contentStyle={{ background: 'var(--surface-elevated)', border: '1px solid var(--surface-border)', borderRadius: '0.5rem', fontSize: '0.75rem' }}
+                formatter={(v: unknown, name: unknown) => [
+                  `${fmtNum(Number(v))} sessões (${totalSessoes > 0 ? ((Number(v) / totalSessoes) * 100).toFixed(1) : 0}%)`,
+                  String(name),
+                ] as [string, string]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <ul className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-[1.5rem] gap-y-[0.5rem] min-w-0 self-center">
+          {chartData.map((entry) => {
+            const pct = totalSessoes > 0 ? (entry.value / totalSessoes) * 100 : 0
+            return (
+              <li key={entry.name} className="flex items-center gap-[0.5rem] text-[0.8125rem] min-w-0">
+                <span className="w-[0.5rem] h-[0.5rem] rounded-full shrink-0" style={{ backgroundColor: entry.cor }} />
+                <span className="text-ink-primary font-medium truncate" title={entry.name}>{entry.name}</span>
+                <span className="ml-auto text-ink-secondary tabular-nums shrink-0">
+                  {fmtNum(entry.value)}<span className="text-ink-muted"> · {pct.toFixed(1).replace('.', ',')}%</span>
+                </span>
+              </li>
+            )
+          })}
+        </ul>
       </div>
 
       <div className="flex justify-end">

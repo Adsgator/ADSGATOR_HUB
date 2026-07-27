@@ -60,7 +60,9 @@ const porCliques = (a: LinhaLocalAds, b: LinhaLocalAds) => b.cliques - a.cliques
 function agregarPor(dados: LinhaLocalAds[], chave: (l: LinhaLocalAds) => string): LinhaLocalAds[] {
   const mapa = new Map<string, LinhaLocalAds>()
   for (const l of dados) {
-    const k = chave(l).trim()
+    // Cache antigo (pré-Fase 3) não tinha regiao/pais → chave() pode vir
+    // undefined num payload servido do analytics_detalhes ainda no TTL.
+    const k = (chave(l) ?? '').trim()
     if (!k) continue
     const cur = mapa.get(k)
     if (cur) {

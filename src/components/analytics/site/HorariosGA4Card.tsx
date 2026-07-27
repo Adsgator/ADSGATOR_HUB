@@ -15,7 +15,9 @@ export function HorariosGA4Card({ dados }: { dados: LinhaHoraGA4[] }) {
   const chartData = dados.map((h) => ({ ...h, rotulo: `${h.hora}h` }))
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-[0.875rem]">
+    // "Acessos" (3 séries) ocupa a largura toda; duração e engajamento dividem a
+    // linha de baixo — evita o 3º gráfico sozinho deixando metade da linha vazia.
+    <div className="space-y-[0.875rem]">
       <MiniChartLinha
         titulo="Acompanhamento de acessos"
         dados={chartData}
@@ -28,24 +30,26 @@ export function HorariosGA4Card({ dados }: { dados: LinhaHoraGA4[] }) {
         ]}
         legenda={{ visualizacoes: 'Visualizações', usuariosNovos: 'Novos usuários', sessoes: 'Sessões' }}
       />
-      <MiniChartLinha
-        titulo="Acompanhamento de duração média"
-        dados={chartData}
-        eixoX="rotulo"
-        formatter={fmtDuracao}
-        series={[{ chave: 'duracaoMediaSessao', cor: '#06b6d4' }]}
-      />
-      <MiniChartLinha
-        titulo="Acompanhamento de engajamento"
-        dados={chartData}
-        eixoX="rotulo"
-        formatter={(v) => `${v.toFixed(1).replace('.', ',')}%`}
-        series={[
-          { chave: 'taxaEngajamento', cor: '#22c55e' },
-          { chave: 'taxaRejeicao', cor: '#ef4444' },
-        ]}
-        legenda={{ taxaEngajamento: 'Engajamento', taxaRejeicao: 'Rejeição' }}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[0.875rem]">
+        <MiniChartLinha
+          titulo="Acompanhamento de duração média"
+          dados={chartData}
+          eixoX="rotulo"
+          formatter={fmtDuracao}
+          series={[{ chave: 'duracaoMediaSessao', cor: '#06b6d4' }]}
+        />
+        <MiniChartLinha
+          titulo="Acompanhamento de engajamento"
+          dados={chartData}
+          eixoX="rotulo"
+          formatter={(v) => `${v.toFixed(1).replace('.', ',')}%`}
+          series={[
+            { chave: 'taxaEngajamento', cor: '#22c55e' },
+            { chave: 'taxaRejeicao', cor: '#ef4444' },
+          ]}
+          legenda={{ taxaEngajamento: 'Engajamento', taxaRejeicao: 'Rejeição' }}
+        />
+      </div>
     </div>
   )
 }
