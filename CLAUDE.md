@@ -17,11 +17,15 @@ automático):
   `gh workflow enable "Cron dispatch"`.
 - **`vercel.json`** — cron diário removido (`crons: []`). Restaurar o schedule
   se o dispatcher voltar a ser necessário.
-- **Deploy na Vercel / projeto Supabase** — decisão pendente do Lucas (pausar
-  ou despublicar manualmente pelo dashboard); a CLI local não tinha sessão
-  autenticada para fazer isso automaticamente.
-- **BigQuery Data Transfer** (nível MCC, Google Cloud Console) — fora deste
-  repo; pausar manualmente se aplicável, senão segue ingerindo dado sozinho.
+- **BigQuery Data Transfer** "AdsGator MCC" (projeto `project-96f1eec4-8654-4fb5-818`,
+  `transferConfigs/6a4fd875-0000-285d-9f3b-f4f5e80701d0`) — agendamento automático
+  desligado via `bq update --transfer_config --no_auto_scheduling` (02/09/2026).
+  Reativar: `bq update --transfer_config --nono_auto_scheduling --project_id=project-96f1eec4-8654-4fb5-818 <resource-name>`
+  (ou pelo Console: BigQuery → Data transfers → AdsGator MCC → reativar agendamento).
+- **Deploy na Vercel / projeto Supabase** — ainda de pé. CLI local sem sessão
+  autenticada para pausar via terminal (`vercel whoami` falhou; `supabase`
+  não expõe pause/resume no CLI). Pausar manualmente pelo dashboard de cada um
+  (Settings → General → Pause) quando o Lucas quiser fechar de vez.
 
 ---
 
