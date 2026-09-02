@@ -5,6 +5,26 @@ Leia antes de qualquer alteração.
 
 ---
 
+## ⏸️ PROJETO PAUSADO (desde 02/09/2026)
+
+Desenvolvimento e operação parados por tempo indeterminado — clientes ativos
+seguem existindo, mas deixaram de ser gerenciados por este Hub. Antes de
+retomar qualquer trabalho aqui, reative manualmente (nenhum destes é
+automático):
+
+- **GitHub Actions** `Cron dispatch` — desabilitado via `gh workflow disable`
+  (estava disparando `/api/v1/cron/dispatch` a cada 30 min). Reativar com
+  `gh workflow enable "Cron dispatch"`.
+- **`vercel.json`** — cron diário removido (`crons: []`). Restaurar o schedule
+  se o dispatcher voltar a ser necessário.
+- **Deploy na Vercel / projeto Supabase** — decisão pendente do Lucas (pausar
+  ou despublicar manualmente pelo dashboard); a CLI local não tinha sessão
+  autenticada para fazer isso automaticamente.
+- **BigQuery Data Transfer** (nível MCC, Google Cloud Console) — fora deste
+  repo; pausar manualmente se aplicável, senão segue ingerindo dado sozinho.
+
+---
+
 ## Stack
 
 ```
